@@ -3,8 +3,8 @@
 //
 
 #include <common/utils.h>
-#include <Backend/Optix/OptixDomain.h>
-#include <Backend/Optix/gvt_optix.h>
+#include <Backend/Optix/Domain/OptixDomain.h>
+#include <Backend/Optix/Data/gvt_optix.h>
 
 //TODO: Matt (if needed)
 

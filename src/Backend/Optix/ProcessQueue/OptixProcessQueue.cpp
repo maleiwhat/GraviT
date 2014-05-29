@@ -14,8 +14,9 @@
 #include "OptixProcessQueue.h"
 
 #include <cuda_runtime.h>
-#include <optix_primepp.h>
-#include <optixpp.h>
+#include <optix_prime/optix_primepp.h>
+#include <optixu/optixpp.h>
+//#include <optix.h>
 
 
 
@@ -44,7 +45,7 @@ namespace GVT {
             optix::prime::Model model = context->createModel();
 
 
-            RayVector& rayList = param->queue[param->domTarget];
+            GVT::Data::RayVector& rayList = param->queue[param->domTarget];
             //copy rays to buffer
             optix::Ray * optixRays= new optix::Ray[rayList.size()];
             for(int i=0;i<rayList.size();i++)

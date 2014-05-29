@@ -34,13 +34,13 @@ namespace GVT {
             void merge(const box3D &other);
             void expand(GVT::Math::Point4f& v);
 
-            friend std::ostream & operator <<(std::ostream &os, const box3D &bbox) {
+            friend std::ostream & operator <<(std::ostream &os,const box3D &bbox) {
                 
                 //TODO: fix this;
                 //os << bbox.bounds[0] << " x ";
                 //os << bbox.bounds[1];
-                return os << bbox.bounds[0] << " : " << bbox.bounds[1];
-                //return os;
+                //return os << bbox.bounds[0] << " : " << bbox.bounds[1];
+                return os;
             }       
             
             template<typename cast>
