@@ -65,6 +65,9 @@ int main(int argc, char** argv) {
         case GVT::Env::RayTracerAttributes::Manta:
             rta.dataset = new GVT::Dataset::Dataset<GVT::Domain::MantaDomain>(rta.datafile);
             break;
+        case GVT::Env::RayTracerAttributes::Optix:
+            rta.dataset = new GVT::Dataset::Dataset<GVT::Domain::OptixDomain>(rta.datafile);
+            break;
     }
 
 
