@@ -29,7 +29,7 @@ namespace GVT {
         }
 
         template<> void ProcessQueue<GVT::Domain::OptixDomain>::operator()() {
-            cerr<<"Entering ProcessQueue"<<endl;
+            cerr<<"Entering Optix ProcessQueue"<<endl;
             GVT::Domain::GeometryDomain* gdom = dynamic_cast<GVT::Domain::GeometryDomain*> (param->dom);
             if (!gdom) return;
             GVT_DEBUG(DBG_ALWAYS,"processQueue<OptixDomain>: in\n");
