@@ -76,7 +76,7 @@ int main(int argc, char** argv) {
     std::cout << rta << std::endl;
     GVT::Env::Camera<C_PERSPECTIVE> cam(GVT::Env::RayTracerAttributes::rta->view, GVT::Env::RayTracerAttributes::rta->sample_rate);
     Image* image;
-    boost::timer::auto_cpu_timer t("render time: %ws\n");
+    boost::timer::auto_cpu_timer t("image render time from mpitrace: %ws\n");
     {
        boost::timer::auto_cpu_timer t("image creation time: %ws\n");
     image = new Image(GVT::Env::RayTracerAttributes::rta->view.width, GVT::Env::RayTracerAttributes::rta->view.height, imagename);
