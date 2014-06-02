@@ -11,7 +11,7 @@ namespace GVT {
 
         using namespace std;
 
-        template<> Camera<C_ORTHOGRAPHIC>::Camera(GVT::Data::RayVector &rays, GVT::Env::RayTracerAttributes::View &vi, float rate) : rays(rays), vi(vi), rate(rate), m(true) {
+        template<> Camera<C_ORTHOGRAPHIC>::Camera(GVT::Env::RayTracerAttributes::View &vi, float rate) : vi(vi), rate(rate), m(true) {
             if (vi.nearPlane == 0) vi.nearPlane = -vi.camera.z;
             if (vi.farPlane == 0) vi.farPlane = vi.camera.z;
             aspectRatio = 1;
@@ -22,9 +22,10 @@ namespace GVT {
             look = vi.camera - vi.focus;
             setLook(look, vi.up);
             setAspectRatio(double(vi.width)/double(vi.height));
+                trcUpSampling = 1;
         }
 
-        template<> Camera<C_PERSPECTIVE>::Camera(GVT::Data::RayVector &rays, GVT::Env::RayTracerAttributes::View &vi, float rate) : rays(rays), vi(vi), rate(rate), m(true) {
+        template<> Camera<C_PERSPECTIVE>::Camera(GVT::Env::RayTracerAttributes::View &vi, float rate) : vi(vi), rate(rate), m(true) {
             aspectRatio = 1;
             normalizedHeight = 1;
             eye = vi.camera;
@@ -35,7 +36,7 @@ namespace GVT {
             setLook(vi.camera, vi.focus , vi.up);
             setFOV(float(vi.view_angle) * PI / 180.f);
             setAspectRatio(double(vi.width)/double(vi.height));
-            
+                trcUpSampling = 1;
         }
     }
 }

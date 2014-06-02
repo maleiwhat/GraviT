@@ -50,6 +50,9 @@ public:
         rgb[index + 2] = ((unsigned char) (ca.rgba[2] / ca.rgba[3]*255.f) * w);
     }
 
+    inline int getWidth() {return width;}
+    inline int getHeight() {return height;}
+
     unsigned char* GetBuffer() {
         return rgb;
     }

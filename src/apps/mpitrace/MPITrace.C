@@ -18,6 +18,9 @@
 #include <GVT/Environment/RayTracerAttributes.h>
 #include <Backend/Manta/gvtmanta.h>
 #include <Frontend/ConfigFile/Dataset/Dataset.h>
+
+
+#include <boost/timer/timer.hpp>
 using namespace std;
 
 
@@ -71,10 +74,21 @@ int main(int argc, char** argv) {
     GVT_ASSERT(rta.LoadDataset(), "Unable to load dataset");
 
     std::cout << rta << std::endl;
-
+    GVT::Env::Camera<C_PERSPECTIVE> cam(GVT::Env::RayTracerAttributes::rta->view, GVT::Env::RayTracerAttributes::rta->sample_rate);
+    Image* image;
+    boost::timer::auto_cpu_timer t("render time: %ws\n");
+    {
+       boost::timer::auto_cpu_timer t("image creation time: %ws\n");
+    image = new Image(GVT::Env::RayTracerAttributes::rta->view.width, GVT::Env::RayTracerAttributes::rta->view.height, imagename);
+}
     RayTracer rt;
     MPI_Barrier(MPI_COMM_WORLD);
-    rt.RenderImage(imagename);
+    rt.RenderImage(cam, *image);
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    if (rank == 0) {
+        image->Write();
+    }
 
     if (MPI::COMM_WORLD.Get_size() > 1) MPI_Finalize();
 

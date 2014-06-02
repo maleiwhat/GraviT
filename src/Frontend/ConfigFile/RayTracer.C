@@ -23,16 +23,25 @@
 
 #include <boost/timer/timer.hpp>
 
-void RayTracer::RenderImage(string imagename = "mpitrace") {
-     boost::timer::auto_cpu_timer t("render time: %ws\n");
-    Image image(GVT::Env::RayTracerAttributes::rta->view.width, GVT::Env::RayTracerAttributes::rta->view.height, imagename);
-    GVT::Data::RayVector rays;
+void RayTracer::RenderImage(GVT::Env::Camera<C_PERSPECTIVE>& camera, Image& image) {
 
-    GVT::Env::Camera<C_PERSPECTIVE> cam(rays, GVT::Env::RayTracerAttributes::rta->view, GVT::Env::RayTracerAttributes::rta->sample_rate);
-    cam.MakeCameraRays();
+    static std::vector<GVT::Data::ray> crays;
+    crays.resize((camera.getSPP()) * image.getWidth() * image.getHeight());
+
+    {
+       boost::timer::auto_cpu_timer t("make camera rays time: %ws\n");
+       camera.MakeCameraRays(crays);
+    }
 
     int render_type = GVT::Env::RayTracerAttributes::rta->render_type;
-    
+
+    //
+    //  CARSON: I don't think we should be using arrays of pointers for ray storage unless absolutely necessary
+    //
+    GVT::Data::RayVector rays;
+    rays.resize(crays.size());
+    for(size_t i=0;i< rays.size();i++)
+        rays[i] = new GVT::Data::ray(crays[i]);
 
     switch (GVT::Env::RayTracerAttributes::rta->schedule) {
         case GVT::Env::RayTracerAttributes::Image:
@@ -100,12 +109,6 @@ void RayTracer::RenderImage(string imagename = "mpitrace") {
             return;
     }
 
-
-    int rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    if (rank == 0) {
-        image.Write();
-    }
 
 };
 

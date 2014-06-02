@@ -10,6 +10,7 @@
 #include <GVT/Data/scene/Image.h>
 #include <GVT/Data/primitives.h>
 #include <GVT/Environment/RayTracerAttributes.h>
+#include <GVT/Environment/Camera.h>
 
 #include <pthread.h>
 #include <semaphore.h>
@@ -22,7 +23,7 @@ class RayTracer
  public:
     RayTracer() {}
 
-    void RenderImage(string);
+    void RenderImage(GVT::Env::Camera<C_PERSPECTIVE>& camera, Image& image);
 
  protected:
 

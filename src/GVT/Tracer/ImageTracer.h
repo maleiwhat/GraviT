@@ -18,6 +18,7 @@
 #include <GVT/Concurrency/TaskScheduling.h>
 
 #include <boost/foreach.hpp>
+#include <boost/timer/timer.hpp>
 
 namespace GVT {
 
@@ -35,9 +36,10 @@ namespace GVT {
 
             virtual void operator()() {
 
-                long ray_counter = 0, domain_counter = 0;
+               boost::timer::auto_cpu_timer t("image tracer time: %ws\n");
+               long ray_counter = 0, domain_counter = 0;
 
-                this->generateRays();
+                // this->generateRays();
 
                 // buffer for color accumulation
                 GVT::Data::RayVector moved_rays;
@@ -60,11 +62,13 @@ namespace GVT {
                     if (DEBUG_RANK) GVT_DEBUG(DBG_ALWAYS, this->rank << ": selected domain " << domTarget << " (" << domTargetCount << " rays)");
                     if (DEBUG_RANK) GVT_DEBUG(DBG_ALWAYS, this->rank << ": currently processed " << ray_counter << " rays across " << domain_counter << " domains");
 
+                        printf("Carson: processing dom targets\n");
                     if (domTarget >= 0) {
+                        printf("Carson: processing dom target\n");
 
                         GVT_DEBUG(DBG_ALWAYS, "Getting domain " << domTarget << endl);
                         GVT::Domain::Domain* dom = GVT::Env::RayTracerAttributes::rta->dataset->getDomain(domTarget);
-                        dom->load();
+                        // dom->load();
                         GVT_DEBUG(DBG_ALWAYS, "dom: " << domTarget << endl);
 
                         // track domain loads
