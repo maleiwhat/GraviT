@@ -20,7 +20,11 @@
 
 #include <GVT/Scheduler/schedulers.h>
 
+
+#include <boost/timer/timer.hpp>
+
 void RayTracer::RenderImage(string imagename = "mpitrace") {
+     boost::timer::auto_cpu_timer t("render time: %ws\n");
     Image image(GVT::Env::RayTracerAttributes::rta->view.width, GVT::Env::RayTracerAttributes::rta->view.height, imagename);
     GVT::Data::RayVector rays;
 

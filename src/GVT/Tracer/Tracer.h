@@ -18,6 +18,7 @@
 
 #include <GVT/Concurrency/TaskScheduling.h>
 #include <boost/foreach.hpp>
+#include <boost/timer/timer.hpp>
 
 namespace GVT {
 
@@ -188,6 +189,7 @@ namespace GVT {
              */
 
             virtual void generateRays() {
+         boost::timer::auto_cpu_timer t("generate ray time: %ws\n");
                 boost::atomic<int> current_ray(this->rays_start);
                 size_t workload = std::max((size_t)1,(size_t)(this->rays.size() / (GVT::Concurrency::asyncExec::instance()->numThreads * 2)));
                 for (int rc = 0; rc < GVT::Concurrency::asyncExec::instance()->numThreads; ++rc) {
