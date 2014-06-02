@@ -121,8 +121,9 @@ namespace GVT {
             void MakeCameraRays(std::vector<GVT::Data::ray>& raysn) {
                 this->rays = &raysn;
                 depth = 0;
-                // if (rays->size() < (trcUpSampling*trcUpSampling) * vi.width * vi.height)
-                    // rays->resize((trcUpSampling*trcUpSampling) * vi.width * vi.height);
+                if (rays->size() < (trcUpSampling*trcUpSampling) * vi.width * vi.height)
+                    rays->resize((trcUpSampling*trcUpSampling) * vi.width * vi.height);
+
                 int offset = vi.height / GVT::Concurrency::asyncExec::instance()->numThreads;
                 for (int start = 0; start < vi.height;) {
                     int end = start + offset;
