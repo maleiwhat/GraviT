@@ -26,9 +26,8 @@
 void RayTracer::RenderImage(GVT::Env::Camera<C_PERSPECTIVE>& camera, Image& image) {
 
        boost::timer::auto_cpu_timer t("renderimage time: %ws\n");
-    static std::vector<GVT::Data::ray> crays;
-    crays.resize((camera.getSPP()) * image.getWidth() * image.getHeight());
 
+    crays.resize((camera.getSPP()) * image.getWidth() * image.getHeight());
     {
        boost::timer::auto_cpu_timer t("make camera rays time: %ws\n");
        camera.MakeCameraRays(crays);
@@ -39,7 +38,6 @@ void RayTracer::RenderImage(GVT::Env::Camera<C_PERSPECTIVE>& camera, Image& imag
     //
     //  CARSON: I don't think we should be using arrays of pointers for ray storage unless absolutely necessary
     //
-    static GVT::Data::RayVector rays;
     {
        boost::timer::auto_cpu_timer t("convert rays time: %ws\n");
     size_t osize=rays.size();

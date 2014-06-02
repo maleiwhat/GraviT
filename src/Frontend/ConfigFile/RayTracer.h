@@ -21,7 +21,12 @@ using namespace std;
 class RayTracer
 {
  public:
-    RayTracer() {}
+    RayTracer() {
+    crays.resize(1920*1080);
+    rays.resize(1920*1080);
+    for(size_t i=0;i<rays.size();i++)
+        rays[i] = new GVT::Data::ray();
+    }
 
     void RenderImage(GVT::Env::Camera<C_PERSPECTIVE>& camera, Image& image);
 
@@ -49,6 +54,8 @@ class RayTracer
     std::vector<pthread_t> _threads;
     sem_t mutex;
     LoadBalancer* loadBalancer;
+    GVT::Data::RayVector rays;
+    std::vector<GVT::Data::ray> crays;
 
 private:
 	void parallel_comm_2(GVT::Env::RayTracerAttributes& rta, GVT::Data::RayVector& rays,
