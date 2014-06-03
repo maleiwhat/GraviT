@@ -11,19 +11,18 @@ namespace GVT {
             return false;
         };
 
-        bool GVTDataset::intersect(GVT::Data::ray* r, GVT::Data::isecDomList& inter) {
-            // if (dataSetBB.intersect(r) || dataSetBB.inBox(r)) {  //Carson: this is redundant
-                r->t = FLT_MAX;
-                // BOOST_FOREACH(GVT::Domain::Domain* d, domainSet) d->intersect(r, inter);
-                // boost::sort(inter);
-                // inter.push_back(GVT::Data::isecDom(0, t));
+        bool GVTDataset::intersect(GVT::Data::ray&  r, GVT::Data::isecDomList& inter) {
+            if (dataSetBB.intersect(r) || dataSetBB.inBox(r)) {
+                r.t = FLT_MAX;
+                BOOST_FOREACH(GVT::Domain::Domain* d, domainSet) d->intersect(r, inter);
+                boost::sort(inter);
                 
                 
 //                GVT::Data::isecDomList r; r.assign(inter.rbegin(),inter.rend());
 //                inter.clear(); inter.assign(r.begin(),r.end());
                 return (!inter.empty());
-            // }
-            // return false;
+            }
+            return false;
         };
 
         GVT::Domain::Domain* GVTDataset::getDomain(int id) {

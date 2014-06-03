@@ -18,7 +18,8 @@
 #include <boost/smart_ptr.hpp>
 
 #include <boost/aligned_storage.hpp>
-
+#include <boost/pool/pool.hpp>
+#include <boost/pool/pool_alloc.hpp>
 namespace GVT {
     namespace Data {
 
@@ -95,30 +96,14 @@ namespace GVT {
             const static float RAY_EPSILON;
             
             
-            void* operator new(size_t size);
-            void* operator new[](size_t size);
-            
-            void operator delete(void* ptr);
-            void operator delete[](void* ptr);
-
-
-            //typedef boost::singleton_pool<GVT::Data::ray, sizeof(GVT::Data::ray)> ray_memory_pool;
-            
-            //            void* operator new(size_t size) {
-//                return boost::
-//            }
-            
             
         protected:
-            
-            //boost
 
         };
 
       
-        
-        typedef boost::container::vector< GVT::Data::ray* > RayVector;
-        
+        typedef std::vector< GVT::Data::ray, boost::pool_allocator<GVT::Data::ray> > RayVector;
+
 
     };
 };

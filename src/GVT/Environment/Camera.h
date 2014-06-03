@@ -10,7 +10,9 @@
 
 #include <boost/foreach.hpp>
 #include <boost/aligned_storage.hpp>
+
 #include <boost/timer/timer.hpp>
+
 
 namespace GVT {
     namespace Env {
@@ -119,7 +121,7 @@ namespace GVT {
                 return trcUpSampling*trcUpSampling;
             }
 
-            void MakeCameraRays(std::vector<GVT::Data::ray>& raysn) {
+            void MakeCameraRays(GVT::Data::RayVector& raysn) {
                 this->rays = &raysn;
                 depth = 0;
                 if (rays->size() < (trcUpSampling*trcUpSampling) * vi.width * vi.height)
@@ -134,7 +136,7 @@ namespace GVT {
                 }
                 GVT::Concurrency::asyncExec::instance()->sync();
                 GVT_DEBUG(DBG_ALWAYS, "EXPECTED PREGENERATING : " << (trcUpSampling*trcUpSampling) * vi.width * vi.height);
-                GVT_DEBUG(DBG_ALWAYS, "PREGENERATING : " << rays->size());
+                GVT_DEBUG(DBG_ALWAYS, "PREGENERATING : " << rays.size());
 
             }
 
@@ -153,7 +155,7 @@ namespace GVT {
                boost::timer::auto_cpu_timer t("cameraGenerateRays time: %ws\n");
                     GVT::Math::AffineTransformMatrix<float> m = cam->m; // rotation matrix
                     int depth = cam->depth;
-                    std::vector<GVT::Data::ray>* rays = cam->rays;
+                    GVT::Data::RayVector& rays = *(cam->rays);
                     GVT::Math::Vector4f eye = cam->eye;
                     GVT::Math::Vector4f look = cam->look; // direction to look
                     GVT::Math::Vector4f u = cam->u, v = cam->v; // u and v in the 
@@ -170,7 +172,7 @@ namespace GVT {
                     const float divider = cam->trcUpSampling;
                     const float offset = 1.0 / divider;
                     const float offset2 = offset / 2.f;
-                    const float idivider2 = 1.0 / (divider * divider);
+                    const float w = 1.0 / (divider * divider);
                     const float buffer_width = cam->vi.width;
                     const float buffer_height = cam->vi.height;
                     GVT::Math::Vector4f dir;
@@ -184,28 +186,22 @@ namespace GVT {
                                     float x = x1 / float(buffer_width) - 0.5;
                                     float y = y1 / float(buffer_height) - 0.5;
                                     dir = m * ((look + x * u + y * v)).normalize();
-                                    // GVT::Data::ray* ray = new GVT::Data::ray(eye, dir, idivider2, GVT::Data::ray::PRIMARY, depth);
-                                    // assert((*rays).size() > idx);
-                                    GVT::Data::ray* ray = &((*rays)[idx]);
-                                    ray->origin = eye;
-                                    ray->direction = dir;
-                                    ray->w = idivider2;
-                                    ray->type = GVT::Data::ray::PRIMARY;
-                                    ray->depth = depth;
-                                    ray->id = idx;
-
-                                    // lrays.push_back(ray);
+                                    GVT::Data::ray& ray = rays[idx];
+                                    ray.id = idx;;
+                                    ray.origin = eye;
+                                    ray.w = w;
+                                    ray.depth =  depth;
+                                    ray.setDirection(dir);
+                                    ray.type = GVT::Data::ray::PRIMARY;
                                 }
                             }
                         }
                     }
-                    // boost::mutex::scoped_lock lock(cam->rmutex);
-                    // rays.insert(rays.end(), lrays.begin(), lrays.end());
                 }
             };
 
             boost::mutex rmutex;
-            
+
         private:
             GVT::Math::AffineTransformMatrix<float> m; // rotation matrix
             double normalizedHeight; // dimensions of image place at unit dist from eye
@@ -221,8 +217,7 @@ namespace GVT {
             GVT::Math::Vector4f look; // direction to look
             GVT::Math::Vector4f u, v; // u and v in the 
 
-            // GVT::Data::RayVector *rays;
-            std::vector<GVT::Data::ray>* rays;
+            GVT::Data::RayVector* rays;
             GVT::Env::RayTracerAttributes::View &vi;
             float rate;
 

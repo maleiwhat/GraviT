@@ -65,33 +65,33 @@ namespace GVT {
             virtual bool SendRays() = 0;
             virtual void gatherFramebuffers(int rays_traced) = 0;
 
-            virtual void addRay(GVT::Data::ray* r) {
+            virtual void addRay(GVT::Data::ray& ray) {
                 GVT::Data::isecDomList len2List;
-                if (len2List.empty()) GVT::Env::RayTracerAttributes::rta->dataset->intersect(r, len2List);
+                if (len2List.empty()) GVT::Env::RayTracerAttributes::rta->dataset->intersect(ray, len2List);
                 if (!len2List.empty()) {
-                    r->domains.assign(len2List.begin() + 1, len2List.end());
+                    ray.domains.assign(len2List.begin() + 1, len2List.end());
                     int domTarget = (*len2List.begin());
-                    GVT::Env::RayTracerAttributes::rta->dataset->getDomain(domTarget)->marchIn(r);
-                    queue[domTarget].push_back(r);
+                    GVT::Env::RayTracerAttributes::rta->dataset->getDomain(domTarget)->marchIn(ray);
+                    queue[domTarget].push_back(ray);
                     return;
                 } else {
-                    for (int i = 0; i < 3; i++) colorBuf[r->id].rgba[i] += r->color.rgba[i];
-                    colorBuf[r->id].rgba[3] = 1.f;
-                    colorBuf[r->id].clamp();
+                    for (int i = 0; i < 3; i++) colorBuf[ray.id].rgba[i] += ray.color.rgba[i];
+                    colorBuf[ray.id].rgba[3] = 1.f;
+                    colorBuf[ray.id].clamp();
                 }
             }
         };
 
         struct processRay {
             abstract_trace* tracer;
-            GVT::Data::ray* ray;
+            GVT::Data::ray& ray;
 
-            processRay(abstract_trace* tracer, GVT::Data::ray* ray) : tracer(tracer), ray(ray) {
+            processRay(abstract_trace* tracer, GVT::Data::ray& ray) : tracer(tracer), ray(ray) {
 
             }
 
             void operator()() {
-                GVT::Data::isecDomList& len2List = ray->domains;
+                GVT::Data::isecDomList& len2List = ray.domains;
                 if (len2List.empty()) GVT::Env::RayTracerAttributes::rta->dataset->intersect(ray, len2List);
                 if (!len2List.empty()) {
                     int domTarget = (*len2List.begin());
@@ -100,10 +100,10 @@ namespace GVT {
                     boost::mutex::scoped_lock qlock(tracer->queue_mutex[domTarget]);
                     tracer->queue[domTarget].push_back(ray);
                 } else {
-                    boost::mutex::scoped_lock fbloc(tracer->colorBuf_mutex[ray->id % GVT::Env::RTA::instance()->view.width] );
-                    for (int i = 0; i < 3; i++) tracer->colorBuf[ray->id].rgba[i] += ray->color.rgba[i];
-                    tracer->colorBuf[ray->id].rgba[3] = 1.f;
-                    tracer->colorBuf[ray->id].clamp();
+                    boost::mutex::scoped_lock fbloc(tracer->colorBuf_mutex[ray.id % GVT::Env::RTA::instance()->view.width] );
+                    for (int i = 0; i < 3; i++) tracer->colorBuf[ray.id].rgba[i] += ray.color.rgba[i];
+                    tracer->colorBuf[ray.id].rgba[3] = 1.f;
+                    tracer->colorBuf[ray.id].clamp();
                     //delete ray;
                 }
             }
@@ -114,7 +114,7 @@ namespace GVT {
             GVT::Data::RayVector& rays;
             boost::atomic<int>& current_ray;
             int last;
-            const int split;
+            const size_t split;
             GVT::Domain::Domain* dom;
 
             processRayVector(abstract_trace* tracer, GVT::Data::RayVector& rays, boost::atomic<int>& current_ray, int last, const int split,  GVT::Domain::Domain* dom =NULL) :
@@ -125,18 +125,17 @@ namespace GVT {
             void operator()() {
                 
                 GVT::Data::RayVector localQueue;
-                while (true) {
+                while (!rays.empty()) {
                     localQueue.clear();
                     boost::unique_lock<boost::mutex> lock(tracer->raymutex);
-                    if ((last - current_ray) <= 0) return;
-                    std::size_t range = std::min(split, (last - current_ray));
-                    localQueue.assign(rays.begin() + current_ray, rays.begin() + current_ray + range);
-                    current_ray += range;
+                    std::size_t range = std::min(split, rays.size());
+                    localQueue.assign(rays.begin(), rays.begin() + range);
+                    rays.erase(rays.begin(), rays.begin() + range);
                     lock.unlock();
 
                     for (int i = 0; i < localQueue.size(); i++) {
-                        GVT::Data::ray* ray = localQueue[i];
-                        GVT::Data::isecDomList& len2List = ray->domains;
+                        GVT::Data::ray& ray = localQueue[i];
+                        GVT::Data::isecDomList& len2List = ray.domains;
                         if (len2List.empty() && dom) dom->marchOut(ray);
                         if (len2List.empty()) GVT::Env::RayTracerAttributes::rta->dataset->intersect(ray, len2List);
                         if (!len2List.empty()) {
@@ -146,10 +145,10 @@ namespace GVT {
                             boost::mutex::scoped_lock qlock(tracer->queue_mutex[domTarget]);
                             tracer->queue[domTarget].push_back(ray);
                         } else {
-                            boost::mutex::scoped_lock fbloc(tracer->colorBuf_mutex[ray->id % GVT::Env::RTA::instance()->view.width]);
-                            for (int i = 0; i < 3; i++) tracer->colorBuf[ray->id].rgba[i] += ray->color.rgba[i];
-                            tracer->colorBuf[ray->id].rgba[3] = 1.f;
-                            tracer->colorBuf[ray->id].clamp();
+                            boost::mutex::scoped_lock fbloc(tracer->colorBuf_mutex[ray.id % GVT::Env::RTA::instance()->view.width]);
+                            for (int i = 0; i < 3; i++) tracer->colorBuf[ray.id].rgba[i] += ray.color.rgba[i];
+                            tracer->colorBuf[ray.id].rgba[3] = 1.f;
+                            tracer->colorBuf[ray.id].clamp();
                             //delete ray;
                         }
                     }

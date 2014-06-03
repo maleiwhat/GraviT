@@ -20,10 +20,10 @@
 namespace GVT {
 
     namespace Trace {
-/// Tracer Hybrid (HybridSchedule) based decomposition implementation
+        /// Tracer Hybrid (HybridSchedule) based decomposition implementation
 
-/*
- */
+                /*
+         */
         template<class DomainType, class MPIW, class SCHEDULER> class Tracer<DomainType, MPIW, HybridSchedule<SCHEDULER> > : public Tracer_base<MPIW> {
         public:
 
@@ -145,25 +145,33 @@ namespace GVT {
                             }
                         }
 
-                        GVT::Backend::ProcessQueue<DomainType>(new GVT::Backend::adapt_param<DomainType>(this->queue, moved_rays, domTarget, dom, this->colorBuf, ray_counter, domain_counter))();
-
-                        
-                        BOOST_FOREACH( GVT::Data::ray* mr,  moved_rays) {
-                            dom->marchOut(mr);
-                            GVT::Concurrency::asyncExec::instance()->run_task(processRay(this,mr));
+                        //GVT::Backend::ProcessQueue<DomainType>(new GVT::Backend::adapt_param<DomainType>(this->queue, moved_rays, domTarget, dom, this->colorBuf, ray_counter, domain_counter))();
+                        {
+                            moved_rays.reserve(this->queue[domTarget].size()*10);
+                            boost::timer::auto_cpu_timer t("Tracing domain rays %t\n");
+                            dom->trace(this->queue[domTarget], moved_rays);
                         }
-                                                
-//                        while (!moved_rays.empty()) {
-//                            GVT::Data::ray& mr = moved_rays.back();
-//                            if(!mr.domains.empty()) {
-//                                int target = mr.domains.back();
-//                                this->queue[target].push_back(mr);
-//                            }
-//                            if(mr.type != GVT::Data::ray::PRIMARY) {
-//                                this->addRay(mr);
-//                            }
-//                            moved_rays.pop_back();
-//                        }
+
+                        boost::atomic<int> current_ray(0);
+                        size_t workload = std::max((size_t) 1, (size_t) (moved_rays.size() / (GVT::Concurrency::asyncExec::instance()->numThreads * 2)));
+                        {
+                            boost::timer::auto_cpu_timer t("Scheduling rays %t\n");
+                            for (int rc = 0; rc < GVT::Concurrency::asyncExec::instance()->numThreads; ++rc) {
+                                GVT::Concurrency::asyncExec::instance()->run_task(processRayVector(this, moved_rays, current_ray, moved_rays.size(), workload, dom));
+                            }
+                            GVT::Concurrency::asyncExec::instance()->sync();
+                        }
+                        //                        while (!moved_rays.empty()) {
+                        //                            GVT::Data::ray& mr = moved_rays.back();
+                        //                            if(!mr.domains.empty()) {
+                        //                                int target = mr.domains.back();
+                        //                                this->queue[target].push_back(mr);
+                        //                            }
+                        //                            if(mr.type != GVT::Data::ray::PRIMARY) {
+                        //                                this->addRay(mr);
+                        //                            }
+                        //                            moved_rays.pop_back();
+                        //                        }
 
                         this->queue.erase(domTarget); // TODO: for secondary rays, rays may have been added to this domain queue
                     }
@@ -455,7 +463,7 @@ namespace GVT {
                     int buf_size = 0;
                     DEBUG(if (DEBUG_RANK) cerr << this->rank << ": ray sizes in domain " << dos->first << endl);
                     for (int r = ray_count; r < (ray_count + ray_seg); ++r) {
-                        buf_size += this->queue[dos->first][r]->packedSize(); // rays can have diff packed sizes
+                        buf_size += this->queue[dos->first][r].packedSize(); // rays can have diff packed sizes
                         DEBUG(if (DEBUG_RANK) cerr << "    " << this->queue[dos->first][r]->packedSize() << " (" << buf_size << ")" << endl);
                     }
                     outbound[i + 1] += buf_size;
@@ -514,9 +522,9 @@ namespace GVT {
                             << outbound[i + 1] << " bytes) to " << dos->second << endl;
                             );
                     for (int r = ray_count; r < (ray_count + ray_seg); ++r) {
-                        GVT::Data::ray* ray = this->queue[dos->first][r];
+                        GVT::Data::ray& ray = this->queue[dos->first][r];
                         DEBUG(if (DEBUG_RANK) cerr << "    @" << ptr_buf[dos->second] << ": " << ray << endl);
-                        ptr_buf[dos->second] += ray->pack(send_buf[dos->second] + ptr_buf[dos->second]);
+                        ptr_buf[dos->second] += ray.pack(send_buf[dos->second] + ptr_buf[dos->second]);
                     }
                     ray_count += ray_seg;
 
@@ -543,9 +551,9 @@ namespace GVT {
                         int ptr = 0;
                         for (int c = 0; c < inbound[j]; ++c) {
                             DEBUG(if (DEBUG_RANK) cerr << "    receive ray " << c << endl);
-                            GVT::Data::ray* r = new GVT::Data::ray(recv_buf[i] + ptr);
-                            this->queue[r->domains.back()].push_back(r);
-                            ptr += r->packedSize();
+                            GVT::Data::ray r(recv_buf[i] + ptr);
+                            this->queue[r.domains.back()].push_back(r);
+                            ptr += r.packedSize();
                             DEBUG(if (DEBUG_RANK) cerr << "    " << r << endl);
                         }
                     }

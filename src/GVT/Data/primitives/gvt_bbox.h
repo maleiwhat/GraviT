@@ -24,12 +24,13 @@ namespace GVT {
             box3D(GVT::Math::Point4f vmin,  GVT::Math::Point4f vmax);
 
             box3D(const box3D &other);
-            bool intersect(const GVT::Data::ray *r) const;
-            bool intersect(const GVT::Data::ray &r, float& tmin, float& tmax) const;
-            bool inBox(const GVT::Data::ray *r) const;
+            
+            bool intersect(const GVT::Data::ray& r) const;
+            bool intersect(const GVT::Data::ray& r, float& tmin, float& tmax) const;
+            bool inBox(const GVT::Data::ray& r) const;
             bool inBox(const GVT::Math::Point4f &r) const;
-            GVT::Math::Point4f getHitpoint(const GVT::Data::ray *r) const;
-            bool intersectDistance(const GVT::Data::ray* r, float& t) const;
+            GVT::Math::Point4f getHitpoint(const GVT::Data::ray& r) const;
+            bool intersectDistance(const GVT::Data::ray& r, float& t) const;
             void merge(const box3D &other);
             void expand(GVT::Math::Point4f& v);
 
@@ -38,10 +39,10 @@ namespace GVT {
                 //TODO: fix this;
                 //os << bbox.bounds[0] << " x ";
                 //os << bbox.bounds[1];
-                //return os << bbox.bounds[0] << " : " << bbox.bounds[1];
-                return os;
-            }
-
+                return os << bbox.bounds[0] << " : " << bbox.bounds[1];
+                //return os;
+            }       
+            
             template<typename cast>
             operator cast() {
                 GVT_ASSERT(false,"Cast operator not available from GVT BBox");
