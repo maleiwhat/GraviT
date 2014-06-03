@@ -124,18 +124,34 @@ namespace GVT {
             void MakeCameraRays(GVT::Data::RayVector& raysn) {
                 this->rays = &raysn;
                 depth = 0;
-                if (rays->size() < (trcUpSampling*trcUpSampling) * vi.width * vi.height)
-                    rays->resize((trcUpSampling*trcUpSampling) * vi.width * vi.height);
-
-                int offset = vi.height / GVT::Concurrency::asyncExec::instance()->numThreads;
-                for (int start = 0; start < vi.height;) {
-                    int end = start + offset;
-                    end = std::min(end, vi.height);
-                    GVT::Concurrency::asyncExec::instance()->run_task(cameraGenerateRays(this, start, end));
-                    start = end;
+                size_t nrays = (trcUpSampling * trcUpSampling) * vi.width * vi.height;
+                if(rays->size() < nrays ) {
+                    int l = rays->size();
+                    rays->resize(nrays);
+                    {
+                    boost::timer::auto_cpu_timer t("camera rays readjust %t\n");
+                    for(; l< nrays; l++) {
+                        rays->push_back(GVT::Data::ray());
+                    }
+                    }
                 }
-                GVT::Concurrency::asyncExec::instance()->sync();
-                GVT_DEBUG(DBG_ALWAYS, "EXPECTED PREGENERATING : " << (trcUpSampling*trcUpSampling) * vi.width * vi.height);
+                
+                int offset = vi.height / GVT::Concurrency::asyncExec::instance()->numThreads;
+
+                
+                
+                {
+                    boost::timer::auto_cpu_timer t("Generating camera rays %t\n");
+                    for (int start = 0; start < vi.height;) {
+                        int end = start + offset;
+                        end = std::min(end, vi.height);
+                        GVT::Concurrency::asyncExec::instance()->run_task(cameraGenerateRays(this, start, end));
+                        start = end;
+                    }
+                    GVT::Concurrency::asyncExec::instance()->sync();
+                }
+
+                GVT_DEBUG(DBG_ALWAYS, "EXPECTED PREGENERATING : " << (trcUpSampling * trcUpSampling) * vi.width * vi.height);
                 GVT_DEBUG(DBG_ALWAYS, "PREGENERATING : " << rays.size());
 
             }
@@ -160,15 +176,6 @@ namespace GVT {
                     GVT::Math::Vector4f look = cam->look; // direction to look
                     GVT::Math::Vector4f u = cam->u, v = cam->v; // u and v in the 
                     int samples = (cam->trcUpSampling * cam->trcUpSampling);
-                    
-                    // GVT::Data::RayVector lrays;
-                    // static int rngCounter =0;
-                    // static int rngCounterSize=10;
-                    // static float rngs[] = {.121, .789,.3476,.9871,.2412,.199,.41231,.2341,.812,.12312};
-                    float r1 = frand();
-                    float r2 = frand();
-                    //TODO: Carson: need more precomputed numbers... or use a real rngs.  Can't use frand in runtime code!
-
                     const float divider = cam->trcUpSampling;
                     const float offset = 1.0 / divider;
                     const float offset2 = offset / 2.f;
@@ -176,6 +183,10 @@ namespace GVT {
                     const float buffer_width = cam->vi.width;
                     const float buffer_height = cam->vi.height;
                     GVT::Math::Vector4f dir;
+                    
+                    float r1 = frand();
+                    float r2 = frand();
+                    
                     for (int j = start; j < end; j++) {
                         for (int i = 0; i < buffer_width; i++) {
                             int idx = j * buffer_width + i;

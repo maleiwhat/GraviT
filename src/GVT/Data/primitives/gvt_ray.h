@@ -102,6 +102,7 @@ namespace GVT {
         };
 
       
+        struct RayPointerTag {};
         typedef std::vector< GVT::Data::ray, boost::pool_allocator<GVT::Data::ray> > RayVector;
 
 

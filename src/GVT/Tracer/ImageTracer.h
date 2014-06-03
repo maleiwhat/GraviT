@@ -81,7 +81,9 @@ namespace GVT {
                         {
                             moved_rays.reserve(this->queue[domTarget].size()*10);
                             boost::timer::auto_cpu_timer t("imageTracer dom->trace time: %ws\n");
+                             std::cout << "Tracing " << this->queue[domTarget].size() << std::endl;
                             dom->trace(this->queue[domTarget], moved_rays);
+                           
                         }
                         GVT_DEBUG(DBG_ALWAYS, "Marching rays");
                         //                        BOOST_FOREACH( GVT::Data::ray* mr,  moved_rays) {
