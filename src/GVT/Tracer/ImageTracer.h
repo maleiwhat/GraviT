@@ -15,6 +15,7 @@
 #include <GVT/Tracer/Tracer.h>
 #include <GVT/Backend/MetaProcessQueue.h>
 #include <GVT/Scheduler/schedulers.h>
+<<<<<<< HEAD
 #include <GVT/Concurrency/TaskScheduling.h>
 
 #include <boost/foreach.hpp>
@@ -35,6 +36,7 @@ namespace GVT {
             }
 
             virtual void operator()() {
+              boost::timer::auto_cpu_timer t;
 
                boost::timer::auto_cpu_timer t("imageTracer time: %ws\n");
                long ray_counter = 0, domain_counter = 0;
@@ -79,9 +81,28 @@ namespace GVT {
                         GVT_DEBUG(DBG_ALWAYS, "Calling process queue");
                         //GVT::Backend::ProcessQueue<DomainType>(new GVT::Backend::adapt_param<DomainType>(this->queue, moved_rays, domTarget, dom, this->colorBuf, ray_counter, domain_counter))();
 
-{
                boost::timer::auto_cpu_timer t("imageTracer dom->trace time: %ws\n");
                         dom->trace(this->queue[domTarget], moved_rays);
+                        // Carson TODO: create BVH
+                        GVT::Backend::ProcessQueue<DomainType>(new GVT::Backend::adapt_param<DomainType>(this->queue, moved_rays, domTarget, dom, this->rta, this->colorBuf, ray_counter, domain_counter))();
+
+                        while (!moved_rays.empty()) {
+                            GVT::Data::ray& mr = moved_rays.back();
+
+                            if(!mr.domains.empty()) {
+                                dom->marchOut(mr);
+                                int target = mr.domains.back();
+                                this->queue[target].push_back(mr);
+                                this->rta.dataset->getDomain(target)->marchIn(mr);
+                                mr.domains.pop_back();
+                            } else {
+                                this->addRay(mr);
+                            }
+
+                            moved_rays.pop_back();
+                        }
+                        dom->free();
+                        this->queue.erase(domTarget); // TODO: for secondary rays, rays may have been added to this domain queue
                     }
 
                         GVT_DEBUG(DBG_ALWAYS, "Marching rays");
