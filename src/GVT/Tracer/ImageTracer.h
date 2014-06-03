@@ -82,26 +82,25 @@ namespace GVT {
                boost::timer::auto_cpu_timer t("imageTracer dom->trace time: %ws\n");
                         dom->trace(this->queue[domTarget], moved_rays);
                         // Carson TODO: create BVH
-                        GVT::Backend::ProcessQueue<DomainType>(new GVT::Backend::adapt_param<DomainType>(this->queue, moved_rays, domTarget, dom, this->rta, this->colorBuf, ray_counter, domain_counter))();
+                        // GVT::Backend::ProcessQueue<DomainType>(new GVT::Backend::adapt_param<DomainType>(this->queue, moved_rays, domTarget, dom, GVT::Env::RayTracerAttributes::rta, this->colorBuf, ray_counter, domain_counter))();
 
-                        while (!moved_rays.empty()) {
-                            GVT::Data::ray* mr = moved_rays.back();
+                    //     while (!moved_rays.empty()) {
+                    //         GVT::Data::ray* mr = moved_rays.back();
 
-                            if(!mr->domains.empty()) {
-                                dom->marchOut(mr);
-                                int target = mr.domains.back();
-                                this->queue[target].push_back(mr);
-                                this->rta.dataset->getDomain(target)->marchIn(mr);
-                                mr->domains.pop_back();
-                            } else {
-                                this->addRay(mr);
-                            }
+                    //         if(!mr->domains.empty()) {
+                    //             dom->marchOut(mr);
+                    //             int target = mr.domains.back();
+                    //             this->queue[target].push_back(mr);
+                    //             this->rta.dataset->getDomain(target)->marchIn(mr);
+                    //             mr->domains.pop_back();
+                    //         } else {
+                    //             this->addRay(mr);
+                    //         }
 
-                            moved_rays.pop_back();
-                        }
-                        dom->free();
+                    //         moved_rays.pop_back();
+                    //     }
+                    //     dom->free();
                         this->queue.erase(domTarget); // TODO: for secondary rays, rays may have been added to this domain queue
-                    }
 
                         GVT_DEBUG(DBG_ALWAYS, "Marching rays");
                         //                        BOOST_FOREACH( GVT::Data::ray* mr,  moved_rays) {
@@ -121,13 +120,14 @@ namespace GVT {
                         GVT_DEBUG(DBG_ALWAYS, "Finished marching");
                         //dom->free();
                         moved_rays.clear();
+                    }
                         //this->queue.erase(domTarget); // TODO: for secondary rays, rays may have been added to this domain queue
                 } while (domTarget != -1);
                 GVT_DEBUG(DBG_ALWAYS, "Gathering buffers");
                 {
                boost::timer::auto_cpu_timer t("imageTracer gatherframebuffers time: %ws\n");
                 this->gatherFramebuffers(this->rays.size());
-            }
+                }
             }
         };
     };

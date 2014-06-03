@@ -10,6 +10,7 @@
 
 #include <boost/foreach.hpp>
 #include <boost/aligned_storage.hpp>
+#include <boost/timer/timer.hpp>
 
 namespace GVT {
     namespace Env {
@@ -149,6 +150,7 @@ namespace GVT {
                 }
 
                 void operator()() {
+               boost::timer::auto_cpu_timer t("cameraGenerateRays time: %ws\n");
                     GVT::Math::AffineTransformMatrix<float> m = cam->m; // rotation matrix
                     int depth = cam->depth;
                     std::vector<GVT::Data::ray>* rays = cam->rays;
@@ -158,6 +160,12 @@ namespace GVT {
                     int samples = (cam->trcUpSampling * cam->trcUpSampling);
                     
                     // GVT::Data::RayVector lrays;
+                    // static int rngCounter =0;
+                    // static int rngCounterSize=10;
+                    // static float rngs[] = {.121, .789,.3476,.9871,.2412,.199,.41231,.2341,.812,.12312};
+                    float r1 = frand();
+                    float r2 = frand();
+                    //TODO: Carson: need more precomputed numbers... or use a real rngs.  Can't use frand in runtime code!
 
                     const float divider = cam->trcUpSampling;
                     const float offset = 1.0 / divider;
@@ -171,8 +179,8 @@ namespace GVT {
                             int idx = j * buffer_width + i;
                             for (float off_i = 0; off_i < 1.0; off_i += offset) {
                                 for (float off_j = 0; off_j < 1.0; off_j += offset) {
-                                    float x1 = float(i) + off_i + offset2 * (frand() - 0.5);
-                                    float y1 = float(j) + off_j + offset2 * (frand() - 0.5);
+                                    float x1 = float(i) + off_i + offset2 * (r1 - 0.5);
+                                    float y1 = float(j) + off_j + offset2 * (r2 - 0.5);
                                     float x = x1 / float(buffer_width) - 0.5;
                                     float y = y1 / float(buffer_height) - 0.5;
                                     dir = m * ((look + x * u + y * v)).normalize();
