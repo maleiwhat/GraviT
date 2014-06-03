@@ -24,7 +24,7 @@ class RayTracer
     RayTracer() {
 //    crays.resize(1920*1080);
         
-        rays.reserve(GVT::Env::RTA::instance()->view.width * GVT::Env::RTA::instance()->view.height);
+        rays.resize(GVT::Env::RTA::instance()->view.width * GVT::Env::RTA::instance()->view.height);
         
     //rays.resize(1920*1080);
 //    for(size_t i=0;i<rays.size();i++)
