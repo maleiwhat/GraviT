@@ -8,7 +8,12 @@
 
 #include "Color.h"
 
+
+#include <GVT/Concurrency/TaskScheduling.h>
+
 #include <string>
+#include <boost/foreach.hpp>
+#include <boost/timer/timer.hpp>
 using namespace std;
 
 class Image {
@@ -24,6 +29,9 @@ public:
         rgb = new unsigned char[size];
         for (int i = 0; i < size; ++i)
             rgb[i] = 0;
+
+            this->colorBuf = new COLOR_ACCUM[width*height];  
+    this->colorBuf_mutex = new boost::mutex[width];
     }
 
     void Add(int pixel, float* buf) {
@@ -61,13 +69,18 @@ public:
 
     ~Image() {
         delete[] rgb;
+        delete[] colorBuf;
+        delete[] colorBuf_mutex;
     }
 
-private:
+// private:
     int width, height;
     string filename;
     ImageFormat format;
     unsigned char* rgb;
+
+                boost::mutex* colorBuf_mutex;
+            COLOR_ACCUM* colorBuf;
 };
 
 

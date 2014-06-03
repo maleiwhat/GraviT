@@ -36,7 +36,7 @@ namespace GVT {
 
             virtual void operator()() {
 
-               boost::timer::auto_cpu_timer t("image tracer time: %ws\n");
+               boost::timer::auto_cpu_timer t("imageTracer time: %ws\n");
                long ray_counter = 0, domain_counter = 0;
 
                 // this->generateRays();
@@ -51,12 +51,15 @@ namespace GVT {
                     domTargetCount = 0;
 
                     GVT_DEBUG(DBG_ALWAYS, "Selecting new domain");
+                    {
                     for (map<int, GVT::Data::RayVector>::iterator q = this->queue.begin(); q != this->queue.end(); ++q) {
                         if (q->second.size() > domTargetCount) {
                             domTargetCount = q->second.size();
                             domTarget = q->first;
                         }
                     }
+               boost::timer::auto_cpu_timer t("imageTracer selecting new domain time: %ws\n");
+                }
                     GVT_DEBUG(DBG_ALWAYS, "Selecting new domain");
                     if (domTarget != -1) std::cout << "Domain " << domTarget << " size " << this->queue[domTarget].size() << std::endl;
                     if (DEBUG_RANK) GVT_DEBUG(DBG_ALWAYS, this->rank << ": selected domain " << domTarget << " (" << domTargetCount << " rays)");
@@ -76,7 +79,10 @@ namespace GVT {
                         GVT_DEBUG(DBG_ALWAYS, "Calling process queue");
                         //GVT::Backend::ProcessQueue<DomainType>(new GVT::Backend::adapt_param<DomainType>(this->queue, moved_rays, domTarget, dom, this->colorBuf, ray_counter, domain_counter))();
 
+{
+               boost::timer::auto_cpu_timer t("imageTracer dom->trace time: %ws\n");
                         dom->trace(this->queue[domTarget], moved_rays);
+                    }
 
                         GVT_DEBUG(DBG_ALWAYS, "Marching rays");
                         //                        BOOST_FOREACH( GVT::Data::ray* mr,  moved_rays) {
@@ -100,7 +106,10 @@ namespace GVT {
                     }
                 } while (domTarget != -1);
                 GVT_DEBUG(DBG_ALWAYS, "Gathering buffers");
+                {
+               boost::timer::auto_cpu_timer t("imageTracer gatherframebuffers time: %ws\n");
                 this->gatherFramebuffers(this->rays.size());
+            }
             }
         };
     };

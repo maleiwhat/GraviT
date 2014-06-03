@@ -49,14 +49,16 @@ namespace GVT {
             abstract_trace(GVT::Data::RayVector& rays, Image& image) : rays(rays), image(image) {
                 this->vtf = GVT::Env::RayTracerAttributes::rta->GetTransferFunction();
                 this->sample_ratio = GVT::Env::RayTracerAttributes::rta->sample_ratio;
-                this->colorBuf = new COLOR_ACCUM[this->rays.size()];
+                // this->colorBuf = new COLOR_ACCUM[this->rays.size()];
                 this->queue_mutex = new boost::mutex[GVT::Env::RayTracerAttributes::rta->dataset->size()];
-                this->colorBuf_mutex = new boost::mutex[GVT::Env::RTA::instance()->view.width];
+                // this->colorBuf_mutex = new boost::mutex[GVT::Env::RTA::instance()->view.width];
+                this->colorBuf = image.colorBuf;
+                this->colorBuf_mutex = image.colorBuf_mutex;
                 
             }
 
             virtual ~abstract_trace() {
-                delete[] colorBuf;
+                // delete[] colorBuf;
             };
             virtual void operator()(void) = 0;
             virtual void generateRays(void) = 0;

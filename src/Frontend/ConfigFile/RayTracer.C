@@ -27,7 +27,9 @@ void RayTracer::RenderImage(GVT::Env::Camera<C_PERSPECTIVE>& camera, Image& imag
 
        boost::timer::auto_cpu_timer t("renderimage time: %ws\n");
 
-    crays.resize((camera.getSPP()) * image.getWidth() * image.getHeight());
+       if (crays.size() < (camera.getSPP()) * image.getWidth() * image.getHeight())
+        crays.resize((camera.getSPP()) * image.getWidth() * image.getHeight());
+
     {
        boost::timer::auto_cpu_timer t("make camera rays time: %ws\n");
        camera.MakeCameraRays(crays);
@@ -36,22 +38,30 @@ void RayTracer::RenderImage(GVT::Env::Camera<C_PERSPECTIVE>& camera, Image& imag
     int render_type = GVT::Env::RayTracerAttributes::rta->render_type;
 
     //
-    //  CARSON: I don't think we should be using arrays of pointers for ray storage unless absolutely necessary
+    //  CARSON: I don't think we should be using arrays of pointers for ray storage unless absolutely necessary, this should be taken out
     //
     {
        boost::timer::auto_cpu_timer t("convert rays time: %ws\n");
     size_t osize=rays.size();
-    rays.resize(crays.size());
+    if (rays.size() < (camera.getSPP()) * image.getWidth() * image.getHeight())
+        rays.resize((camera.getSPP()) * image.getWidth() * image.getHeight());
     for(size_t i=osize;i<rays.size();i++)
+    {
+        printf("alloc new ray\n");
         rays[i] = new GVT::Data::ray();
+    }
     for(size_t i=0;i<rays.size();i++)
         *rays[i] = crays[i];
 }
+       boost::timer::auto_cpu_timer t3("renderImage last half: %ws\n");
 
     switch (GVT::Env::RayTracerAttributes::rta->schedule) {
         case GVT::Env::RayTracerAttributes::Image:
             if (render_type == GVT::Env::RayTracerAttributes::Manta)
+            {
+       boost::timer::auto_cpu_timer t3("renderImage tracer: %ws\n");
                 GVT::Trace::Tracer<GVT::Domain::MantaDomain, MPICOMM, ImageSchedule>(rays, image)();
+            }
             else
                 GVT::Trace::Tracer<GVT::Domain::VolumeDomain, MPICOMM, ImageSchedule>(rays, image)();
             break;
