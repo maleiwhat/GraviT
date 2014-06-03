@@ -127,12 +127,12 @@ namespace GVT {
                 size_t nrays = (trcUpSampling * trcUpSampling) * vi.width * vi.height;
                 if(rays->size() < nrays ) {
                     int l = rays->size();
+                    boost::timer::auto_cpu_timer t("camera rays readjust %w\n");
                     rays->resize(nrays);
                     {
-                    boost::timer::auto_cpu_timer t("camera rays readjust %t\n");
-                    for(; l< nrays; l++) {
-                        rays->push_back(GVT::Data::ray());
-                    }
+                    // for(; l< nrays; l++) {
+                        // rays->push_back(GVT::Data::ray());
+                    // }
                     }
                 }
                 
