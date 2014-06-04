@@ -52,8 +52,8 @@ namespace GVT {
             {
                 optixRays[i].origin   =make_float3(rayList[i].origin[0],rayList[i].origin[1],rayList[i].origin[2]);
                 optixRays[i].direction=make_float3(rayList[i].direction[0],rayList[i].direction[1],rayList[i].direction[2]);
-                optixRays[i].tmin     =rayList[i].tmin;
-                optixRays[i].tmax     =rayList[i].tmax;
+                //optixRays[i].tmin     =rayList[i].tmin;
+                //optixRays[i].tmax     =rayList[i].tmax;
             }
 
             //Buffer<Ray> rays( 0, bufferType, LOCKED );
