@@ -1,5 +1,5 @@
 //
-// MantaDomain.C
+// OptixDomain.C
 //
 
 #include <common/utils.h>

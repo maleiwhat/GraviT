@@ -2,7 +2,7 @@
 //  Dataset.C
 //
 
-#include <Domain/OptixDomain.h>
+#include <Backend/Optix/Domain/OptixDomain.h>
 #include <GVT/DataSet/Dataset.h>
 #include <GVT/Data/primitives.h>
 #include <GVT/Data/scene/Utils.h>
@@ -39,7 +39,7 @@
 #include <GVT/Data/primitives.h>
 #include <GVT/DataSet/Dataset.h>
 #include <Frontend/ConfigFile/Dataset/Dataset.h>
-#include <gvtoptix.h>
+#include <Backend/Optix/gvtoptix.h>
 
 namespace GVT {
     namespace Dataset {
@@ -100,7 +100,7 @@ namespace GVT {
 
                     GVT::Math::AffineTransformMatrix<float> m = GVT::Math::AffineTransformMatrix<float>::createTranslation(t[0], t[1], t[2]);
  
-                    GVT::Domain::OptixDomain* dom = new GVT::Domain::OptixDomain(file, m);
+                    GVT::Domain::OptixDomain* dom = new GVT::Domain::OptixDomain(file);//, m);
                     GVT_DEBUG(DBG_LOW,"Domain bounding box : " << dom->getWorldBoundingBox());
                     this->addDomain(dom);
                 } else {
