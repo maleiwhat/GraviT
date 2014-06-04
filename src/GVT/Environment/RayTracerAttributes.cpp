@@ -94,6 +94,8 @@ namespace GVT {
                     break;
                 case RayTracerAttributes::Manta:
                     os << "Surface";
+                case RayTracerAttributes::Optix:
+                    os << "Surface";
                     break;
 
                 default:
@@ -158,7 +160,7 @@ namespace GVT {
             } else if (rt.find("Manta") != string::npos) {
                 rta.render_type = RayTracerAttributes::Manta;
             } else if (rt.find("Optix") != string::npos){
-                rta.render_type = RayTracerAttributes::OptiX;
+                rta.render_type = RayTracerAttributes::Optix;
             } else {
                 cerr << "Unknown render type '" << rt << "', defaulting to Volume" << endl;
                 rta.render_type = RayTracerAttributes::Volume;
