@@ -9,6 +9,7 @@
 #include <GVT/Data/primitives.h>
 #include <GVT/Domain/domains.h>
 #include <Backend/Manta/Domain/MantaDomain.h>
+#include <Backend/Optix/Domain/OptixDomain.h>
 #include <cfloat>
 #include <map>
 #include <string>
@@ -56,6 +57,7 @@ namespace GVT {
 
         template<> bool Dataset<GVT::Domain::MantaDomain>::init();
 //        template<> GVT::Domain::Domain* Dataset<GVT::Domain::MantaDomain>::getDomain(int id);
+        template<> bool Dataset<GVT::Domain::OptixDomain>::init();
         
     };
 };

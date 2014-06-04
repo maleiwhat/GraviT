@@ -17,6 +17,7 @@
 #include <Frontend/ConfigFile/RayTracer.h>
 #include <GVT/Environment/RayTracerAttributes.h>
 #include <Backend/Manta/gvtmanta.h>
+#include <Backend/Optix/gvtoptix.h>
 #include <Frontend/ConfigFile/Dataset/Dataset.h>
 using namespace std;
 
@@ -32,7 +33,7 @@ int main(int argc, char** argv) {
     if (argc > 1)
         filename = argv[1];
     else
-        filename = "./mpitrace.conf";
+        filename = "./data/mpitrace.conf";
 
     if (argc > 2)
         imagename = argv[2];
@@ -65,7 +66,7 @@ int main(int argc, char** argv) {
         case GVT::Env::RayTracerAttributes::Manta:
             rta.dataset = new GVT::Dataset::Dataset<GVT::Domain::MantaDomain>(rta.datafile);
             break;
-        case GVT::Env::RayTracerAttributes::Optix:
+        case GVT::Env::RayTracerAttributes::OptiX:
             rta.dataset = new GVT::Dataset::Dataset<GVT::Domain::OptixDomain>(rta.datafile);
             break;
     }

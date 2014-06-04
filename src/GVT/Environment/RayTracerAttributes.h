@@ -59,7 +59,8 @@ namespace GVT {
             enum RenderType {
                 Volume,
                 Surface,
-                Manta
+                Manta,
+                OptiX
             };
 
             enum ScheduleType {
