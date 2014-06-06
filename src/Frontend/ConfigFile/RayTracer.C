@@ -37,9 +37,6 @@ void RayTracer::RenderImage(GVT::Env::Camera<C_PERSPECTIVE>& camera, Image& imag
 
     int render_type = GVT::Env::RayTracerAttributes::rta->render_type;
 
-//    //
-//    //  CARSON: I don't think we should be using arrays of pointers for ray storage unless absolutely necessary, this should be taken out
-//    //
 //    {
 //       boost::timer::auto_cpu_timer t("convert rays time: %ws\n");
 //    size_t osize=rays.size();

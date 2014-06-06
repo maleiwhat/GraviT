@@ -21,7 +21,8 @@ namespace GVT {
 
         bool Domain::intersect(GVT::Data::ray&  r, GVT::Data::isecDomList& inter) {
             float t;
-            if (getWorldBoundingBox().intersectDistance(r, t) && t > GVT::Data::ray::RAY_EPSILON) {
+            if (getWorldBoundingBox().intersectDistance(r, t) && t > GVT::Data::ray::RAY_EPSILON) 
+            {
                 inter.push_back(GVT::Data::isecDom(domainID, t));
                 return true;
             }

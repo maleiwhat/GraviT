@@ -8,11 +8,30 @@
 #ifndef GVT_TRACER_H
 #define GVT_TRACER_H
 
+
+ #include <Model/Primitives/Cube.h>
+#include <Model/AmbientLights/AmbientOcclusionBackground.h>
+ #include <Model/Materials/Lambertian.h>
+#include <Model/AmbientLights/ArcAmbient.h>
+#include <Model/AmbientLights/ConstantAmbient.h>
+#include <Model/AmbientLights/EyeAmbient.h>
+#include <Engine/Shadows/HardShadows.h>
+#include <Engine/Shadows/NoShadows.h>
+#include <Core/Math/CheapRNG.h>
+#include <Core/Math/MT_RNG.h>
+
+#include <GVT/common/utils.h>
+#include <Domain/MantaDomain.h>
+#include <Data/gvt_manta.h>
+
 #include <mpi.h>
 #include <GVT/Data/primitives.h>
 #include <GVT/Environment/RayTracerAttributes.h>
 #include <GVT/Data/scene/Image.h>
 #include <GVT/common/debug.h>
+
+ #include "DomBox.h"
+ #include "DomBVH.h"
 
 
 
@@ -123,7 +142,12 @@ namespace GVT {
             }
 
             void operator()() {
-                
+
+                // topBVH.rebuild(0,1);
+               // boost::timer::auto_cpu_timer t("processrayvector time: %ws\n");
+               // printf("processrayvector size %d\n", rays.size());
+                // boost::timer::nanosecond_type times=0;
+                double dtimes = 0;
                 GVT::Data::RayVector localQueue;
                 while (!rays.empty()) {
                     localQueue.clear();
@@ -133,11 +157,20 @@ namespace GVT {
                     rays.erase(rays.begin(), rays.begin() + range);
                     lock.unlock();
 
+
+
                     for (int i = 0; i < localQueue.size(); i++) {
+               // boost::timer::auto_cpu_timer t("ray time time: %ws\n");
                         GVT::Data::ray& ray = localQueue[i];
                         GVT::Data::isecDomList& len2List = ray.domains;
                         if (len2List.empty() && dom) dom->marchOut(ray);
-                        if (len2List.empty()) GVT::Env::RayTracerAttributes::rta->dataset->intersect(ray, len2List);
+                        if (len2List.empty()) 
+                        {
+               // boost::timer::cpu_timer timer;
+               // timer.start();
+                            GVT::Env::RayTracerAttributes::rta->dataset->intersect(ray, len2List);
+                 // dtimes += timer.elapsed().wall;
+                        }
                         if (!len2List.empty()) {
                             int domTarget = (*len2List.begin());
                             len2List.erase(len2List.begin());
@@ -153,6 +186,7 @@ namespace GVT {
                         }
                     }
                 }
+                // printf("processrayvector times from intersect: %f\n",  double(dtimes/1000LL)/1000000.0);
             }
         };
 
@@ -190,15 +224,79 @@ namespace GVT {
              */
 
             virtual void generateRays() {
+
+
+
+                //
+                //  Top level BVH intersection:  TODO: most of this should be a preprocess!
+                //
+                Manta::Material *material = new Manta::Lambertian(Manta::Color(Manta::RGBColor(0.f, 0.f, 0.f)));
+                Manta::Group* domGroup = new Manta::Group();
+                for(int i=0; i < GVT::Env::RayTracerAttributes::rta->dataset->size();i++)
+                {
+                    GVT::Domain::Domain* dom = GVT::Env::RayTracerAttributes::rta->dataset->getDomain(i);
+                    GVT::Data::box3D bb = dom->getBounds(0);
+                domGroup->add(new Manta::DomBox(material, Manta::Vector(bb.bounds[0][0],bb.bounds[0][1],bb.bounds[0][2]),
+                  Manta::Vector(bb.bounds[1][0],bb.bounds[1][1],bb.bounds[1][2]),dom->getDomainID()));
+            }
+                // Manta::Cube* dom0 = new Manta::Cube(material, Manta::Vector(0,0,0), Manta::Vector(1,1,1));
+                // Manta::DynBVH* domBVH = new Manta::DynBVH();
+                Manta::DomBVH* domBVH = new Manta::DomBVH();
+                domBVH->setGroup(domGroup);
+                static Manta::MantaInterface* rtrt = Manta::createManta();
+                Manta::LightSet* lights = new Manta::LightSet();
+                lights->add(new Manta::PointLight(Manta::Vector(0, -5, 8), Manta::Color(Manta::RGBColor(1, 1, 1))));
+                Manta::AmbientLight* ambient;
+                ambient = new Manta::AmbientOcclusionBackground(Manta::Color::white()*0.5, 1, 36);
+                Manta::Vector lightPosition(-10, 6, -30);
+                Manta::PreprocessContext context(rtrt, 0, 1, lights);
+                // material->preprocess(context);
+                domGroup->preprocess(context);
+                domBVH->preprocess(context);
+                // domBVH->rebuild(0,1);
+                                Manta::ShadowAlgorithm* shadows;
+                shadows = new Manta::HardShadows();
+                Manta::Scene* scene = new Manta::Scene();
+
+
+                scene->setLights(lights);
+                scene->setObject(domGroup);
+                Manta::RandomNumberGenerator* rng = NULL;
+                Manta::CheapRNG::create(rng);
+
+                Manta::RenderContext rContext(rtrt, 0, 0/*proc*/, 1/*workersAnimandImage*/,
+                        0/*animframestate*/,
+                        0/*loadbalancer*/, 0/*pixelsampler*/, 0/*renderer*/, shadows/*shadowAlgorithm*/, 0/*camera*/, scene/*scene*/, 0/*thread_storage*/, rng/*rngs*/, 0/*samplegenerator*/);
+
+
+                Manta::RayPacketData rpData;
+                Manta::RayPacket mRays(rpData, Manta::RayPacket::UnknownShape, 0, 1, 0, Manta::RayPacket::NormalizedDirections);
+
+                for(size_t i=0; i < this->rays.size();i++)
+                {
+                    GVT::Data::ray& ray = this->rays[i];
+                mRays.setRay(0, GVT::Data::transform<GVT::Data::ray, Manta::Ray>(ray));
+                        mRays.resetHits();
+
+// std::cout << "ray: " << ray << std::endl;
+                        std::vector<int> domIDs;
+                domBVH->intersect(rContext,mRays,domIDs);
+            }
+
+
          boost::timer::auto_cpu_timer t("generate ray time: %ws\n");
                 boost::atomic<int> current_ray(this->rays_start);
                 size_t workload = std::max((size_t)1,(size_t)(this->rays.size() / (GVT::Concurrency::asyncExec::instance()->numThreads * 2)));
-                for (int rc = 0; rc < GVT::Concurrency::asyncExec::instance()->numThreads; ++rc) {
-                    GVT::Concurrency::asyncExec::instance()->run_task(processRayVector(this, this->rays,current_ray,this->rays_end,workload));
-                }
-                GVT::Concurrency::asyncExec::instance()->sync();
+                // for (int rc = 0; rc < GVT::Concurrency::asyncExec::instance()->numThreads; ++rc) {
+                //     GVT::Concurrency::asyncExec::instance()->run_task(processRayVector(this, this->rays,current_ray,this->rays_end,workload));
+                // }
+                processRayVector rv(this, this->rays,current_ray,this->rays_end,this->rays.size());
+                rv();
+                // GVT::Concurrency::asyncExec::instance()->sync();
                 
                 GVT_DEBUG(DBG_ALWAYS,"Current ray: " << (int)current_ray);
+
+
                 
             }
 

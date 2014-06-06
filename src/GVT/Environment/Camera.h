@@ -152,7 +152,7 @@ namespace GVT {
                 }
 
                 GVT_DEBUG(DBG_ALWAYS, "EXPECTED PREGENERATING : " << (trcUpSampling * trcUpSampling) * vi.width * vi.height);
-                GVT_DEBUG(DBG_ALWAYS, "PREGENERATING : " << rays.size());
+                GVT_DEBUG(DBG_ALWAYS, "PREGENERATING : " << rays->size());
 
             }
 

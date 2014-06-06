@@ -39,7 +39,7 @@ namespace GVT {
                boost::timer::auto_cpu_timer t("imageTracer time: %ws\n");
                long ray_counter = 0, domain_counter = 0;
 
-                // this->generateRays();
+                this->generateRays();
 
                 // buffer for color accumulation
                 GVT::Data::RayVector moved_rays;
@@ -77,7 +77,7 @@ namespace GVT {
                         // track domain loads
                         ++domain_counter;
                         GVT_DEBUG(DBG_ALWAYS, "Calling process queue");
-                        //GVT::Backend::ProcessQueue<DomainType>(new GVT::Backend::adapt_param<DomainType>(this->queue, moved_rays, domTarget, dom, this->colorBuf, ray_counter, domain_counter))();
+                        GVT::Backend::ProcessQueue<DomainType>(new GVT::Backend::adapt_param<DomainType>(this->queue, moved_rays, domTarget, dom, this->colorBuf, ray_counter, domain_counter))();
                         {
                             moved_rays.reserve(this->queue[domTarget].size()*10);
                             boost::timer::auto_cpu_timer t("imageTracer dom->trace time: %ws\n");
