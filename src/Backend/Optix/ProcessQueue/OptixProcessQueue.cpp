@@ -29,10 +29,10 @@ namespace GVT {
         }
 
         template<> void ProcessQueue<GVT::Domain::OptixDomain>::operator()() {
-            cerr<<"Entering Optix ProcessQueue"<<endl;
-            GVT::Domain::GeometryDomain* gdom = dynamic_cast<GVT::Domain::GeometryDomain*> (param->dom);
-            if (!gdom) return;
-            GVT_DEBUG(DBG_ALWAYS,"processQueue<OptixDomain>: in\n");
+            //cerr<<"Entering Optix ProcessQueue"<<endl;
+            //GVT::Domain::GeometryDomain* gdom = dynamic_cast<GVT::Domain::GeometryDomain*> (param->dom);
+            //if (!gdom) return;
+            //GVT_DEBUG(DBG_ALWAYS,"processQueue<OptixDomain>: in\n");
 
             /* TODO : 
              *  - Convert mesh to Optix Mesh or list of triangles (gdom->mesh)
@@ -40,7 +40,7 @@ namespace GVT {
              */
              
             //Ray r={ make_float3(0,0,0), 0, make_float3(0,0,1), 1e34f };
-            RTPcontexttype contextType = RTP_CONTEXT_TYPE_CUDA;
+            /*RTPcontexttype contextType = RTP_CONTEXT_TYPE_CUDA;
             optix::prime::Context context = optix::prime::Context::create(contextType);
             optix::prime::Model model = context->createModel();
 
@@ -71,7 +71,7 @@ namespace GVT {
              * 
              **/
             
-            delete[] optixRays;
+            // /delete[] optixRays;
 
         }
 
