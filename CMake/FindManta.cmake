@@ -10,10 +10,10 @@
 # insure a similar build environment will be used by the project.
 # 
 ###############################################################################
-#SET(MANTA_SOURCE_DIR ${CMAKE_SOURCE_DIR})
-#SET(MANTA_BUILD_PREFIX ${CMAKE_SOURCE_DIR}/buildTigger)
+SET(MANTA_SOURCE_DIR "$ENV{MANTA_SOURCE_DIR}")
+SET(MANTA_BUILD_PREFIX "$ENV{MANTA_BUILD_PREFIX}")
 
-IF   (MANTA_SOURCE_DIR AND MANTA_BUILD_PREFIX)
+IF (MANTA_SOURCE_DIR AND MANTA_BUILD_PREFIX)
 
   # Set the include and link variables.
   SET(MANTA_INCLUDE

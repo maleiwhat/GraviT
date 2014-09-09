@@ -189,7 +189,7 @@ namespace GVT {
                                 float t = mRays.getMinT(pindex);
                                 rayPacket[pindex].t = t;
                                 GVT::Math::Vector4f normal = dom->toWorld(GVT::Data::transform<Manta::Vector, GVT::Math::Vector4f>(mRays.getNormal(pindex)));
-                                if(rayPacket[pindex].type == GVT::Data::ray::SECUNDARY) {
+                                if(rayPacket[pindex].type == GVT::Data::ray::SECONDARY) {
                                     t = (t > 1) ? 1.f/t : t;
                                     rayPacket[pindex].w = rayPacket[pindex].w * t;
                                 }
@@ -212,7 +212,7 @@ namespace GVT {
                                 if (ndepth > 0 && rayPacket[pindex].w > p) {
                                         GVT::Data::ray ray(rayPacket[pindex]);
                                         ray.domains.clear();
-                                        ray.type = GVT::Data::ray::SECUNDARY;
+                                        ray.type = GVT::Data::ray::SECONDARY;
                                         ray.origin = ray.origin + ray.direction * ray.t;
                                         ray.setDirection(dom->mesh->mat->CosWeightedRandomHemisphereDirection2(normal).normalize());
                                         ray.w = ray.w * (ray.direction * normal);
