@@ -73,7 +73,7 @@ namespace GVT {
                         //GVT::Backend::ProcessQueue<DomainType>(new GVT::Backend::adapt_param<DomainType>(this->queue, moved_rays, domTarget, dom, this->colorBuf, ray_counter, domain_counter))();
                         {
                             moved_rays.reserve(this->queue[domTarget].size()*10);
-                            boost::timer::auto_cpu_timer t("ImageTracer:Tracing domain rays %t\n");
+                            boost::timer::auto_cpu_timer t("ImageTracer: Tracing domain rays %t\n");
                             dom->trace(this->queue[domTarget], moved_rays);
                         }
                         GVT_DEBUG(DBG_ALWAYS, "Marching rays");
