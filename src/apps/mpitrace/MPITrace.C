@@ -74,10 +74,14 @@ int main(int argc, char** argv) {
   std::cout << rta << std::endl;
 
   RayTracer rt;
+  int rank = -1;
+  MPI_Comm_rank (MPI_COMM_WORLD, &rank);
   MPI_Barrier(MPI_COMM_WORLD);
+  cout << "Rendering: rank=" << rank << endl;
   rt.RenderImage(imagename);
-
+  cout << "Done rendering: rank=" << rank << endl;
   if (MPI::COMM_WORLD.Get_size() > 1) MPI_Finalize();
+  cout << "Finalized: rank=" << rank << endl;
 
   return 0;
 }
