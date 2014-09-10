@@ -128,6 +128,8 @@ class Tracer<DomainType, MPIW, ImageSchedule> : public Tracer_base<MPIW> {
     this->gatherFramebuffers(this->rays.size());
   }
 };
-};
-};
+
+}  //  Trace
+
+}  //  GVT
 #endif /* IMAGETRACER_H_ */
