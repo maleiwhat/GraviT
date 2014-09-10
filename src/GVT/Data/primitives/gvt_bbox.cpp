@@ -148,7 +148,15 @@ bool box3D::intersectDistance(const GVT::Data::ray& ray, float& t) const {
 }
 
 std::ostream& operator<<(std::ostream& os, const box3D& bbox) {
-  os << bbox.bounds[0] << " : " << bbox.bounds[1];
+  for (int i = 0; i < 2; ++i) {
+    os << '(';
+    for (int j = 0; j < 4; ++j) {
+      os << bbox.bounds[i][j];
+      if (j < 3) os << ',';
+    }
+    os << ')';
+    if (i < 1) os << " : ";
+  }
   return os;
 }
 
