@@ -20,63 +20,64 @@
 #include <Frontend/ConfigFile/Dataset/Dataset.h>
 using namespace std;
 
-
-
 int main(int argc, char** argv) {
 
-    MPI_Init(&argc, &argv);
-    MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Init(&argc, &argv);
+  MPI_Barrier(MPI_COMM_WORLD);
 
-    string filename, imagename;
+  string filename, imagename;
 
-    if (argc > 1)
-        filename = argv[1];
-    else
-        filename = "./mpitrace.conf";
+  if (argc > 1)
+    filename = argv[1];
+  else
+    filename = "./mpitrace.conf";
 
-    if (argc > 2)
-        imagename = argv[2];
-    else
-        imagename = "MPITrace";
+  if (argc > 2)
+    imagename = argv[2];
+  else
+    imagename = "MPITrace";
 
-    fstream file;
-    file.open(filename.c_str());
+  fstream file;
+  file.open(filename.c_str());
 
-    if (!file.good()) {
-        cerr << "ERROR: could not open file '" << filename << "'" << endl;
-        return -1;
-    }
+  if (!file.good()) {
+    cerr << "ERROR: could not open file '" << filename << "'" << endl;
+    return -1;
+  }
 
-    GVT::Env::RayTracerAttributes& rta = *(GVT::Env::RayTracerAttributes::instance());
-    
-    file >> rta;
-    
-    file.close();
+  GVT::Env::RayTracerAttributes& rta =
+      *(GVT::Env::RayTracerAttributes::instance());
 
-    switch (rta.render_type) {
-        case GVT::Env::RayTracerAttributes::Volume:
-            GVT_DEBUG(DBG_ALWAYS, "Volume dataset");
-            rta.dataset = new GVT::Dataset::Dataset<GVT::Domain::VolumeDomain>(rta.datafile);
-            break;
-        case GVT::Env::RayTracerAttributes::Surface:
-            GVT_DEBUG(DBG_ALWAYS, "Geometry dataset");
-            rta.dataset = new GVT::Dataset::Dataset<GVT::Domain::GeometryDomain>(rta.datafile);
-            break;
-        case GVT::Env::RayTracerAttributes::Manta:
-            rta.dataset = new GVT::Dataset::Dataset<GVT::Domain::MantaDomain>(rta.datafile);
-            break;
-    }
+  file >> rta;
 
+  file.close();
 
-    GVT_ASSERT(rta.LoadDataset(), "Unable to load dataset");
+  switch (rta.render_type) {
+    case GVT::Env::RayTracerAttributes::Volume:
+      GVT_DEBUG(DBG_ALWAYS, "Volume dataset");
+      rta.dataset =
+          new GVT::Dataset::Dataset<GVT::Domain::VolumeDomain>(rta.datafile);
+      break;
+    case GVT::Env::RayTracerAttributes::Surface:
+      GVT_DEBUG(DBG_ALWAYS, "Geometry dataset");
+      rta.dataset =
+          new GVT::Dataset::Dataset<GVT::Domain::GeometryDomain>(rta.datafile);
+      break;
+    case GVT::Env::RayTracerAttributes::Manta:
+      rta.dataset =
+          new GVT::Dataset::Dataset<GVT::Domain::MantaDomain>(rta.datafile);
+      break;
+  }
 
-    std::cout << rta << std::endl;
+  GVT_ASSERT(rta.LoadDataset(), "Unable to load dataset");
 
-    RayTracer rt;
-    MPI_Barrier(MPI_COMM_WORLD);
-    rt.RenderImage(imagename);
+  std::cout << rta << std::endl;
 
-    if (MPI::COMM_WORLD.Get_size() > 1) MPI_Finalize();
+  RayTracer rt;
+  MPI_Barrier(MPI_COMM_WORLD);
+  rt.RenderImage(imagename);
 
-    return 0;
+  if (MPI::COMM_WORLD.Get_size() > 1) MPI_Finalize();
+
+  return 0;
 }

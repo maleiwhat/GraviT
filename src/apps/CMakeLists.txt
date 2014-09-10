@@ -1,4 +1,3 @@
 PROJECT(APPS)
-
-
+MESSAGE(STATUS "Building APPS")
 ADD_SUBDIRECTORY(mpitrace)
