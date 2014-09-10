@@ -6,21 +6,21 @@
 #include <Backend/Optix/OptixDomain.h>
 #include <Backend/Optix/gvt_optix.h>
 
-//TODO: Matt (if needed)
+// TODO: Matt (if needed)
 
 namespace GVT {
-    namespace Domain {
-        
-        OptixDomain::OptixDomain(std::string filename) : GVT::Domain::GeometryDomain(filename) {
-        }
 
-        OptixDomain::OptixDomain(const OptixDomain& other) : GVT::Domain::GeometryDomain(other) {
-        }
+namespace Domain {
 
-        OptixDomain::~OptixDomain() {  
-        }
-        
-    };
-};
+OptixDomain::OptixDomain(std::string filename)
+    : GVT::Domain::GeometryDomain(filename) {}
 
+OptixDomain::OptixDomain(const OptixDomain& other)
+    : GVT::Domain::GeometryDomain(other) {}
+
+OptixDomain::~OptixDomain() {}
+
+}  // namespce Domain
+
+}  // namespace GVT
 
