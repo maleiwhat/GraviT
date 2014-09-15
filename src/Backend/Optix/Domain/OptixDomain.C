@@ -95,7 +95,6 @@ void trace(RayVector& ray_list, RayVector& moved_rays) {
                  RTP_BUFFER_TYPE_HOST, &hits[0]);
   query->execute(RTP_QUERY_HINT_NONE);
   query->finish();
-  moved_rays.clear();
 }
 
 }  // namespce Domain
