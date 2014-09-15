@@ -33,7 +33,7 @@ struct OptixHitFormat {
   int triangle_id;
   float u;
   float v;
-}
+};
 
 static void GravityRayToOptixRay(const ray& gvt_ray,
                                  OptixRayFormat* optix_ray) {
