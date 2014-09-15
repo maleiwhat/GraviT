@@ -3,9 +3,9 @@
 
 #include <string>
 
-#include <optix_prime/optix_primepp.h>
 #include <GVT/Domain/Domain.h>
 #include <GVT/Domain/GeometryDomain.h>
+#include <optix_prime/optix_primepp.h>
 
 namespace GVT {
 
