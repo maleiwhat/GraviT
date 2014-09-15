@@ -30,35 +30,30 @@
 #include <GVT/Data/primitives.h>
 
 namespace GVT {
-    namespace Domain {
+namespace Domain {
 
-    
+class MantaDomain : public GeometryDomain {
+ public:
+  MantaDomain(string filename = "",
+              GVT::Math::AffineTransformMatrix<float> m =
+                  GVT::Math::AffineTransformMatrix<float>(true));
+  MantaDomain(const MantaDomain& other);
+  virtual ~MantaDomain();
 
-    class MantaDomain : public GeometryDomain {
-    public:
-        MantaDomain(string filename ="",GVT::Math::AffineTransformMatrix<float> m = GVT::Math::AffineTransformMatrix<float>(true));
-        MantaDomain(const MantaDomain& other);
-        virtual ~MantaDomain();
+  virtual bool load();
+  virtual void free();
 
-        virtual bool load();
-        virtual void free();
-        
-        void trace(GVT::Data::RayVector& rayList, GVT::Data::RayVector& moved_rays);
-        
-        Manta::RenderContext* rContext;
-        Manta::DynBVH* as;
-    protected:
+  void trace(GVT::Data::RayVector& rayList, GVT::Data::RayVector& moved_rays);
 
-        //std::vector<Manta::BBox> TraverseBVH(int nodeId, int depth, int maxDepth);
-        
-        
-        
-        
-        
-    };
+  Manta::RenderContext* rContext;
+  Manta::DynBVH* as;
 
-};
+ protected:
+  // std::vector<Manta::BBox> TraverseBVH(int nodeId, int depth, int maxDepth);
 };
 
+}  // namespace Domain
 
-#endif // GVT_MANTA_DOMAIN_H
+}  // namespave GVT
+
+#endif  // GVT_MANTA_DOMAIN_H
