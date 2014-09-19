@@ -62,6 +62,11 @@ endmacro()
 
 OPTIX_find_api_library(optix 1)
 OPTIX_find_api_library(optixu 1)
+OPTIX_find_api_library(optix_prime 1)
+
+message(STATUS "optix_LIBRARY=${optix_LIBRARY}")
+message(STATUS "optixu_LIBRARY=${optixu_LIBRARY}")
+message(STATUS "optix_prime_LIBRARY=${optix_prime_LIBRARY}")
 
 # Include
 find_path(OptiX_INCLUDE
