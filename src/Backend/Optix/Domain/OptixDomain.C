@@ -120,36 +120,37 @@ void OptixDomain::trace(RayVector& ray_list, RayVector& moved_rays) {
   }
   // Generate secondary rays.
   for (int i = ray_list.size() - 1; i >= 0; --i) {
-    traceRay(ray_list[i], hits[i].triangle_id, hits[i].u, hits[i].v);
+    this->traceRay(hits[i].triangle_id, hits[i].t, hits[i].u, hits[i].v,
+                   ray_list[i], ray_list);
     ray_list.pop_back();
     hits.pop_back();
   }
 }
 
 void OptixDomain::traceRay(uint32_t triangle_id, float t, float u, float v,
-                           ray& ray) {
+                           ray& ray, RayVector& rays) {
   if (ray.type == ray::SHADOW) return;
   Vector4f normal = computeNormal(triangle_id, u, v);
   if (ray.type == ray::SECONDARY) ray.w = ray.w * std::max(1.0f / t, t);
-  generateShadowRay(ray, normal, rays);
-  generateSecondaryRay(ray, normal, rays);
+  generateShadowRays(ray, normal, rays);
+  generateSecondaryRays(ray, normal, rays);
 }
 
 Vector4f OptixDomain::computeNormal(uint32_t triangle_id, float u,
                                     float v) const {
-  const Vector4f& a = this->mesh->normals[faces[triangle_id][0]];
-  const Vector4f& b = this->mesh->normals[faces[triangle_id][xi10]];
-  const Vector4f& c = this->mesh->normals[faces[triangle_id][0]];
+  const Vector4f& a = this->mesh->normals[this->mesh->faces[triangle_id].get<0>()];
+  const Vector4f& b = this->mesh->normals[this->mesh->faces[triangle_id].get<1>()];
+  const Vector4f& c = this->mesh->normals[this->mesh->faces[triangle_id].get<2>()];
   Vector4f normal = a * u + b * v + c * (1.0f - u - v);
   return normal;
 }
 
-void OptixDomain::generateSecondaryRay(const ray& ray, const Vector4f& normal,
+void OptixDomain::generateSecondaryRays(const ray& ray_in, const Vector4f& normal,
                                        RayVector& rays) {
-  int depth = ray.depth - 1;
+  int depth = ray_in.depth - 1;
   float p = 1.0f - (float(rand()) / RAND_MAX);
-  if (depth > 0 && ray.w > p) {
-    ray secondary_ray(ray);
+  if (depth > 0 && ray_in.w > p) {
+    ray secondary_ray(ray_in);
     secondary_ray.domains.clear();
     secondary_ray.type = ray::SECONDARY;
     secondary_ray.origin =
@@ -163,14 +164,14 @@ void OptixDomain::generateSecondaryRay(const ray& ray, const Vector4f& normal,
   }
 }
 
-void OptixDomain::generateShadowRays(const ray& ray, const Vector4f& normal,
+void OptixDomain::generateShadowRays(const ray& ray_in, const Vector4f& normal,
                                      RayVector& rays) {
-  for (int lindex = 0; lindex < dom->lights.size(); lindex++) {
-    ray shadow_ray(ray);
+  for (int lindex = 0; lindex < this->lights.size(); lindex++) {
+    ray shadow_ray(ray_in);
     shadow_ray.domains.clear();
     shadow_ray.type = ray::SHADOW;
-    shadow_ray.origin = ray.origin + ray.direction * ray.t;
-    shadow_ray.setDirection(this->lights[lindex]->position - ray.origin);
+    shadow_ray.origin = ray_in.origin + ray_in.direction * ray_in.t;
+    shadow_ray.setDirection(this->lights[lindex]->position - ray_in.origin);
     Color c = this->mesh->mat->shade(shadow_ray, normal, this->lights[lindex]);
     shadow_ray.color = COLOR_ACCUM(1.f, c[0], c[1], c[2], 1.0f);
     rays.push_back(shadow_ray);
