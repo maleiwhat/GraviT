@@ -10,12 +10,13 @@
 #include <GVT/Domain/domains.h>
 #include <GVT/common/debug.h>
 #include <GVT/Math/GVTMath.h>
-#include <Data/gvt_optix.h>
+//#include <Data/gvt_optix.h>
+#include <GVT/Data/primitives.h>
 #include "OptixProcessQueue.h"
 
 #include <cuda_runtime.h>
-#include <optix_primepp.h>
-#include <optixpp.h>
+#include <optix_prime/optix_primepp.h>
+#include <optixu/optixpp.h>
 
 
 
@@ -44,15 +45,18 @@ namespace GVT {
             optix::prime::Model model = context->createModel();
 
 
-            RayVector& rayList = param->queue[param->domTarget];
+            GVT::Data::RayVector& rayList = param->queue[param->domTarget];
             //copy rays to buffer
             optix::Ray * optixRays= new optix::Ray[rayList.size()];
             for(int i=0;i<rayList.size();i++)
             {
                 optixRays[i].origin   =make_float3(rayList[i].origin[0],rayList[i].origin[1],rayList[i].origin[2]);
                 optixRays[i].direction=make_float3(rayList[i].direction[0],rayList[i].direction[1],rayList[i].direction[2]);
-                optixRays[i].tmin     =rayList[i].tmin;
-                optixRays[i].tmax     =rayList[i].tmax;
+                
+                //TODO : [OPTIX] Gravity data structure does not have a tmin/tmax
+                
+                //optixRays[i].tmin     = rayList[i].tmin;
+                //optixRays[i].tmax     = rayList[i].tmax;
             }
 
             //Buffer<Ray> rays( 0, bufferType, LOCKED );
