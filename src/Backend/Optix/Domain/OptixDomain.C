@@ -2,7 +2,6 @@
 
 #include <algorithm>
 
-#include <Backend/Optix/gvt_optix.h>
 #include <GVT/Data/primitives.h>
 #include <common/utils.h>
 #include <optix_prime/optix_primepp.h>
