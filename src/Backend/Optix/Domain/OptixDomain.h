@@ -28,13 +28,15 @@ class OptixDomain : public GeometryDomain {
  private:
   void traceRay(uint32_t triangle_id, float t, float u, float v,
                 Data::ray& ray);
-  GVT::Math::Vector4f computeNormal(uint32_t triangle_id, float u, float v) const;
+  GVT::Math::Vector4f computeNormal(uint32_t triangle_id, float u,
+                                    float v) const;
   void generateSecondaryRay(const GVT::Data::ray& ray,
                             const GVT::Math::Vector4f& normal,
                             Data::RayVector& rays);
   void generateShadowRays(const GVT::Data::ray& ray,
                           const GVT::Math::Vector4f& normal,
                           GVT::Data::RayVector& rays);
+  void traceRay(uint32_t triangle_id, float t, float u, float v, GVT::Data::ray& ray);
   optix::prime::Context optix_context_;
   optix::prime::Model optix_model_;
 };
