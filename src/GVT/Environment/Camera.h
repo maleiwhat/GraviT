@@ -125,14 +125,14 @@ namespace GVT {
                 int offset = vi.height / GVT::Concurrency::asyncExec::instance()->numThreads;
 
                 {
-                    boost::timer::auto_cpu_timer t("Allocate camera rays %t\n");
+                    boost::timer::auto_cpu_timer t("Allocate camera rays %w\n");
                     for(int i = 0; i< nrays; i++) {
                         rays.push_back(GVT::Data::ray());
                     }
                 }
                 
                 {
-                    boost::timer::auto_cpu_timer t("Generating camera rays %t\n");
+                    boost::timer::auto_cpu_timer t("Generating camera rays %w\n");
                     for (int start = 0; start < vi.height;) {
                         int end = start + offset;
                         end = std::min(end, vi.height);

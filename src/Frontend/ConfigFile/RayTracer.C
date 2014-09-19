@@ -22,7 +22,7 @@
 
 void RayTracer::RenderImage(string imagename = "mpitrace") {
     
-    boost::timer::auto_cpu_timer t("Total render time: %t\n");
+    boost::timer::auto_cpu_timer t("Total render time: %w\n");
     
     Image image(GVT::Env::RayTracerAttributes::rta->view.width, GVT::Env::RayTracerAttributes::rta->view.height, imagename);
    

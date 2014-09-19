@@ -112,13 +112,13 @@ namespace GVT {
                             //GVT::Backend::ProcessQueue<DomainType>(new GVT::Backend::adapt_param<DomainType>(this->queue, moved_rays, domTarget, dom, this->colorBuf, ray_counter, domain_counter))();
                             {
                                 moved_rays.reserve(this->queue[domTarget].size()*10);
-                                boost::timer::auto_cpu_timer t("Tracing domain rays %t\n");
+                                boost::timer::auto_cpu_timer t("Tracing domain rays %w\n");
                                 dom->trace(this->queue[domTarget], moved_rays);
                             }
                             boost::atomic<int> current_ray(0);
                             size_t workload = std::max((size_t) 1, (size_t) (moved_rays.size() / (GVT::Concurrency::asyncExec::instance()->numThreads * 2)));
                             {
-                                boost::timer::auto_cpu_timer t("Scheduling rays %t\n");
+                                boost::timer::auto_cpu_timer t("Scheduling rays %w\n");
                                 for (int rc = 0; rc < GVT::Concurrency::asyncExec::instance()->numThreads; ++rc) {
                                     GVT::Concurrency::asyncExec::instance()->run_task(processRayVector(this, moved_rays, current_ray, moved_rays.size(), workload, dom));
                                 }
