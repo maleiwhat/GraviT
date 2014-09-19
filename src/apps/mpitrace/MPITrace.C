@@ -9,15 +9,14 @@
 #include <string>
 #include <vector>
 
-//#include <GVT/MPI/mpi_wrappers.h>
-//#include <Frontend/cmd/RayTracer.h>
-
-#include <GVT/Data/primitives.h>
-#include <GVT/Math/GVTMath.h>
-#include <Frontend/ConfigFile/RayTracer.h>
-#include <GVT/Environment/RayTracerAttributes.h>
 #include <Backend/Manta/gvtmanta.h>
+#include <Backend/Optix/Domain/OptixDomain.h>
 #include <Frontend/ConfigFile/Dataset/Dataset.h>
+#include <Frontend/ConfigFile/RayTracer.h>
+#include <GVT/Data/primitives.h>
+#include <GVT/Environment/RayTracerAttributes.h>
+#include <GVT/Math/GVTMath.h>
+
 using namespace std;
 
 int main(int argc, char** argv) {
@@ -66,6 +65,10 @@ int main(int argc, char** argv) {
     case GVT::Env::RayTracerAttributes::Manta:
       rta.dataset =
           new GVT::Dataset::Dataset<GVT::Domain::MantaDomain>(rta.datafile);
+      break;
+    case GVT::Env::RayTracerAttributes::Optix:
+      rta.dataset =
+          new GVT::Dataset::Dataset<GVT::Domain::OptixDomain>(rta.datafile);
       break;
   }
 
