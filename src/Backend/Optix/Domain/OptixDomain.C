@@ -4,8 +4,8 @@
 #include <common/utils.h>
 #include <optix_prime/optix_primepp.h>
 
-using GTV::Data::Mesh;
-using GTV::Data::ray;
+using GVT::Data::Mesh;
+using GVT::Data::ray;
 using GVT::Data::Color;
 using GVT::Data::RayVector;
 using GVT::Domain::GeometryDomain;
