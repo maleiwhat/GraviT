@@ -1,3 +1,5 @@
+#include <string>
+
 #include <Backend/Optix/Domain/OptixDomain.h>
 #include <algorithm>
 #include <GVT/Data/primitives.h>
@@ -52,6 +54,12 @@ OptixDomain::OptixDomain(const std::string& filename)
     : GeometryDomain(filename) {}
 
 OptixDomain::~OptixDomain() {}
+
+OptixDomain::OptixDomain(const std::string& filename,
+                         GVT::Math::AffineTransformMatrix<float> m)
+    : GVT::Domain::GeometryDomain(filename, m) {
+  this->load();
+}
 
 bool OptixDomain::load() {
   if (domainIsLoaded()) return true;

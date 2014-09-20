@@ -17,6 +17,8 @@ class OptixDomain : public GeometryDomain {
  public:
   OptixDomain();
   explicit OptixDomain(const std::string& filename);
+  OptixDomain(const std::string& filename,
+              GVT::Math::AffineTransformMatrix<float> m);
   virtual ~OptixDomain();
   virtual bool load();
   void trace(GVT::Data::RayVector& rayList, GVT::Data::RayVector& moved_rays);
@@ -29,8 +31,8 @@ class OptixDomain : public GeometryDomain {
   GVT::Math::Vector4f computeNormal(uint32_t triangle_id, float u,
                                     float v) const;
   void generateSecondaryRays(const GVT::Data::ray& ray,
-                            const GVT::Math::Vector4f& normal,
-                            Data::RayVector& rays);
+                             const GVT::Math::Vector4f& normal,
+                             Data::RayVector& rays);
   void generateShadowRays(const GVT::Data::ray& ray,
                           const GVT::Math::Vector4f& normal,
                           GVT::Data::RayVector& rays);
