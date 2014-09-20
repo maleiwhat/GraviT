@@ -23,8 +23,8 @@ namespace GVT {
 namespace Trace {
 /// Tracer Image (ImageSchedule) based decomposition implementation
 
-template <class DomainType, class MPIW>
-class Tracer<DomainType, MPIW, ImageSchedule> : public Tracer_base<MPIW> {
+template <class MPIW>
+class Tracer<MPIW, ImageSchedule> : public Tracer_base<MPIW> {
  public:
   Tracer(GVT::Data::RayVector& rays, Image& image)
       : Tracer_base<MPIW>(rays, image) {

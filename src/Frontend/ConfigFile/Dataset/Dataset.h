@@ -10,8 +10,8 @@
 #include <string>
 #include <vector>
 
-#include <Backend/Manta/Domain/MantaDomain.h>
-#include <Backend/Optix/Domain/OptixDomain.h>
+//#include <Backend/Manta/Domain/MantaDomain.h>
+//#include <Backend/Optix/Domain/OptixDomain.h>
 #include <GVT/Data/primitives.h>
 #include <GVT/DataSet/Dataset.h>
 #include <GVT/Domain/domains.h>
@@ -23,11 +23,11 @@ namespace GVT {
 namespace Dataset {
 
 template <typename DomainType>
-class Dataset : public GVTDataset {
+class ConfigFileDataset : public GVTDataset {
  public:
-  Dataset() {}
+  ConfigFileDataset() {}
 
-  Dataset(string& filename) : GVTDataset(), conf_filename(filename) {
+  ConfigFileDataset(string& filename) : GVTDataset(), conf_filename(filename) {
     GVT_DEBUG(DBG_ALWAYS, "Filename : " + filename);
     conf_filename = filename;
   }
@@ -43,16 +43,15 @@ class Dataset : public GVTDataset {
 };
 
 template <>
-bool Dataset<GVT::Domain::VolumeDomain>::init();
+bool ConfigFileDataset<GVT::Domain::VolumeDomain>::init();
 
 template <>
-bool Dataset<GVT::Domain::GeometryDomain>::init();
-
-template <>
-bool Dataset<GVT::Domain::MantaDomain>::init();
-
-template <>
-bool Dataset<GVT::Domain::OptixDomain>::init();
+bool ConfigFileDataset<GVT::Domain::GeometryDomain>::init();
+//
+//
+//
+//template <>
+//bool Dataset<GVT::Domain::OptixDomain>::init();
 
 }  // namespace Dataset
 

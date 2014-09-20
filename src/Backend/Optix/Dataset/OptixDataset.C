@@ -8,32 +8,13 @@
 #include <vector>
 
 #include <Backend/Optix/Domain/OptixDomain.h>
-#include <Core/Exceptions/Exception.h>
-#include <Core/Exceptions/InternalError.h>
-#include <Core/Geometry/BBox.h>
-#include <Frontend/ConfigFile/Dataset/Dataset.h>
-#include <GVT/Data/primitives.h>
-#include <GVT/Data/scene/Utils.h>
-#include <GVT/DataSet/Dataset.h>
-#include <GVT/Domain/domains.h>
-#include <GVT/common/debug.h>
-#include <GVT/common/utils.h>
-#include <Interface/Context.h>
-#include <Interface/LightSet.h>
-#include <Interface/Object.h>
-#include <Interface/Scene.h>
-#include <Model/Groups/Mesh.h>
-#include <Model/Lights/PointLight.h>
-#include <Model/Materials/Phong.h>
-#include <Model/Primitives/KenslerShirleyTriangle.h>
-#include <Model/Readers/PlyReader.h>
+#include <Backend/Optix/Dataset/OptixDataset.h>
 
 namespace GVT {
 
 namespace Dataset {
-
-template <>
-bool Dataset<GVT::Domain::OptixDomain>::init() {
+    
+bool OptixDataset::init() {
   float min[3];
   float max[3];
   int size[3];

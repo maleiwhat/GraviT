@@ -23,7 +23,7 @@ namespace GVT {
     namespace Dataset {
 
         template<>
-        bool Dataset<GVT::Domain::VolumeDomain>::init() {
+        bool ConfigFileDataset<GVT::Domain::VolumeDomain>::init() {
             float min[3];
             float max[3];
             int size[3];

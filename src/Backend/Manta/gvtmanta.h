@@ -8,16 +8,11 @@
 #ifndef GVTMANTA_H
 #define	GVTMANTA_H
 
+
 #include <Backend/Manta/Data/gvt_manta.h>
 #include <Backend/Manta/Domain/MantaDomain.h>
+#include <Backend/Manta/Dataset/MantaDataset.h>
 #include <Backend/Manta/ProcessQueue/MantaProcessQueue.h>
-
-#include <GVT/DataSet/Dataset.h>
-
-
-
-
-
 
 #endif	/* GVTMANTA_H */
 

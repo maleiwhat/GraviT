@@ -2,6 +2,8 @@
 //  MPITrace.C
 //
 
+
+#include <config/config.h>
 #include <mpi.h>
 
 #include <fstream>
@@ -9,14 +11,19 @@
 #include <string>
 #include <vector>
 
-#include <Backend/Manta/gvtmanta.h>
-#include <Backend/Optix/Domain/OptixDomain.h>
+
 #include <Frontend/ConfigFile/Dataset/Dataset.h>
 #include <Frontend/ConfigFile/RayTracer.h>
 #include <GVT/Data/primitives.h>
 #include <GVT/Environment/RayTracerAttributes.h>
 #include <GVT/Math/GVTMath.h>
 
+#ifdef GVT_BE_MANTA
+#include <Backend/Manta/gvtmanta.h>
+#endif
+#ifdef GVT_BE_OPTIX
+#include <Backend/Optix/gvtoptix.h>
+#endif
 using namespace std;
 
 int main(int argc, char** argv) {
@@ -55,27 +62,30 @@ int main(int argc, char** argv) {
     case GVT::Env::RayTracerAttributes::Volume:
       GVT_DEBUG(DBG_ALWAYS, "Volume dataset");
       rta.dataset =
-          new GVT::Dataset::Dataset<GVT::Domain::VolumeDomain>(rta.datafile);
+          new GVT::Dataset::ConfigFileDataset<GVT::Domain::VolumeDomain>(rta.datafile);
       break;
     case GVT::Env::RayTracerAttributes::Surface:
       GVT_DEBUG(DBG_ALWAYS, "Geometry dataset");
       rta.dataset =
-          new GVT::Dataset::Dataset<GVT::Domain::GeometryDomain>(rta.datafile);
+          new GVT::Dataset::ConfigFileDataset<GVT::Domain::GeometryDomain>(rta.datafile);
       break;
+#ifdef GVT_BE_MANTA
     case GVT::Env::RayTracerAttributes::Manta:
-      rta.dataset =
-          new GVT::Dataset::Dataset<GVT::Domain::MantaDomain>(rta.datafile);
-      break;
+    GVT_DEBUG(DBG_ALWAYS,"Using manta backend");
+    rta.dataset = new GVT::Dataset::MantaDataset(rta.datafile);
+    break;
+#endif
+#ifdef GVT_BE_OPTIX
     case GVT::Env::RayTracerAttributes::Optix:
-      rta.dataset =
-          new GVT::Dataset::Dataset<GVT::Domain::OptixDomain>(rta.datafile);
-      break;
+    GVT_DEBUG(DBG_ALWAYS,"Using optix backend");
+        
+    rta.dataset = new GVT::Dataset::OptixDataset(rta.datafile);
+    break;
+#endif
   }
-
+  
   GVT_ASSERT(rta.LoadDataset(), "Unable to load dataset");
-
   std::cout << rta << std::endl;
-
   RayTracer rt;
   int rank = -1;
   MPI_Comm_rank (MPI_COMM_WORLD, &rank);

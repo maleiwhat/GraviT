@@ -27,7 +27,7 @@ namespace GVT {
     namespace Trace {
         /// Tracer Domain (DomainSchedule) based decomposition implementation
 
-        template<class DomainType, class MPIW> class Tracer<DomainType, MPIW, DomainSchedule> : public Tracer_base<MPIW> {
+        template<class MPIW> class Tracer<MPIW, DomainSchedule> : public Tracer_base<MPIW> {
         public:
 
             std::set<int> neighbors;

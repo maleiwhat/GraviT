@@ -12,10 +12,9 @@
 #include <GVT/Data/transform.h>
 #include <GVT/Data/primitives.h>
 #include <GVT/Data/primitives/gvt_ray.h>
-
-#include <Core/Geometry/Ray.h>
 #include <vector>
 
+#if 0
 namespace GVT {
 
 namespace Data {
@@ -63,6 +62,6 @@ struct transform_impl<OptixRay, GVT::Data::ray> {
 }  // namespace Data
 
 }  // namespace GVT
-
+#endif
 #endif /* GVT_OPTIX_H */
 

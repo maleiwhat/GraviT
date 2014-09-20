@@ -24,7 +24,7 @@ namespace GVT {
 
                 /*
          */
-        template<class DomainType, class MPIW, class SCHEDULER> class Tracer<DomainType, MPIW, HybridSchedule<SCHEDULER> > : public Tracer_base<MPIW> {
+        template<class MPIW, class SCHEDULER> class Tracer<MPIW, HybridSchedule<SCHEDULER> > : public Tracer_base<MPIW> {
         public:
 
             GVT::Domain::Domain* dom;

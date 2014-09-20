@@ -92,7 +92,10 @@ ostream& operator<<(ostream& os, RayTracerAttributes const& rta) {
       os << "Surface";
       break;
     case RayTracerAttributes::Manta:
-      os << "Surface";
+      os << "Manta";
+      break;
+    case RayTracerAttributes::Optix:
+      os << "Manta";
       break;
     default:
       os << "Unknown (" << rta.render_type << ")";

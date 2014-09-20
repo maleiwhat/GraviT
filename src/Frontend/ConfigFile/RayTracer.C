@@ -2,6 +2,7 @@
 //  RayTracer.C
 //
 
+#include "config/config.h"
 #include "RayTracer.h"
 #include <Model/Materials/Phong.h>
 #include <Model/Readers/PlyReader.h>
@@ -21,113 +22,70 @@
 #include <GVT/Scheduler/schedulers.h>
 
 void RayTracer::RenderImage(string imagename = "mpitrace") {
-  Image image(GVT::Env::RayTracerAttributes::rta->view.width,
-              GVT::Env::RayTracerAttributes::rta->view.height, imagename);
-  GVT::Data::RayVector rays;
+    Image image(GVT::Env::RayTracerAttributes::rta->view.width,
+            GVT::Env::RayTracerAttributes::rta->view.height, imagename);
+    GVT::Data::RayVector rays;
 
-  GVT::Env::Camera<C_PERSPECTIVE> cam(
-      rays, GVT::Env::RayTracerAttributes::rta->view,
-      GVT::Env::RayTracerAttributes::rta->sample_rate);
-  cam.MakeCameraRays();
+    GVT::Env::Camera<C_PERSPECTIVE> cam(
+            rays, GVT::Env::RayTracerAttributes::rta->view,
+            GVT::Env::RayTracerAttributes::rta->sample_rate);
+    cam.MakeCameraRays();
 
-  int render_type = GVT::Env::RayTracerAttributes::rta->render_type;
+    int render_type = GVT::Env::RayTracerAttributes::rta->render_type;
 
-  switch (GVT::Env::RayTracerAttributes::rta->schedule) {
-    case GVT::Env::RayTracerAttributes::Image:
-      if (render_type == GVT::Env::RayTracerAttributes::Manta)
-        GVT::Trace::Tracer<GVT::Domain::MantaDomain, MPICOMM, ImageSchedule>(
-            rays, image)();
-      else
-        GVT::Trace::Tracer<GVT::Domain::VolumeDomain, MPICOMM, ImageSchedule>(
-            rays, image)();
-      break;
-    case GVT::Env::RayTracerAttributes::Domain:
-      if (render_type == GVT::Env::RayTracerAttributes::Manta)
-        GVT::Trace::Tracer<GVT::Domain::MantaDomain, MPICOMM, DomainSchedule>(
-            rays, image)();
-      else
-        GVT::Trace::Tracer<GVT::Domain::VolumeDomain, MPICOMM, DomainSchedule>(
-            rays, image)();
-      break;
-    case GVT::Env::RayTracerAttributes::Greedy:
-      if (render_type == GVT::Env::RayTracerAttributes::Manta)
-        GVT::Trace::Tracer<GVT::Domain::MantaDomain, MPICOMM,
-                           HybridSchedule<GreedySchedule> >(rays, image)();
-      else
-        GVT::Trace::Tracer<GVT::Domain::VolumeDomain, MPICOMM,
-                           HybridSchedule<GreedySchedule> >(rays, image)();
-      break;
-    case GVT::Env::RayTracerAttributes::Spread:
-      if (render_type == GVT::Env::RayTracerAttributes::Manta)
-        GVT::Trace::Tracer<GVT::Domain::MantaDomain, MPICOMM,
-                           HybridSchedule<SpreadSchedule> >(rays, image)();
-      else
-        GVT::Trace::Tracer<GVT::Domain::VolumeDomain, MPICOMM,
-                           HybridSchedule<SpreadSchedule> >(rays, image)();
-      break;
-    case GVT::Env::RayTracerAttributes::RayWeightedSpread:
-      if (render_type == GVT::Env::RayTracerAttributes::Manta)
-        GVT::Trace::Tracer<GVT::Domain::MantaDomain, MPICOMM,
-                           HybridSchedule<RayWeightedSpreadSchedule> >(rays,
-                                                                       image)();
-      else
-        GVT::Trace::Tracer<GVT::Domain::VolumeDomain, MPICOMM,
-                           HybridSchedule<RayWeightedSpreadSchedule> >(rays,
-                                                                       image)();
-      break;
-    case GVT::Env::RayTracerAttributes::AdaptiveSend:
-      if (render_type == GVT::Env::RayTracerAttributes::Manta)
-        GVT::Trace::Tracer<GVT::Domain::MantaDomain, MPICOMM,
-                           HybridSchedule<AdaptiveSendSchedule> >(rays,
-                                                                  image)();
-      else
-        GVT::Trace::Tracer<GVT::Domain::VolumeDomain, MPICOMM,
-                           HybridSchedule<AdaptiveSendSchedule> >(rays,
-                                                                  image)();
-      break;
-    case GVT::Env::RayTracerAttributes::LoadOnce:
-      if (render_type == GVT::Env::RayTracerAttributes::Manta)
-        GVT::Trace::Tracer<GVT::Domain::MantaDomain, MPICOMM,
-                           HybridSchedule<LoadOnceSchedule> >(rays, image)();
-      else
-        GVT::Trace::Tracer<GVT::Domain::VolumeDomain, MPICOMM,
-                           HybridSchedule<LoadOnceSchedule> >(rays, image)();
-      break;
-    case GVT::Env::RayTracerAttributes::LoadAnyOnce:
-      if (render_type == GVT::Env::RayTracerAttributes::Manta)
-        GVT::Trace::Tracer<GVT::Domain::MantaDomain, MPICOMM,
-                           HybridSchedule<LoadAnyOnceSchedule> >(rays, image)();
-      else
-        GVT::Trace::Tracer<GVT::Domain::VolumeDomain, MPICOMM,
-                           HybridSchedule<LoadAnyOnceSchedule> >(rays, image)();
-      break;
-    case GVT::Env::RayTracerAttributes::LoadAnother:
-      if (render_type == GVT::Env::RayTracerAttributes::Manta)
-        GVT::Trace::Tracer<GVT::Domain::MantaDomain, MPICOMM,
-                           HybridSchedule<LoadAnotherSchedule> >(rays, image)();
-      else
-        GVT::Trace::Tracer<GVT::Domain::VolumeDomain, MPICOMM,
-                           HybridSchedule<LoadAnotherSchedule> >(rays, image)();
-      break;
-    case GVT::Env::RayTracerAttributes::LoadMany:
-      if (render_type == GVT::Env::RayTracerAttributes::Manta)
-        GVT::Trace::Tracer<GVT::Domain::MantaDomain, MPICOMM,
-                           HybridSchedule<LoadManySchedule> >(rays, image)();
-      else
-        GVT::Trace::Tracer<GVT::Domain::VolumeDomain, MPICOMM,
-                           HybridSchedule<LoadManySchedule> >(rays, image)();
-      break;
-    default:
-      cerr << "ERROR: unknown schedule '"
-           << GVT::Env::RayTracerAttributes::rta->schedule << "'" << endl;
-      return;
-  }
+    switch (GVT::Env::RayTracerAttributes::rta->schedule) {
+        case GVT::Env::RayTracerAttributes::Image:
+            GVT::Trace::Tracer<MPICOMM, ImageSchedule>(
+                    rays, image)();
+            break;
+        case GVT::Env::RayTracerAttributes::Domain:
+            GVT::Trace::Tracer<MPICOMM, DomainSchedule>(
+                    rays, image)();
+            break;
+        case GVT::Env::RayTracerAttributes::Greedy:
+            GVT::Trace::Tracer<MPICOMM,
+                    HybridSchedule<GreedySchedule> >(rays, image)();
+            break;
+        case GVT::Env::RayTracerAttributes::Spread:
+            GVT::Trace::Tracer<MPICOMM,
+                    HybridSchedule<SpreadSchedule> >(rays, image)();
+            break;
+        case GVT::Env::RayTracerAttributes::RayWeightedSpread:
+            GVT::Trace::Tracer<MPICOMM,
+                    HybridSchedule<RayWeightedSpreadSchedule> >(rays,
+                    image)();
+            break;
+        case GVT::Env::RayTracerAttributes::AdaptiveSend:
+            GVT::Trace::Tracer<MPICOMM,
+                    HybridSchedule<AdaptiveSendSchedule> >(rays,
+                    image)();
+            break;
+        case GVT::Env::RayTracerAttributes::LoadOnce:
+            GVT::Trace::Tracer<MPICOMM,
+                    HybridSchedule<LoadOnceSchedule> >(rays, image)();
+            break;
+            GVT::Trace::Tracer<MPICOMM,
+                    HybridSchedule<LoadAnyOnceSchedule> >(rays, image)();
+            break;
+        case GVT::Env::RayTracerAttributes::LoadAnother:
+            GVT::Trace::Tracer<MPICOMM,
+                    HybridSchedule<LoadAnotherSchedule> >(rays, image)();
+            break;
+        case GVT::Env::RayTracerAttributes::LoadMany:
+            GVT::Trace::Tracer<MPICOMM,
+                    HybridSchedule<LoadManySchedule> >(rays, image)();
+            break;
+        default:
+            cerr << "ERROR: unknown schedule '"
+                    << GVT::Env::RayTracerAttributes::rta->schedule << "'" << endl;
+            return;
+    }
 
-  int rank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  if (rank == 0) {
-    image.Write();
-  }
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    if (rank == 0) {
+        image.Write();
+    }
 };
 
 #if !defined(M_PI)

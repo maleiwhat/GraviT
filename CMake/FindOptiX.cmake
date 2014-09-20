@@ -133,8 +133,8 @@ function(OptiX_add_imported_library name lib_location dll_lib dependent_libs)
 endfunction()
 
 # Sets up a dummy target
-#OptiX_add_imported_library(optix "${optix_LIBRARY}" "${optix_DLL}" "${CUDA_CUDART_LIBRARY};${OPENGL_LIBRARIES}")
-#OptiX_add_imported_library(optixu   "${optixu_LIBRARY}"   "${optixu_DLL}"   "")
+OptiX_add_imported_library(optix "${optix_LIBRARY}" "${optix_DLL}" "${CUDA_CUDART_LIBRARY};${OPENGL_LIBRARIES}")
+OptiX_add_imported_library(optixu   "${optixu_LIBRARY}"   "${optixu_DLL}"   "")
 
 # Since liboptix.1.dylib is built with an install name of @rpath, we need to
 # compile our samples with the rpath set to where optix exists.
@@ -159,3 +159,5 @@ g rpath, the copy of optixu next to optix will be used during loading instead of
   set( optix_rpath ${_optixu_rpath} ${_optix_rpath} )
 endif()             
 
+
+SET(OptiX_LIBRARIES ${optix_LIBRARY} ${optixu_LIBRARY} ${optix_prime_LIBRARY})
