@@ -35,6 +35,7 @@ class AbstractMesh {
 class Mesh : public AbstractMesh {
  public:
   typedef boost::tuple<int, int, int> face;
+  typedef boost::tuple<int, int, int> face_normal;
 
   Mesh(GVT::Data::Material* mat = NULL);
   Mesh(const Mesh& orig);
@@ -61,6 +62,7 @@ class Mesh : public AbstractMesh {
   boost::container::vector<GVT::Math::Vector4f> mapuv;
   boost::container::vector<GVT::Math::Vector4f> normals;
   boost::container::vector<GVT::Data::Mesh::face> faces;
+  boost::container::vector<GVT::Data::Mesh::face_normal> faces_normals;
 
   GVT::Data::box3D boundingBox;
 };

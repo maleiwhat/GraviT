@@ -136,52 +136,55 @@ bool OptixDomain::load() {
 
 void OptixDomain::trace(RayVector& ray_list, RayVector& moved_rays) {
   // Create our query.
+            this->load();
+            GVT_ASSERT(optix_model_.isValid(), "trace:Model is not valid");
+            if (!optix_model_.isValid()) return;
+            Query query = optix_model_->createQuery(RTP_QUERY_TYPE_CLOSEST);
+            if (!query.isValid()) return;
+    while(!ray_list.empty()) {
 
-  try {
-    this->load();
-    GVT_ASSERT(optix_model_.isValid(), "trace:Model is not valid");
-    if (!optix_model_.isValid()) return;
-    Query query = optix_model_->createQuery(RTP_QUERY_TYPE_CLOSEST);
-    if (!query.isValid()) return;
-    // Format GVT rays for Optix and give Optix an array of rays.
-    std::vector<OptixRayFormat> rays(ray_list.size());
-    for (int i = 0; i < ray_list.size(); ++i)
-      gravityRayToOptixRay(ray_list[i], &rays[i]);
-    query->setRays(rays.size(), RTP_BUFFER_FORMAT_RAY_ORIGIN_DIRECTION,
-                   RTP_BUFFER_TYPE_HOST, &rays[0]);
-    // Create and pass hit results in an Optix friendly format.
-    std::vector<OptixHitFormat> hits(ray_list.size());
-    query->setHits(ray_list.size(), RTP_BUFFER_FORMAT_HIT_T_TRIID_U_V,
-                   RTP_BUFFER_TYPE_HOST, &hits[0]);
-    // Execute our query and wait for it to finish.
+        GVT_DEBUG(DBG_ALWAYS,"Ray list size : " << ray_list.size() );
 
-    // TODO: [OPTIX] Failing here
-    query->execute(RTP_QUERY_HINT_NONE);
-    query->finish();
+        try {
+            // Format GVT rays for Optix and give Optix an array of rays.
+            std::vector<OptixRayFormat> rays(ray_list.size());
+            for (int i = 0; i < ray_list.size(); ++i)
+                gravityRayToOptixRay(ray_list[i], &rays[i]);
+            query->setRays(rays.size(), RTP_BUFFER_FORMAT_RAY_ORIGIN_DIRECTION,
+                    RTP_BUFFER_TYPE_HOST, &rays[0]);
+            // Create and pass hit results in an Optix friendly format.
+            std::vector<OptixHitFormat> hits(ray_list.size());
+            query->setHits(ray_list.size(), RTP_BUFFER_FORMAT_HIT_T_TRIID_U_V,
+                    RTP_BUFFER_TYPE_HOST, &hits[0]);
+            // Execute our query and wait for it to finish.
 
-    // Move missed rays.
-    for (int i = hits.size() - 1; i >= 0; --i) {
-      if (hits[i].t < 0.0f) {
-        moved_rays.push_back(ray_list[i]);
-        std::swap(hits[i], hits.back());
-        std::swap(ray_list[i], ray_list.back());
-        ray_list.pop_back();
-        hits.pop_back();
-      }
+            query->execute(RTP_QUERY_HINT_NONE);
+            query->finish();
+
+            // Move missed rays.
+            for (int i = hits.size() - 1; i >= 0; --i) {
+                if (hits[i].t < 0.0f) {
+                    moved_rays.push_back(ray_list[i]);
+                    std::swap(hits[i], hits.back());
+                    std::swap(ray_list[i], ray_list.back());
+                    ray_list.pop_back();
+                    hits.pop_back();
+                }
+            }
+
+            // Generate secondary rays.
+            for (int i = ray_list.size() - 1; i >= 0; --i) {
+                this->traceRay(hits[i].triangle_id, hits[i].t, hits[i].u, hits[i].v,
+                        ray_list[i], ray_list);
+                ray_list.pop_back();
+                hits.pop_back();
+            }
+        }
+        catch (const optix::prime::Exception& e) {
+            std::cerr << "Exception: " << e.getErrorString() << "\n";
+            GVT_ASSERT(false, e.getErrorString());
+        }
     }
-
-    // Generate secondary rays.
-    for (int i = ray_list.size() - 1; i >= 0; --i) {
-      this->traceRay(hits[i].triangle_id, hits[i].t, hits[i].u, hits[i].v,
-                     ray_list[i], ray_list);
-      ray_list.pop_back();
-      hits.pop_back();
-    }
-  }
-  catch (const optix::prime::Exception& e) {
-    std::cerr << "Exception: " << e.getErrorString() << "\n";
-    GVT_ASSERT(false, e.getErrorString());
-  }
 }
 
 void OptixDomain::traceRay(uint32_t triangle_id, float t, float u, float v,
