@@ -109,7 +109,7 @@ namespace GVT {
                         if (ndepth > 0 && ray->w > p) {     
                             GVT::Data::ray* ray = new GVT::Data::ray(*localQueue[pindex]);
                             ray->domains.clear();
-                            ray->type = GVT::Data::ray::SECUNDARY;
+                            ray->type = GVT::Data::ray::SECONDARY;
                             ray->origin = ray->origin + ray->direction * ray->t;
                             ray->setDirection(mat->CosWeightedRandomHemisphereDirection2(normal).normalize());
                             ray->w = ray->w * (ray->direction * normal);

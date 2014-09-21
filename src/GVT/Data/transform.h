@@ -1,4 +1,4 @@
-/* 
+/*
  * File:   convert.h
  * Author: jbarbosa
  *
@@ -6,26 +6,29 @@
  */
 
 #ifndef CONVERT_H
-#define	CONVERT_H
+#define CONVERT_H
 
 #include <GVT/common/debug.h>
 
 namespace GVT {
-    namespace Data {
-        
-        template<typename SRC_FORMAT, typename DST_FORMAT> struct transform_impl {
-            static inline DST_FORMAT transform(const SRC_FORMAT& src) {
-                GVT_WARNING(DBG_ALWAYS,"CONVERSION NOT IMPLEMENTED : TRYING DYNAMIC CAST");
-                return dynamic_cast<DST_FORMAT>(src);
-            }
-        };
+namespace Data {
 
-        template<typename SRC_FORMAT, typename DST_FORMAT> inline DST_FORMAT transform(const SRC_FORMAT& param) {
-            return transform_impl<SRC_FORMAT,DST_FORMAT>::transform(param);
-        }
-
-    };
+template <typename SRC_FORMAT, typename DST_FORMAT>
+struct transform_impl {
+  static inline DST_FORMAT transform(const SRC_FORMAT& src) {
+    GVT_WARNING(DBG_ALWAYS, "CONVERSION NOT IMPLEMENTED : TRYING DYNAMIC CAST");
+    return dynamic_cast<DST_FORMAT>(src);
+  }
 };
 
-#endif	/* CONVERT_H */
+template <typename SRC_FORMAT, typename DST_FORMAT>
+inline DST_FORMAT transform(const SRC_FORMAT& param) {
+  return transform_impl<SRC_FORMAT, DST_FORMAT>::transform(param);
+}
+
+}  // namespace Data
+
+}  // namespace GVT
+
+#endif /* CONVERT_H */
 

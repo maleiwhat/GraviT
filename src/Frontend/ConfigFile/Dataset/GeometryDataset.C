@@ -21,7 +21,7 @@ namespace GVT {
     namespace Dataset {
 
         template<>
-        bool Dataset<GVT::Domain::GeometryDomain>::init() {
+        bool ConfigFileDataset<GVT::Domain::GeometryDomain>::init() {
             float min[3];
             float max[3];
             int size[3];

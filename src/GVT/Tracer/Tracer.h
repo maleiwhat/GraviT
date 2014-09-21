@@ -243,7 +243,7 @@ namespace GVT {
          * 
          */
 
-        template<class DomainType, class MPIW, class BSCHEDULER>
+        template<class MPIW, class BSCHEDULER>
         class Tracer : public Tracer_base<MPIW> {
         public:
 
@@ -264,8 +264,8 @@ namespace GVT {
          * \tparam ISCHEDUDER Inner scheduler for base scheduler (Greedy, Spread, ...)
          * 
          */
-        template<class DomainType, class MPIW, template<typename> class BSCHEDULER, class ISCHEDULER>
-        class Tracer<DomainType, MPIW, BSCHEDULER<ISCHEDULER> > : public Tracer_base<MPIW> {
+        template<class MPIW, template<typename> class BSCHEDULER, class ISCHEDULER>
+        class Tracer<MPIW, BSCHEDULER<ISCHEDULER> > : public Tracer_base<MPIW> {
         public:
 
             Tracer(GVT::Data::RayVector& rays, Image& image) : Tracer_base<MPIW>(rays, image) {

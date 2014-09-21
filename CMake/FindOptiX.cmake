@@ -22,7 +22,12 @@
 # Locate the OptiX distribution.  Search relative to the SDK first, then look in the system.
 
 # Our initial guess will be within the SDK.
-set(OptiX_INSTALL_DIR "${CMAKE_SOURCE_DIR}/../" CACHE PATH "Path to OptiX installed location.")
+if (DEFINED ENV{OptiX_INSTALL_DIR})
+  set(OptiX_INSTALL_DIR "$ENV{OptiX_INSTALL_DIR}")
+else()
+  set(OptiX_INSTALL_DIR "${CMAKE_SOURCE_DIR}/../" CACHE PATH "Path to OptiX installed location.")
+endif()
+message(STATUS "OptiX_INSTALL_DIR=${OptiX_INSTALL_DIR}")
 
 # The distribution contains both 32 and 64 bit libraries.  Adjust the library
 # search path based on the bit-ness of the build.  (i.e. 64: bin64, lib64; 32:
@@ -57,6 +62,11 @@ endmacro()
 
 OPTIX_find_api_library(optix 1)
 OPTIX_find_api_library(optixu 1)
+OPTIX_find_api_library(optix_prime 1)
+
+message(STATUS "optix_LIBRARY=${optix_LIBRARY}")
+message(STATUS "optixu_LIBRARY=${optixu_LIBRARY}")
+message(STATUS "optix_prime_LIBRARY=${optix_prime_LIBRARY}")
 
 # Include
 find_path(OptiX_INCLUDE
@@ -149,3 +159,5 @@ g rpath, the copy of optixu next to optix will be used during loading instead of
   set( optix_rpath ${_optixu_rpath} ${_optix_rpath} )
 endif()             
 
+
+SET(OptiX_LIBRARIES ${optix_LIBRARY} ${optixu_LIBRARY} ${optix_prime_LIBRARY})
