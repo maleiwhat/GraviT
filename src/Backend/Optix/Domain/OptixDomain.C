@@ -51,30 +51,41 @@ static void gravityRayToOptixRay(const ray& gvt_ray,
 OptixDomain::OptixDomain() : GeometryDomain("") {}
 
 OptixDomain::OptixDomain(const std::string& filename)
-    : GeometryDomain(filename) {}
+    : GeometryDomain(filename), loaded_(false) {}
+
+OptixDomain::OptixDomain(const OptixDomain& domain)
+    : GeometryDomain(domain),
+      optix_context_(domain.optix_context_),
+      optix_model_(domain.optix_model_),
+      loaded_(false) {
+  std::cout << "Copy constructed!\n";
+}
 
 OptixDomain::~OptixDomain() {}
 
 OptixDomain::OptixDomain(const std::string& filename,
                          GVT::Math::AffineTransformMatrix<float> m)
-    : GVT::Domain::GeometryDomain(filename, m) {
+    : GVT::Domain::GeometryDomain(filename, m), loaded_(false) {
   this->load();
 }
 
 bool OptixDomain::load() {
 
-  if (domainIsLoaded()) return true;
+  if (loaded_) return true;
 
+  std::cout << "OptixDomain::load()\n";
   // Make sure we load the GVT mesh.
   GVT_ASSERT(GeometryDomain::load(), "Geometry not loaded");
   if (!GeometryDomain::load()) return false;
+  std::cout << "Create context\n";
 
-  // Create an Optix to use.
+  // Create an Optix context to use.
   optix_context_ = Context::create(RTP_CONTEXT_TYPE_CUDA);
 
   GVT_ASSERT(optix_context_.isValid(), "Optix Context is not valid");
   if (!optix_context_.isValid()) return false;
 
+  std::cout << "Create vertex buffer\n";
   // Setup the buffer to hold our vertices.
   BufferDesc vertices_desc;
   vertices_desc = optix_context_->createBufferDesc(
@@ -87,6 +98,7 @@ bool OptixDomain::load() {
   vertices_desc->setRange(0, this->mesh->vertices.size());
   vertices_desc->setStride(sizeof(Vector3f));
 
+  std::cout << "Create index buffer\n";
   // Setup the triangle indices buffer.
   BufferDesc indices_desc;
   indices_desc = optix_context_->createBufferDesc(
@@ -98,57 +110,77 @@ bool OptixDomain::load() {
   indices_desc->setRange(0, this->mesh->faces.size());
   indices_desc->setStride(sizeof(Mesh::face));
 
+  std::cout << "Create model\n";
   // Create an Optix model.
   optix_model_ = optix_context_->createModel();
-
+  std::cout << "Model created\n";
   GVT_ASSERT(optix_model_.isValid(), "Model is not valid");
-
-  if (optix_model_.isValid()) return false;
-
+  if (!optix_model_.isValid()) return false;
+  std::cout << "Set triangles\n";
   optix_model_->setTriangles(indices_desc, vertices_desc);
+  std::cout << "Update model\n";
   optix_model_->update(RTP_MODEL_HINT_NONE);
+  GVT_ASSERT(optix_model_.isValid(), "load:Model is not valid");
+  std::cerr << "Waiting to finish loading.\n";
   optix_model_->finish();
 
+  while (!optix_model_->isFinished())
+    std::cout << "Waiting for model to finish loading.";
+  std::cout << "Model loaded!\n";
+
+  if (!optix_model_.isValid()) return false;
+
+  loaded_ = true;
   return true;
 }
 
 void OptixDomain::trace(RayVector& ray_list, RayVector& moved_rays) {
   // Create our query.
-  GVT_DEBUG(DBG_ALWAYS,"In Optix Trace");
-  this->load();
-  if (!optix_model_.isValid()) return;
 
-  Query query = optix_model_->createQuery(RTP_QUERY_TYPE_CLOSEST);
-  if (!query.isValid()) return;
-  // Format GVT rays for Optix and give Optix an array of rays.
-  std::vector<OptixRayFormat> rays(ray_list.size());
-  for (int i = 0; i < ray_list.size(); ++i) gravityRayToOptixRay(ray_list[i], &rays[i]);
-  query->setRays(rays.size(), RTP_BUFFER_FORMAT_RAY_ORIGIN_DIRECTION, RTP_BUFFER_TYPE_HOST, &rays[0]);
-  // Create and pass hit results in an Optix friendly format.
-  std::vector<OptixHitFormat> hits(ray_list.size());
-  query->setHits(ray_list.size(), RTP_BUFFER_FORMAT_HIT_T_TRIID_U_V, RTP_BUFFER_TYPE_HOST, &hits[0]);
-  // Execute our query and wait for it to finish.
+  try {
+    this->load();
+    GVT_ASSERT(optix_model_.isValid(), "trace:Model is not valid");
+    if (!optix_model_.isValid()) return;
+    Query query = optix_model_->createQuery(RTP_QUERY_TYPE_CLOSEST);
+    if (!query.isValid()) return;
+    // Format GVT rays for Optix and give Optix an array of rays.
+    std::vector<OptixRayFormat> rays(ray_list.size());
+    for (int i = 0; i < ray_list.size(); ++i)
+      gravityRayToOptixRay(ray_list[i], &rays[i]);
+    query->setRays(rays.size(), RTP_BUFFER_FORMAT_RAY_ORIGIN_DIRECTION,
+                   RTP_BUFFER_TYPE_HOST, &rays[0]);
+    // Create and pass hit results in an Optix friendly format.
+    std::vector<OptixHitFormat> hits(ray_list.size());
+    query->setHits(ray_list.size(), RTP_BUFFER_FORMAT_HIT_T_TRIID_U_V,
+                   RTP_BUFFER_TYPE_HOST, &hits[0]);
+    // Execute our query and wait for it to finish.
 
-  // TODO: [OPTIX] Failing here
-  query->execute(RTP_QUERY_HINT_NONE);
-  query->finish();
+    // TODO: [OPTIX] Failing here
+    query->execute(RTP_QUERY_HINT_NONE);
+    query->finish();
 
-  // Move missed rays.
-  for (int i = hits.size() - 1; i >= 0; --i) {
-    if (hits[i].t < 0.0f) {
-      moved_rays.push_back(ray_list[i]);
-      std::swap(hits[i], hits.back());
-      std::swap(ray_list[i], ray_list.back());
+    // Move missed rays.
+    for (int i = hits.size() - 1; i >= 0; --i) {
+      if (hits[i].t < 0.0f) {
+        moved_rays.push_back(ray_list[i]);
+        std::swap(hits[i], hits.back());
+        std::swap(ray_list[i], ray_list.back());
+        ray_list.pop_back();
+        hits.pop_back();
+      }
+    }
+
+    // Generate secondary rays.
+    for (int i = ray_list.size() - 1; i >= 0; --i) {
+      this->traceRay(hits[i].triangle_id, hits[i].t, hits[i].u, hits[i].v,
+                     ray_list[i], ray_list);
       ray_list.pop_back();
       hits.pop_back();
     }
   }
-
-  // Generate secondary rays.
-  for (int i = ray_list.size() - 1; i >= 0; --i) {
-    this->traceRay(hits[i].triangle_id, hits[i].t, hits[i].u, hits[i].v, ray_list[i], ray_list);
-    ray_list.pop_back();
-    hits.pop_back();
+  catch (const optix::prime::Exception& e) {
+    std::cerr << "Exception: " << e.getErrorString() << "\n";
+    GVT_ASSERT(false, e.getErrorString());
   }
 }
 

@@ -16,6 +16,7 @@ namespace Domain {
 class OptixDomain : public GeometryDomain {
  public:
   OptixDomain();
+  OptixDomain(const OptixDomain& domain);
   explicit OptixDomain(const std::string& filename);
   OptixDomain(const std::string& filename,
               GVT::Math::AffineTransformMatrix<float> m);
@@ -40,6 +41,7 @@ class OptixDomain : public GeometryDomain {
                 GVT::Data::ray& ray, GVT::Data::RayVector& rayList);
   optix::prime::Context optix_context_;
   optix::prime::Model optix_model_;
+  bool loaded_;
 };
 
 }  // namespace Domain
