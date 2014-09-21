@@ -116,7 +116,7 @@ void OptixDomain::trace(RayVector& ray_list, RayVector& moved_rays) {
   // Create our query.
 
   this->load();
-  if (!optix_model_.isValid()) {return false;
+  if (!optix_model_.isValid()) return;
 
   Query query = optix_model_->createQuery(RTP_QUERY_TYPE_CLOSEST);
   if (!query.isValid()) return;
