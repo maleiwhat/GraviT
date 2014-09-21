@@ -27,6 +27,8 @@
 # USING_ICPC : icpc is being used for C++ compiler
 # USING_WINDOWS_CL : Visual Studio's compiler
 # USING_WINDOWS_ICL : Intel's Windows compiler
+# USING_APPLE_CLANG : Apple Clang compiler
+# USING_APPLE_CLANG++ : Apple Clang compiler
 
 # Have to set this variable outside of the top level IF statement,
 # since CMake will break if you use it in an IF statement.
@@ -67,6 +69,41 @@ ELSE(NOT CMAKE_COMPILER_IS_GNUCXX)
   SET(USING_GPP TRUE)
   SET(USING_KNOWN_CXX_COMPILER TRUE)
 ENDIF(NOT CMAKE_COMPILER_IS_GNUCXX)
+
+SET(OPTIX_COMPILER_NAME_REGEXPR "cc.*$")
+
+IF(NOT CMAKE_COMPILER_IS_GNUCC)
+  # This regular expression also matches things like icc-9.1
+  IF(CMAKE_C_COMPILER MATCHES ${OPTIX_COMPILER_NAME_REGEXPR})
+    SET(USING_APPLECLANG TRUE)
+    SET(USING_KNOWN_C_COMPILER TRUE)
+  ENDIF(CMAKE_C_COMPILER MATCHES ${OPTIX_COMPILER_NAME_REGEXPR})
+ELSE(NOT CMAKE_COMPILER_IS_GNUCC)
+  SET(USING_GCC TRUE)
+  SET(USING_KNOWN_C_COMPILER TRUE)
+ENDIF(NOT CMAKE_COMPILER_IS_GNUCC)
+
+SET(OPTIX_COMPILER_NAME_REGEXPR "c++.*$")
+IF(NOT CMAKE_COMPILER_IS_GNUCXX)
+  IF   (CMAKE_CXX_COMPILER MATCHES ${OPTIX_COMPILER_NAME_REGEXPR})
+      SET(USING_APPLECLANG TRUE)
+    SET(USING_KNOWN_CXX_COMPILER TRUE)
+
+    EXEC_PROGRAM(${CMAKE_CXX_COMPILER} 
+      ARGS --version 
+      OUTPUT_VARIABLE TEMP)
+
+    STRING(REGEX MATCH "([0-9\\.]+)"
+        CLANG_COMPILER_VERSION
+      ${TEMP})
+
+  MARK_AS_ADVANCED(CLANG_COMPILER_VERSION)
+  ENDIF(CMAKE_CXX_COMPILER MATCHES ${OPTIX_COMPILER_NAME_REGEXPR})
+ELSE(NOT CMAKE_COMPILER_IS_GNUCXX)
+  SET(USING_GPP TRUE)
+  SET(USING_KNOWN_CXX_COMPILER TRUE)
+ENDIF(NOT CMAKE_COMPILER_IS_GNUCXX)
+
 
 # The idea is to match a string that ends with cl but doesn't have icl in it.
 SET(OPTIX_COMPILER_NAME_REGEXPR "([^i]|^)cl.*$")
@@ -113,11 +150,11 @@ ENDIF(USING_ICC AND USING_GPP)
 
 # Using unknown compilers
 IF   (NOT USING_KNOWN_C_COMPILER)
-  FIRST_TIME_MESSAGE("Specified C compiler ${CMAKE_C_COMPILER} is not recognized (gcc, icc).  Using CMake defaults.")
+  FIRST_TIME_MESSAGE("Specified C compiler ${CMAKE_C_COMPILER} is not recognized (gcc, icc, clang).  Using CMake defaults.")
 ENDIF(NOT USING_KNOWN_C_COMPILER)
 
 IF   (NOT USING_KNOWN_CXX_COMPILER)
-  FIRST_TIME_MESSAGE("Specified CXX compiler ${CMAKE_CXX_COMPILER} is not recognized (g++, icpc).  Using CMake defaults.")
+  FIRST_TIME_MESSAGE("Specified CXX compiler ${CMAKE_CXX_COMPILER} is not recognized (g++, icpc, clang++).  Using CMake defaults.")
 ENDIF(NOT USING_KNOWN_CXX_COMPILER)
 
 # Warn if the compiler is not icc on SGI_LINUX systems

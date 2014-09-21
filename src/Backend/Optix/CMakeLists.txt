@@ -35,6 +35,6 @@ IF (GVT_BE_OPTIX)
     CONFIGURE_LIB_MPI()
 
 
-    CONFIGURE_FILE("${GVT_SOURCE_DIR}/config/config.h.in" "${GVT_BINARY_DIR}/config/config.h") 
+    #CONFIGURE_FILE("${GVT_SOURCE_DIR}/config/config.h.in" "${GVT_BINARY_DIR}/config/config.h") 
 
 ENDIF()
