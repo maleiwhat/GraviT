@@ -1,0 +1,14 @@
+/*****
+*
+*
+*
+*/
+
+#ifndef __CONFIG_H__
+#define __CONFIG_H__
+
+#cmakedefine GVT_BE_OPTIX @GVT_BE_OPTIX@
+#cmakedefine GVT_BE_MANTA @GVT_BE_MANTA@
+#cmakedefine GVT_BE_EMBREE @GVT_BE_EMBREE@
+
+#endif

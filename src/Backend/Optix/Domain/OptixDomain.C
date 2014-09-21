@@ -1,8 +1,8 @@
 #include <string>
 
 #include <Backend/Optix/Domain/OptixDomain.h>
-#include <algorithm>
 #include <GVT/Data/primitives.h>
+#include <algorithm>
 #include <common/utils.h>
 #include <optix_prime/optix_primepp.h>
 
@@ -214,4 +214,3 @@ void OptixDomain::generateShadowRays(const ray& ray_in, const Vector4f& normal,
 }  // namespace Domain
 
 }  // namespace GVT
-
