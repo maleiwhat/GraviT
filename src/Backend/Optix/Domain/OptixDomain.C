@@ -38,8 +38,7 @@ namespace GVT {
             float v;
         };
 
-        static void gravityRayToOptixRay(const ray& gvt_ray,
-                OptixRayFormat* optix_ray) {
+        static void gravityRayToOptixRay(const ray& gvt_ray, OptixRayFormat* optix_ray) {
             optix_ray->origin_x = gvt_ray.origin[0];
             optix_ray->origin_y = gvt_ray.origin[1];
             optix_ray->origin_z = gvt_ray.origin[2];
