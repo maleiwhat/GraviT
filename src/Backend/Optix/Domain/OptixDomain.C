@@ -96,7 +96,7 @@ bool OptixDomain::load() {
 
   if (!vertices_desc.isValid()) return false;
   vertices_desc->setRange(0, this->mesh->vertices.size());
-  vertices_desc->setStride(sizeof(Vector4f));
+  vertices_desc->setStride(sizeof(Vector3f));
 
   std::cout << "Create index buffer\n";
   // Setup the triangle indices buffer.
@@ -136,7 +136,6 @@ bool OptixDomain::load() {
 
 void OptixDomain::trace(RayVector& ray_list, RayVector& moved_rays) {
   // Create our query.
-
   try {
     this->load();
     GVT_ASSERT(optix_model_.isValid(), "trace:Model is not valid");
@@ -145,10 +144,9 @@ void OptixDomain::trace(RayVector& ray_list, RayVector& moved_rays) {
     if (!query.isValid()) return;
     // Format GVT rays for Optix and give Optix an array of rays.
     std::vector<OptixRayFormat> rays(ray_list.size());
-    std::cout << "Ray list size = " << ray_list.size() << "\n";
     for (int i = 0; i < ray_list.size(); ++i)
       gravityRayToOptixRay(ray_list[i], &rays[i]);
-    query->setRays(ray_list.size(), RTP_BUFFER_FORMAT_RAY_ORIGIN_DIRECTION,
+    query->setRays(rays.size(), RTP_BUFFER_FORMAT_RAY_ORIGIN_DIRECTION,
                    RTP_BUFFER_TYPE_HOST, &rays[0]);
     // Create and pass hit results in an Optix friendly format.
     std::vector<OptixHitFormat> hits(ray_list.size());
@@ -156,15 +154,9 @@ void OptixDomain::trace(RayVector& ray_list, RayVector& moved_rays) {
                    RTP_BUFFER_TYPE_HOST, &hits[0]);
     // Execute our query and wait for it to finish.
 
-    std::cout << "rays.size = " << rays.size()
-              << " hits.size = " << hits.size() << "\n";
     // TODO: [OPTIX] Failing here
-    std::cout << "Executing query.\n";
     query->execute(RTP_QUERY_HINT_NONE);
-    std::cout << "Finishing query.\n";
     query->finish();
-    while (!query->isFinished()) std::cout << "Waiting for query to finisih.";
-    std::cout << "Query finished!\n";
 
     // Move missed rays.
     for (int i = hits.size() - 1; i >= 0; --i) {
@@ -202,12 +194,6 @@ void OptixDomain::traceRay(uint32_t triangle_id, float t, float u, float v,
 
 Vector4f OptixDomain::computeNormal(uint32_t triangle_id, float u,
                                     float v) const {
-  std::cout << "Normal set size = " << this->mesh->normals.size() << "\n";
-  std::cout << "Computing normal.\n";
-  if (triangle_id > this->mesh->normals.size())
-    std::cerr << "Triangle id = " << triangle_id << " is out of bounds!";
-  GVT_ASSERT(triangle_id < this->mesh->faces.size(),
-             "Triangle id out of bounds.");
   const Vector4f& a =
       this->mesh->normals[this->mesh->faces[triangle_id].get<0>()];
   const Vector4f& b =
@@ -215,7 +201,6 @@ Vector4f OptixDomain::computeNormal(uint32_t triangle_id, float u,
   const Vector4f& c =
       this->mesh->normals[this->mesh->faces[triangle_id].get<2>()];
   Vector4f normal = a * u + b * v + c * (1.0f - u - v);
-  std::cout << "Normal computed.\n";
   return normal;
 }
 
