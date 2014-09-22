@@ -141,44 +141,23 @@ void OptixDomain::trace(RayVector& ray_list, RayVector& moved_rays) {
   // Create our query.
   try {
     this->load();
+    if (this->mesh->normals.size() < this->mesh->vertices.size())
+      this->mesh->generateNormals();
+    std::cout << "normals.size() = " << this->mesh->normals.size() << "\n";
     GVT_ASSERT(optix_model_.isValid(), "trace:Model is not valid");
     if (!optix_model_.isValid()) return;
-    Query query = optix_model_->createQuery(RTP_QUERY_TYPE_CLOSEST);
-    if (!query.isValid()) return;
-    // Format GVT rays for Optix and give Optix an array of rays.
-    std::vector<OptixRayFormat> rays(ray_list.size());
-    for (int i = 0; i < ray_list.size(); ++i)
-      gravityRayToOptixRay(ray_list[i], &rays[i]);
-    query->setRays(rays.size(), RTP_BUFFER_FORMAT_RAY_ORIGIN_DIRECTION,
-                   RTP_BUFFER_TYPE_HOST, &rays[0]);
-
-    // Create and pass hit results in an Optix friendly format.
-    std::vector<OptixHitFormat> hits(ray_list.size());
-    query->setHits(ray_list.size(), RTP_BUFFER_FORMAT_HIT_T_TRIID_U_V,
-                   RTP_BUFFER_TYPE_HOST, &hits[0]);
-
-    // Execute our query and wait for it to finish.
-    query->execute(RTP_QUERY_HINT_NONE);
-    query->finish();
-
-    // Move missed rays.
-    for (int i = hits.size() - 1; i >= 0; --i) {
-      if (hits[i].t < 0.0f) {
-        moved_rays.push_back(ray_list[i]);
-        std::swap(hits[i], hits.back());
-        std::swap(ray_list[i], ray_list.back());
-        ray_list.pop_back();
-        hits.pop_back();
+    RayVector next_list;
+    RayVector chunk;
+    const uint32_t kMaxChunkSize = 65536;
+    while (!ray_list.empty()) {
+      chunk.push_back(ray_list.back());
+      ray_list.pop_back();
+      if (chunk.size() == kMaxChunkSize || ray_list.empty()) {
+        traceChunk(chunk, next_list, moved_rays);
+        chunk.clear();
       }
     }
-
-    // Generate secondary rays.
-    for (int i = ray_list.size() - 1; i >= 0; --i) {
-      this->traceRay(hits[i].triangle_id, hits[i].t, hits[i].u, hits[i].v,
-                     ray_list[i], ray_list);
-      ray_list.pop_back();
-      hits.pop_back();
-    }
+    ray_list.swap(next_list);
   }
   catch (const optix::prime::Exception& e) {
     std::cerr << "Exception: " << e.getErrorString() << "\n";
@@ -186,10 +165,51 @@ void OptixDomain::trace(RayVector& ray_list, RayVector& moved_rays) {
   }
 }
 
+void OptixDomain::traceChunk(RayVector& chunk, RayVector& next_list,
+                             RayVector& moved_rays) {
+  // Create our query.
+  Query query = optix_model_->createQuery(RTP_QUERY_TYPE_CLOSEST);
+  if (!query.isValid()) return;
+
+  // Format GVT rays for Optix and give Optix an array of rays.
+  std::vector<OptixRayFormat> optix_rays(chunk.size());
+  for (int i = 0; i < chunk.size(); ++i)
+    gravityRayToOptixRay(this->toLocal(chunk[i]), &optix_rays[i]);
+
+  // Hand the rays to Optix.
+  query->setRays(optix_rays.size(), RTP_BUFFER_FORMAT_RAY_ORIGIN_DIRECTION,
+                 RTP_BUFFER_TYPE_HOST, &optix_rays[0]);
+
+  // Create and pass hit results in an Optix friendly format.
+  std::vector<OptixHitFormat> hits(chunk.size());
+  query->setHits(hits.size(), RTP_BUFFER_FORMAT_HIT_T_TRIID_U_V,
+                 RTP_BUFFER_TYPE_HOST, &hits[0]);
+
+  // Execute our query and wait for it to finish.
+  query->execute(RTP_QUERY_HINT_NONE);
+  query->finish();
+
+  // Move missed rays.
+  for (int i = hits.size() - 1; i >= 0; --i) {
+    if (hits[i].t < 0.0f) {
+      moved_rays.push_back(chunk[i]);
+      std::swap(hits[i], hits.back());
+      std::swap(chunk[i], chunk.back());
+      chunk.pop_back();
+      hits.pop_back();
+    }
+  }
+
+  // Trace each ray: shade, fire shadow rays, fire secondary rays.
+  for (int i = 0; i < chunk.size(); ++i)
+    this->traceRay(hits[i].triangle_id, hits[i].t, hits[i].u, hits[i].v,
+                   chunk[i], next_list);
+}
+
 void OptixDomain::traceRay(uint32_t triangle_id, float t, float u, float v,
                            ray& ray, RayVector& rays) {
   if (ray.type == ray::SHADOW) return;
-  Vector4f normal = computeNormal(triangle_id, u, v);
+  Vector4f normal = this->toWorld(computeNormal(triangle_id, u, v));
   if (ray.type == ray::SECONDARY) ray.w = ray.w * std::max(1.0f / t, t);
   generateShadowRays(ray, normal, rays);
   generateSecondaryRays(ray, normal, rays);
@@ -197,6 +217,7 @@ void OptixDomain::traceRay(uint32_t triangle_id, float t, float u, float v,
 
 Vector4f OptixDomain::computeNormal(uint32_t triangle_id, float u,
                                     float v) const {
+  //std::cout << "triangle_id = " << triangle_id << "\n";
   const Vector4f& a =
       this->mesh->normals[this->mesh->faces[triangle_id].get<0>()];
   const Vector4f& b =

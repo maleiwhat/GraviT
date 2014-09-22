@@ -39,6 +39,8 @@ class OptixDomain : public GeometryDomain {
                           GVT::Data::RayVector& rays);
   void traceRay(uint32_t triangle_id, float t, float u, float v,
                 GVT::Data::ray& ray, GVT::Data::RayVector& rayList);
+  void traceChunk(GVT::Data::RayVector& chunk, GVT::Data::RayVector& next_list,
+                  GVT::Data::RayVector& moved_rays);
   optix::prime::Context optix_context_;
   optix::prime::Model optix_model_;
   bool loaded_;
