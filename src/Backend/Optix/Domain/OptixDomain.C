@@ -77,6 +77,9 @@ bool OptixDomain::load() {
   // Make sure we load the GVT mesh.
   GVT_ASSERT(GeometryDomain::load(), "Geometry not loaded");
   if (!GeometryDomain::load()) return false;
+  // Make sure normals exist.
+  if (this->mesh->normals.size() < this->mesh->vertices.size())
+    this->mesh->generateNormals();
   std::cout << "Create context\n";
 
   // Create an Optix context to use.
@@ -148,13 +151,13 @@ void OptixDomain::trace(RayVector& ray_list, RayVector& moved_rays) {
       gravityRayToOptixRay(ray_list[i], &rays[i]);
     query->setRays(rays.size(), RTP_BUFFER_FORMAT_RAY_ORIGIN_DIRECTION,
                    RTP_BUFFER_TYPE_HOST, &rays[0]);
+
     // Create and pass hit results in an Optix friendly format.
     std::vector<OptixHitFormat> hits(ray_list.size());
     query->setHits(ray_list.size(), RTP_BUFFER_FORMAT_HIT_T_TRIID_U_V,
                    RTP_BUFFER_TYPE_HOST, &hits[0]);
-    // Execute our query and wait for it to finish.
 
-    // TODO: [OPTIX] Failing here
+    // Execute our query and wait for it to finish.
     query->execute(RTP_QUERY_HINT_NONE);
     query->finish();
 
