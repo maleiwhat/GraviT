@@ -6,17 +6,18 @@
 #include <common/utils.h>
 #include <optix_prime/optix_primepp.h>
 
-using GVT::Data::Mesh;
-using GVT::Data::ray;
 using GVT::Data::Color;
+using GVT::Data::LightSource;
+using GVT::Data::Mesh;
 using GVT::Data::RayVector;
+using GVT::Data::ray;
 using GVT::Domain::GeometryDomain;
 using GVT::Math::Vector3f;
 using GVT::Math::Vector4f;
+using optix::prime::BufferDesc;
 using optix::prime::Context;
 using optix::prime::Model;
 using optix::prime::Query;
-using optix::prime::BufferDesc;
 
 namespace GVT {
 
@@ -57,9 +58,7 @@ OptixDomain::OptixDomain(const OptixDomain& domain)
     : GeometryDomain(domain),
       optix_context_(domain.optix_context_),
       optix_model_(domain.optix_model_),
-      loaded_(false) {
-  std::cout << "Copy constructed!\n";
-}
+      loaded_(false) {}
 
 OptixDomain::~OptixDomain() {}
 
@@ -73,14 +72,14 @@ bool OptixDomain::load() {
 
   if (loaded_) return true;
 
-  std::cout << "OptixDomain::load()\n";
   // Make sure we load the GVT mesh.
   GVT_ASSERT(GeometryDomain::load(), "Geometry not loaded");
   if (!GeometryDomain::load()) return false;
+  
   // Make sure normals exist.
-  if (this->mesh->normals.size() < this->mesh->vertices.size())
+  if (this->mesh->normals.size() < this->mesh->vertices.size()
+      || this->mesh->face_normals.size() < this->mesh->faces.size())
     this->mesh->generateNormals();
-  std::cout << "Create context\n";
 
   // Create an Optix context to use.
   optix_context_ = Context::create(RTP_CONTEXT_TYPE_CUDA);
@@ -88,7 +87,6 @@ bool OptixDomain::load() {
   GVT_ASSERT(optix_context_.isValid(), "Optix Context is not valid");
   if (!optix_context_.isValid()) return false;
 
-  std::cout << "Create vertex buffer\n";
   // Setup the buffer to hold our vertices.
   BufferDesc vertices_desc;
   vertices_desc = optix_context_->createBufferDesc(
@@ -96,12 +94,11 @@ bool OptixDomain::load() {
       &this->mesh->vertices[0]);
 
   GVT_ASSERT(vertices_desc.isValid(), "Vertices are not valid");
-
   if (!vertices_desc.isValid()) return false;
+
   vertices_desc->setRange(0, this->mesh->vertices.size());
   vertices_desc->setStride(sizeof(Vector3f));
 
-  std::cout << "Create index buffer\n";
   // Setup the triangle indices buffer.
   BufferDesc indices_desc;
   indices_desc = optix_context_->createBufferDesc(
@@ -110,26 +107,19 @@ bool OptixDomain::load() {
 
   GVT_ASSERT(indices_desc.isValid(), "Indices are not valid");
   if (!indices_desc.isValid()) return false;
+
   indices_desc->setRange(0, this->mesh->faces.size());
   indices_desc->setStride(sizeof(Mesh::face));
 
-  std::cout << "Create model\n";
   // Create an Optix model.
   optix_model_ = optix_context_->createModel();
-  std::cout << "Model created\n";
+
   GVT_ASSERT(optix_model_.isValid(), "Model is not valid");
   if (!optix_model_.isValid()) return false;
-  std::cout << "Set triangles\n";
-  optix_model_->setTriangles(indices_desc, vertices_desc);
-  std::cout << "Update model\n";
-  optix_model_->update(RTP_MODEL_HINT_NONE);
-  GVT_ASSERT(optix_model_.isValid(), "load:Model is not valid");
-  std::cerr << "Waiting to finish loading.\n";
-  optix_model_->finish();
 
-  while (!optix_model_->isFinished())
-    std::cout << "Waiting for model to finish loading.";
-  std::cout << "Model loaded!\n";
+  optix_model_->setTriangles(indices_desc, vertices_desc);
+  optix_model_->update(RTP_MODEL_HINT_NONE);
+  optix_model_->finish();
 
   if (!optix_model_.isValid()) return false;
 
@@ -143,24 +133,30 @@ void OptixDomain::trace(RayVector& ray_list, RayVector& moved_rays) {
     this->load();
     if (this->mesh->normals.size() < this->mesh->vertices.size())
       this->mesh->generateNormals();
-    std::cout << "normals.size() = " << this->mesh->normals.size() << "\n";
+
     GVT_ASSERT(optix_model_.isValid(), "trace:Model is not valid");
     if (!optix_model_.isValid()) return;
+
     RayVector next_list;
+    while (!ray_list.empty()) {
+      next_list.push_back(ray_list.back());
+      ray_list.pop_back();
+    }
     RayVector chunk;
     const uint32_t kMaxChunkSize = 65536;
-    while (!ray_list.empty()) {
-      chunk.push_back(ray_list.back());
-      ray_list.pop_back();
-      if (chunk.size() == kMaxChunkSize || ray_list.empty()) {
-        traceChunk(chunk, next_list, moved_rays);
-        chunk.clear();
+    while (!next_list.empty()) {
+      ray_list.swap(next_list);
+      while (!ray_list.empty()) {
+        chunk.push_back(ray_list.back());
+        ray_list.pop_back();
+        if (chunk.size() == kMaxChunkSize || ray_list.empty()) {
+          traceChunk(chunk, next_list, moved_rays);
+          chunk.clear();
+        }
       }
     }
-    ray_list.swap(next_list);
   }
   catch (const optix::prime::Exception& e) {
-    std::cerr << "Exception: " << e.getErrorString() << "\n";
     GVT_ASSERT(false, e.getErrorString());
   }
 }
@@ -191,13 +187,14 @@ void OptixDomain::traceChunk(RayVector& chunk, RayVector& next_list,
 
   // Move missed rays.
   for (int i = hits.size() - 1; i >= 0; --i) {
-    if (hits[i].t < 0.0f) {
+    if (hits[i].t < ray::RAY_EPSILON|| hits[i].u < 0.0f || hits[i].u > 1.0f ||
+        hits[i].v < 0.0f || hits[i].u + hits[i].v > 1.0f) {
       moved_rays.push_back(chunk[i]);
       std::swap(hits[i], hits.back());
       std::swap(chunk[i], chunk.back());
       chunk.pop_back();
       hits.pop_back();
-    }
+    } 
   }
 
   // Trace each ray: shade, fire shadow rays, fire secondary rays.
@@ -209,7 +206,9 @@ void OptixDomain::traceChunk(RayVector& chunk, RayVector& next_list,
 void OptixDomain::traceRay(uint32_t triangle_id, float t, float u, float v,
                            ray& ray, RayVector& rays) {
   if (ray.type == ray::SHADOW) return;
+  ray.t = t;
   Vector4f normal = this->toWorld(computeNormal(triangle_id, u, v));
+  normal.normalize();
   if (ray.type == ray::SECONDARY) ray.w = ray.w * std::max(1.0f / t, t);
   generateShadowRays(ray, normal, rays);
   generateSecondaryRays(ray, normal, rays);
@@ -217,7 +216,6 @@ void OptixDomain::traceRay(uint32_t triangle_id, float t, float u, float v,
 
 Vector4f OptixDomain::computeNormal(uint32_t triangle_id, float u,
                                     float v) const {
-  //std::cout << "triangle_id = " << triangle_id << "\n";
   const Vector4f& a =
       this->mesh->normals[this->mesh->faces[triangle_id].get<0>()];
   const Vector4f& b =
@@ -225,6 +223,7 @@ Vector4f OptixDomain::computeNormal(uint32_t triangle_id, float u,
   const Vector4f& c =
       this->mesh->normals[this->mesh->faces[triangle_id].get<2>()];
   Vector4f normal = a * u + b * v + c * (1.0f - u - v);
+  normal.normalize();
   return normal;
 }
 
@@ -240,8 +239,8 @@ void OptixDomain::generateSecondaryRays(const ray& ray_in,
     secondary_ray.origin =
         secondary_ray.origin + secondary_ray.direction * secondary_ray.t;
     secondary_ray.setDirection(
-        this->mesh->mat->CosWeightedRandomHemisphereDirection2(normal)
-            .normalize());
+        this->mesh->mat->CosWeightedRandomHemisphereDirection2(
+                             normal).normalize());
     secondary_ray.w = secondary_ray.w * (secondary_ray.direction * normal);
     secondary_ray.depth = depth;
     rays.push_back(secondary_ray);
@@ -250,14 +249,15 @@ void OptixDomain::generateSecondaryRays(const ray& ray_in,
 
 void OptixDomain::generateShadowRays(const ray& ray_in, const Vector4f& normal,
                                      RayVector& rays) {
-  for (int lindex = 0; lindex < this->lights.size(); lindex++) {
+  for (int lindex = 0; lindex < this->lights.size(); ++lindex) {
     ray shadow_ray(ray_in);
     shadow_ray.domains.clear();
     shadow_ray.type = ray::SHADOW;
-    shadow_ray.origin = ray_in.origin + ray_in.direction * ray_in.t;
-    shadow_ray.setDirection(this->lights[lindex]->position - ray_in.origin);
+    shadow_ray.origin = shadow_ray.origin + shadow_ray.direction * shadow_ray.t;
+    Vector4f light_position(this->lights[lindex]->position);
+    shadow_ray.setDirection(light_position - shadow_ray.origin);
     Color c = this->mesh->mat->shade(shadow_ray, normal, this->lights[lindex]);
-    shadow_ray.color = COLOR_ACCUM(1.f, c[0], c[1], c[2], 1.0f);
+    shadow_ray.color = COLOR_ACCUM(1.0f, c[0], c[1], c[2], 1.0f);
     rays.push_back(shadow_ray);
   }
 }

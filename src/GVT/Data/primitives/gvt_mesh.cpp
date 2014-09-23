@@ -61,8 +61,10 @@ void Mesh::addFace(int v0, int v1, int v2) {
 
 void Mesh::generateNormals() {
   normals.resize(vertices.size());
+  face_normals.resize(faces.size());
   for (int i = 0; i < normals.size(); ++i)
     normals[i] = GVT::Math::Vector4f(0.0f, 0.0f, 0.0f, 0.0f);
+
   for (int i = 0; i < faces.size(); ++i) {
     int I = faces[i].get<0>();
     int J = faces[i].get<1>();

@@ -20,113 +20,104 @@
 #include <boost/pool/pool.hpp>
 #include <boost/pool/pool_alloc.hpp>
 namespace GVT {
-    namespace Data {
+namespace Data {
 
-        typedef struct intersection {
-            int domain;
-            float d;
+typedef struct intersection {
+  int domain;
+  float d;
 
-            intersection(int dom) : domain(dom), d(FLT_MAX) {
-            }
+  intersection(int dom) : domain(dom), d(FLT_MAX) {}
 
-            intersection(int dom, float dist) : domain(dom), d(dist) {
-            }
+  intersection(int dom, float dist) : domain(dom), d(dist) {}
 
-            operator int() {
-                return domain;
-            }
+  operator int() { return domain; }
 
-            operator float() {
-                return d;
-            }
+  operator float() { return d; }
 
-            friend inline bool operator==(const intersection& lhs,
-                    const intersection& rhs) {
-                return (lhs.d == rhs.d) && (lhs.d == rhs.d);
-            }
+  friend inline bool operator==(const intersection& lhs,
+                                const intersection& rhs) {
+    return (lhs.d == rhs.d) && (lhs.d == rhs.d);
+  }
 
-            friend inline bool operator<(const intersection& lhs,
-                    const intersection& rhs) {
-                return (lhs.d < rhs.d) || ((lhs.d == rhs.d) && (lhs.domain < rhs.domain));
-            }
+  friend inline bool operator<(const intersection& lhs,
+                               const intersection& rhs) {
+    return (lhs.d < rhs.d) || ((lhs.d == rhs.d) && (lhs.domain < rhs.domain));
+  }
 
-        } isecDom;
-        typedef boost::container::vector<isecDom> isecDomList;
+} isecDom;
+typedef boost::container::vector<isecDom> isecDomList;
 
-        class ray {
-        public:
+class ray {
+ public:
+  enum RayType {
+    PRIMARY,
+    SHADOW,
+    SECONDARY
+  };
 
-            enum RayType {
-                PRIMARY,
-                SHADOW,
-                SECONDARY
-            };
+  // GVT_CONVERTABLE_OBJ(GVT::Data::ray);
 
-            // GVT_CONVERTABLE_OBJ(GVT::Data::ray);
+  ray(GVT::Math::Point4f origin = GVT::Math::Point4f(0, 0, 0, 1),
+      GVT::Math::Vector4f direction = GVT::Math::Vector4f(0, 0, 0, 0),
+      float contribution = 1.f, RayType type = PRIMARY, int depth = 10);
+  ray(ray& ray, GVT::Math::AffineTransformMatrix<float>& m);
+  ray(const ray& orig);
+  ray(const unsigned char* buf);
 
-            ray(GVT::Math::Point4f origin = GVT::Math::Point4f(0, 0, 0, 1),
-                    GVT::Math::Vector4f direction = GVT::Math::Vector4f(0, 0, 0, 0),
-                    float contribution = 1.f, RayType type = PRIMARY, int depth = 10);
-            ray(ray& ray, GVT::Math::AffineTransformMatrix<float>& m);
-            ray(const ray& orig);
-            ray(const unsigned char* buf);
+  virtual ~ray();
 
-            virtual ~ray();
+  void setDirection(GVT::Math::Vector4f dir);
+  void setDirection(double* dir);
+  void setDirection(float* dir);
 
-            void setDirection(GVT::Math::Vector4f dir);
-            void setDirection(double* dir);
-            void setDirection(float* dir);
+  int packedSize();
 
-            int packedSize();
+  int pack(unsigned char* buffer);
 
-            int pack(unsigned char* buffer);
+  friend ostream& operator<<(ostream& stream, GVT::Data::ray const& ray) {
+    stream << ray.origin << "-->" << ray.direction << "[" << ray.type << "]";
+    return stream;
+  }
 
-            friend ostream& operator<<(ostream& stream, GVT::Data::ray const& ray) {
-                stream << ray.origin << "-->" << ray.direction << "[" << ray.type << "]";
-                return stream;
-            }
+  mutable GVT::Math::Point4f origin;
+  mutable GVT::Math::Vector4f direction;
+  mutable GVT::Math::Vector4f inverseDirection;
+  //            mutable int sign[3];
 
-            mutable GVT::Math::Point4f origin;
-            mutable GVT::Math::Vector4f direction;
-            mutable GVT::Math::Vector4f inverseDirection;
-            //            mutable int sign[3];
+  int id;     ///<! index into framebuffer
+  int depth;  ///<! sample rate
+  //            float r; ///<! sample rate
+  float w;  ///<! weight of image contribution
+  mutable float t;
+  COLOR_ACCUM color;
+  isecDomList domains;
+  int type;
 
-            int id; ///<! index into framebuffer
-            int depth; ///<! sample rate
-            //            float r; ///<! sample rate
-            float w; ///<! weight of image contribution
-            mutable float t;
-            COLOR_ACCUM color;
-            isecDomList domains;
-            int type;
+  const static float RAY_EPSILON;
 
-            const static float RAY_EPSILON;
+  void* operator new(size_t size);
+  void* operator new(size_t size, GVT::Data::ray* const& ptr);
+  void* operator new[](size_t size);
 
-            void* operator new(size_t size);
-            void* operator new(size_t size, GVT::Data::ray * const& ptr);
-            void* operator new[](size_t size);
+  void operator delete(void* ptr);
+  void operator delete[](void* ptr);
+  void operator delete(void*, void*);
 
-            void operator delete(void* ptr);
-            void operator delete[](void* ptr);
-            void operator delete(void*, void *);
+  // typedef boost::singleton_pool<GVT::Data::ray, sizeof(GVT::Data::ray)>
+  // ray_memory_pool;
 
+  //            void* operator new(size_t size) {
+  //                return boost::
+  //            }
 
-            // typedef boost::singleton_pool<GVT::Data::ray, sizeof(GVT::Data::ray)>
-            // ray_memory_pool;
+ protected:
+  // boost
+};
 
-            //            void* operator new(size_t size) {
-            //                return boost::
-            //            }
-
-        protected:
-            // boost
-        };
-
-        struct RayPointerTag {
-        };
-        typedef boost::pool_allocator<GVT::Data::ray> RayPoolAllocator;
-        typedef std::vector<GVT::Data::ray, RayPoolAllocator> RayVector;
-    };
+struct RayPointerTag {};
+typedef boost::pool_allocator<GVT::Data::ray> RayPoolAllocator;
+typedef std::vector<GVT::Data::ray, RayPoolAllocator> RayVector;
+};
 };
 #endif /* RAY_H */
 
