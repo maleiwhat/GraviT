@@ -1,15 +1,14 @@
 //
 // GeometryDomain.h
 //
-
 #ifndef GVT_GEOMETRY_DOMAIN_H
 #define GVT_GEOMETRY_DOMAIN_H
 
-#include "Domain.h"
 #include <GVT/Data/primitives.h>
-#include <GVT/utils/readply.h>
-#include <vector>
+#include <GVT/Domain/Domain.h>
+
 namespace GVT {
+
 namespace Domain {
 
 class GeometryDomain : public Domain {
@@ -53,7 +52,8 @@ class GeometryDomain : public Domain {
 
   virtual void operator()() {}
 };
-};
-};
 
+}  // namespace Domain
+
+}  // namespace GVT
 #endif  // GVT_GEOMETRY_DOMAIN_H

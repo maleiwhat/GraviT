@@ -10,19 +10,15 @@
 
 #include <GVT/Data/primitives/gvt_material.h>
 
-#include <vector>
-
-#include <boost/tuple/tuple.hpp>
+#include <GVT/Data/primitives.h>
 #include <boost/container/vector.hpp>
-
-#include "gvt_bbox.h"
+#include <boost/tuple/tuple.hpp>
 
 namespace GVT {
 
 namespace Data {
 
 class AbstractMesh {
-
  public:
   AbstractMesh() {}
   AbstractMesh(const AbstractMesh&) {}
@@ -36,6 +32,7 @@ class AbstractMesh {
 class Mesh : public AbstractMesh {
  public:
   typedef boost::tuple<int, int, int> face;
+  typedef boost::tuple<int, int, int> face_to_normals;
 
   Mesh(GVT::Data::Material* mat = NULL);
   Mesh(const Mesh& orig);
@@ -58,12 +55,14 @@ class Mesh : public AbstractMesh {
 
   virtual GVT::Data::Color shade(GVT::Data::ray& r, GVT::Math::Vector4f normal,
                                  GVT::Data::LightSource* lsource);
+
   GVT::Data::Material* mat;
 
   boost::container::vector<GVT::Math::Vector4f> vertices;
   boost::container::vector<GVT::Math::Vector4f> mapuv;
   boost::container::vector<GVT::Math::Vector4f> normals;
   boost::container::vector<GVT::Data::Mesh::face> faces;
+  boost::container::vector<GVT::Data::Mesh::face_to_normals> faces_to_normals;
   boost::container::vector<GVT::Math::Vector4f> face_normals;
 
   GVT::Data::box3D boundingBox;
