@@ -4,20 +4,26 @@
  *
  * Created on April 20, 2014, 11:01 PM
  */
+#include <GVT/Data/primitives/gvt_mesh.h>
+
 #include <GVT/Data/primitives.h>
-#include "gvt_mesh.h"
+
 namespace GVT {
 
 namespace Data {
 
-Mesh::Mesh(GVT::Data::Material* mat) : mat(mat) {}
+Mesh::Mesh(GVT::Data::Material* mat) : mat(mat), haveNormals(false) {}
 
 Mesh::Mesh(const Mesh& orig) {
   mat = orig.mat;
   vertices = orig.vertices;
+  mapuv = orig.mapuv;
   normals = orig.normals;
   faces = orig.faces;
+  faces_to_normals = orig.faces_to_normals;
+  face_normals = orig.face_normals;
   boundingBox = orig.boundingBox;
+  haveNormals = orig.haveNormals;
 }
 
 Mesh::~Mesh() {}
@@ -60,8 +66,14 @@ void Mesh::addFace(int v0, int v1, int v2) {
 }
 
 void Mesh::generateNormals() {
+  if (haveNormals) return;
+  std::cout << "Generating normals\n";
+  normals.clear();
+  face_normals.clear();
+  faces_to_normals.clear();
   normals.resize(vertices.size());
   face_normals.resize(faces.size());
+  faces_to_normals.resize(faces.size());
   for (int i = 0; i < normals.size(); ++i)
     normals[i] = GVT::Math::Vector4f(0.0f, 0.0f, 0.0f, 0.0f);
 
@@ -84,8 +96,20 @@ void Mesh::generateNormals() {
     normals[I] += normal;
     normals[J] += normal;
     normals[K] += normal;
+    faces_to_normals[i] = face_to_normals(I, J, K);
   }
   for (int i = 0; i < normals.size(); ++i) normals[i].normalize();
+  /**for(int i = 0; i < normals.size(); ++i) {
+    GVT::Math::Vector4f normal = normals[i];
+    std::cout << "normals[" << i << "] = (" << normal.n[0] << "," << normal.n[1] << 
+      "," << normal.n[2] << ")\n";
+  }
+  for(int i = 0; i < face_normals.size(); ++i) {
+    GVT::Math::Vector4f normal = face_normals[i];
+    std::cout << "face_normals[" << i << "] = (" << normal.n[0] << "," << normal.n[1]
+              << "," << normal.n[2] << ")\n";
+  }**/
+  haveNormals = true;
 }
 
 GVT::Data::Color Mesh::shade(GVT::Data::ray& r, GVT::Math::Vector4f normal,

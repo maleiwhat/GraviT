@@ -75,10 +75,10 @@ bool OptixDomain::load() {
   // Make sure we load the GVT mesh.
   GVT_ASSERT(GeometryDomain::load(), "Geometry not loaded");
   if (!GeometryDomain::load()) return false;
-  
+
   // Make sure normals exist.
-  if (this->mesh->normals.size() < this->mesh->vertices.size()
-      || this->mesh->face_normals.size() < this->mesh->faces.size())
+  if (this->mesh->normals.size() < this->mesh->vertices.size() ||
+      this->mesh->face_normals.size() < this->mesh->faces.size())
     this->mesh->generateNormals();
 
   // Create an Optix context to use.
@@ -131,7 +131,7 @@ void OptixDomain::trace(RayVector& ray_list, RayVector& moved_rays) {
   // Create our query.
   try {
     this->load();
-    if (this->mesh->normals.size() < this->mesh->vertices.size())
+    if (!this->mesh->haveNormals || this->mesh->normals.size() == 0)
       this->mesh->generateNormals();
 
     GVT_ASSERT(optix_model_.isValid(), "trace:Model is not valid");
@@ -187,14 +187,13 @@ void OptixDomain::traceChunk(RayVector& chunk, RayVector& next_list,
 
   // Move missed rays.
   for (int i = hits.size() - 1; i >= 0; --i) {
-    if (hits[i].t < ray::RAY_EPSILON|| hits[i].u < 0.0f || hits[i].u > 1.0f ||
-        hits[i].v < 0.0f || hits[i].u + hits[i].v > 1.0f) {
+    if (hits[i].t < ray::RAY_EPSILON) {
       moved_rays.push_back(chunk[i]);
       std::swap(hits[i], hits.back());
       std::swap(chunk[i], chunk.back());
       chunk.pop_back();
       hits.pop_back();
-    } 
+    }
   }
 
   // Trace each ray: shade, fire shadow rays, fire secondary rays.
@@ -207,7 +206,8 @@ void OptixDomain::traceRay(uint32_t triangle_id, float t, float u, float v,
                            ray& ray, RayVector& rays) {
   if (ray.type == ray::SHADOW) return;
   ray.t = t;
-  Vector4f normal = this->toWorld(computeNormal(triangle_id, u, v));
+  Vector4f normal = computeNormal(triangle_id, u, v);
+  //if (normal.length() < ray::RAY_EPSILON) return;
   normal.normalize();
   if (ray.type == ray::SECONDARY) ray.w = ray.w * std::max(1.0f / t, t);
   generateShadowRays(ray, normal, rays);
@@ -216,13 +216,20 @@ void OptixDomain::traceRay(uint32_t triangle_id, float t, float u, float v,
 
 Vector4f OptixDomain::computeNormal(uint32_t triangle_id, float u,
                                     float v) const {
-  const Vector4f& a =
-      this->mesh->normals[this->mesh->faces[triangle_id].get<0>()];
-  const Vector4f& b =
-      this->mesh->normals[this->mesh->faces[triangle_id].get<1>()];
-  const Vector4f& c =
-      this->mesh->normals[this->mesh->faces[triangle_id].get<2>()];
+  float length = this->mesh->face_normals[triangle_id].length();
+  if (fabs(length - 1.0f) > 1e-5) {
+    std::cerr << "length = " << length << "\n";
+    GVT_ASSERT(false, "Normal not normal");
+  }
+//  return this->mesh->face_normals[triangle_id];
+  const Mesh::face_to_normals& normals =
+      this->mesh->faces_to_normals[triangle_id];
+  const Vector4f& a = this->mesh->normals[normals.get<0>()];
+  const Vector4f& b = this->mesh->normals[normals.get<1>()];
+  const Vector4f& c = this->mesh->normals[normals.get<2>()];
   Vector4f normal = a * u + b * v + c * (1.0f - u - v);
+  //std::cout << "computeNormal:normal = (" << normal.n[0] << "," << normal.n[1]
+  //          << "," << normal.n[2] << ")\n";
   normal.normalize();
   return normal;
 }
@@ -236,11 +243,12 @@ void OptixDomain::generateSecondaryRays(const ray& ray_in,
     ray secondary_ray(ray_in);
     secondary_ray.domains.clear();
     secondary_ray.type = ray::SECONDARY;
+    float t_secondary = secondary_ray.t - ray::RAY_EPSILON;
     secondary_ray.origin =
-        secondary_ray.origin + secondary_ray.direction * secondary_ray.t;
+        secondary_ray.origin + secondary_ray.direction * t_secondary;
     secondary_ray.setDirection(
-        this->mesh->mat->CosWeightedRandomHemisphereDirection2(
-                             normal).normalize());
+        this->mesh->mat->CosWeightedRandomHemisphereDirection2(normal)
+            .normalize());
     secondary_ray.w = secondary_ray.w * (secondary_ray.direction * normal);
     secondary_ray.depth = depth;
     rays.push_back(secondary_ray);
@@ -253,11 +261,15 @@ void OptixDomain::generateShadowRays(const ray& ray_in, const Vector4f& normal,
     ray shadow_ray(ray_in);
     shadow_ray.domains.clear();
     shadow_ray.type = ray::SHADOW;
-    shadow_ray.origin = shadow_ray.origin + shadow_ray.direction * shadow_ray.t;
+    float t_shadow = shadow_ray.t - ray::RAY_EPSILON;
+    shadow_ray.origin = shadow_ray.origin + shadow_ray.direction * t_shadow;
     Vector4f light_position(this->lights[lindex]->position);
     shadow_ray.setDirection(light_position - shadow_ray.origin);
     Color c = this->mesh->mat->shade(shadow_ray, normal, this->lights[lindex]);
-    shadow_ray.color = COLOR_ACCUM(1.0f, c[0], c[1], c[2], 1.0f);
+    float w = shadow_ray.w;
+    // Need to weight this somehow.
+    shadow_ray.color =
+        COLOR_ACCUM(1.0f, normal.n[0], normal.n[1], normal.n[2], 1.0f);
     rays.push_back(shadow_ray);
   }
 }

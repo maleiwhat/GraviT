@@ -57,10 +57,13 @@ void GeometryDomain::free() {
 bool GeometryDomain::load() {
   if (isLoaded) return true;
   if (filename == "") return false;
-  std::string ext;
+  std::string ext = GetFileExtension(filename);;
+  std::cout << "File extension = " << ext << "\n";
   if (ext.compare("ply") == 0) {
     mesh = readply(filename);
   } else if (ext.compare("obj") == 0) {
+    std::cout << "Loading OBJ file.\n";
+    mesh =  new GVT::Data::Mesh();
     WavefrontObjLoader loader(filename, mesh);
     loader.Load();
   }

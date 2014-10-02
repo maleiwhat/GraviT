@@ -66,6 +66,8 @@ class Mesh : public AbstractMesh {
   boost::container::vector<GVT::Math::Vector4f> face_normals;
 
   GVT::Data::box3D boundingBox;
+  bool haveNormals;
+ private:
 };
 
 }  // namespace Data

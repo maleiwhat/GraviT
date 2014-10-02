@@ -2,7 +2,6 @@
 //  MPITrace.C
 //
 
-
 #include <config/config.h>
 #include <mpi.h>
 
@@ -10,7 +9,6 @@
 #include <iostream>
 #include <string>
 #include <vector>
-
 
 #include <Frontend/ConfigFile/Dataset/Dataset.h>
 #include <Frontend/ConfigFile/RayTracer.h>
@@ -62,33 +60,34 @@ int main(int argc, char** argv) {
     case GVT::Env::RayTracerAttributes::Volume:
       GVT_DEBUG(DBG_ALWAYS, "Volume dataset");
       rta.dataset =
-          new GVT::Dataset::ConfigFileDataset<GVT::Domain::VolumeDomain>(rta.datafile);
+          new GVT::Dataset::ConfigFileDataset<GVT::Domain::VolumeDomain>(
+              rta.datafile);
       break;
     case GVT::Env::RayTracerAttributes::Surface:
       GVT_DEBUG(DBG_ALWAYS, "Geometry dataset");
       rta.dataset =
-          new GVT::Dataset::ConfigFileDataset<GVT::Domain::GeometryDomain>(rta.datafile);
+          new GVT::Dataset::ConfigFileDataset<GVT::Domain::GeometryDomain>(
+              rta.datafile);
       break;
 #ifdef GVT_BE_MANTA
     case GVT::Env::RayTracerAttributes::Manta:
-    GVT_DEBUG(DBG_ALWAYS,"Using manta backend");
-    rta.dataset = new GVT::Dataset::MantaDataset(rta.datafile);
-    break;
+      GVT_DEBUG(DBG_ALWAYS, "Using manta backend");
+      rta.dataset = new GVT::Dataset::MantaDataset(rta.datafile);
+      break;
 #endif
 #ifdef GVT_BE_OPTIX
     case GVT::Env::RayTracerAttributes::Optix:
-    GVT_DEBUG(DBG_ALWAYS,"Using optix backend");
-        
-    rta.dataset = new GVT::Dataset::OptixDataset(rta.datafile);
-    break;
+      GVT_DEBUG(DBG_ALWAYS, "Using optix backend");
+      rta.dataset = new GVT::Dataset::OptixDataset(rta.datafile);
+      break;
 #endif
   }
-  
+
   GVT_ASSERT(rta.LoadDataset(), "Unable to load dataset");
   std::cout << rta << std::endl;
   RayTracer rt;
   int rank = -1;
-  MPI_Comm_rank (MPI_COMM_WORLD, &rank);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Barrier(MPI_COMM_WORLD);
   cout << "Rendering: rank=" << rank << endl;
   rt.RenderImage(imagename);

@@ -95,7 +95,7 @@ ostream& operator<<(ostream& os, RayTracerAttributes const& rta) {
       os << "Manta";
       break;
     case RayTracerAttributes::Optix:
-      os << "Manta";
+      os << "Optix";
       break;
     default:
       os << "Unknown (" << rta.render_type << ")";
