@@ -50,9 +50,9 @@ int WavefrontObjLoader::Load() {
       file_stream, const_cast<ObjParseCallbacks*>(&object_parse_callbacks_));
   fclose(file_stream);
   if (!mesh_->haveNormals) mesh_->generateNormals();
-  const bool kDebugNormals = false;
+  const bool kDebugNormals = true;
   if (kDebugNormals) {
-    ofstream ofs("bunny_check.obj");
+    ofstream ofs("sibenik_check.obj");
     for (int i = 0; i < mesh_->vertices.size(); ++i) {
       const Vector4f& v = mesh_->vertices[i];
       ofs << "v " << v.n[0] << " " << v.n[1] << " " << v.n[2] << "\n";
@@ -115,7 +115,7 @@ int WavefrontObjLoader::AddToFace(size_t v, size_t /* vt */, size_t vn) {
     int* normal_tuple = reinterpret_cast<int*>(&fn);
     normal_tuple[current_face_vertex_] = vn - 1;
   } else {
-    std::cout << "Triangle fan!\n";
+    //std::cout << "Triangle fan!\n";
     // If #vertices for this face > 3, then process it like a triangle fan.
     // See, TRIANGLE_FAN from fixed function OpenGL.
     Mesh::face g;

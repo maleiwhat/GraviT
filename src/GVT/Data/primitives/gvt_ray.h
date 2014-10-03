@@ -92,6 +92,8 @@ class ray {
   COLOR_ACCUM color;
   isecDomList domains;
   int type;
+  float t_min;
+  float t_max;
 
   const static float RAY_EPSILON;
 

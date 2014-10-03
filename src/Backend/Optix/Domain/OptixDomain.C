@@ -27,9 +27,11 @@ struct OptixRayFormat {
   float origin_x;
   float origin_y;
   float origin_z;
+  float t_min;
   float direction_x;
   float direction_y;
   float direction_z;
+  float t_max;
 };
 
 struct OptixHitFormat {
@@ -44,9 +46,11 @@ static void gravityRayToOptixRay(const ray& gvt_ray,
   optix_ray->origin_x = gvt_ray.origin[0];
   optix_ray->origin_y = gvt_ray.origin[1];
   optix_ray->origin_z = gvt_ray.origin[2];
+  optix_ray->t_min = gvt_ray.t_min;
   optix_ray->direction_x = gvt_ray.direction[0];
   optix_ray->direction_y = gvt_ray.direction[1];
   optix_ray->direction_z = gvt_ray.direction[2];
+  optix_ray->t_max = gvt_ray.t_max;
 }
 
 OptixDomain::OptixDomain() : GeometryDomain("") {}
@@ -173,7 +177,8 @@ void OptixDomain::traceChunk(RayVector& chunk, RayVector& next_list,
     gravityRayToOptixRay(this->toLocal(chunk[i]), &optix_rays[i]);
 
   // Hand the rays to Optix.
-  query->setRays(optix_rays.size(), RTP_BUFFER_FORMAT_RAY_ORIGIN_DIRECTION,
+  query->setRays(optix_rays.size(),
+                 RTP_BUFFER_FORMAT_RAY_ORIGIN_TMIN_DIRECTION_TMAX,
                  RTP_BUFFER_TYPE_HOST, &optix_rays[0]);
 
   // Create and pass hit results in an Optix friendly format.
@@ -187,7 +192,8 @@ void OptixDomain::traceChunk(RayVector& chunk, RayVector& next_list,
 
   // Move missed rays.
   for (int i = hits.size() - 1; i >= 0; --i) {
-    if (hits[i].t < ray::RAY_EPSILON) {
+    //std::cout << "triangle_id = " << hits[i].triangle_id << "\n";
+    if (hits[i].triangle_id < 0) {
       moved_rays.push_back(chunk[i]);
       std::swap(hits[i], hits.back());
       std::swap(chunk[i], chunk.back());
@@ -195,6 +201,8 @@ void OptixDomain::traceChunk(RayVector& chunk, RayVector& next_list,
       hits.pop_back();
     }
   }
+
+  std::cout << "num hits = " << hits.size() << "\n";
 
   // Trace each ray: shade, fire shadow rays, fire secondary rays.
   for (int i = 0; i < chunk.size(); ++i)
@@ -205,31 +213,26 @@ void OptixDomain::traceChunk(RayVector& chunk, RayVector& next_list,
 void OptixDomain::traceRay(uint32_t triangle_id, float t, float u, float v,
                            ray& ray, RayVector& rays) {
   if (ray.type == ray::SHADOW) return;
+  if (ray.type == ray::SECONDARY) {
+    float s = ((t > 1.0f) ? 1.0f / t : t);
+    ray.w = ray.w * s;
+    std::cout << "w = " << ray.w << "\n";
+  }
   ray.t = t;
-  Vector4f normal = computeNormal(triangle_id, u, v);
-  //if (normal.length() < ray::RAY_EPSILON) return;
+  Vector4f normal = this->localToWorldNormal(computeNormal(triangle_id, u, v));
   normal.normalize();
-  if (ray.type == ray::SECONDARY) ray.w = ray.w * std::max(1.0f / t, t);
   generateShadowRays(ray, normal, rays);
   generateSecondaryRays(ray, normal, rays);
 }
 
 Vector4f OptixDomain::computeNormal(uint32_t triangle_id, float u,
                                     float v) const {
-  float length = this->mesh->face_normals[triangle_id].length();
-  if (fabs(length - 1.0f) > 1e-5) {
-    std::cerr << "length = " << length << "\n";
-    GVT_ASSERT(false, "Normal not normal");
-  }
-//  return this->mesh->face_normals[triangle_id];
   const Mesh::face_to_normals& normals =
       this->mesh->faces_to_normals[triangle_id];
   const Vector4f& a = this->mesh->normals[normals.get<0>()];
   const Vector4f& b = this->mesh->normals[normals.get<1>()];
   const Vector4f& c = this->mesh->normals[normals.get<2>()];
   Vector4f normal = a * u + b * v + c * (1.0f - u - v);
-  //std::cout << "computeNormal:normal = (" << normal.n[0] << "," << normal.n[1]
-  //          << "," << normal.n[2] << ")\n";
   normal.normalize();
   return normal;
 }
@@ -239,7 +242,10 @@ void OptixDomain::generateSecondaryRays(const ray& ray_in,
                                         RayVector& rays) {
   int depth = ray_in.depth - 1;
   float p = 1.0f - (float(rand()) / RAND_MAX);
+  //std::cout << "p = " << p << " w = " << ray_in.w << " depth = " << depth
+  //          << "\n";
   if (depth > 0 && ray_in.w > p) {
+    //std::cout << "Firing secondary ray\n";
     ray secondary_ray(ray_in);
     secondary_ray.domains.clear();
     secondary_ray.type = ray::SECONDARY;
@@ -261,15 +267,21 @@ void OptixDomain::generateShadowRays(const ray& ray_in, const Vector4f& normal,
     ray shadow_ray(ray_in);
     shadow_ray.domains.clear();
     shadow_ray.type = ray::SHADOW;
-    float t_shadow = shadow_ray.t - ray::RAY_EPSILON;
+    float t_shadow = shadow_ray.t - 20 * ray::RAY_EPSILON;
     shadow_ray.origin = shadow_ray.origin + shadow_ray.direction * t_shadow;
     Vector4f light_position(this->lights[lindex]->position);
-    shadow_ray.setDirection(light_position - shadow_ray.origin);
+    Vector4f dir = light_position - shadow_ray.origin;
+    shadow_ray.t_max = dir.length();
+    dir.normalize();
+    shadow_ray.setDirection(dir);
     Color c = this->mesh->mat->shade(shadow_ray, normal, this->lights[lindex]);
-    float w = shadow_ray.w;
+    //std::cout << "n = " << normal << "\n";
     // Need to weight this somehow.
-    shadow_ray.color =
-        COLOR_ACCUM(1.0f, normal.n[0], normal.n[1], normal.n[2], 1.0f);
+    shadow_ray.color = COLOR_ACCUM(1.0f, c[0], c[1], c[2], 1.0f);
+    //shadow_ray.color = COLOR_ACCUM(1.0f, 0.5f * (normal.n[0] + 1.0f),
+    //                               0.5f * (normal.n[1] + 1.0f),
+    //                               0.5f * (normal.n[2] + 1.0f), 0.0f);
+    //std::cout << "w = " << shadow_ray.w << "\n";
     rays.push_back(shadow_ray);
   }
 }
