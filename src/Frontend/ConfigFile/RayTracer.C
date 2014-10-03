@@ -12,7 +12,7 @@
 #include <GVT/Environment/Camera.h>
 #include <GVT/Tracer/tracers.h>
 #include <GVT/MPI/mpi_wrappers.h>
-#include <Backend/Manta/gvtmanta.h>
+//#include <Backend/Manta/gvtmanta.h>
 //#include <assert.h>
 
 #ifdef PARALLEL

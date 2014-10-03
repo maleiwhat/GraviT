@@ -1,6 +1,21 @@
 //
 //  Dataset.C
 //
+#include <Model/Primitives/KenslerShirleyTriangle.h>
+#include <Interface/MantaInterface.h>
+#include <Interface/Scene.h>
+#include <Interface/Object.h>
+#include <Interface/Context.h>
+#include <Core/Geometry/BBox.h>
+#include <Core/Exceptions/Exception.h>
+#include <Core/Exceptions/InternalError.h>
+#include <Model/Groups/DynBVH.h>
+#include <Model/Groups/Mesh.h>
+#include <Model/Materials/Phong.h>
+#include <Model/Readers/PlyReader.h>
+#include <Interface/LightSet.h>
+#include <Model/Lights/PointLight.h>
+#include <Core/Geometry/vecdefs.h>
 
 #include <Backend/Manta/Domain/MantaDomain.h>
 #include <GVT/DataSet/Dataset.h>
@@ -20,21 +35,6 @@
 #include <vector>
 
 #include <GVT/common/debug.h>
-
-#include <Model/Primitives/KenslerShirleyTriangle.h>
-#include <Interface/MantaInterface.h>
-#include <Interface/Scene.h>
-#include <Interface/Object.h>
-#include <Interface/Context.h>
-#include <Core/Geometry/BBox.h>
-#include <Core/Exceptions/Exception.h>
-#include <Core/Exceptions/InternalError.h>
-#include <Model/Groups/DynBVH.h>
-#include <Model/Groups/Mesh.h>
-#include <Model/Materials/Phong.h>
-#include <Model/Readers/PlyReader.h>
-#include <Interface/LightSet.h>
-#include <Model/Lights/PointLight.h>
 
 #include <GVT/Data/primitives.h>
 #include <GVT/DataSet/Dataset.h>
