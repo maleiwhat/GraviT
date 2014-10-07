@@ -1,4 +1,6 @@
 #include <string>
+#include <boost/timer/timer.hpp>
+
 
 #include <Backend/Optix/Domain/OptixDomain.h>
 #include <GVT/Data/primitives.h>
@@ -129,6 +131,8 @@ bool OptixDomain::load() {
 
 void OptixDomain::trace(RayVector& ray_list, RayVector& moved_rays) {
   // Create our query.
+  boost::timer::auto_cpu_timer optix_time("Optix domain trace: %w\n");
+    
   try {
     this->load();
     if (!this->mesh->haveNormals || this->mesh->normals.size() == 0)
