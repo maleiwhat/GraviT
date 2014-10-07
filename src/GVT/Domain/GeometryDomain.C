@@ -67,9 +67,12 @@ bool GeometryDomain::load() {
     WavefrontObjLoader loader(filename, mesh);
     loader.Load();
   }
-  lights.push_back(
-      new GVT::Data::PointLightSource(GVT::Math::Point4f(5.0, 5.0, 5.0, 1.f),
-                                      GVT::Data::Color(1.f, 1.f, 1.f, 1.f)));
+  lights.push_back(new GVT::Data::PointLightSource(
+  //    GVT::Math::Point4f(-10.7389f, -13.6002f, 1.0f),
+      GVT::Math::Point4f(-10.7098f, -13.9444f, 0.299326f),
+    //  GVT::Math::Point4f(0.0f, -4.0f, -4.0f),
+//      GVT::Math::Point4f(5.0f, 5.0f, 5.0f),
+      GVT::Data::Color(1.f, 1.f, 1.f, 1.f)));
   mesh->mat = new GVT::Data::Lambert(GVT::Data::Color(1.f, .0f, .0f, 1.f));
   boundingBox = mesh->boundingBox;
   isLoaded = true;

@@ -22,7 +22,7 @@ typedef boost::singleton_pool<RayTag, sizeof(GVT::Data::ray)> ray_memory_pool;
 
 ray::ray(GVT::Math::Point4f origin, GVT::Math::Vector4f direction,
          float contribution, RayType type, int depth)
-    : type(type), w(contribution), depth(depth) {
+    : type(type), w(contribution), depth(depth), t_min(0.0f), t_max(FLT_MAX) {
 
   this->origin = origin;
   this->direction = (direction).normalize();
@@ -35,7 +35,8 @@ ray::ray(GVT::Math::Point4f origin, GVT::Math::Vector4f direction,
   //            origin_domain = -1;
 }
 
-ray::ray(ray& ray, GVT::Math::AffineTransformMatrix<float>& m) {
+ray::ray(ray& ray, GVT::Math::AffineTransformMatrix<float>& m)
+    : t_min(ray.t_min), t_max(ray.t_max) {
   origin = m * ray.origin;
   direction = m * (ray.direction).normalize();
   setDirection(direction);
@@ -55,7 +56,7 @@ ray::ray(ray& ray, GVT::Math::AffineTransformMatrix<float>& m) {
   //            visited = ray.visited;
 }
 
-ray::ray(const ray& ray) {
+ray::ray(const ray& ray) : t_min(ray.t_min), t_max(ray.t_max) {
   origin = ray.origin;
   direction = ray.direction;
   inverseDirection = ray.inverseDirection;
