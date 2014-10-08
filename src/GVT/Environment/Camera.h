@@ -113,7 +113,7 @@ class Camera {
 
   void MakeCameraRays() {
     trcUpSampling = 1;
-    depth = 0;
+    depth = 4;
     size_t nrays = (trcUpSampling * trcUpSampling) * vi.width * vi.height;
     rays.reserve(nrays);
     int offset =

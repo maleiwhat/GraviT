@@ -206,8 +206,7 @@ void OptixDomain::traceChunk(RayVector& chunk, RayVector& next_list,
     }
   }
 
-  std::cout << "num hits = " << hits.size() << "\n";
-
+  //std::cout << "num hits = " << hits.size() << "\n";
   // Trace each ray: shade, fire shadow rays, fire secondary rays.
   for (int i = 0; i < chunk.size(); ++i)
     this->traceRay(hits[i].triangle_id, hits[i].t, hits[i].u, hits[i].v,
@@ -220,7 +219,7 @@ void OptixDomain::traceRay(uint32_t triangle_id, float t, float u, float v,
   if (ray.type == ray::SECONDARY) {
     float s = ((t > 1.0f) ? 1.0f / t : t);
     ray.w = ray.w * s;
-    std::cout << "w = " << ray.w << "\n";
+    //std::cout << "w = " << ray.w << "\n";
   }
   ray.t = t;
   Vector4f normal = this->localToWorldNormal(computeNormal(triangle_id, u, v));
