@@ -8,9 +8,8 @@
 #ifndef GVT_MESH_H
 #define GVT_MESH_H
 
-#include <GVT/Data/primitives/gvt_material.h>
-
 #include <GVT/Data/primitives.h>
+#include <GVT/Data/primitives/gvt_material.h>
 #include <boost/container/vector.hpp>
 #include <boost/tuple/tuple.hpp>
 
@@ -49,14 +48,20 @@ class Mesh : public AbstractMesh {
   virtual void pushTexUV(int which,
                          GVT::Math::Point4f texUV = GVT::Math::Point4f());
   virtual void setMaterial(GVT::Data::Material* mat);
+  virtual void setMaterialList(GVT::Data::MaterialList* materials);
   virtual void addFace(int v0, int v1, int v2);
+  virtual void setFaceMaterial(int i);
 
   void generateNormals(); 
 
   virtual GVT::Data::Color shade(GVT::Data::ray& r, GVT::Math::Vector4f normal,
                                  GVT::Data::LightSource* lsource);
+  virtual GVT::Data::Color shade(int face_id, GVT::Data::ray& r,
+                                 GVT::Math::Vector4f normal,
+                                 GVT::Data::LightSource* lsource);
 
   GVT::Data::Material* mat;
+  const MaterialList* material_list;
 
   boost::container::vector<GVT::Math::Vector4f> vertices;
   boost::container::vector<GVT::Math::Vector4f> mapuv;
@@ -64,6 +69,7 @@ class Mesh : public AbstractMesh {
   boost::container::vector<GVT::Data::Mesh::face> faces;
   boost::container::vector<GVT::Data::Mesh::face_to_normals> faces_to_normals;
   boost::container::vector<GVT::Math::Vector4f> face_normals;
+  boost::container::vector<const Material*> faces_to_materials;
 
   GVT::Data::box3D boundingBox;
   bool haveNormals;

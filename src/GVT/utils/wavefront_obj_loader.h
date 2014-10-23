@@ -1,6 +1,8 @@
 #ifndef WAVEFRONT_OBJ_LOADER_H
 #define WAVEFRONT_OBJ_LOADER_H
 
+#include <GVT/Data/primitives/gvt_material.h>
+#include <GVT/Data/primitives/gvt_material_list.h>
 #include <GVT/Data/primitives/gvt_mesh.h>
 #include <objreader/usercallbacks.h>
 
@@ -29,6 +31,12 @@ class WavefrontObjLoader {
   // else a non-zero value can be returned.
   int AddVertex(float x, float y, float z, float weight);
 
+  // This must add a texel with coordinates "x", "y", "z", and "weight"
+  // as the values and create and ID for the new vertex to be referenced
+  // later on.  It there was no error, the value of 0 should be returned,
+  // else a non-zero value can be returned.
+  int AddTexel(float x, float y, float z);
+
   // This must add a normal with coordinates "x", "y", and "z"
   // as the values and create an ID for the new vertex to be referenced
   // later on. It there was no error, the value of 0 should be returned,
@@ -38,6 +46,13 @@ class WavefrontObjLoader {
   // This must start a face and create an ID for it.  Must return 0
   // on error and non-zero otherwise.
   int StartFace();
+
+  // Add a material library using "file_name" as the path.  The file name
+  // should use the ".mtl" extension.
+  int AddMaterialLib(char* file_name);
+
+  // Use the material with name specified by "material_name".
+  int UseMaterial(char* material_name);
 
   // This must add a vertex to the current face with vertex ID of "v",
   // vertex texel ID of "vt", and vertex normal with ID of "vn".
@@ -67,6 +82,10 @@ class WavefrontObjLoader {
   int current_face_vertex_;
   // The callbacks struct provided by libobjreader.
   ObjParseCallbacks object_parse_callbacks_;
+  // This is the current material ibrary.
+  MaterialLibrary* current_material_library_;
+  // This is the current material.
+  const GVT::Data::Material* current_material_;
 
   // Disable copy.
   WavefrontObjLoader(const WavefrontObjLoader&);
