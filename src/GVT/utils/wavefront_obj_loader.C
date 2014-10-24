@@ -12,21 +12,23 @@
 #include <objreader/objreader.h>
 #include <objreader/usercallbacks.h>
 
-using GVT::Data::Mesh;
 using GVT::Data::Material;
 using GVT::Data::MaterialLibrary;
 using GVT::Data::MaterialList;
+using GVT::Data::Mesh;
 using GVT::Math::Point4f;
+using GVT::Math::Vector3f;
 using GVT::Math::Vector4f;
+using GVT::utils::WavefrontMtlLoader;
 
 namespace GVT {
 
 namespace utils {
 
 // Utility Functions
-static bool GetRealPath(const std::string& name, std::string* result) const {
+static bool GetRealPath(const std::string& name, std::string* result) {
   char buffer[PATH_MAX];
-  if (realpath(file_name.c_str(), &buffer[0])) {
+  if (realpath(name.c_str(), &buffer[0])) {
     *result = std::string(buffer);
     return true;
   }
@@ -39,7 +41,7 @@ static bool GetRealPath(const std::string& name, std::string* result) const {
 // User data should be of type WavefrontObjLoader*.  The function will
 // cast user_data to said pointer type and call the corresponding method.
 int AddVertexCallback(float x, float y, float z, float weight, void* user_data);
-int AddTexelFuncCallback(float x, float y, float z, void* user_data);
+int AddTexelCallback(float x, float y, float z, void* user_data);
 int AddNormalCallback(float x, float y, float z, void* user_data);
 int StartFaceCallback(void* user_data);
 int AddToFaceCallback(size_t v, size_t vt, size_t vn, void* user_data);
@@ -52,7 +54,7 @@ void WavefrontObjLoader::Init() {
   // Setup object parse callbacks.
   memset(&object_parse_callbacks_, 0, sizeof(ObjParseCallbacks));
   object_parse_callbacks_.onVertex = AddVertexCallback;
-  object_parse_callbacks_.onTexel = AddVertexCallback;
+  object_parse_callbacks_.onTexel = AddTexelCallback;
   object_parse_callbacks_.onNormal = AddNormalCallback;
   object_parse_callbacks_.onStartFace = StartFaceCallback;
   object_parse_callbacks_.onAddToFace = AddToFaceCallback;
@@ -85,7 +87,7 @@ int WavefrontObjLoader::AddVertex(float x, float y, float z, float weight) {
 }
 
 int WavefrontObjLoader::AddTexel(float x, float y, float z) {
-  Vector3f texel = Vecter3f(x, y, z);
+  Vector3f texel = Vector3f(x, y, z);
   // add it here
   return 0;
 }
@@ -136,7 +138,6 @@ int WavefrontObjLoader::AddToFace(size_t v, size_t /* vt */, size_t vn) {
     gn.get<1>() = fn.get<2>();
     gn.get<2>() = vn - 1;
     mesh_->faces_to_normals.push_back(gn);
-    Mesh::face_to_material fm = mesh_->face_to_material.back();
     mesh_->faces_to_materials.push_back(current_material_);
   }
   ++current_face_vertex_;
@@ -158,8 +159,14 @@ int WavefrontObjLoader::AddMaterialLib(const char* file_name) {
 }
 
 int WavefrontObjLoader::UseMaterial(const char* material_name) {
+  if (!current_material_library_) {
+    std::cerr << "No material library loaded when trying to use material'"
+              << material_name << "'.\n";
+    return 0;
+  }
   std::string name(material_name);
-  current_material_ = material_list->GetMaterialByName(std::string(name));
+  current_material_ =
+      current_material_library_->GetMaterialByName(std::string(name));
   if (!current_material_)
     std::cerr << "Material: " << material_name << " not found!\n";
   return 0;

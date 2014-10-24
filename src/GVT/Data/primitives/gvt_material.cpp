@@ -14,6 +14,7 @@ using GVT::Data::LightSource;
 using GVT::Data::RayVector;
 using GVT::Data::ray;
 using GVT::Math::Vector4f;
+using GVT::Math::Point4f;
 
 namespace GVT {
 
@@ -101,7 +102,7 @@ RayVector Phong::ao(const ray& ray, const Vector4f& sufaceNormal,
 }
 
 RayVector Phong::secondary(const ray& ray, const Vector4f& sufaceNormal,
-                           float samples) {
+                           float samples) const {
   return RayVector();
 }
 
@@ -146,30 +147,30 @@ RayVector BlinnPhong::secondary(const ray& ray, const Vector4f& sufaceNormal,
 }
 
 WavefrontObjMaterial::WavefrontObjMaterial()
-    : kd(Vector4f(0.5f, 0.5f, 0.5f, 0.0f)),
-      ks(Vector4f(0.0f, 0.0f, 0.0f, 0.0f)),
-      ke(Vector4f(0.0f, 0.0f, 0.0f, 0.0f)),
-      ka(Vector4f(0.0f, 0.0f, 0.0f, 0.0f)),
-      specular_exponent(0.0f),
-      has_illum_model(false),
-      illum_model(0),
-      has_ambient_texture_map(false),
-      ambient_texture_map(),
-      has_diffuse_texture_map(false),
-      diffuse_texture_map() {}
+    : kd_(Vector4f(0.5f, 0.5f, 0.5f, 0.0f)),
+      ks_(Vector4f(0.0f, 0.0f, 0.0f, 0.0f)),
+      ke_(Vector4f(0.0f, 0.0f, 0.0f, 0.0f)),
+      ka_(Vector4f(0.0f, 0.0f, 0.0f, 0.0f)),
+      specular_exponent_(0.0f),
+      has_illum_model_(false),
+      illum_model_(0),
+      has_ambient_texture_map_(false),
+      ambient_texture_map_(),
+      has_diffuse_texture_map_(false),
+      diffuse_texture_map_() {}
 
 WavefrontObjMaterial::WavefrontObjMaterial(const WavefrontObjMaterial& orig)
-    : kd(orig.kd),
-      ks(orig.ks),
-      ke(orig.ke),
-      ka(orig.ka),
-      specular_exponent(orig.specular_exponent),
-      has_illum_model(orig.has_illum_model),
-      illum_model(orig.illum_model),
-      has_ambient_texture_map(orig.has_ambient_texture_map),
-      ambient_texture_map(orig.ambient_texture_map),
-      has_diffuse_texture_map(orig.has_diffuse_texture_map),
-      diffuse_texture_map(orig.diffuse_texture_map) {}
+    : kd_(orig.kd_),
+      ks_(orig.ks_),
+      ke_(orig.ke_),
+      ka_(orig.ka_),
+      specular_exponent_(orig.specular_exponent_),
+      has_illum_model_(orig.has_illum_model_),
+      illum_model_(orig.illum_model_),
+      has_ambient_texture_map_(orig.has_ambient_texture_map_),
+      ambient_texture_map_(orig.ambient_texture_map_),
+      has_diffuse_texture_map_(orig.has_diffuse_texture_map_),
+      diffuse_texture_map_(orig.diffuse_texture_map_) {}
 
 WavefrontObjMaterial::~WavefrontObjMaterial() {}
 
@@ -183,12 +184,12 @@ Vector4f WavefrontObjMaterial::shade(const ray& ray, const Vector4f& N,
   Vector4f H = (L - ray.direction).normalize();
 
   float NdotH = (H * N);
-  float power = NdotH * std::pow(NdotH, specular_exponent);
+  float power = NdotH * std::pow(NdotH, specular_exponent_);
 
   Vector4f lightSourceContrib = lightSource->contribution(ray);
 
-  Color diffuse = prod((lightSourceContrib * NdotL), kd) * ray.w;
-  Color specular = prod((lightSourceContrib * specular_exponent), ks) * ray.w;
+  Color diffuse = prod((lightSourceContrib * NdotL), kd_) * ray.w;
+  Color specular = prod((lightSourceContrib * specular_exponent_), ks_) * ray.w;
 
   // TODO (rsmith): Add support for texture maps and illumination models.
   // However, diffuse texture maps are the highest priority.

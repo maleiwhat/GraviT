@@ -49,10 +49,10 @@ class WavefrontObjLoader {
 
   // Add a material library using "file_name" as the path.  The file name
   // should use the ".mtl" extension.
-  int AddMaterialLib(char* file_name);
+  int AddMaterialLib(const char* file_name);
 
   // Use the material with name specified by "material_name".
-  int UseMaterial(char* material_name);
+  int UseMaterial(const char* material_name);
 
   // This must add a vertex to the current face with vertex ID of "v",
   // vertex texel ID of "vt", and vertex normal with ID of "vn".
@@ -83,7 +83,7 @@ class WavefrontObjLoader {
   // The callbacks struct provided by libobjreader.
   ObjParseCallbacks object_parse_callbacks_;
   // This is the current material ibrary.
-  MaterialLibrary* current_material_library_;
+  GVT::Data::MaterialLibrary* current_material_library_;
   // This is the current material.
   const GVT::Data::Material* current_material_;
 

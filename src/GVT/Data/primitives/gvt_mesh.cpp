@@ -7,10 +7,12 @@
 #include <GVT/Data/primitives/gvt_mesh.h>
 
 #include <GVT/Data/primitives.h>
+#include <GVT/Data/primitives/gvt_material_list.h>
 
 using GVT::Data::Color;
 using GVT::Data::LightSource;
 using GVT::Data::Material;
+using GVT::Data::MaterialList;
 using GVT::Data::ray;
 using GVT::Math::Point4f;
 using GVT::Math::Vector4f;
@@ -64,7 +66,7 @@ void Mesh::pushVertex(int which, Point4f vertex, Vector4f normal,
 
 void Mesh::setMaterial(Material* mat) { this->mat = mat; }
 
-void Mesh::setMaterialList(const MaterialList* materials) {
+void Mesh::setMaterialList(MaterialList* materials) {
   material_list = materials;
 }
 
@@ -72,13 +74,11 @@ void Mesh::addFace(int v0, int v1, int v2) {
   GVT_ASSERT(v0 < vertices.size(), "Vertex index 0 outside bounds");
   GVT_ASSERT(v1 < vertices.size(), "Vertex index 1 outside bounds");
   GVT_ASSERT(v2 < vertices.size(), "Vertex index 2 outside bounds");
-
   faces.push_back(face(v0, v1, v2));
-  face_to_material.push_back(-1);
 }
 
-void Mesh::setFaceMaterial(int face_index, int material_id) {
-  face_to_material[face_index] = material_id;
+void Mesh::setFaceMaterial(int face_id, const Material* material) {
+  faces_to_materials[face_id] = material;
 }
 
 void Mesh::generateNormals() {
@@ -119,7 +119,7 @@ void Mesh::generateNormals() {
 }
 
 Color Mesh::shade(int face_id, ray& r, Vector4f normal,
-                  LightSource* lsource) const {
+                  LightSource* lsource) {
   Color c(0.5f, 0.5f, 0.5f, 0.0f);
   const Material* m =
       (faces_to_materials[face_id] ? faces_to_materials[face_id] : mat);

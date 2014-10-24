@@ -80,11 +80,11 @@ class WavefrontMtlLoader {
   // This is the location of the .mtl file to load.
   std::string file_path_;
   // This is the mesh being loaded into.
-  const GVT::Data::MaterialLibrary* material_library_;
+  GVT::Data::MaterialLibrary* material_library_;
   // The current material.
-  const GVT::Data::Material* current_material_;
+  GVT::Data::WavefrontObjMaterial* current_material_;
   // The callbacks struct provided by libobjreader.
-  ObjParseCallbacks object_parse_callbacks_;
+  MtlParseCallbacks material_parse_callbacks_;
 
   // Disable copy.
   WavefrontMtlLoader(const WavefrontMtlLoader&);
@@ -95,5 +95,5 @@ class WavefrontMtlLoader {
 }  // namespace utils
 
 }  // namespace GVT
-#endif  // WAVEFRONT_OBJ_LOADER_H
+#endif  // WAVEFRONT_MTL_LOADER_H
 

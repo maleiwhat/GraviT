@@ -14,13 +14,13 @@ namespace GVT {
 
 namespace Domain {
 
-std::string ToLower(const std::string& str) {
+static std::string ToLower(const std::string& str) {
   std::string result(str);
   for (int i = 0; i < str.length(); ++i) result[i] = tolower(result[i]);
   return result;
 }
 
-std::string GetFileExtension(const std::string& path) {
+static std::string GetFileExtension(const std::string& path) {
   std::string name = path.substr(path.find_last_of("/") + 1);
   std::string ext = name.substr(name.find_last_of(".") + 1);
   if (ext.length() == name.length()) return "";

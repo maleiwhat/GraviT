@@ -10,6 +10,7 @@
 
 #include <GVT/Data/primitives.h>
 #include <GVT/Data/primitives/gvt_material.h>
+#include <GVT/Data/primitives/gvt_material_list.h>
 #include <boost/container/vector.hpp>
 #include <boost/tuple/tuple.hpp>
 
@@ -50,9 +51,9 @@ class Mesh : public AbstractMesh {
   virtual void setMaterial(GVT::Data::Material* mat);
   virtual void setMaterialList(GVT::Data::MaterialList* materials);
   virtual void addFace(int v0, int v1, int v2);
-  virtual void setFaceMaterial(int i);
+  virtual void setFaceMaterial(int face_id, const GVT::Data::Material* material);
 
-  void generateNormals(); 
+  void generateNormals();
 
   virtual GVT::Data::Color shade(GVT::Data::ray& r, GVT::Math::Vector4f normal,
                                  GVT::Data::LightSource* lsource);
@@ -61,7 +62,7 @@ class Mesh : public AbstractMesh {
                                  GVT::Data::LightSource* lsource);
 
   GVT::Data::Material* mat;
-  const MaterialList* material_list;
+  GVT::Data::MaterialList* material_list;
 
   boost::container::vector<GVT::Math::Vector4f> vertices;
   boost::container::vector<GVT::Math::Vector4f> mapuv;

@@ -8,7 +8,9 @@
 #include <objreader/objreader.h>
 #include <objreader/usercallbacks.h>
 
+using GVT::Data::Material;
 using GVT::Data::Mesh;
+using GVT::Data::WavefrontObjMaterial;
 using GVT::Math::Point4f;
 using GVT::Math::Vector4f;
 
@@ -37,23 +39,25 @@ WavefrontMtlLoader::WavefrontMtlLoader() { Init(); }
 void WavefrontMtlLoader::Init() {
   // Setup object parse callbacks.
   memset(&material_parse_callbacks_, 0, sizeof(ObjParseCallbacks));
-  material_parse_callbacks_.onAddMaterial = AddMaterial;
-  material_parse_callbacks_.onSetAmbientColor = SetAmbientColor;
-  material_parse_callbacks_.onSetDiffuseColor = SetDiffuseColor;
-  material_parse_callbacks_.onSetSpecularColor = SetSpecularColor;
-  material_parse_callbacks_.onSetSpecularExponent = SetSpecularExponent;
-  material_parse_callbacks_.onSetOpticalDensity = SetOpticalDensity;
-  material_parse_callbacks_.onSetAlpha = SetAlpha;
-  material_parse_callbacks_.onSetIllumModel = SetIllumModel;
-  material_parse_callbacks_.onSetAmbientTextureMap = SetAmbientTextureMap;
-  material_parse_callbacks_.onSetDiffuseTextureMap = SetDiffuseTextureMap;
+  material_parse_callbacks_.onAddMaterial = AddMaterialCallback;
+  material_parse_callbacks_.onSetAmbientColor = SetAmbientColorCallback;
+  material_parse_callbacks_.onSetDiffuseColor = SetDiffuseColorCallback;
+  material_parse_callbacks_.onSetSpecularColor = SetSpecularColorCallback;
+  material_parse_callbacks_.onSetSpecularExponent = SetSpecularExponentCallback;
+  material_parse_callbacks_.onSetOpticalDensity = SetOpticalDensityCallback;
+  material_parse_callbacks_.onSetAlpha = SetAlphaCallback;
+  material_parse_callbacks_.onSetIllumModel = SetIllumModelCallback;
+  material_parse_callbacks_.onSetAmbientTextureMap =
+      SetAmbientTextureMapCallback;
+  material_parse_callbacks_.onSetDiffuseTextureMap =
+      SetDiffuseTextureMapCallback;
   material_parse_callbacks_.userData = reinterpret_cast<void*>(this);
 }
 
 int WavefrontMtlLoader::AddMaterial(char* name) {
-  current_material_  = new ObjMaterial;
-  material_library_->AddMaterial(name,
-                                 static_cast<Material*>(current_material_));
+  current_material_ = new WavefrontObjMaterial;
+  material_library_->AddMaterial(
+      name, static_cast<Material*>(current_material_));
 }
 
 int WavefrontMtlLoader::SetAmbientColor(float r, float g, float b) {

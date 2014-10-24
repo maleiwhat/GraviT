@@ -8,7 +8,7 @@ namespace GVT {
 
 namespace Data {
 
-~MaterialList::MaterialList() {
+MaterialList::~MaterialList() {
   for (int i = 0; i < material_libraries_.size(); ++i)
     delete material_libraries_[i];
   material_libraries_.clear();
@@ -23,12 +23,13 @@ void MaterialList::AddMaterialLibrary(const std::string& name,
 
 const Material* MaterialList::GetMaterialByName(const std::string& name) const {
   const Material* result = NULL;
+  int i = 0;
   while (i < size() && !material_libraries_[i]->HasMaterial(name)) ++i;
   if (i < size()) result = material_libraries_[i]->GetMaterialByName(name);
   return result;
 }
 
-~MaterialLibrary::MaterialLibrary() {
+MaterialLibrary::~MaterialLibrary() {
   for (int i = 0; i < materials_.size(); ++i) delete materials_[i];
   materials_.clear();
   names_.clear();
@@ -38,15 +39,16 @@ const Material* MaterialList::GetMaterialByName(const std::string& name) const {
 void MaterialLibrary::AddMaterial(const std::string& name,
                                   const Material* material) {
   if (HasMaterial(name)) return;
-  materials_.push_back(materials);
+  materials_.push_back(material);
   names_.push_back(name);
-  name_to_material_[name] = material;
+  name_to_material_[name] = materials_.size() - 1;
 }
 
 const Material* MaterialLibrary::GetMaterialByName(const std::string& name)
     const {
-  if (name_to_material_.count(name) > 0)
-    return materials_[name_to_material_[name]];
+  if (name_to_material_.count(name) > 0) {
+    return materials_[name_to_material_.find(name)->second];
+  }
   return NULL;
 }
 

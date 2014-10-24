@@ -134,7 +134,9 @@ class BlinnPhong : public Material {
   GVT::Math::Vector4f kd;
   GVT::Math::Vector4f ks;
   float alpha;
-} class WavefrontObjMaterial : public Material {
+};
+
+class WavefrontObjMaterial : public Material {
  public:
   WavefrontObjMaterial();
 
@@ -154,53 +156,55 @@ class BlinnPhong : public Material {
       const GVT::Data::ray& ray, const GVT::Math::Vector4f& sufaceNormal,
       float samples) const;
 
-  void set_kd(const GVT::Math::Vector4f& value) const { kd = value; }
+  void set_kd(const GVT::Math::Vector4f& value) { kd_ = value; }
 
-  void set_ks(const GVT::Math::Vector4f& value) const { ks = value; }
+  void set_ks(const GVT::Math::Vector4f& value) { ks_ = value; }
 
-  void set_ke(const GVT::Math::Vector4f& value) const { ke = value; }
+  void set_ke(const GVT::Math::Vector4f& value) { ke_ = value; }
 
-  void set_ka(const GVT::Math::Vector4f& value) const { ka = value; }
+  void set_ka(const GVT::Math::Vector4f& value) { ka_ = value; }
 
-  void set_specular_exponent(float value) const { specular_exponent = value; }
+  void set_specular_exponent(float value) { specular_exponent_ = value; }
 
-  void set_optical_density(float value) const { optical_density = value; }
+  void set_optical_density(float value) { optical_density_ = value; }
 
-  void set_alpha(float value) const { alpha = value; }
+  void set_alpha(float value) { alpha_ = value; }
 
-  void set_has_illum_model(float value) const { has_illum_model = value; }
+  void set_has_illum_model(bool value) { has_illum_model_ = value; }
 
-  void set_has_ambient_texture_map(bool value) const {
-    has_ambient_texture_map = value;
+  void set_illum_model(float value) { illum_model_ = value; }
+
+  void set_has_ambient_texture_map(bool value) {
+    has_ambient_texture_map_ = value;
   }
 
-  void set_ambient_texture_map(const std::string& value) const {
-    has_ambient_texture_map = value;
+  void set_ambient_texture_map(const std::string& value) {
+    ambient_texture_map_ = value;
   }
 
-  void set_has_diffuse_texture_map(bool value) const {
-    has_diffuse_texture_map = value;
+  void set_has_diffuse_texture_map(bool value) {
+    has_diffuse_texture_map_ = value;
   }
 
-  void set_diffuse_texture_map(const std::string& value) const {
-    has_diffuse_texture_map = value;
+  void set_diffuse_texture_map(const std::string& value) {
+    diffuse_texture_map_ = value;
   }
 
  protected:
-  GVT::Math::Vector4f kd;
-  GVT::Math::Vector4f ks;
-  GVT::Math::Vector4f ke;
-  GVT::Math::Vector4f ka;
-  float specular_exponent;  // Blinn-Phong shineness exponent
-  float optical_density;    // index of refraction
-  float alpha;              // opacity
+  GVT::Math::Vector4f kd_;
+  GVT::Math::Vector4f ks_;
+  GVT::Math::Vector4f ke_;
+  GVT::Math::Vector4f ka_;
+  float specular_exponent_;  // Blinn-Phong shineness exponent
+  float optical_density_;    // index of refraction
+  float alpha_;              // opacity
   // The values below are currently ignored.
-  bool has_illum_model;
-  int illum_model;
-  bool has_ambient_texture_map;
-  std::string ambient_texture_map;
-  bool has_diffuse_texture_map;
-  std::string diffuse_texture_map;
+  bool has_illum_model_;
+  int illum_model_;
+  bool has_ambient_texture_map_;
+  std::string ambient_texture_map_;
+  bool has_diffuse_texture_map_;
+  std::string diffuse_texture_map_;
 };
 
 }  // namespace Data
