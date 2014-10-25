@@ -692,6 +692,23 @@ class Vector4 {
   friend Vector4<T> maximum(const Vector4<T>& a, const Vector4<T>& b);
   template <class U>
   friend Vector4<T> prod(const Vector4<T>& a, const Vector4<T>& b);
+  void Print(std::ostream& os) const {
+    os << n[0] << " " << n[1] << " " << n[2] << " " << n[3];
+  }
+
+  void Read(std::istream& is) { is >> n[0] >> n[1] >> n[2] >> n[3]; }
+  template <class U>
+  friend std::ostream& operator<<(std::ostream& os,
+                                  const GVT::Math::Vector4<U>& v) {
+
+    v.Print(os);
+    return os;
+  }
+  template <class U>
+  friend std::istream& operator>>(std::istream& is, GVT::Math::Vector4<U>& v) {
+    v.Read(is);
+    return is;
+  }
 };
 
 typedef Vector4<int> Vector4i;
@@ -749,10 +766,6 @@ class Point4 : public Vector4<T> {
   double length2() const { return 0.f; }
 
   double length() const { return 0.f; }
-  template <class U>
-  friend std::ostream& operator<<(std::ostream& os, const Point4<T>& m);
-  template <class U>
-  friend std::istream& operator>>(std::istream& is, Point4<T>& m);
 };
 
 typedef Point4<int> Point4i;

@@ -179,29 +179,12 @@ WavefrontObjMaterial::~WavefrontObjMaterial() {}
 
 Vector4f WavefrontObjMaterial::shade(const ray& ray, const Vector4f& N,
                                      const LightSource* lightSource) const {
-  Vector4f hitPoint = (Vector4f)ray.origin + (ray.direction * ray.t);
-  Vector4f L = (Vector4f)lightSource->position - hitPoint;
+  Point4f L = ray.direction;
   L = L.normalize();
-  float NdotL = std::max(0.f, (N * L));
-
-  Vector4f H = (L - ray.direction).normalize();
-
-  float NdotH = (H * N);
-  float power = NdotH * std::pow(NdotH, specular_exponent_);
-
-  Vector4f lightSourceContrib = lightSource->contribution(ray);
-
-  Color diffuse = prod((lightSourceContrib * NdotL), kd_) * ray.w;
-  Color specular = prod((lightSourceContrib * specular_exponent_), ks_) * ray.w;
-
-  // TODO (rsmith): Add support for texture maps and illumination models.
-  // However, diffuse texture maps are the highest priority.
-  //
-  // TODO (rsmith): Add support for emissive and ambient properties.
-  // Emissive property handling is the highest priority.
-
-  Color finalColor = (diffuse + specular);
-  return finalColor;
+  float NdotL = std::max(0.f, N * L);
+  Color lightSourceContrib = lightSource->contribution(ray);
+  Color diffuse = prod(lightSourceContrib, kd_ * NdotL) * ray.w;
+  return diffuse;
 }
 
 RayVector WavefrontObjMaterial::ao(const ray& ray, const Vector4f& sufaceNormal,
@@ -216,11 +199,11 @@ RayVector WavefrontObjMaterial::secondary(const ray& ray,
 }
 
 void  WavefrontObjMaterial::Print(std::ostream& os) const {
-//  os << "kd_" << kd_ <<"\n";
-//  os << "ks_" << ks_ <<"\n";
-//  os << "ka_" << ka_ <<"\n";
-//  os << "ke_" << ke_ <<"\n";
-//  os << "se:" << specular_exponent_ << "\n";
+  os << "kd_=" << kd_ <<"\n";
+  os << "ks_=" << ks_ <<"\n";
+  os << "ka_=" << ka_ <<"\n";
+  os << "ke_=" << ke_ <<"\n";
+  os << "se=" << specular_exponent_ << "\n";
 }
 
 std::ostream& operator<<(std::ostream& os, const Material& material) {

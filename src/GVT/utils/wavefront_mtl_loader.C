@@ -66,28 +66,28 @@ int WavefrontMtlLoader::AddMaterial(char* name) {
 
 int WavefrontMtlLoader::SetAmbientColor(float r, float g, float b) {
   if (current_material_) {
-    current_material_->set_ka(Vector4f(r, g, b, 0.0f));
+    current_material_->set_ka(Vector4f(r, g, b, 1.0f));
   }
   return 0;
 }
 
 int WavefrontMtlLoader::SetDiffuseColor(float r, float g, float b) {
   if (current_material_) {
-    current_material_->set_kd(Vector4f(r, g, b, 0.0f));
+    current_material_->set_kd(Vector4f(r, g, b, 1.0f));
   }
   return 0;
 }
 
 int WavefrontMtlLoader::SetSpecularColor(float r, float g, float b) {
   if (current_material_) {
-    current_material_->set_ks(Vector4f(r, g, b, 0.0f));
+    current_material_->set_ks(Vector4f(r, g, b, 1.0f));
   }
   return 0;
 }
 
 int WavefrontMtlLoader::SetEmissiveColor(float r, float g, float b) {
   if (current_material_) {
-    current_material_->set_ke(Vector4f(r, g, b, 0.0f));
+    current_material_->set_ke(Vector4f(r, g, b, 1.0f));
   }
   return 0;
 }
