@@ -1,6 +1,7 @@
 #ifndef GVT_MATERIAL_LIST_H
 #define GVT_MATERIAL_LIST_H
 
+#include <iostream>
 #include <map>
 #include <string>
 #include <vector>
@@ -29,11 +30,14 @@ namespace Data {
         return (i < size() && i >= 0 ? materials_[i] : NULL);
       }
       int size() const { materials_.size(); }
+      void Print(std::ostream& os) const;
     private:
       std::vector<const GVT::Data::Material*> materials_;
       std::vector<std::string> names_;
       std::map<std::string, int> name_to_material_;
   };
+
+  std::ostream& operator<<(std::ostream& os, const MaterialLibrary& library);
 
   class MaterialList {
     public:
@@ -51,11 +55,13 @@ namespace Data {
         }
         const GVT::Data::Material* GetMaterialByName(const std::string& name) const;
         int size() const { material_libraries_.size(); }
-
+        void Print(std::ostream& os) const;
        private:
         std::vector<const MaterialLibrary*> material_libraries_;
         std::map<std::string, int> name_to_library_;
   };
+
+  std::ostream& operator<<(std::ostream& os, const MaterialList& list);
 
 }  // namespace Data
 

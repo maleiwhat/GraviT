@@ -29,6 +29,7 @@ const Material* MaterialList::GetMaterialByName(const std::string& name) const {
   return result;
 }
 
+
 MaterialLibrary::~MaterialLibrary() {
   for (int i = 0; i < materials_.size(); ++i) delete materials_[i];
   materials_.clear();
@@ -38,18 +39,51 @@ MaterialLibrary::~MaterialLibrary() {
 
 void MaterialLibrary::AddMaterial(const std::string& name,
                                   const Material* material) {
-  if (HasMaterial(name)) return;
+  if (HasMaterial(name)) {
+    std::cout << "Already have material " << name << "\n";
+    return;
+  }
+
+  std::cout << "Adding material " << name << "\n";
   materials_.push_back(material);
   names_.push_back(name);
   name_to_material_[name] = materials_.size() - 1;
 }
 
+
+void MaterialLibrary::Print(std::ostream& os) const {
+  for (int i = 0; i < materials_.size(); ++i) {
+    os << names_[i] << "\n";
+    const WavefrontObjMaterial& material =
+        *static_cast<const WavefrontObjMaterial*>(materials_[i]);
+    os << material << "\n";
+  }
+}
+
+std::ostream& operator<<(std::ostream& os, const MaterialLibrary& library) {
+  library.Print(os);
+  return os;
+}
+
 const Material* MaterialLibrary::GetMaterialByName(const std::string& name)
     const {
   if (name_to_material_.count(name) > 0) {
+    std::cout << "Found material " << name << "\n";
     return materials_[name_to_material_.find(name)->second];
   }
+    std::cout << "Did not find material " << name << "\n";
   return NULL;
+}
+
+void MaterialList::Print(std::ostream& os) const {
+  for (int i = 0; i < material_libraries_.size(); ++i) {
+    os << material_libraries_[i] << "\n";
+  }
+}
+
+std::ostream& operator<<(std::ostream& os, const MaterialList material_list) {
+  material_list.Print(os);
+  return os;
 }
 
 }  // namespace Data

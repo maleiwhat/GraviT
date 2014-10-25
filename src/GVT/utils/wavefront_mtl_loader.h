@@ -45,6 +45,11 @@ class WavefrontMtlLoader {
   // of the imagei, respectively. Affects only the current material.
   int SetSpecularColor(float r, float g, float b);
 
+  // This sets the emissive color for the current material. The "r",
+  // "g", "b" parameters represent the red, blue, and green channels
+  // of the imagei, respectively. Affects only the current material.
+  int SetEmissiveColor(float r, float g, float b);
+
   // The parameter "se" represents the Blinn-Phong shininess parameter.
   // Affects only the current material.
   int SetSpecularExponent(float se);

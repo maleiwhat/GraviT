@@ -29,7 +29,7 @@ namespace utils {
 static bool GetRealPath(const std::string& name, std::string* result) {
   char buffer[PATH_MAX];
   if (realpath(name.c_str(), &buffer[0])) {
-    *result = std::string(buffer);
+    result->assign(buffer);
     return true;
   }
   return false;
@@ -69,7 +69,9 @@ void WavefrontObjLoader::Init() {
 int WavefrontObjLoader::Load() {
   FILE* file_stream = fopen(file_path_.c_str(), "r");
   if (!file_stream) std::cout << "Unable to open: " << file_path_ << "\n";
-  std::cout << "Loading " << file_path_ << "\n";
+  GetRealPath(file_path_, &real_path_);
+  parent_path_ = real_path_.substr(0, real_path_.find_last_of("/") + 1);
+  std::cout << "Loading " << real_path_ << "\n";
   int result = ReadObjFile(
       file_stream, const_cast<ObjParseCallbacks*>(&object_parse_callbacks_));
   fclose(file_stream);
@@ -147,7 +149,9 @@ int WavefrontObjLoader::AddToFace(size_t v, size_t /* vt */, size_t vn) {
 int WavefrontObjLoader::AddMaterialLib(const char* file_name) {
   std::string key;
   std::string name(file_name);
-  if (!GetRealPath(name, &key)) {
+  std::string path =
+      (name.find_first_of("/") == 0 ? name : parent_path_ + name);
+  if (!GetRealPath(path, &key)) {
     std::cerr << "Material library with name '" << name << "' not found!\n";
     return 0;
   }
@@ -155,6 +159,7 @@ int WavefrontObjLoader::AddMaterialLib(const char* file_name) {
   mesh_->material_list->AddMaterialLibrary(key, current_material_library_);
   WavefrontMtlLoader material_loader(key, current_material_library_);
   material_loader.Load();
+//  std::cout << "Current library: " << key << "\n" << *current_material_library_;
   return 0;
 }
 

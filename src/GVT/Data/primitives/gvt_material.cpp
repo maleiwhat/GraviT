@@ -4,10 +4,13 @@
  *
  * Created on April 18, 2014, 3:07 PM
  */
+
 #include <cmath>
+#include <iostream>
 
 #include <GVT/Data/derived_types.h>
 #include <GVT/Data/primitives/gvt_material.h>
+#include <GVT/Math/GVTMath.h>
 
 using GVT::Data::Color;
 using GVT::Data::LightSource;
@@ -210,6 +213,19 @@ RayVector WavefrontObjMaterial::secondary(const ray& ray,
                                           const Vector4f& sufaceNormal,
                                           float samples) const {
   return RayVector();
+}
+
+void  WavefrontObjMaterial::Print(std::ostream& os) const {
+  os << "kd_" << kd_ <<"\n";
+  os << "ks_" << ks_ <<"\n";
+  os << "ka_" << ka_ <<"\n";
+  os << "ke_" << ke_ <<"\n";
+  os << "se:" << specular_exponent_ << "\n";
+}
+
+std::ostream& operator<<(std::ostream& os, const Material& material) {
+  material.Print(os);
+  return os;
 }
 
 }  // namespace Data

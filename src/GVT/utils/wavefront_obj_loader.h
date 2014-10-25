@@ -17,7 +17,11 @@ class WavefrontObjLoader {
   // parameter will be populated with the geometry from the path
   // specified by "file_path".
   WavefrontObjLoader(const std::string& file_path, GVT::Data::Mesh* mesh)
-      : file_path_(file_path), mesh_(mesh), current_face_vertex_(-1) {
+      : file_path_(file_path),
+        real_path_(),
+        parent_path_(),
+        mesh_(mesh),
+        current_face_vertex_(-1) {
     Init();
   }
 
@@ -75,6 +79,8 @@ class WavefrontObjLoader {
  private:
   // This is the location of the .obj file to load.
   std::string file_path_;
+  std::string real_path_;  // absolute location of the file
+  std::string parent_path_;  // parent of real_path_
   // This is the mesh being loaded into.
   GVT::Data::Mesh* mesh_;
   // Since we triangulate all polygonal faces, we need to keep track

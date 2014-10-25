@@ -115,6 +115,9 @@ void Mesh::generateNormals() {
     faces_to_normals[i] = face_to_normals(I, J, K);
   }
   for (int i = 0; i < normals.size(); ++i) normals[i].normalize();
+  //for (int i = 0; i < normals.size(); ++i)
+  //  std::cout << "normal = (" << normals[i].n[0] <<
+  //   "," << normals[i].n[1] << "," << normals[i].n[2] <<  ")\n";
   haveNormals = true;
 }
 
@@ -123,7 +126,11 @@ Color Mesh::shade(int face_id, ray& r, Vector4f normal,
   Color c(0.5f, 0.5f, 0.5f, 0.0f);
   const Material* m =
       (faces_to_materials[face_id] ? faces_to_materials[face_id] : mat);
-  if (m) c = m->shade(r, normal, lsource);
+  if (m) {
+    c = m->shade(r, normal, lsource);
+    std::cout << "shading with \n" << *m << "\n";
+  }
+  //c = mat->shade(r, normal, lsource);
   return c;
 }
 

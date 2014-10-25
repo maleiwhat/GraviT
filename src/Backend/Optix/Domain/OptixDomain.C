@@ -277,7 +277,7 @@ void OptixDomain::generateShadowRays(int triangle_id, const ray& ray_in,
     shadow_ray.t_max = dir.length();
     dir.normalize();
     shadow_ray.setDirection(dir);
-    Color c = this->mesh->shade(triangle_id, shadow_ray, normal,
+    Color c = this->mesh->mat->shade(shadow_ray, normal,
                                 this->lights[lindex]);
     shadow_ray.color = COLOR_ACCUM(1.0f, c[0], c[1], c[2], 1.0f);
     rays.push_back(shadow_ray);

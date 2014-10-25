@@ -5,9 +5,11 @@
 
 #include <cctype>
 
+#include <GVT/Data/primitives/gvt_material_list.h>
 #include <GVT/utils/readply.h>
 #include <GVT/utils/wavefront_obj_loader.h>
 
+using GVT::Data::MaterialList;
 using GVT::utils::WavefrontObjLoader;
 
 namespace GVT {
@@ -37,6 +39,10 @@ void GeometryDomain::free() {
     delete mesh->mat;
     mesh->mat = NULL;
   }
+  if (mesh->material_list) {
+    delete mesh->material_list;
+    mesh->material_list = NULL;
+  }
   if (mesh) {
     delete mesh;
     mesh = NULL;
@@ -64,17 +70,26 @@ bool GeometryDomain::load() {
   } else if (ext.compare("obj") == 0) {
     std::cout << "Loading OBJ file.\n";
     mesh =  new GVT::Data::Mesh();
+    mesh->material_list = new MaterialList;
     WavefrontObjLoader loader(filename, mesh);
     loader.Load();
+    for (int i = 0; i < mesh->faces.size(); ++i) {
+      if (mesh->faces_to_materials.size() >= i + 1 &&
+          mesh->faces_to_materials[i]) 
+        std::cout << "face " << i << " has material \n" <<
+        *(mesh->faces_to_materials[i]);
+    }
   }
   lights.push_back(new GVT::Data::PointLightSource(
   //    GVT::Math::Point4f(-10.7389f, -13.6002f, 1.0f),
-      GVT::Math::Point4f(-10.7098f, -13.9444f, 0.299326f),
+  //    GVT::Math::Point4f(-10.7098f, -13.9444f, 0.299326f),
+      GVT::Math::Point4f(278.0f,274.4f,550.0f),
     //  GVT::Math::Point4f(0.0f, -4.0f, -4.0f),
 //      GVT::Math::Point4f(5.0f, 5.0f, 5.0f),
       GVT::Data::Color(1.f, 1.f, 1.f, 1.f)));
   mesh->mat = new GVT::Data::Lambert(GVT::Data::Color(1.f, .0f, .0f, 1.f));
   boundingBox = mesh->boundingBox;
+  std::cout << "bounds = " << boundingBox << "\n";
   isLoaded = true;
   return isLoaded;
 }

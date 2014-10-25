@@ -64,6 +64,7 @@ class Material {
     std::cout << "dot(n, direction) = " << direction* n;
     return direction;
   }
+  virtual void Print(std::ostream& os) const {}
 
  protected:
 };
@@ -190,6 +191,8 @@ class WavefrontObjMaterial : public Material {
     diffuse_texture_map_ = value;
   }
 
+  virtual void Print(std::ostream& os) const;
+
  protected:
   GVT::Math::Vector4f kd_;
   GVT::Math::Vector4f ks_;
@@ -206,6 +209,9 @@ class WavefrontObjMaterial : public Material {
   bool has_diffuse_texture_map_;
   std::string diffuse_texture_map_;
 };
+
+std::ostream& operator<<(std::ostream& os, const Material& material);
+
 
 }  // namespace Data
 

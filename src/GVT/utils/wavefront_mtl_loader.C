@@ -27,6 +27,7 @@ int AddMaterialCallback(char* name, void* user_data);
 int SetAmbientColorCallback(float r, float g, float b, void* user_data);
 int SetDiffuseColorCallback(float r, float g, float b, void* user_data);
 int SetSpecularColorCallback(float r, float g, float b, void* user_data);
+int SetEmissiveColorCallback(float r, float g, float b, void* user_data);
 int SetSpecularExponentCallback(float se, void* user_data);
 int SetOpticalDensityCallback(float d, void* user_data);
 int SetAlphaCallback(float a, void* user_data);
@@ -38,11 +39,12 @@ WavefrontMtlLoader::WavefrontMtlLoader() { Init(); }
 
 void WavefrontMtlLoader::Init() {
   // Setup object parse callbacks.
-  memset(&material_parse_callbacks_, 0, sizeof(ObjParseCallbacks));
+  memset(&material_parse_callbacks_, 0, sizeof(MtlParseCallbacks));
   material_parse_callbacks_.onAddMaterial = AddMaterialCallback;
   material_parse_callbacks_.onSetAmbientColor = SetAmbientColorCallback;
   material_parse_callbacks_.onSetDiffuseColor = SetDiffuseColorCallback;
   material_parse_callbacks_.onSetSpecularColor = SetSpecularColorCallback;
+  material_parse_callbacks_.onSetEmissiveColor = SetEmissiveColorCallback;
   material_parse_callbacks_.onSetSpecularExponent = SetSpecularExponentCallback;
   material_parse_callbacks_.onSetOpticalDensity = SetOpticalDensityCallback;
   material_parse_callbacks_.onSetAlpha = SetAlphaCallback;
@@ -55,9 +57,11 @@ void WavefrontMtlLoader::Init() {
 }
 
 int WavefrontMtlLoader::AddMaterial(char* name) {
+  std::cout << "newmtl " << name << "\n";
   current_material_ = new WavefrontObjMaterial;
   material_library_->AddMaterial(
       name, static_cast<Material*>(current_material_));
+  return 0;
 }
 
 int WavefrontMtlLoader::SetAmbientColor(float r, float g, float b) {
@@ -77,6 +81,13 @@ int WavefrontMtlLoader::SetDiffuseColor(float r, float g, float b) {
 int WavefrontMtlLoader::SetSpecularColor(float r, float g, float b) {
   if (current_material_) {
     current_material_->set_ks(Vector4f(r, g, b, 0.0f));
+  }
+  return 0;
+}
+
+int WavefrontMtlLoader::SetEmissiveColor(float r, float g, float b) {
+  if (current_material_) {
+    current_material_->set_ke(Vector4f(r, g, b, 0.0f));
   }
   return 0;
 }
@@ -141,6 +152,7 @@ int WavefrontMtlLoader::Load() {
 }
 
 int AddMaterialCallback(char* name, void* user_data) {
+  std::cout << "newmtl  " << name << "\n";
   WavefrontMtlLoader* loader = reinterpret_cast<WavefrontMtlLoader*>(user_data);
   int result = loader->AddMaterial(name);
   return result;
@@ -161,6 +173,12 @@ int SetDiffuseColorCallback(float r, float g, float b, void* user_data) {
 int SetSpecularColorCallback(float r, float g, float b, void* user_data) {
   WavefrontMtlLoader* loader = reinterpret_cast<WavefrontMtlLoader*>(user_data);
   int result = loader->SetSpecularColor(r, g, b);
+  return result;
+}
+
+int SetEmissiveColorCallback(float r, float g, float b, void* user_data) {
+  WavefrontMtlLoader* loader = reinterpret_cast<WavefrontMtlLoader*>(user_data);
+  int result = loader->SetEmissiveColor(r, g, b);
   return result;
 }
 
