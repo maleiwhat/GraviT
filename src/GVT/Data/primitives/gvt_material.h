@@ -61,7 +61,6 @@ class Material {
 
     GVT::Math::Vector4f direction = x * xs + y * ys + z * zs;
     direction.normalize();
-    std::cout << "dot(n, direction) = " << direction* n;
     return direction;
   }
   virtual void Print(std::ostream& os) const {}

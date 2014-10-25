@@ -1,7 +1,7 @@
 //
 // MantaDomain.C
 //
-
+#include <Core/Geometry/vecdefs.h>
 #include <Model/Primitives/Cube.h>
 #include <Model/AmbientLights/AmbientOcclusionBackground.h>
 #include <Model/AmbientLights/ArcAmbient.h>

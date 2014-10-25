@@ -8,6 +8,7 @@
 #ifndef GVT_MANTA_H
 #define	GVT_MANTA_H
 
+#include <Core/Geometry/vecdefs.h>
 #include <Model/Materials/Lambertian.h>
 
 #include <GVT/Math/GVTMath.h>

@@ -98,6 +98,7 @@ int WavefrontObjLoader::AddNormal(float x, float y, float z) {
   // std::cout << "WavefrontObjLoader::AddNormal\n";
   mesh_->haveNormals = true;
   mesh_->normals.push_back(Vector4f(x, y, z, 0.0f));
+  return 0;
 }
 
 int WavefrontObjLoader::StartFace() {
