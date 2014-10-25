@@ -216,11 +216,11 @@ RayVector WavefrontObjMaterial::secondary(const ray& ray,
 }
 
 void  WavefrontObjMaterial::Print(std::ostream& os) const {
-  os << "kd_" << kd_ <<"\n";
-  os << "ks_" << ks_ <<"\n";
-  os << "ka_" << ka_ <<"\n";
-  os << "ke_" << ke_ <<"\n";
-  os << "se:" << specular_exponent_ << "\n";
+//  os << "kd_" << kd_ <<"\n";
+//  os << "ks_" << ks_ <<"\n";
+//  os << "ka_" << ka_ <<"\n";
+//  os << "ke_" << ke_ <<"\n";
+//  os << "se:" << specular_exponent_ << "\n";
 }
 
 std::ostream& operator<<(std::ostream& os, const Material& material) {

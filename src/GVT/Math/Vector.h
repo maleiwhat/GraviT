@@ -692,21 +692,6 @@ class Vector4 {
   friend Vector4<T> maximum(const Vector4<T>& a, const Vector4<T>& b);
   template <class U>
   friend Vector4<T> prod(const Vector4<T>& a, const Vector4<T>& b);
-  virtual void Print(std::ostream& os) const {
-    os << n[0] << " " << n[1] << " " << n[2] << " " << n[3];
-  }
-  virtual void Read(std::ostream& os) {
-    os << n[0] << " " << n[1] << " " << n[2] << " " << n[3];
-  }
-  friend std::ostream& operator<<(std::ostream& os,
-                                  const GVT::Math::Vector4<T>& v) {
-    v.Print(os);
-    return os;
-  }
-  friend std::istream& operator>>(std::istream& is, GVT::Math::Vector4<T>& v) {
-    v.Read(is);
-    return is;
-  }
 };
 
 typedef Vector4<int> Vector4i;

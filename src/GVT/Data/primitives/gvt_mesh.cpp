@@ -128,7 +128,6 @@ Color Mesh::shade(int face_id, ray& r, Vector4f normal,
       (faces_to_materials[face_id] ? faces_to_materials[face_id] : mat);
   if (m) {
     c = m->shade(r, normal, lsource);
-    std::cout << "shading with \n" << *m << "\n";
   }
   //c = mat->shade(r, normal, lsource);
   return c;

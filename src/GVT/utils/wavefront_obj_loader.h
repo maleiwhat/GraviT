@@ -21,7 +21,9 @@ class WavefrontObjLoader {
         real_path_(),
         parent_path_(),
         mesh_(mesh),
-        current_face_vertex_(-1) {
+        current_face_vertex_(-1),
+        current_material_(NULL),
+        current_material_library_(NULL) {
     Init();
   }
 

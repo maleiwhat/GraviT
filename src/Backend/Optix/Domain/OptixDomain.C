@@ -270,14 +270,14 @@ void OptixDomain::generateShadowRays(int triangle_id, const ray& ray_in,
     // TODO (rsmith): Dehackify this (20 is a hard-coded constant).
     // Perhaps it is better to use K * ULP for some integer K or
     // some kind of other tolerance relative to shadow_ray.t.
-    float t_shadow = shadow_ray.t - 20 * ray::RAY_EPSILON;
+    float t_shadow = shadow_ray.t - 1000 * ray::RAY_EPSILON;
     shadow_ray.origin = shadow_ray.origin + shadow_ray.direction * t_shadow;
     Vector4f light_position(this->lights[lindex]->position);
     Vector4f dir = light_position - shadow_ray.origin;
     shadow_ray.t_max = dir.length();
     dir.normalize();
     shadow_ray.setDirection(dir);
-    Color c = this->mesh->mat->shade(shadow_ray, normal,
+    Color c = this->mesh->shade(triangle_id, shadow_ray, normal,
                                 this->lights[lindex]);
     shadow_ray.color = COLOR_ACCUM(1.0f, c[0], c[1], c[2], 1.0f);
     rays.push_back(shadow_ray);

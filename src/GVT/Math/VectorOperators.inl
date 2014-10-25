@@ -262,6 +262,17 @@ inline bool operator!=(const GVT::Math::Vector4<T>& a,
   return !(a == b);
 }
 
+template <class T>
+inline std::ostream& operator<<(std::ostream& os,
+                                const GVT::Math::Vector4<T>& v) {
+  return os << v[0] << " " << v[1] << " " << v[2] << " " << v[3];
+}
+
+template <class T>
+inline std::istream& operator>>(std::istream& is, GVT::Math::Vector4<T>& v) {
+  return is >> v[0] >> v[1] >> v[2] >> v[3];
+}
+
 // template <class T>
 // inline std::ostream& operator <<(std::ostream& os, const
 // GVT::Math::Vector3<T>& v) {
@@ -273,4 +284,14 @@ inline bool operator!=(const GVT::Math::Vector4<T>& a,
 // {
 //    is >> v.n[0] >> v.n[1] >> v.n[2];
 //}
+template <class T>
+inline std::ostream& operator<<(std::ostream& os,
+                                const GVT::Math::Point4<T>& v) {
+  return os << v.n[0] << " " << v.n[1] << " " << v.n[2] << " " << v.n[3];
+}
+
+template <class T>
+inline std::istream& operator>>(std::istream& is, GVT::Math::Point4<T>& v) {
+  return is >> v.n[0] >> v.n[1] >> v.n[2] >> v.n[3];
+}
 
