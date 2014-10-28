@@ -10,7 +10,6 @@ namespace utils {
 
 class WavefrontMtlLoader {
  public:
-
   // The file path specifies the obj file to load and the "mesh"
   // parameter will be populated with the geometry from the path
   // specified by "file_path".
@@ -50,6 +49,11 @@ class WavefrontMtlLoader {
   // of the imagei, respectively. Affects only the current material.
   int SetEmissiveColor(float r, float g, float b);
 
+  // This sets the transmissive filter for the current material. The "r",
+  // "g", "b" parameters represent the red, blue, and green channels
+  // of the imagei, respectively. Affects only the current material.
+  int SetTransmissiveFilter(float r, float g, float b);
+
   // The parameter "se" represents the Blinn-Phong shininess parameter.
   // Affects only the current material.
   int SetSpecularExponent(float se);
@@ -76,7 +80,7 @@ class WavefrontMtlLoader {
 
  protected:
   // Currently, this method is disabled.
-  WavefrontMtlLoader(); 
+  WavefrontMtlLoader();
 
   // This sets up callbacks for libobjreader.
   void Init();

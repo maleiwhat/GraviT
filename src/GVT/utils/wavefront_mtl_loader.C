@@ -28,6 +28,7 @@ int SetAmbientColorCallback(float r, float g, float b, void* user_data);
 int SetDiffuseColorCallback(float r, float g, float b, void* user_data);
 int SetSpecularColorCallback(float r, float g, float b, void* user_data);
 int SetEmissiveColorCallback(float r, float g, float b, void* user_data);
+int SetTransmissiveFilterCallback(float r, float g, float b, void* user_data);
 int SetSpecularExponentCallback(float se, void* user_data);
 int SetOpticalDensityCallback(float d, void* user_data);
 int SetAlphaCallback(float a, void* user_data);
@@ -45,6 +46,8 @@ void WavefrontMtlLoader::Init() {
   material_parse_callbacks_.onSetDiffuseColor = SetDiffuseColorCallback;
   material_parse_callbacks_.onSetSpecularColor = SetSpecularColorCallback;
   material_parse_callbacks_.onSetEmissiveColor = SetEmissiveColorCallback;
+  material_parse_callbacks_.onSetTransmissiveFilter =
+      SetTransmissiveFilterCallback;
   material_parse_callbacks_.onSetSpecularExponent = SetSpecularExponentCallback;
   material_parse_callbacks_.onSetOpticalDensity = SetOpticalDensityCallback;
   material_parse_callbacks_.onSetAlpha = SetAlphaCallback;
@@ -59,8 +62,8 @@ void WavefrontMtlLoader::Init() {
 int WavefrontMtlLoader::AddMaterial(char* name) {
   std::cout << "newmtl " << name << "\n";
   current_material_ = new WavefrontObjMaterial;
-  material_library_->AddMaterial(
-      name, static_cast<Material*>(current_material_));
+  material_library_->AddMaterial(name,
+                                 static_cast<Material*>(current_material_));
   return 0;
 }
 
@@ -86,6 +89,13 @@ int WavefrontMtlLoader::SetSpecularColor(float r, float g, float b) {
 }
 
 int WavefrontMtlLoader::SetEmissiveColor(float r, float g, float b) {
+  if (current_material_) {
+    current_material_->set_ke(Vector4f(r, g, b, 1.0f));
+  }
+  return 0;
+}
+
+int WavefrontMtlLoader::SetTransmissiveFilter(float r, float g, float b) {
   if (current_material_) {
     current_material_->set_ke(Vector4f(r, g, b, 1.0f));
   }
@@ -137,7 +147,6 @@ int WavefrontMtlLoader::SetDiffuseTextureMap(char* path) {
   return 0;
 }
 
-
 // Class methods used by WavefrontMtlLoader here.
 // We provide a very simple implementation to load faces, vertices,
 // and vertex normals.
@@ -179,6 +188,12 @@ int SetSpecularColorCallback(float r, float g, float b, void* user_data) {
 int SetEmissiveColorCallback(float r, float g, float b, void* user_data) {
   WavefrontMtlLoader* loader = reinterpret_cast<WavefrontMtlLoader*>(user_data);
   int result = loader->SetEmissiveColor(r, g, b);
+  return result;
+}
+
+int SetTransmissiveFilterCallback(float r, float g, float b, void* user_data) {
+  WavefrontMtlLoader* loader = reinterpret_cast<WavefrontMtlLoader*>(user_data);
+  int result = loader->SetTransmissiveFilter(r, g, b);
   return result;
 }
 
