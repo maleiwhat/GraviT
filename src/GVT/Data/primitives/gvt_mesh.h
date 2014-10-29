@@ -57,7 +57,7 @@ class Mesh : public AbstractMesh {
 
   virtual GVT::Data::Color shade(GVT::Data::ray& r, GVT::Math::Vector4f normal,
                                  GVT::Data::LightSource* lsource);
-  virtual GVT::Data::Color shade(int face_id, GVT::Data::ray& r,
+  virtual GVT::Data::Color shadeFace(int face_id, GVT::Data::ray& r,
                                  GVT::Math::Vector4f normal,
                                  GVT::Data::LightSource* lsource);
 

@@ -48,7 +48,7 @@ int AddToFaceCallback(size_t v, size_t vt, size_t vn, void* user_data);
 int AddMaterialLibCallBack(char* filename, void* user_data);
 int UseMaterialCallback(char* material, void* user_data);
 
-WavefrontObjLoader::WavefrontObjLoader() { Init(); }
+WavefrontObjLoader::WavefrontObjLoader() : current_material_(NULL) { Init(); }
 
 void WavefrontObjLoader::Init() {
   // Setup object parse callbacks.

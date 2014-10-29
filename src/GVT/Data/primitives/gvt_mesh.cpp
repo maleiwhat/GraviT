@@ -21,7 +21,7 @@ namespace GVT {
 
 namespace Data {
 
-Mesh::Mesh(Material* mat) : mat(mat), haveNormals(false) {}
+Mesh::Mesh(Material* mat) : mat(NULL), haveNormals(false) {}
 
 Mesh::Mesh(const Mesh& orig) {
   mat = orig.mat;
@@ -121,7 +121,7 @@ void Mesh::generateNormals() {
   haveNormals = true;
 }
 
-Color Mesh::shade(int face_id, ray& r, Vector4f normal,
+Color Mesh::shadeFace(int face_id, ray& r, Vector4f normal,
                   LightSource* lsource) {
   Color c(0.5f, 0.5f, 0.5f, 0.0f);
   const Material* m =
@@ -129,7 +129,6 @@ Color Mesh::shade(int face_id, ray& r, Vector4f normal,
   if (m) {
     c = m->shade(r, normal, lsource);
   }
-  //c = mat->shade(r, normal, lsource);
   return c;
 }
 

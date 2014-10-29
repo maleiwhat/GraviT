@@ -164,6 +164,8 @@ class WavefrontObjMaterial : public Material {
 
   void set_ka(const GVT::Math::Vector4f& value) { ka_ = value; }
 
+  void set_kt(const GVT::Math::Vector4f& value) { kt_ = value; }
+
   void set_specular_exponent(float value) { specular_exponent_ = value; }
 
   void set_optical_density(float value) { optical_density_ = value; }
@@ -197,6 +199,7 @@ class WavefrontObjMaterial : public Material {
   GVT::Math::Vector4f ks_;
   GVT::Math::Vector4f ke_;
   GVT::Math::Vector4f ka_;
+  GVT::Math::Vector4f kt_;
   float specular_exponent_;  // Blinn-Phong shineness exponent
   float optical_density_;    // index of refraction
   float alpha_;              // opacity

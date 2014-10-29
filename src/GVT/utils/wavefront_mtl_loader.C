@@ -97,7 +97,7 @@ int WavefrontMtlLoader::SetEmissiveColor(float r, float g, float b) {
 
 int WavefrontMtlLoader::SetTransmissiveFilter(float r, float g, float b) {
   if (current_material_) {
-    current_material_->set_ke(Vector4f(r, g, b, 1.0f));
+    current_material_->set_kt(Vector4f(r, g, b, 1.0f));
   }
   return 0;
 }

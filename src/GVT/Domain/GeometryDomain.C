@@ -73,22 +73,23 @@ bool GeometryDomain::load() {
     mesh->material_list = new MaterialList;
     WavefrontObjLoader loader(filename, mesh);
     loader.Load();
-    std::cout << "Material list size = " << mesh->material_list->size() << "\n";
-    std::cout << "faces_to_materials.size() = "
-              << mesh->faces_to_materials.size() << "\n";
-    for (int i = 0; i < mesh->faces.size(); ++i) {
-      if (mesh->faces_to_materials.size() > i  &&
-          mesh->faces_to_materials[i] != NULL) 
-        std::cout << "face " << i << " has material \n" <<
-        *(mesh->faces_to_materials[i]);
-    }
+   // std::cout << "Material list size = " << mesh->material_list->size() << "\n";
+   // std::cout << "faces_to_materials.size() = "
+    //          << mesh->faces_to_materials.size() << "\n";
+    //for (int i = 0; i < mesh->faces.size(); ++i) {
+    //  if (mesh->faces_to_materials.size() > i  &&
+    //      mesh->faces_to_materials[i] != NULL) 
+    //    std::cout << "face " << i << " has material \n" <<
+   //     *(mesh->faces_to_materials[i]);
+   // }
   }
   lights.push_back(new GVT::Data::PointLightSource(
   //    GVT::Math::Point4f(-10.7389f, -13.6002f, 1.0f),
-  //    GVT::Math::Point4f(-10.7098f, -13.9444f, 0.299326f),
-        GVT::Math::Point4f(278.0f,400.4f,250.0f),
+//      GVT::Math::Point4f(-10.7098f, -13.9444f, 0.299326f), // sibenik cathedral
+     // GVT::Math::Point4f(-20.0f, -13.0f, 1.0f),
+        GVT::Math::Point4f(278.0f,400.4f,250.0f),   // cornell box
    //  GVT::Math::Point4f(0.0f, -4.0f, -4.0f),
-   //   GVT::Math::Point4f(5.0f, 5.0f, 5.0f),
+  //    GVT::Math::Point4f(5.0f, 5.0f, 5.0f), // bunny
       GVT::Data::Color(1.f, 1.f, 1.f, 1.f)));
   mesh->mat = new GVT::Data::Lambert(GVT::Data::Color(1.f, .0f, .0f, 1.f));
   boundingBox = mesh->boundingBox;

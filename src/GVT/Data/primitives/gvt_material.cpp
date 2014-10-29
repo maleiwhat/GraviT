@@ -154,6 +154,7 @@ WavefrontObjMaterial::WavefrontObjMaterial()
       ks_(Vector4f(0.0f, 0.0f, 0.0f, 0.0f)),
       ke_(Vector4f(0.0f, 0.0f, 0.0f, 0.0f)),
       ka_(Vector4f(0.0f, 0.0f, 0.0f, 0.0f)),
+      kt_(Vector4f(0.0f, 0.0f, 0.0f, 0.0f)),
       specular_exponent_(0.0f),
       has_illum_model_(false),
       illum_model_(0),
@@ -167,6 +168,7 @@ WavefrontObjMaterial::WavefrontObjMaterial(const WavefrontObjMaterial& orig)
       ks_(orig.ks_),
       ke_(orig.ke_),
       ka_(orig.ka_),
+      kt_(orig.kt_),
       specular_exponent_(orig.specular_exponent_),
       has_illum_model_(orig.has_illum_model_),
       illum_model_(orig.illum_model_),
@@ -202,6 +204,7 @@ void  WavefrontObjMaterial::Print(std::ostream& os) const {
   os << "kd_=" << kd_ <<"\n";
   os << "ks_=" << ks_ <<"\n";
   os << "ka_=" << ka_ <<"\n";
+  os << "kt_=" << kt_ <<"\n";
   os << "ke_=" << ke_ <<"\n";
   os << "se=" << specular_exponent_ << "\n";
 }
