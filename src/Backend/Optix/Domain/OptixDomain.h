@@ -24,9 +24,7 @@ class OptixDomain : public GeometryDomain {
   virtual bool load();
   void trace(GVT::Data::RayVector& rayList, GVT::Data::RayVector& moved_rays);
   optix::prime::Context& optix_context() { return optix_context_; }
-  optix::prime::Model& optix_model() {
-    return optix_model_;
-  };
+  optix::prime::Model& optix_model() { return optix_model_; }
 
  private:
   GVT::Math::Vector4f computeNormal(uint32_t triangle_id, float u,
@@ -34,7 +32,7 @@ class OptixDomain : public GeometryDomain {
   void generateSecondaryRays(const GVT::Data::ray& ray,
                              const GVT::Math::Vector4f& normal,
                              Data::RayVector& rays);
-  void generateShadowRays(const GVT::Data::ray& ray,
+  void generateShadowRays(int triangle_id, const GVT::Data::ray& ray,
                           const GVT::Math::Vector4f& normal,
                           GVT::Data::RayVector& rays);
   void traceRay(uint32_t triangle_id, float t, float u, float v,

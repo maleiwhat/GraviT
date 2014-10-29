@@ -7,14 +7,16 @@
 
 #ifndef GVT_MATERIAL_H
 #define GVT_MATERIAL_H
-#include <boost/container/vector.hpp>
 
-#include <GVT/Math/GVTMath.h>
-#include <GVT/Data/primitives/gvt_ray.h>
-#include <GVT/Data/primitives/gvt_lightsource.h>
 #include <time.h>
 
+#include <GVT/Data/primitives/gvt_lightsource.h>
+#include <GVT/Data/primitives/gvt_ray.h>
+#include <GVT/Math/GVTMath.h>
+#include <boost/container/vector.hpp>
+
 namespace GVT {
+
 namespace Data {
 
 class Material {
@@ -23,18 +25,18 @@ class Material {
   Material(const Material& orig);
   virtual ~Material();
 
-  virtual GVT::Math::Vector4f shade(const GVT::Data::ray& ray,
-                                    const GVT::Math::Vector4f& sufaceNormal,
-                                    const GVT::Data::LightSource* lightSource);
+  virtual GVT::Math::Vector4f shade(
+      const GVT::Data::ray& ray, const GVT::Math::Vector4f& sufaceNormal,
+      const GVT::Data::LightSource* lightSource) const;
   virtual GVT::Data::RayVector ao(const GVT::Data::ray& ray,
                                   const GVT::Math::Vector4f& sufaceNormal,
-                                  float samples);
+                                  float samples) const;
   virtual GVT::Data::RayVector secondary(
       const GVT::Data::ray& ray, const GVT::Math::Vector4f& sufaceNormal,
-      float samples);
+      float samples) const;
 
   GVT::Math::Vector4f CosWeightedRandomHemisphereDirection2(
-      GVT::Math::Vector4f n) {
+      const GVT::Math::Vector4f& n) const {
     float Xi1 = (float)rand() / (float)RAND_MAX;
     float Xi2 = (float)rand() / (float)RAND_MAX;
 
@@ -59,9 +61,9 @@ class Material {
 
     GVT::Math::Vector4f direction = x * xs + y * ys + z * zs;
     direction.normalize();
-//    std::cout << "dot(n, direction) = " << direction * n;
     return direction;
   }
+  virtual void Print(std::ostream& os) const {}
 
  protected:
 };
@@ -72,15 +74,15 @@ class Lambert : public Material {
   Lambert(const Lambert& orig);
   virtual ~Lambert();
 
-  virtual GVT::Math::Vector4f shade(const GVT::Data::ray& ray,
-                                    const GVT::Math::Vector4f& sufaceNormal,
-                                    const GVT::Data::LightSource* lightSource);
+  virtual GVT::Math::Vector4f shade(
+      const GVT::Data::ray& ray, const GVT::Math::Vector4f& sufaceNormal,
+      const GVT::Data::LightSource* lightSource) const;
   virtual GVT::Data::RayVector ao(const GVT::Data::ray& ray,
                                   const GVT::Math::Vector4f& sufaceNormal,
-                                  float samples);
+                                  float samples) const;
   virtual GVT::Data::RayVector secondary(
       const GVT::Data::ray& ray, const GVT::Math::Vector4f& sufaceNormal,
-      float samples);
+      float samples) const;
 
  protected:
   GVT::Math::Vector4f kd;
@@ -94,15 +96,15 @@ class Phong : public Material {
   Phong(const Phong& orig);
   virtual ~Phong();
 
-  virtual GVT::Math::Vector4f shade(const GVT::Data::ray& ray,
-                                    const GVT::Math::Vector4f& sufaceNormal,
-                                    const GVT::Data::LightSource* lightSource);
+  virtual GVT::Math::Vector4f shade(
+      const GVT::Data::ray& ray, const GVT::Math::Vector4f& sufaceNormal,
+      const GVT::Data::LightSource* lightSource) const;
   virtual GVT::Data::RayVector ao(const GVT::Data::ray& ray,
                                   const GVT::Math::Vector4f& sufaceNormal,
-                                  float samples);
+                                  float samples) const;
   virtual GVT::Data::RayVector secondary(
       const GVT::Data::ray& ray, const GVT::Math::Vector4f& sufaceNormal,
-      float samples);
+      float samples) const;
 
  protected:
   GVT::Math::Vector4f kd;
@@ -118,23 +120,104 @@ class BlinnPhong : public Material {
   BlinnPhong(const BlinnPhong& orig);
   virtual ~BlinnPhong();
 
-  virtual GVT::Math::Vector4f shade(const GVT::Data::ray& ray,
-                                    const GVT::Math::Vector4f& sufaceNormal,
-                                    const GVT::Data::LightSource* lightSource);
+  virtual GVT::Math::Vector4f shade(
+      const GVT::Data::ray& ray, const GVT::Math::Vector4f& sufaceNormal,
+      const GVT::Data::LightSource* lightSource) const;
   virtual GVT::Data::RayVector ao(const GVT::Data::ray& ray,
                                   const GVT::Math::Vector4f& sufaceNormal,
-                                  float samples);
+                                  float samples) const;
   virtual GVT::Data::RayVector secondary(
       const GVT::Data::ray& ray, const GVT::Math::Vector4f& sufaceNormal,
-      float samples);
+      float samples) const;
 
  protected:
   GVT::Math::Vector4f kd;
   GVT::Math::Vector4f ks;
   float alpha;
 };
+
+class WavefrontObjMaterial : public Material {
+ public:
+  WavefrontObjMaterial();
+
+  WavefrontObjMaterial(const WavefrontObjMaterial& orig);
+
+  virtual ~WavefrontObjMaterial();
+
+  virtual GVT::Math::Vector4f shade(
+      const GVT::Data::ray& ray, const GVT::Math::Vector4f& sufaceNormal,
+      const GVT::Data::LightSource* lightSource) const;
+
+  virtual GVT::Data::RayVector ao(const GVT::Data::ray& ray,
+                                  const GVT::Math::Vector4f& sufaceNormal,
+                                  float samples) const;
+
+  virtual GVT::Data::RayVector secondary(
+      const GVT::Data::ray& ray, const GVT::Math::Vector4f& sufaceNormal,
+      float samples) const;
+
+  void set_kd(const GVT::Math::Vector4f& value) { kd_ = value; }
+
+  void set_ks(const GVT::Math::Vector4f& value) { ks_ = value; }
+
+  void set_ke(const GVT::Math::Vector4f& value) { ke_ = value; }
+
+  void set_ka(const GVT::Math::Vector4f& value) { ka_ = value; }
+
+  void set_kt(const GVT::Math::Vector4f& value) { kt_ = value; }
+
+  void set_specular_exponent(float value) { specular_exponent_ = value; }
+
+  void set_optical_density(float value) { optical_density_ = value; }
+
+  void set_alpha(float value) { alpha_ = value; }
+
+  void set_has_illum_model(bool value) { has_illum_model_ = value; }
+
+  void set_illum_model(float value) { illum_model_ = value; }
+
+  void set_has_ambient_texture_map(bool value) {
+    has_ambient_texture_map_ = value;
+  }
+
+  void set_ambient_texture_map(const std::string& value) {
+    ambient_texture_map_ = value;
+  }
+
+  void set_has_diffuse_texture_map(bool value) {
+    has_diffuse_texture_map_ = value;
+  }
+
+  void set_diffuse_texture_map(const std::string& value) {
+    diffuse_texture_map_ = value;
+  }
+
+  virtual void Print(std::ostream& os) const;
+
+ protected:
+  GVT::Math::Vector4f kd_;
+  GVT::Math::Vector4f ks_;
+  GVT::Math::Vector4f ke_;
+  GVT::Math::Vector4f ka_;
+  GVT::Math::Vector4f kt_;
+  float specular_exponent_;  // Blinn-Phong shineness exponent
+  float optical_density_;    // index of refraction
+  float alpha_;              // opacity
+  // The values below are currently ignored.
+  bool has_illum_model_;
+  int illum_model_;
+  bool has_ambient_texture_map_;
+  std::string ambient_texture_map_;
+  bool has_diffuse_texture_map_;
+  std::string diffuse_texture_map_;
 };
-};
+
+std::ostream& operator<<(std::ostream& os, const Material& material);
+
+
+}  // namespace Data
+
+}  // namespace GVT
 
 #endif /* GVT_MATERIAL_H */
 

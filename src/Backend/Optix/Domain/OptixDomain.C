@@ -55,6 +55,23 @@ static void gravityRayToOptixRay(const ray& gvt_ray,
   optix_ray->t_max = gvt_ray.t_max;
 }
 
+// Adapted from:
+//  http://www.cygnus-software.com/papers/comparingfloats/comparingfloats.htm
+// Pass in "A" and "B" and this function will return true if "A"
+// and "B" are within "max_ulps" of each other and false otherwise.
+// This function worls buy interpreting "A" and "B" as twos-complement
+// integers and taking the integer difference between the two
+// values. 
+bool CompareUsingUlp(float A, float B, int max_ulps) {
+  int a_int = *(int*)&A;
+  if (a_int < 0) a_int = 0x80000000 - a_int;
+  int b_int = *(int*)&B;
+  if (b_int < 0) b_int = 0x80000000 - b_int;
+  int int_diff = abs(a_int - b_int);
+  if (int_diff <= max_ulps) return true;
+  return false;
+}
+
 OptixDomain::OptixDomain() : GeometryDomain("") {}
 
 OptixDomain::OptixDomain(const std::string& filename)
@@ -196,7 +213,7 @@ void OptixDomain::traceChunk(RayVector& chunk, RayVector& next_list,
 
   // Move missed rays.
   for (int i = hits.size() - 1; i >= 0; --i) {
-    //std::cout << "triangle_id = " << hits[i].triangle_id << "\n";
+    // std::cout << "triangle_id = " << hits[i].triangle_id << "\n";
     if (hits[i].triangle_id < 0) {
       moved_rays.push_back(chunk[i]);
       std::swap(hits[i], hits.back());
@@ -224,7 +241,7 @@ void OptixDomain::traceRay(uint32_t triangle_id, float t, float u, float v,
   ray.t = t;
   Vector4f normal = this->localToWorldNormal(computeNormal(triangle_id, u, v));
   normal.normalize();
-  generateShadowRays(ray, normal, rays);
+  generateShadowRays(triangle_id, ray, normal, rays);
   generateSecondaryRays(ray, normal, rays);
 }
 
@@ -245,10 +262,10 @@ void OptixDomain::generateSecondaryRays(const ray& ray_in,
                                         RayVector& rays) {
   int depth = ray_in.depth - 1;
   float p = 1.0f - (float(rand()) / RAND_MAX);
-  //std::cout << "p = " << p << " w = " << ray_in.w << " depth = " << depth
+  // std::cout << "p = " << p << " w = " << ray_in.w << " depth = " << depth
   //          << "\n";
   if (depth > 0 && ray_in.w > p) {
-    //std::cout << "Firing secondary ray\n";
+    // std::cout << "Firing secondary ray\n";
     ray secondary_ray(ray_in);
     secondary_ray.domains.clear();
     secondary_ray.type = ray::SECONDARY;
@@ -264,12 +281,15 @@ void OptixDomain::generateSecondaryRays(const ray& ray_in,
   }
 }
 
-void OptixDomain::generateShadowRays(const ray& ray_in, const Vector4f& normal,
-                                     RayVector& rays) {
+void OptixDomain::generateShadowRays(int triangle_id, const ray& ray_in,
+                                     const Vector4f& normal, RayVector& rays) {
   for (int lindex = 0; lindex < this->lights.size(); ++lindex) {
     ray shadow_ray(ray_in);
     shadow_ray.domains.clear();
     shadow_ray.type = ray::SHADOW;
+    // TODO (rsmith): Dehackify this (20 is a hard-coded constant).
+    // Perhaps it is better to use K * ULP for some integer K or
+    // some kind of other tolerance relative to shadow_ray.t.
     float t_shadow = shadow_ray.t - 20 * ray::RAY_EPSILON;
     shadow_ray.origin = shadow_ray.origin + shadow_ray.direction * t_shadow;
     Vector4f light_position(this->lights[lindex]->position);
@@ -277,14 +297,10 @@ void OptixDomain::generateShadowRays(const ray& ray_in, const Vector4f& normal,
     shadow_ray.t_max = dir.length();
     dir.normalize();
     shadow_ray.setDirection(dir);
-    Color c = this->mesh->mat->shade(shadow_ray, normal, this->lights[lindex]);
-    //std::cout << "n = " << normal << "\n";
-    // Need to weight this somehow.
+    Color c = this->mesh->shadeFace(triangle_id, shadow_ray, normal,
+                                this->lights[lindex]);
+    //Color c = this->mesh->mat->shade(shadow_ray, normal, this->lights[lindex]);
     shadow_ray.color = COLOR_ACCUM(1.0f, c[0], c[1], c[2], 1.0f);
-    //shadow_ray.color = COLOR_ACCUM(1.0f, 0.5f * (normal.n[0] + 1.0f),
-    //                               0.5f * (normal.n[1] + 1.0f),
-    //                               0.5f * (normal.n[2] + 1.0f), 0.0f);
-    //std::cout << "w = " << shadow_ray.w << "\n";
     rays.push_back(shadow_ray);
   }
 }

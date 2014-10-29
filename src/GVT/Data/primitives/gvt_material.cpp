@@ -4,10 +4,23 @@
  *
  * Created on April 18, 2014, 3:07 PM
  */
+
 #include <cmath>
+#include <iostream>
+
 #include <GVT/Data/derived_types.h>
-#include "gvt_material.h"
+#include <GVT/Data/primitives/gvt_material.h>
+#include <GVT/Math/GVTMath.h>
+
+using GVT::Data::Color;
+using GVT::Data::LightSource;
+using GVT::Data::RayVector;
+using GVT::Data::ray;
+using GVT::Math::Vector4f;
+using GVT::Math::Point4f;
+
 namespace GVT {
+
 namespace Data {
 
 Material::Material() {}
@@ -16,57 +29,49 @@ Material::Material(const Material& orig) {}
 
 Material::~Material() {}
 
-GVT::Math::Vector4f Material::shade(const GVT::Data::ray& ray,
-                                    const GVT::Math::Vector4f& sufaceNormal,
-                                    const GVT::Data::LightSource* lightSource) {
-  return GVT::Math::Vector4f();
+Vector4f Material::shade(const ray& ray, const Vector4f& sufaceNormal,
+                         const LightSource* lightSource) const {
+  return Vector4f();
 }
 
-GVT::Data::RayVector Material::ao(const GVT::Data::ray& ray,
-                                  const GVT::Math::Vector4f& sufaceNormal,
-                                  float samples) {
-  return GVT::Data::RayVector();
+RayVector Material::ao(const ray& ray, const Vector4f& sufaceNormal,
+                       float samples) const {
+  return RayVector();
 }
 
-GVT::Data::RayVector Material::secondary(
-    const GVT::Data::ray& ray, const GVT::Math::Vector4f& sufaceNormal,
-    float samples) {
-  return GVT::Data::RayVector();
+RayVector Material::secondary(const ray& ray, const Vector4f& sufaceNormal,
+                              float samples) const {
+  return RayVector();
 }
 
-Lambert::Lambert(const GVT::Math::Vector4f& kd) : Material(), kd(kd) {}
+Lambert::Lambert(const Vector4f& kd) : Material(), kd(kd) {}
 
 Lambert::Lambert(const Lambert& orig) : Material(orig), kd(orig.kd) {}
 
 Lambert::~Lambert() {}
 
-GVT::Math::Vector4f Lambert::shade(const GVT::Data::ray& ray,
-                                   const GVT::Math::Vector4f& N,
-                                   const GVT::Data::LightSource* lightSource) {
+Vector4f Lambert::shade(const ray& ray, const Vector4f& N,
+                        const LightSource* lightSource) const {
 
-  GVT::Math::Point4f L = ray.direction;
+  Point4f L = ray.direction;
   L = L.normalize();
   float NdotL = std::max(0.f, N * L);
-  GVT::Data::Color lightSourceContrib = lightSource->contribution(ray);
-  GVT::Data::Color diffuse =
-      GVT::Math::prod(lightSourceContrib, kd * NdotL) * ray.w;
+  Color lightSourceContrib = lightSource->contribution(ray);
+  Color diffuse = prod(lightSourceContrib, kd * NdotL) * ray.w;
   return diffuse;
 }
 
-GVT::Data::RayVector Lambert::ao(const GVT::Data::ray& ray,
-                                 const GVT::Math::Vector4f& sufaceNormal,
-                                 float samples) {
-  return GVT::Data::RayVector();
+RayVector Lambert::ao(const ray& ray, const Vector4f& sufaceNormal,
+                      float samples) const {
+  return RayVector();
 }
 
-GVT::Data::RayVector Lambert::secondary(const GVT::Data::ray& ray,
-                                        const GVT::Math::Vector4f& sufaceNormal,
-                                        float samples) {
-  return GVT::Data::RayVector();
+RayVector Lambert::secondary(const ray& ray, const Vector4f& sufaceNormal,
+                             float samples) const {
+  return RayVector();
 }
 
-Phong::Phong(const GVT::Math::Vector4f& kd, const GVT::Math::Vector4f& ks,
-             const float& alpha)
+Phong::Phong(const Vector4f& kd, const Vector4f& ks, const float& alpha)
     : Material(), kd(kd), ks(ks), alpha(alpha) {}
 
 Phong::Phong(const Phong& orig)
@@ -74,45 +79,38 @@ Phong::Phong(const Phong& orig)
 
 Phong::~Phong() {}
 
-GVT::Math::Vector4f Phong::shade(const GVT::Data::ray& ray,
-                                 const GVT::Math::Vector4f& N,
-                                 const GVT::Data::LightSource* lightSource) {
-  GVT::Math::Vector4f hitPoint =
-      (GVT::Math::Vector4f)ray.origin + (ray.direction * ray.t);
-  GVT::Math::Vector4f L = (GVT::Math::Vector4f)lightSource->position - hitPoint;
+Vector4f Phong::shade(const ray& ray, const Vector4f& N,
+                      const LightSource* lightSource) const {
+  Vector4f hitPoint = (Vector4f)ray.origin + (ray.direction * ray.t);
+  Vector4f L = (Vector4f)lightSource->position - hitPoint;
 
   L = L.normalize();
   float NdotL = std::max(0.f, (N * L));
-  GVT::Math::Vector4f R = ((N * 2.f) * NdotL) - L;
+  Vector4f R = ((N * 2.f) * NdotL) - L;
   float VdotR = std::max(0.f, (R * (-ray.direction)));
   float power = VdotR * std::pow(VdotR, alpha);
 
-  GVT::Math::Vector4f lightSourceContrib =
-      lightSource->contribution(ray);  //  distance;
+  Vector4f lightSourceContrib = lightSource->contribution(ray);  //  distance;
 
-  GVT::Data::Color diffuse =
-      GVT::Math::prod((lightSourceContrib * NdotL), kd) * ray.w;
-  GVT::Data::Color specular =
-      GVT::Math::prod((lightSourceContrib * power), ks) * ray.w;
+  Color diffuse = prod((lightSourceContrib * NdotL), kd) * ray.w;
+  Color specular = prod((lightSourceContrib * power), ks) * ray.w;
 
-  GVT::Data::Color finalColor = (diffuse + specular);
+  Color finalColor = (diffuse + specular);
   return finalColor;
 }
 
-GVT::Data::RayVector Phong::ao(const GVT::Data::ray& ray,
-                               const GVT::Math::Vector4f& sufaceNormal,
-                               float samples) {
-  return GVT::Data::RayVector();
+RayVector Phong::ao(const ray& ray, const Vector4f& sufaceNormal,
+                    float samples) const {
+  return RayVector();
 }
 
-GVT::Data::RayVector Phong::secondary(const GVT::Data::ray& ray,
-                                      const GVT::Math::Vector4f& sufaceNormal,
-                                      float samples) {
-  return GVT::Data::RayVector();
+RayVector Phong::secondary(const ray& ray, const Vector4f& sufaceNormal,
+                           float samples) const {
+  return RayVector();
 }
 
-BlinnPhong::BlinnPhong(const GVT::Math::Vector4f& kd,
-                       const GVT::Math::Vector4f& ks, const float& alpha)
+BlinnPhong::BlinnPhong(const Vector4f& kd, const Vector4f& ks,
+                       const float& alpha)
     : Material(), kd(kd), ks(ks), alpha(alpha) {}
 
 BlinnPhong::BlinnPhong(const BlinnPhong& orig)
@@ -120,41 +118,102 @@ BlinnPhong::BlinnPhong(const BlinnPhong& orig)
 
 BlinnPhong::~BlinnPhong() {}
 
-GVT::Math::Vector4f BlinnPhong::shade(
-    const GVT::Data::ray& ray, const GVT::Math::Vector4f& N,
-    const GVT::Data::LightSource* lightSource) {
-  GVT::Math::Vector4f hitPoint =
-      (GVT::Math::Vector4f)ray.origin + (ray.direction * ray.t);
-  GVT::Math::Vector4f L = (GVT::Math::Vector4f)lightSource->position - hitPoint;
+Vector4f BlinnPhong::shade(const ray& ray, const Vector4f& N,
+                           const LightSource* lightSource) const {
+  Vector4f hitPoint = (Vector4f)ray.origin + (ray.direction * ray.t);
+  Vector4f L = (Vector4f)lightSource->position - hitPoint;
   L = L.normalize();
   float NdotL = std::max(0.f, (N * L));
 
-  GVT::Math::Vector4f H = (L - ray.direction).normalize();
+  Vector4f H = (L - ray.direction).normalize();
 
   float NdotH = (H * N);
   float power = NdotH * std::pow(NdotH, alpha);
 
-  GVT::Math::Vector4f lightSourceContrib = lightSource->contribution(ray);
+  Vector4f lightSourceContrib = lightSource->contribution(ray);
 
-  GVT::Data::Color diffuse =
-      GVT::Math::prod((lightSourceContrib * NdotL), kd) * ray.w;
-  GVT::Data::Color specular =
-      GVT::Math::prod((lightSourceContrib * power), ks) * ray.w;
+  Color diffuse = prod((lightSourceContrib * NdotL), kd) * ray.w;
+  Color specular = prod((lightSourceContrib * power), ks) * ray.w;
 
-  GVT::Data::Color finalColor = (diffuse + specular);
+  Color finalColor = (diffuse + specular);
   return finalColor;
 }
 
-GVT::Data::RayVector BlinnPhong::ao(const GVT::Data::ray& ray,
-                                    const GVT::Math::Vector4f& sufaceNormal,
-                                    float samples) {
-  return GVT::Data::RayVector();
+RayVector BlinnPhong::ao(const ray& ray, const Vector4f& sufaceNormal,
+                         float samples) const {
+  return RayVector();
 }
 
-GVT::Data::RayVector BlinnPhong::secondary(
-    const GVT::Data::ray& ray, const GVT::Math::Vector4f& sufaceNormal,
-    float samples) {
-  return GVT::Data::RayVector();
+RayVector BlinnPhong::secondary(const ray& ray, const Vector4f& sufaceNormal,
+                                float samples) const {
+  return RayVector();
 }
+
+WavefrontObjMaterial::WavefrontObjMaterial()
+    : kd_(Vector4f(0.5f, 0.5f, 0.5f, 0.0f)),
+      ks_(Vector4f(0.0f, 0.0f, 0.0f, 0.0f)),
+      ke_(Vector4f(0.0f, 0.0f, 0.0f, 0.0f)),
+      ka_(Vector4f(0.0f, 0.0f, 0.0f, 0.0f)),
+      kt_(Vector4f(0.0f, 0.0f, 0.0f, 0.0f)),
+      specular_exponent_(0.0f),
+      has_illum_model_(false),
+      illum_model_(0),
+      has_ambient_texture_map_(false),
+      ambient_texture_map_(),
+      has_diffuse_texture_map_(false),
+      diffuse_texture_map_() {}
+
+WavefrontObjMaterial::WavefrontObjMaterial(const WavefrontObjMaterial& orig)
+    : kd_(orig.kd_),
+      ks_(orig.ks_),
+      ke_(orig.ke_),
+      ka_(orig.ka_),
+      kt_(orig.kt_),
+      specular_exponent_(orig.specular_exponent_),
+      has_illum_model_(orig.has_illum_model_),
+      illum_model_(orig.illum_model_),
+      has_ambient_texture_map_(orig.has_ambient_texture_map_),
+      ambient_texture_map_(orig.ambient_texture_map_),
+      has_diffuse_texture_map_(orig.has_diffuse_texture_map_),
+      diffuse_texture_map_(orig.diffuse_texture_map_) {}
+
+WavefrontObjMaterial::~WavefrontObjMaterial() {}
+
+Vector4f WavefrontObjMaterial::shade(const ray& ray, const Vector4f& N,
+                                     const LightSource* lightSource) const {
+  Point4f L = ray.direction;
+  L = L.normalize();
+  float NdotL = std::max(0.f, N * L);
+  Color lightSourceContrib = lightSource->contribution(ray);
+  Color diffuse = prod(lightSourceContrib, kd_ * NdotL) * ray.w;
+  return diffuse;
 }
+
+RayVector WavefrontObjMaterial::ao(const ray& ray, const Vector4f& sufaceNormal,
+                                   float samples) const {
+  return RayVector();
 }
+
+RayVector WavefrontObjMaterial::secondary(const ray& ray,
+                                          const Vector4f& sufaceNormal,
+                                          float samples) const {
+  return RayVector();
+}
+
+void  WavefrontObjMaterial::Print(std::ostream& os) const {
+  os << "kd_=" << kd_ <<"\n";
+  os << "ks_=" << ks_ <<"\n";
+  os << "ka_=" << ka_ <<"\n";
+  os << "kt_=" << kt_ <<"\n";
+  os << "ke_=" << ke_ <<"\n";
+  os << "se=" << specular_exponent_ << "\n";
+}
+
+std::ostream& operator<<(std::ostream& os, const Material& material) {
+  material.Print(os);
+  return os;
+}
+
+}  // namespace Data
+
+}  // namespace GVT
