@@ -85,9 +85,9 @@ bool GeometryDomain::load() {
   }
   lights.push_back(new GVT::Data::PointLightSource(
   //    GVT::Math::Point4f(-10.7389f, -13.6002f, 1.0f),
-//      GVT::Math::Point4f(-10.7098f, -13.9444f, 0.299326f), // sibenik cathedral
-     // GVT::Math::Point4f(-20.0f, -13.0f, 1.0f),
-        GVT::Math::Point4f(278.0f,400.4f,250.0f),   // cornell box
+      GVT::Math::Point4f(-10.7098f, -13.9444f, 0.299326f), // sibenik cathedral
+  //    GVT::Math::Point4f(-20.0f, -13.0f, 1.0f),
+   //     GVT::Math::Point4f(278.0f,400.4f,250.0f),   // cornell box
    //  GVT::Math::Point4f(0.0f, -4.0f, -4.0f),
   //    GVT::Math::Point4f(5.0f, 5.0f, 5.0f), // bunny
       GVT::Data::Color(1.f, 1.f, 1.f, 1.f)));
