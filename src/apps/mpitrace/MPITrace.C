@@ -3,6 +3,9 @@
 //
 
 #include <config/config.h>
+//#ifdef GVT_MPE
+#include "mpe.h"
+//#endif
 #include <mpi.h>
 
 #include <fstream>
@@ -26,7 +29,13 @@ using namespace std;
 
 int main(int argc, char** argv) {
 
+#ifdef GVT_MPE
+  int event1a, event1b, event2a, event2b, event3a, event3b;
+  int event1, event2, event3;
+#endif
+  int rank = -1;
   MPI_Init(&argc, &argv);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Barrier(MPI_COMM_WORLD);
 
   string filename, imagename;
@@ -41,6 +50,23 @@ int main(int argc, char** argv) {
   else
     imagename = "MPITrace";
 
+#ifdef GVT_MPE
+  // define some mpe events
+  MPE_Log_get_state_eventIDs( &event1a, &event1b );
+  MPE_Log_get_state_eventIDs( &event2a, &event2b );
+  MPE_Log_get_state_eventIDs( &event3a, &event3b );
+  MPE_Log_get_solo_eventID( &event1 );
+  MPE_Log_get_solo_eventID( &event2 );
+  MPE_Log_get_solo_eventID( &event3 );
+  if(rank==0) {
+	MPE_Describe_state( event1a, event1b, "Read geometry","red");
+	MPE_Describe_state( event2a, event2b, "Render ","orange");
+	MPE_Describe_state( event3a, event3b, "Composite ","green");
+	MPE_Describe_event( event1, "Start Read", "white");
+	MPE_Describe_event( event2, "Start Render", "purple");
+	MPE_Describe_event( event3, "Start Composite", "navy");
+  }
+#endif
   fstream file;
   file.open(filename.c_str());
 
@@ -56,15 +82,18 @@ int main(int argc, char** argv) {
 
   file.close();
 
+
   switch (rta.render_type) {
     case GVT::Env::RayTracerAttributes::Volume:
       GVT_DEBUG(DBG_ALWAYS, "Volume dataset");
+	cerr << "VOLUME DATASET" << endl;
       rta.dataset =
           new GVT::Dataset::ConfigFileDataset<GVT::Domain::VolumeDomain>(
               rta.datafile);
       break;
     case GVT::Env::RayTracerAttributes::Surface:
       GVT_DEBUG(DBG_ALWAYS, "Geometry dataset");
+	cerr << "GEOM DATASET" << endl;
       rta.dataset =
           new GVT::Dataset::ConfigFileDataset<GVT::Domain::GeometryDomain>(
               rta.datafile);
@@ -72,25 +101,44 @@ int main(int argc, char** argv) {
 #ifdef GVT_BE_MANTA
     case GVT::Env::RayTracerAttributes::Manta:
       GVT_DEBUG(DBG_ALWAYS, "Using manta backend");
+	cerr << "MANTA DATASET" << endl;
       rta.dataset = new GVT::Dataset::MantaDataset(rta.datafile);
       break;
 #endif
 #ifdef GVT_BE_OPTIX
     case GVT::Env::RayTracerAttributes::Optix:
       GVT_DEBUG(DBG_ALWAYS, "Using optix backend");
+	cerr << "OPTIX DATASET" << endl;
       rta.dataset = new GVT::Dataset::OptixDataset(rta.datafile);
       break;
 #endif
+    default:
+      GVT_DEBUG(DBG_ALWAYS, "GOT NUTHIN FOR A DATASET");
+	cerr << "NUTTIN DATASET" << endl;
+      break;
   }
 
+#ifdef GVT_MPE
+  MPE_Log_event(event1,0,NULL);
+  MPE_Log_event(event1a,0,NULL);
+#endif
   GVT_ASSERT(rta.LoadDataset(), "Unable to load dataset");
+#ifdef GVT_MPE
+  MPE_Log_event(event1b,0,NULL);
+#endif
   std::cout << rta << std::endl;
   RayTracer rt;
-  int rank = -1;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Barrier(MPI_COMM_WORLD);
   cout << "Rendering: rank=" << rank << endl;
+#ifdef GVT_MPE
+  MPE_Log_event(event2,0,NULL);
+  MPE_Log_event(event2a,0,NULL);
+#endif
   rt.RenderImage(imagename);
+#ifdef GVT_MPE
+  MPE_Log_event(event2b,0,NULL);
+  MPE_Log_sync_clocks();
+#endif
   cout << "Done rendering: rank=" << rank << endl;
   if (MPI::COMM_WORLD.Get_size() > 1) MPI_Finalize();
   cout << "Finalized: rank=" << rank << endl;
