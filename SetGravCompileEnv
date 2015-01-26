@@ -1,0 +1,16 @@
+#!/bin/bash
+
+echo set up gravit compile env vars
+
+# boost directory
+export BOOST_DIR='/home/01197/semeraro/Projects/boost_1_55_0'
+# Manta environment
+export MANTA_SOURCE_DIR='/home/01197/semeraro/Projects/Gravity/Manta/trunk'
+export MANTA_BUILD_PREFIX='/home/01197/semeraro/Projects/Gravity/Manta/trunk/build'
+# objreader environment
+export OBJREADER_ROOT_DIR='/home/01197/semeraro/Projects/objreader/install'
+# optix stuff
+export OptiX_INSTALL_DIR='/home/01197/semeraro/Projects/optix'
+# MPE stuff.
+export MPE_INSTALL_DIR='/home/01197/semeraro/mpe2-1.3.0'
+export MPEHOME=$MPE_INSTALL_DIR/build
