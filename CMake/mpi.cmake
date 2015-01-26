@@ -1,13 +1,21 @@
 IF (GVT_MPI)
+	#find the mpi packages
         FIND_PACKAGE(MPI REQUIRED)
         INCLUDE_DIRECTORIES(${MPI_INCLUDE_PATH})
+	#find the mpe stuff
+	IF (GVT_MPE)
+		FIND_PACKAGE(MPE REQUIRED)
+		if(MPE_FOUND)
+			message("mpe include dir ${MPE_INCLUDE_DIR}")
+			message("mpe libs ${MPE_LIBRARIES}")
+			message("mp libs   ${MPI_LIBRARIES}")
+			INCLUDE_DIRECTORIES(${MPE_INCLUDE_DIR})
+		endif(MPE_FOUND)
+	ENDIF(GVT_MPE)
 
+	message("mpi link flags are: ${MPI_LINK_FLAGS}")
 	MACRO(CONFIGURE_LIB_MPI)
             set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "${MPI_COMPILE_FLAGS} -DPARALLEL")
             set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "${MPI_LINK_FLAGS}")
 	ENDMACRO()
-
-
-
-
 ENDIF()

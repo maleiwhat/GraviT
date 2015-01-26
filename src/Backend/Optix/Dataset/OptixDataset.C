@@ -33,8 +33,9 @@ bool OptixDataset::init() {
   size_t ptr = conf_filename.find_last_of("/\\");
   string conf_dir = conf_filename.substr(0, ptr);
 
-  GVT_DEBUG(DBG_LOW, "opened file '" << conf_filename << "' with dir '"
+  GVT_DEBUG(DBG_ALWAYS, "opened file '" << conf_filename << "' with dir '"
                                      << conf_dir << "'");
+   std::cout << "opened file " << conf_filename << " wih dir " << conf_dir << std::endl;
 
   // read chunk filenames and layout data
   while (conf.good()) {
@@ -42,6 +43,7 @@ bool OptixDataset::init() {
     getline(conf, line);
     if (line.size() > 0 && line.substr(0, 1) != "#") {
       GVT_DEBUG(DBG_LOW, "got line: '" << line << "'");
+	std::cout << "got line: " << line << std::endl;
       line += " ";
       stringstream buf;
       string file = conf_dir;
@@ -49,6 +51,7 @@ bool OptixDataset::init() {
       pos = line.find_first_of(" ");
       file += "/";
       file += line.substr(0, pos);
+	std::cout << "file is: " << file << std::endl;
       this->files.push_back(file);
 
       GVT::Math::Vector3f t;
@@ -91,6 +94,6 @@ bool OptixDataset::init() {
   return true;
 }
 
-}  // namespace Domain
+}  // namespace Dataset
 
 }  // namespace GVT
