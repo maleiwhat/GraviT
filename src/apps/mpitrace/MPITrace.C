@@ -3,9 +3,9 @@
 //
 
 #include <config/config.h>
-//#ifdef GVT_MPE
+#ifdef GVT_MPE
 #include "mpe.h"
-//#endif
+#endif
 #include <mpi.h>
 
 #include <fstream>
