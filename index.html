@@ -1,0 +1,63 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+	<head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<meta charset="utf-8">
+	<meta name="description" content="GraviT: A Comprehensive Ray Tracing Framework for Visualization in Distributed-Memory Parallel Environments">
+	<link rel="stylesheet" type="text/css" media="screen" href="./css/stylesheet.css">
+	<title>GraviT</title>
+	<link rel="icon" type="image/png" href="./images/fiu192.png" sizes="192x192">
+	<link rel="SHORTCUT ICON" href="./images/fiu32.ico">
+	<style type="text/css"></style></head>
+
+	<body>
+		<div id="header">
+			<div id="header-github">
+				<a id="forkme-banner" href="https://github.com/TACC/GraviT">View on GitHub</a>
+			</div>
+			<div id="header-title">GraviT</div>
+			<div id="header-subtitle">A Comprehensive Ray Tracing Framework for Visualization in Distributed-Memory Parallel Environments</div>
+			<div id="header-navbar">
+				<ul>
+					<li><a href="http://tacc.github.io/GraviT/index.html">Overview</a></li>
+					<li><a href="http://tacc.github.io/GraviT/demos.html">Demos</a></li>
+					<li><a href="http://tacc.github.io/GraviT/gallery.html">Gallery</a></li>
+					<li><a href="http://tacc.github.io/GraviT/getting_gravit.html">Getting GraviT</a></li>
+					<li><a href="https://github.com/TACC/GraviT/wiki">Wiki</a></li>
+					<li><a href="https://github.com/TACC/GraviT/issues">Bugs/Issues</a></li>
+					<li><a href="http://tacc.github.io/GraviT/related_projects.html">Related Projects</a></li>
+				</ul>
+			</div>
+			<div id="header-spacing"></div> 
+		</div>
+
+		<div id="content-wrap">
+			<div id="content">
+
+				<h1>What is GraviT?</h1>
+				<p>
+				GraviT is a software library for the class of simulation problems where insight is derived from actors operating on scientific data, i.e., data that has physical coordinates.  This data is often so large that it cannot reside in the memory of a single compute node.  While GraviT is designed with many types of actors and use cases in mind, the canonical usage of GraviT is with the actors that are rays and data that are tessellated surfaces.  In this case, GraviT produces ray-traced renderings.
+				</p>
+				<p>
+				GraviT’s design focuses on three key elements: interface, scheduler, and engine.   The interface element is how users interact with GraviT.  The scheduler element focuses on how to bring together actors with the appropriate pieces of data to advance the calculation.  The engine element performs the specified operations of the actor upon the data. This design is intentionally modular: developers can opt to extend GraviT with their own implementations of interface, scheduler, or engine, and to re-use the implementations from the other areas.   In short, GraviT provides a fully working system, but also one that can be easily extended.  Finally, GraviT is intended for very computationally heavy problems, so it aims to carry out calculations in the most efficient way possible while maintaining modularity and generality.  This goal impacts the scheduler and engine elements in particular.  
+				</p>
+				<p>
+				GraviT is divided into “core” infrastructure and domain-specific library.  The “core” infrastructure, abbreviated GVT-Core, contains abstract types, as well as implementations that are common to domain-specific libraries, for example scheduling.  The domain-specific libraries build on GVT-Core to create a functional system that is specialized to their area.  The domain-specific libraries that have been discussed by the GraviT team are:
+				<ul>
+				<li>GVT-Render, for ray-tracing geometric surfaces</li>
+				<li>GVT-Volume, for volume rendering</li>
+				<li>GVT-Advect, for particle advection</li>
+				<li>GVT-Photo, for modeling photon interactions</li>
+				</ul>
+				</p>
+				<p>
+				GraviT is developed by the <a href="http://www.tacc.utexas.edu/">Texas Advanced Computing Center</a> at the University of Texas at Austin, in partnership with the University of Oregon, the University of Utah, and ParaTools, Inc.
+				</p>
+				</p>
+			</div>
+		</div>
+
+		<div id="footer">
+			<a href="http://tacc.github.io/GraviT/">http://tacc.github.io/GraviT/</a>
+		</div>
+
+</body></html>
