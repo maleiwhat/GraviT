@@ -85,11 +85,15 @@ void EmbreeRayTracer::RenderImage(std::string imagename = "mpitrace")
     Image image(scene->camera.getFilmSizeWidth(),scene->camera.getFilmSizeHeight(), imagename);
 
     std::cout << "making camera rays" << std::endl;
-    rays = scene->camera.MakeCameraRays();
+    //rays = scene->camera.MakeCameraRays();
     std::cout << "finished making camera rays" << std::endl;
 
-    std::cout << "calling EmbreeDomain trace/render function" << std::endl;
-    gvt::render::algorithm::Tracer<DomainScheduler>(rays, image)();
+
+    for(int i=0; i < 16; i++) {
+        boost::timer::auto_cpu_timer t("Frame render time: %w\n");
+        rays = scene->camera.MakeCameraRays();
+        gvt::render::algorithm::Tracer<DomainScheduler>(rays, image)();
+    }
     
     gvt::render::algorithm::GVT_COMM mpi;
     if(mpi.root()) {
