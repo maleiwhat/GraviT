@@ -102,7 +102,7 @@ void TiledMantaRayTracer::RenderImage(std::string imagename = "mpitrace")
  //    boost::timer::auto_cpu_timer t("Total render time: %t\n");
 
 	// // comment out the following 3 lines to use gvt camera
- //    Image image(scene->camera.getFilmSizeWidth(),scene->camera.getFilmSizeHeight(), imagename);
+    // Image image(scene->camera.getFilmSizeWidth(),scene->camera.getFilmSizeHeight(), imagename);
  //    // rays = scene->camera.MakeCameraRays();
  //    // gvt::render::algorithm::Tracer<DomainScheduler>(rays, image)();
 
@@ -178,6 +178,7 @@ void TiledMantaRayTracer::RenderImage(std::string imagename = "mpitrace")
     display.domains = doms;
     display.width = m_width;
     display.height = m_height;
+    display.imagename = imagename;
     display.Launch();
   }
   else if (rank == 1)

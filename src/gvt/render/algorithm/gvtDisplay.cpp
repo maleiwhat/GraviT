@@ -85,7 +85,7 @@ void* parallelProcessPixels(void* args)
 }
 
 
-void displayFunc(void) 
+void gvtDisplay::displayFunc(void) 
 {
   DEBUG("display");
   static         boost::timer::cpu_timer render_timer, bench_timer;
@@ -115,6 +115,7 @@ void displayFunc(void)
     time = seconds.count();
     time = MPI_Wtime()-bench_time;
     printf("total render time of %d frames: %f avg: %f fps: %f \n",bench_frames, time, time/double(bench_frames),double(bench_frames)/time);
+    display_framebuffer.Write(imagename);
     StateMsg msg;
     msg.msg = "exit";
     msg.SendAll(MPI_COMM_WORLD); 
@@ -137,12 +138,12 @@ void displayFunc(void)
 
     // glRasterPos2i(-1, 1);
     // glPixelZoom(1.0f, -1.0f);
-  glDrawPixels(display_width,display_height,GL_RGB,GL_UNSIGNED_BYTE,display_framebuffer.GetData());
-  glutSwapBuffers();
+  // glDrawPixels(display_width,display_height,GL_RGB,GL_UNSIGNED_BYTE,display_framebuffer.GetData());
+  // glutSwapBuffers();
   frame.frame++;
   render_timer.stop();
   render_times_accumulated += render_timer.elapsed().wall;
-  glutPostRedisplay();
+  // glutPostRedisplay();
   DEBUG("display end");
   if (bench_frames > 0)
     displayFunc();
@@ -164,21 +165,21 @@ void initGlut (const std::string name, const size_t width, const size_t height)
   display_width = width;
   display_height = height;
   resizeDisplay(display_width,display_height);
-  int argc = 0; char** argv = NULL; 
-  glutInit(&argc, argv);
-  glutInitWindowSize((GLsizei)display_width, (GLsizei)display_height);
-  glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
-  glutInitWindowPosition(0, 0);
-  g_window = glutCreateWindow(name.c_str());
-  glutDisplayFunc(displayFunc);
-  glutIdleFunc(idleFunc);
-  glutKeyboardFunc(keyboardFunc);
-  glutSpecialFunc(specialFunc);
-  glutMouseFunc(clickFunc);
-  glutMotionFunc(motionFunc);
-  glutReshapeFunc(reshapeFunc);
-  printf("running glut main\n");
-  glutMainLoop();
+  // int argc = 0; char** argv = NULL; 
+  // glutInit(&argc, argv);
+  // glutInitWindowSize((GLsizei)display_width, (GLsizei)display_height);
+  // glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
+  // glutInitWindowPosition(0, 0);
+  // g_window = glutCreateWindow(name.c_str());
+  // glutDisplayFunc(displayFunc);
+  // glutIdleFunc(idleFunc);
+  // glutKeyboardFunc(keyboardFunc);
+  // glutSpecialFunc(specialFunc);
+  // glutMouseFunc(clickFunc);
+  // glutMotionFunc(motionFunc);
+  // glutReshapeFunc(reshapeFunc);
+  // printf("running glut main\n");
+  // glutMainLoop();
 }
 
 void resizeDisplay(int width, int height)
@@ -251,6 +252,7 @@ void gvtDisplay::Launch()
   scene.SendAll(stateLocal.intercomm);
 
   initGlut("gvtDisplay", width,height);
+  displayFunc();
   MPI_Comm_disconnect(&stateLocal.intercomm);
   MPI_Finalize();
 }

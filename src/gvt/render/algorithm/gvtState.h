@@ -24,8 +24,11 @@
 
 #include <mpi.h>
 
+#include <fstream>
 #include <sstream>
 #include <vector>
+
+#include <gvt/core/Debug.h>
 
 typedef std::vector<char> MPIBuffer;
 
@@ -336,10 +339,13 @@ template<class T>
 template<class T>
   struct Framebuffer 
   {
-    Framebuffer()
-    :width(0),height(0),data(0)
+    enum ImageFormat { PPM };
+
+    Framebuffer(ImageFormat f = PPM)
+    :width(0),height(0),data(0), format(f)
     {}
-    Framebuffer(int width, int height)
+    Framebuffer(int width, int height, ImageFormat f = PPM)
+    : format(f)
     {
       this->width = this->height = 0;
       Resize(width,height);
@@ -360,6 +366,47 @@ template<class T>
     T* GetData()
     { return &data[0]; }
 
+    void Write(const std::string filename)
+    {
+      // gvt::render::algorithm::GVT_COMM comm;
+      
+      // if(!comm.root()) return;
+      
+      std::string ext;
+      switch (format)
+      {
+          case PPM:
+              ext = ".ppm"; break;
+          default:
+              GVT_DEBUG(DBG_ALWAYS,"ERROR: unknown image format '" << format << "'");
+              return;
+      }
+      
+      std::stringstream header;
+      header << "P6" << std::endl;
+      header << width << " " << height << std::endl;
+      header << "255" << std::endl;
+      
+      std::fstream file;
+      file.open( (filename + ext).c_str(), std::fstream::out | std::fstream::trunc | std::fstream::binary );
+      file << header.str();
+      
+      // reverse row order so image is correctly oriented
+      for (int j=height-1; j >= 0; --j)
+      {
+          int offset = j*width;
+          for (int i=0; i < width; ++i)
+          {
+              // int index = 3*(offset+i);
+              // file << rgb[index+0] << rgb[index+1] << rgb[index+2];
+              int index = (offset+i);
+              file << data[index].r << data[index].g << data[index].b;
+          }
+      }
+      file.close();
+    }
+
+    ImageFormat format;
   // std::vector<char> data
     int width, height;
   // vector<T> data;
