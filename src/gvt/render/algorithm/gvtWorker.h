@@ -8,6 +8,7 @@
 #include <vector>
 #include <sstream>
 #include <stack>
+#include <string>
 
 #include <boost/timer/timer.hpp>
 
@@ -21,10 +22,10 @@ class Worker
 {
 public:
   Worker() {}
-void Launch();
+  void Launch(const std::string& objFilename);
   StateLocal stateLocal;
-StateUniversal stateUniversal;
-MPIBuffer buffer;
+  StateUniversal stateUniversal;
+  MPIBuffer buffer;
 };
 
 }

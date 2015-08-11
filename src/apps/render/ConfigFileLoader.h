@@ -58,8 +58,6 @@ namespace gvtapps {
         0: NONE, 1: BVH
         */
             AccelType accel_type = NoAccel; /* default no acceleration */
-
-
         };
 
     }

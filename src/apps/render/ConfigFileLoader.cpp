@@ -101,6 +101,7 @@ ConfigFileLoader::ConfigFileLoader(const std::string filename)
                 }
                 
                 scene.domainSet.push_back(domain = new gvt::render::data::domain::GeometryDomain(mesh));
+                scene.objFilenames.push_back(elems[1]);
                 
                 gvt::core::math::Vector4f t;
                 t[0] = std::atof(elems[2].c_str());

@@ -14,6 +14,9 @@
 #include <boost/timer/timer.hpp>
 
 #include "gvtState.h"
+
+#define BUNNIES 0
+
 using namespace std;
 
 namespace cvt
@@ -33,7 +36,7 @@ public:
   int height;
   int rank;
   std::vector<StateDomain> domains;
-  std::string imagename;
+  std::string imagename; // output
 };
 
 }

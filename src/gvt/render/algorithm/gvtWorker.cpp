@@ -80,7 +80,7 @@ struct MantaDomain
 
 struct MantaContext
 {
-  MantaContext()
+  MantaContext(const std::string& objFilename)
   {
 
     rtrt = Manta::createManta();
@@ -135,6 +135,8 @@ struct MantaContext
 
     // bunnyObj = new Manta::ObjGroup("/work/01336/carson/data/bunny.obj", material, Manta::MeshTriangle::KENSLER_SHIRLEY_TRI);
     bunnyObj = new Manta::ObjGroup("/work/03378/hpark/maverick/renderers/gravit/data/geom/bunny.obj", material, Manta::MeshTriangle::KENSLER_SHIRLEY_TRI);
+    //std::cout<<"obj filename: "<<objFilename<<"\n";
+    //bunnyObj = new Manta::ObjGroup(objFilename.c_str(), material, Manta::MeshTriangle::KENSLER_SHIRLEY_TRI);
     bunnyAS = new Manta::DynBVH();
     bunnyObj->preprocess(*pContext);
     bunnyAS->setGroup(bunnyObj);
@@ -213,6 +215,7 @@ void intersectDomains(Manta::RayPacket& mRays, unsigned int* pixIds, Framebuffer
   {
     if (mRays.wasHit(i))
     {
+      // std::cout<<"wasHit\n";
       unsigned int id = mRays.getScratchpad<unsigned int>(0)[i];
         // uchar3 color = {0,0,255};
       uchar3 color = {(id)%255,(id+128)%255,(id+200)%255};
@@ -308,9 +311,9 @@ void* worker_thread(void*)
     // server
     //
     // int main(int argc, char** argv)
-void Worker::Launch()
+void Worker::Launch(const std::string& objFilename)
 {
-  mContext = new MantaContext();
+  mContext = new MantaContext(objFilename);
   int rank, size;
 
   MPI_Comm intercomm;

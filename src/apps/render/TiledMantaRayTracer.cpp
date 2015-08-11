@@ -18,6 +18,7 @@
 #include <gvt/render/algorithm/gvtDisplay.h>
 #include <gvt/render/algorithm/gvtServer.h>
 #include <gvt/render/algorithm/gvtWorker.h>
+#include <gvt/core/Math.h>
 
 
 // Manta includes
@@ -33,6 +34,7 @@
 #ifdef PARALLEL
 #include <mpi.h>
 #endif
+
 
 using namespace gvtapps::render;
 using namespace gvt::core::mpi;
@@ -148,31 +150,55 @@ void TiledMantaRayTracer::RenderImage(std::string imagename = "mpitrace")
   // boost::mpi::communicator world;
     MPI_Comm_get_parent(&parentcomm);
       // if (parentcomm == MPI_COMM_NULL)
-
-    std::vector<StateDomain> doms;
+#if BUNNIES // defined in gvtDisplay.h
+  std::vector<StateDomain> doms;
   if(rank == 0) //gvtDisplay for now
   {
 
     glm::vec3 min(-50,-50,0);
-      for(int i=0; i < 10;i++)
-  {
-    for (int j=0;j < 10;j++)
+    for(int i=0; i < 10;i++)
     {
-      for(int k=0;k<1;k++)
+      for (int j=0;j < 10;j++)
       {
-        StateDomain dom;
-        dom.bound_min = glm::vec3(i*10+min[0],j*10+min[1],k*10+min[2]);
-        dom.bound_max = glm::vec3(i*10+min[0]+9,j*10+min[1]+9,k*10+min[2]+9);
-        dom.id = k*100+j*10+i;
-        doms.push_back(dom);
+        for(int k=0;k<1;k++)
+        {
+          StateDomain dom;
+          dom.bound_min = glm::vec3(i*10+min[0],j*10+min[1],k*10+min[2]);
+          dom.bound_max = glm::vec3(i*10+min[0]+9,j*10+min[1]+9,k*10+min[2]+9);
+          dom.id = k*100+j*10+i;
+          doms.push_back(dom);
+        }
       }
     }
+    // StateDomain dom;
+    //   dom.bound_min = glm::vec3(0,0,0);
+    //   dom.bound_max = glm::vec3(20,10,10);
+    //   dom.id = 10;
+    //   doms.push_back(dom);
+    gvtDisplay display;
+    display.domains = doms;
+    display.width = m_width;
+    display.height = m_height;
+    display.imagename = imagename;
+    display.Launch();
   }
-  // StateDomain dom;
-  //   dom.bound_min = glm::vec3(0,0,0);
-  //   dom.bound_max = glm::vec3(20,10,10);
-  //   dom.id = 10;
-  //   doms.push_back(dom);
+#else 
+  std::vector<StateDomain> doms;
+  if(rank == 0) //gvtDisplay for now
+  {
+    for (int i=0; i<scene->domainSet.size(); ++i) {
+        AbstractDomain* dom = scene->domainSet[i];
+	gvt::render::data::primitives::Box3D bbox = dom->getWorldBoundingBox();
+        gvt::core::math::Vector4f min = bbox.bounds[0];
+        gvt::core::math::Vector4f max = bbox.bounds[1];
+        StateDomain sdom;
+        sdom.bound_min = glm::vec3(min.x, min.y ,min.z);
+        sdom.bound_max = glm::vec3(max.x, max.y ,max.z);
+	// std::cout<<"[id:"<<i<<"] [min.x: "<<min.x<<"] [min.y: "<<min.y<<"] [min.z: "<<min.z<<"]\n";
+	// std::cout<<"[id:"<<i<<"] [max.x: "<<max.x<<"] [max.y: "<<max.y<<"] [max.z: "<<max.z<<"]\n";
+        sdom.id = i;
+        doms.push_back(sdom);
+    }
 
     gvtDisplay display;
     display.domains = doms;
@@ -181,6 +207,7 @@ void TiledMantaRayTracer::RenderImage(std::string imagename = "mpitrace")
     display.imagename = imagename;
     display.Launch();
   }
+#endif
   else if (rank == 1)
   {
     gvtServer server;
@@ -190,7 +217,8 @@ void TiledMantaRayTracer::RenderImage(std::string imagename = "mpitrace")
   } else //renderer
   {
     Worker worker;
-    worker.Launch();
+    int domainId = size-2;
+    worker.Launch(scene->objFilenames[domainId]);
   }
 
 // MPI_Finalize();

@@ -51,6 +51,7 @@ namespace gvt {
                 std::vector<gvt::render::data::scene::Light*>               lightSet;
                 gvt::render::data::accel::AbstractAccel*                    acceleration;
                 std::map<std::string, gvt::render::data::primitives::Mesh*> objMeshes;
+	        std::vector<std::string> objFilenames;
             };
         }
     }
