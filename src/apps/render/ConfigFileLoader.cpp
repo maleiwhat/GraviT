@@ -101,6 +101,7 @@ ConfigFileLoader::ConfigFileLoader(const std::string filename)
                 }
                 
                 scene.domainSet.push_back(domain = new gvt::render::data::domain::GeometryDomain(mesh));
+                scene.objFilenames.push_back(elems[1]);
                 
                 gvt::core::math::Vector4f t;
                 t[0] = std::atof(elems[2].c_str());
@@ -163,6 +164,7 @@ ConfigFileLoader::ConfigFileLoader(const std::string filename)
         {
           if(elems[1] == "OPTIX") domain_type = 1;
           if(elems[1] == "EMBREE") domain_type = 2;
+          if(elems[1] == "CAVIT") domain_type = 3;
         }
         else if (elems[0] == "ST") 
         {

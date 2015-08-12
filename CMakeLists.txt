@@ -176,6 +176,12 @@ set(GVT_RENDER_HDRS ${GVT_RENDER_HDRS}
 	src/gvt/render/algorithm/ImageTracer.h
 	src/gvt/render/algorithm/TracerBase.h
 	src/gvt/render/algorithm/Tracers.h
+	src/gvt/render/algorithm/gvtDisplay.h
+        src/gvt/render/algorithm/gvtInterface.h
+        src/gvt/render/algorithm/gvtMCube.h
+        src/gvt/render/algorithm/gvtServer.h
+        src/gvt/render/algorithm/gvtState.h
+        src/gvt/render/algorithm/gvtWorker.h
 	src/gvt/render/Attributes.h
 	src/gvt/render/Context.h
 	src/gvt/render/data/Dataset.h
@@ -235,6 +241,12 @@ set(GVT_RENDER_SRCS ${GVT_RENDER_SRCS}
 	src/gvt/render/data/scene/Image.cpp
 	src/gvt/render/data/scene/Light.cpp
 	src/gvt/render/data/accel/BVH.cpp
+	src/gvt/render/algorithm/gvtDisplay.cpp
+        src/gvt/render/algorithm/gvtInterface.cpp
+        src/gvt/render/algorithm/gvtMCube.cpp
+        src/gvt/render/algorithm/gvtServer.cpp
+        src/gvt/render/algorithm/gvtState.cpp
+        src/gvt/render/algorithm/gvtWorker.cpp
 	)
 
 
@@ -421,11 +433,13 @@ endif(GVT_GLRENDER_APP)
 
 if (GVT_RENDER_APP)
     find_package(MPI REQUIRED)
-    include_directories(${MPI_INCLUDE_PATH} ${TINYOBJPATH})
+    FIND_PACKAGE(OpenGL) # for cavit
+    FIND_PACKAGE(GLUT) # for cavit
+    include_directories(${MPI_INCLUDE_PATH} ${TINYOBJPATH} ${GLM_ROOT_DIR} ${GLM_ROOT_DIR}/glm/gtx)
     set(GVTAPP_RENDER_LIBS ${GVTAPP_RENDER_LIBS} ${MPI_LIBRARIES}
 ${TINYOBJPATH}/libtinyobjloader.a)
 
-    find_package(Boost REQUIRED COMPONENTS thread timer system)
+    find_package(Boost REQUIRED COMPONENTS thread timer system serialization filesystem)
     include_directories(${Boost_INCLUDE_DIRS})
 
     set(GVTAPP_RENDER_LIBS ${GVTAPP_RENDER_LIBS} ${Boost_LIBRARIES})
@@ -446,12 +460,14 @@ ${TINYOBJPATH}/libtinyobjloader.a)
 		set(GVTAPP_RENDER_HDRS ${GVTAPP_RENDER_HDRS}
 			src/apps/render/ConfigFileLoader.h
 			src/apps/render/MantaRayTracer.h
+			src/apps/render/TiledMantaRayTracer.h
 			)
 
 		set(GVTAPP_RENDER_SRCS ${GVTAPP_RENDER_SRCS}
 			src/apps/render/ConfigFileLoader.cpp
 			src/apps/render/GVTTrace.cpp
 			src/apps/render/MantaRayTracer.cpp
+			src/apps/render/TiledMantaRayTracer.cpp
 			)
         endif(GVT_RENDER_ADAPTER_MANTA)
 
@@ -473,7 +489,7 @@ ${TINYOBJPATH}/libtinyobjloader.a)
 		${GVTAPP_RENDER_SRCS}
 		)
 
-	target_link_libraries(gvtTracer ${GVTAPP_RENDER_LIBS} gvtCore gvtRender)
+	target_link_libraries(gvtTracer ${GVTAPP_RENDER_LIBS} gvtCore gvtRender ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES} ${Boost_SERIALIZATION_LIBRARY_RELEASE})
 	if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
 		set_target_properties(gvtTracer PROPERTIES COMPILE_FLAGS '-std=c++11')
 	endif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")

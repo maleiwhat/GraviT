@@ -6,6 +6,7 @@
 #include "MantaRayTracer.h"
 #include "OptixRayTracer.h"
 #include "EmbreeRayTracer.h"
+#include "TiledMantaRayTracer.h"
 
 #include <gvt/core/Math.h>
 #ifdef GVT_RENDER_ADAPTER_MANTA
@@ -92,6 +93,13 @@ int main(int argc, char** argv) {
   if (cl.domain_type == 0) {
     domain_choosen = true;
     MantaRayTracer rt(cl);
+    MPI_Barrier(MPI_COMM_WORLD);
+    rt.RenderImage(imagename);
+  }
+  else if (cl.domain_type == 3) {
+    GVT_DEBUG(DBG_ALWAYS,"Rendering with Manta (cavit)");
+    domain_choosen = true;
+    TiledMantaRayTracer rt(cl);
     MPI_Barrier(MPI_COMM_WORLD);
     rt.RenderImage(imagename);
   }
