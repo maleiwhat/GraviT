@@ -15,8 +15,6 @@
 
 #include "gvtState.h"
 
-#define BUNNIES 0
-
 using namespace std;
 
 namespace cvt

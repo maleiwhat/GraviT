@@ -150,7 +150,8 @@ void TiledMantaRayTracer::RenderImage(std::string imagename = "mpitrace")
   // boost::mpi::communicator world;
     MPI_Comm_get_parent(&parentcomm);
       // if (parentcomm == MPI_COMM_NULL)
-#if BUNNIES // defined in gvtDisplay.h
+// #define BUNNIES
+#ifdef BUNNIES
   std::vector<StateDomain> doms;
   if(rank == 0) //gvtDisplay for now
   {

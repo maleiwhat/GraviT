@@ -132,19 +132,27 @@ struct MantaContext
             0/*animframestate*/,
             0/*loadbalancer*/, 0/*pixelsampler*/, 0/*renderer*/, shadows/*shadowAlgorithm*/, 0/*camera*/, scene/*scene*/, 0/*thread_storage*/, rng/*rngs*/, 0/*samplegenerator*/);
 
-
-    // bunnyObj = new Manta::ObjGroup("/work/01336/carson/data/bunny.obj", material, Manta::MeshTriangle::KENSLER_SHIRLEY_TRI);
+// #define BUNNIES
+#ifdef BUNNIES
+    bunnyObj.resize(1);
+    bunnyAS.resize(1);
+    bunnyObj[0] = new Manta::ObjGroup("/work/03378/hpark/maverick/renderers/gravit/data/geom/bunny.obj", material, Manta::MeshTriangle::KENSLER_SHIRLEY_TRI);
+    bunnyAS[0] = new Manta::DynBVH();
+    bunnyObj[0]->preprocess(*pContext);
+    bunnyAS[0]->setGroup(bunnyObj[0]);
+    bunnyAS[0]->preprocess(*pContext);
+#else
     unsigned numDomains = objFilenames->size();
     bunnyObj.resize(numDomains);
     bunnyAS.resize(numDomains);
     for (unsigned i=0; i<numDomains; ++i) {
-      //bunnyObj[i] = new Manta::ObjGroup("/work/03378/hpark/maverick/renderers/gravit/data/geom/bunny.obj", material, Manta::MeshTriangle::KENSLER_SHIRLEY_TRI);
       bunnyObj[i] = new Manta::ObjGroup(objFilenames->at(i).c_str(), material, Manta::MeshTriangle::KENSLER_SHIRLEY_TRI);
       bunnyAS[i] = new Manta::DynBVH();
       bunnyObj[i]->preprocess(*pContext);
       bunnyAS[i]->setGroup(bunnyObj[i]);
       bunnyAS[i]->preprocess(*pContext);
     }
+#endif
     //std::cout<<"obj filename: "<<objFilename<<"\n";
     //bunnyObj = new Manta::ObjGroup(objFilename.c_str(), material, Manta::MeshTriangle::KENSLER_SHIRLEY_TRI);
   // Manta::LightSet* lights = new Manta::LightSet();
@@ -168,7 +176,11 @@ struct MantaContext
     // t.scale(Manta::Vector(100,100,100));
     t.translate(dmin+drange/2.0);
     // t.translate(Manta::Vector(3,0,0));
+#ifdef BUNNIES
+    Manta::Instance* instance = new Manta::Instance(bunnyAS[0], t);
+#else
     Manta::Instance* instance = new Manta::Instance(bunnyAS[domain.id], t);
+#endif
     instance->preprocess(*(pContext));
     Manta::gvtMCube* domBox = new Manta::gvtMCube(material,
       Manta::Vector(domain.bound_min[0], domain.bound_min[1], domain.bound_min[2]),

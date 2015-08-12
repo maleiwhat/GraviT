@@ -243,7 +243,8 @@ void gvtDisplay::Launch()
   bench_frames = 15;
   bench_warmup = 10;
   g_camera.vfov = g_camera.hfov = 35;
-#if BUNNIES // defined in gvtDisplay.h
+// #define BUNNIES
+#ifdef BUNNIES
   g_camera.eye = glm::vec3(0,0,-100);
 #else
   g_camera.eye = glm::vec3(0,0,-1);
