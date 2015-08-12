@@ -21,11 +21,14 @@ namespace cvt
 class Worker
 {
 public:
-  Worker() {}
-  void Launch(const std::string& objFilename);
+  Worker(const std::vector<std::string>* objFilenames) {
+    this->objFilenames = objFilenames;
+  }
+  void Launch();
   StateLocal stateLocal;
   StateUniversal stateUniversal;
   MPIBuffer buffer;
+  const std::vector<std::string>* objFilenames;
 };
 
 }

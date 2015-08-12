@@ -216,9 +216,9 @@ void TiledMantaRayTracer::RenderImage(std::string imagename = "mpitrace")
     server.Launch();
   } else //renderer
   {
-    Worker worker;
+    Worker worker(&scene->objFilenames);
     int domainId = size-2;
-    worker.Launch(scene->objFilenames[domainId]);
+    worker.Launch();
   }
 
 // MPI_Finalize();

@@ -80,7 +80,7 @@ struct MantaDomain
 
 struct MantaContext
 {
-  MantaContext(const std::string& objFilename)
+  MantaContext(const std::vector<std::string>* objFilenames)
   {
 
     rtrt = Manta::createManta();
@@ -134,13 +134,19 @@ struct MantaContext
 
 
     // bunnyObj = new Manta::ObjGroup("/work/01336/carson/data/bunny.obj", material, Manta::MeshTriangle::KENSLER_SHIRLEY_TRI);
-    bunnyObj = new Manta::ObjGroup("/work/03378/hpark/maverick/renderers/gravit/data/geom/bunny.obj", material, Manta::MeshTriangle::KENSLER_SHIRLEY_TRI);
+    unsigned numDomains = objFilenames->size();
+    bunnyObj.resize(numDomains);
+    bunnyAS.resize(numDomains);
+    for (unsigned i=0; i<numDomains; ++i) {
+      //bunnyObj[i] = new Manta::ObjGroup("/work/03378/hpark/maverick/renderers/gravit/data/geom/bunny.obj", material, Manta::MeshTriangle::KENSLER_SHIRLEY_TRI);
+      bunnyObj[i] = new Manta::ObjGroup(objFilenames->at(i).c_str(), material, Manta::MeshTriangle::KENSLER_SHIRLEY_TRI);
+      bunnyAS[i] = new Manta::DynBVH();
+      bunnyObj[i]->preprocess(*pContext);
+      bunnyAS[i]->setGroup(bunnyObj[i]);
+      bunnyAS[i]->preprocess(*pContext);
+    }
     //std::cout<<"obj filename: "<<objFilename<<"\n";
     //bunnyObj = new Manta::ObjGroup(objFilename.c_str(), material, Manta::MeshTriangle::KENSLER_SHIRLEY_TRI);
-    bunnyAS = new Manta::DynBVH();
-    bunnyObj->preprocess(*pContext);
-    bunnyAS->setGroup(bunnyObj);
-    bunnyAS->preprocess(*pContext);
   // Manta::LightSet* lights = new Manta::LightSet();
   // assert(MantaRenderer::singleton()->getEngine());
   }
@@ -162,7 +168,7 @@ struct MantaContext
     // t.scale(Manta::Vector(100,100,100));
     t.translate(dmin+drange/2.0);
     // t.translate(Manta::Vector(3,0,0));
-    Manta::Instance* instance = new Manta::Instance(bunnyAS, t);
+    Manta::Instance* instance = new Manta::Instance(bunnyAS[domain.id], t);
     instance->preprocess(*(pContext));
     Manta::gvtMCube* domBox = new Manta::gvtMCube(material,
       Manta::Vector(domain.bound_min[0], domain.bound_min[1], domain.bound_min[2]),
@@ -184,8 +190,8 @@ struct MantaContext
   Manta::MantaInterface* rtrt;
   Manta::Group* world;
   Manta::AccelerationStructure* domainAccel;
-  Manta::ObjGroup* bunnyObj;
-  Manta::DynBVH* bunnyAS;
+  std::vector<Manta::ObjGroup*> bunnyObj;
+  std::vector<Manta::DynBVH*> bunnyAS;
 };
 
 
@@ -311,9 +317,9 @@ void* worker_thread(void*)
     // server
     //
     // int main(int argc, char** argv)
-void Worker::Launch(const std::string& objFilename)
+void Worker::Launch()
 {
-  mContext = new MantaContext(objFilename);
+  mContext = new MantaContext(objFilenames);
   int rank, size;
 
   MPI_Comm intercomm;
