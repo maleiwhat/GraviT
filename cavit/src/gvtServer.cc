@@ -13,7 +13,7 @@
 using namespace std;
 using namespace cvt;
 
-
+gvtThreadContext threadContext;
 
 
 void ProcessMessages(StateLocal& state)
@@ -58,8 +58,8 @@ void gvtServer::Launch(int argc, char** argv)
   MPI_Comm intercomm;
   MPI_Status status;
 
-// g_granularity = commSize;
-  g_granularity = 8;
+ g_granularity = commSize-2;
+//  g_granularity = 8;
   LoadBalancer2D<StateTile> baseLoadBalancer(0,0,width,height,g_granularity);
 
   // MPI_Open_port(MPI::INFO_NULL, port_name);
@@ -122,7 +122,7 @@ void gvtServer::Launch(int argc, char** argv)
         for (int i = 0; i < numRenderers; i++)
         {
           printf("sending client msg\n");
-          stateUniversal.Send(i+2, stateLocal.intercomm);
+          stateUniversal.Send(i+2, stateLocal.intercomm,threadContext);
         }
       }
 
@@ -144,12 +144,12 @@ void gvtServer::Launch(int argc, char** argv)
         }
         if (status.MPI_TAG == scene.tag)
         {
-          scene.Recv(MPI_ANY_SOURCE,stateLocal.intercomm, buffer);
+          scene.Recv(MPI_ANY_SOURCE,stateLocal.intercomm, buffer,threadContext);
         }
         if (status.MPI_TAG == frame.tag)
         {
 
-          frame.Recv(MPI_ANY_SOURCE, stateLocal.intercomm, buffer);
+          frame.Recv(MPI_ANY_SOURCE, stateLocal.intercomm, buffer,threadContext);
           if (frame.width != width || frame.height != height)
           {
             width = frame.width;
@@ -166,12 +166,12 @@ void gvtServer::Launch(int argc, char** argv)
           // while (!frameDone)
         if (status.MPI_TAG == sr.tag)
         {
-          sr.Recv(MPI_ANY_SOURCE, stateLocal.intercomm, buffer);
+          sr.Recv(MPI_ANY_SOURCE, stateLocal.intercomm, buffer,threadContext);
           if (sr.tagr == StateTile::tag || sr.tagr == GVT_WORK_REQUEST)
           {
             StateTile tile = loadBalancer.Next();
         // printf("sending tile %d %d %d %d\n", tile.x, tile.y, tile.width, tile.height);
-            tile.Send(sr.status.MPI_SOURCE, stateLocal.intercomm);
+            tile.Send(sr.status.MPI_SOURCE, stateLocal.intercomm,threadContext);
           }
         }
 

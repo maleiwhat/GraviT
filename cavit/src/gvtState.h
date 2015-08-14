@@ -26,11 +26,46 @@
 
 #include <sstream>
 #include <vector>
+#include <float.h>
 
 typedef std::vector<char> MPIBuffer;
 
 namespace cvt
 {
+  
+  struct gvtContext
+  {
+    gvtContext()
+    {
+      frame=0;
+    }
+    void Init()
+    {
+      MPI_Comm_rank(MPI_COMM_WORLD, &mpiRank);
+      MPI_Comm_size(MPI_COMM_WORLD, &mpiSize);
+    }
+    int mpiRank;
+    int mpiSize;
+    int frame;
+    // Camera* camera;
+    // StateScene* scene;
+  };
+  
+  struct gvtThreadContext
+  {
+    gvtThreadContext(int threadID=0)
+    : threadID(threadID)
+    {
+      bufferSize=2048*16;
+      waitingOnRequest=false;
+    }
+    int bufferSize;
+    int threadID;
+    char buffer[2048*16];
+    MPI_Request request;
+    bool waitingOnRequest;
+  };
+  
 
   #define DEBUG(x) { std::cout << __PRETTY_FUNCTION__ << ":" << __LINE__ << ": \"" << #x << "\": " << x << std::endl; }
 
@@ -134,19 +169,19 @@ template<class T>
       assert(0);
     }
 
-    virtual void Recv(int source, MPI_Comm comm, MPIBuffer& buffer)
+    virtual void Recv(int source, MPI_Comm comm, MPIBuffer& buffer, gvtThreadContext& threadContext)
     {
       assert(0);
     }
-    virtual void Send(int dest, MPI_Comm comm)
+    virtual void Send(int dest, MPI_Comm comm, gvtThreadContext& threadContext)
     {
       assert(0);
     }
-    virtual void Isend(int dest, MPI_Comm comm)
+    virtual void Isend(int dest, MPI_Comm comm, gvtThreadContext& threadContext)
     {
       assert(0);
     }
-    virtual void Irecv(int source, MPI_Comm comm, MPIBuffer& buffer)
+    virtual void Irecv(int source, MPI_Comm comm, MPIBuffer& buffer, gvtThreadContext& threadContext)
     {
     // MPI_Iprobe(source, GetTag(), comm, &status, &request);
       assert(0);
@@ -155,7 +190,7 @@ template<class T>
     {
       MPI_Wait(&request, &status);
     }
-    virtual void SendAll(MPI_Comm comm)
+    virtual void SendAll(MPI_Comm comm, gvtThreadContext& threadContext)
     {
       int rank,size;
       MPI_Comm_rank(comm  , &rank);
@@ -163,7 +198,7 @@ template<class T>
       for(int i =0; i < size;i++)
       {
         if (i!= rank)
-          Send(i,comm);
+          Send(i,comm, threadContext);
       }
     }
   // std::vector<char> _packBuffer;
@@ -194,11 +229,11 @@ template<class T>
     {
       return tag;
     }
-    virtual void Recv(int source, MPI_Comm comm, MPIBuffer& buffer)
+    virtual void Recv(int source, MPI_Comm comm, MPIBuffer& buffer, gvtThreadContext& threadContext)
     {
       assert(0);
     }
-    virtual void Send(int dest, MPI_Comm comm)
+    virtual void Send(int dest, MPI_Comm comm, gvtThreadContext& threadContext)
     {
       assert(0);
     }
@@ -219,11 +254,11 @@ template<class T>
     {
       return tag;
     }
-    virtual void Recv(int source, MPI_Comm comm, MPIBuffer& buffer)
+    virtual void Recv(int source, MPI_Comm comm, MPIBuffer& buffer, gvtThreadContext& threadContext)
     {
       GetMPIState<StateMsg>(*this, comm, source, MPI_CHAR, buffer,status);
     }
-    virtual void Send(int dest, MPI_Comm comm)
+    virtual void Send(int dest, MPI_Comm comm, gvtThreadContext& threadContext)
     {
       SetMPIState<StateMsg>(*this, comm, dest, MPI_CHAR);
     }
@@ -264,11 +299,11 @@ template<class T>
     {
       tagr=tag_;
     }
-    virtual void Recv(int source, MPI_Comm comm, MPIBuffer& buffer)
+    virtual void Recv(int source, MPI_Comm comm, MPIBuffer& buffer, gvtThreadContext& threadContext)
     {
       GetMPIState<StateRequest>(*this, comm, source, MPI_CHAR, buffer,status);
     }
-    virtual void Send(int dest, MPI_Comm comm)
+    virtual void Send(int dest, MPI_Comm comm, gvtThreadContext& threadContext)
     {
       SetMPIState<StateRequest>(*this, comm, dest, MPI_CHAR);
     }
@@ -300,11 +335,11 @@ template<class T>
     {
       return tag;
     }
-    virtual void Recv(int source, MPI_Comm comm, MPIBuffer& buffer)
+    virtual void Recv(int source, MPI_Comm comm, MPIBuffer& buffer, gvtThreadContext& threadContext)
     {
       GetMPIState<StateUniversal>(*this, comm, source, MPI_CHAR, buffer,status);
     }
-    virtual void Send(int dest, MPI_Comm comm)
+    virtual void Send(int dest, MPI_Comm comm, gvtThreadContext& threadContext)
     {
       SetMPIState<StateUniversal>(*this, comm, dest, MPI_CHAR);
     }
@@ -393,60 +428,145 @@ template<class T>
     {
       return tag;
     }
-    virtual void Recv(int source, MPI_Comm comm, MPIBuffer& buffer)
+    virtual void Recv(int source, MPI_Comm comm, MPIBuffer& buffer, gvtThreadContext& threadContext)
     {
     // GetMPIState<StatePixels>(*this, comm, source, MPI_CHAR, buffer);
     // if (buffer.size() < 102)
       // buffer.resize(102);
-      int info[5] = {0,0,0,0,1677};
-      MPI_Recv(info, 5, MPI_INT, source, tag, comm, &status);
+//      int info[5] = {0,0,0,0,1677};
+//      MPI_Recv(info, 5, MPI_INT, source, tag, comm, &status);
+//      x=info[0];
+//      y=info[1];
+//      width=info[2];
+//      height=info[3];
+//      unsigned int ptag = info[4];
+//     // ptag = info[4];
+////      printf("statepixels recieving %d %d %d %d ptag: %d\n",x,y,width,height,ptag);
+//     // MPI_Probe(source, tag, comm, &status);
+//
+//    // When probe returns, the status object has the size and other
+//    // attributes of the incoming message. Get the size of the message
+//  // MPI_Get_count(&status, type, &size); 
+//     // if (buffer.size() < info[2])
+//      // buffer.resize(info[2]);
+//    // printf("recv framebuffer size: %d %d\n", framebuffer->width, framebuffer->height);
+//      for(int y2=0;y2<height;y2++)
+//      {
+//       MPI_Recv((char*)(*framebuffer)(x,y+y2), width*sizeof(T), MPI_CHAR, source, ptag, comm, &status);
+//     }
+      char* tbuffer = threadContext.buffer;
+        int info[5] = {0,0,0,0};
+        MPI_Recv(tbuffer, threadContext.bufferSize, MPI_CHAR, source, tag, comm, &status);
+      int headerSize=sizeof(int)*4;
+      memcpy(info, tbuffer, headerSize);
       x=info[0];
       y=info[1];
       width=info[2];
       height=info[3];
-      unsigned int ptag = info[4];
-     // ptag = info[4];
-     // printf("statepixels recieving %d %d %d %d\n",x,y,width,height);
-     // MPI_Probe(source, tag, comm, &status);
-
-    // When probe returns, the status object has the size and other
-    // attributes of the incoming message. Get the size of the message
-  // MPI_Get_count(&status, type, &size); 
-     // if (buffer.size() < info[2])
-      // buffer.resize(info[2]);
-    // printf("recv framebuffer size: %d %d\n", framebuffer->width, framebuffer->height);
-      for(int y2=0;y2<height;y2++)
+//      printf("statepixels recieving %d %d %d %d\n",x,y,width,height);
+      char* tbufferptr = tbuffer+headerSize;
+      for(int y2=y;y2<y+height;y2++)
       {
-       MPI_Recv((char*)(*framebuffer)(x,y+y2), width*sizeof(T), MPI_CHAR, source, ptag, comm, &status);
-     }
+        memcpy((*framebuffer)(x,y2), tbufferptr,width*sizeof(T));
+        tbufferptr += width*sizeof(T);
+      }
    }
-   virtual void Send(int dest, MPI_Comm comm)
+   virtual void Send(int dest, MPI_Comm comm, gvtThreadContext& threadContext)
    {
-    // SetMPIState<StatePixels>(*this, comm, dest, MPI_CHAR);
-    int ptag = 1677+tagOffset;
-    int info[] = {x,y,width,height,ptag};
-    MPI_Send(info, 5, MPI_INT, dest,
-      tag, comm);
-       // printf("send framebuffer size: %d %d\n", framebuffer->width, framebuffer->height);
-  // printf("StatePixels::Send tag: %d\n", ptag);
-
-    for(int y2=0;y2<height;y2++)
-    {
-     MPI_Send((*framebuffer)(x,y+y2), width*sizeof(T), MPI_CHAR, dest, ptag, comm);
-   }
+     assert(0);
+//    // SetMPIState<StatePixels>(*this, comm, dest, MPI_CHAR);
+//    int ptag = 1677+tagOffset;
+//    int info[] = {x,y,width,height,ptag};
+//    MPI_Send(info, 5, MPI_INT, dest,
+//      tag, comm);
+//       // printf("send framebuffer size: %d %d\n", framebuffer->width, framebuffer->height);
+////   printf("StatePixels::Send tag: %d\n", ptag);
+//
+//    for(int y2=0;y2<height;y2++)
+//    {
+//     MPI_Send((*framebuffer)(x,y+y2), width*sizeof(T), MPI_CHAR, dest, ptag, comm);
+//   }
  }
- virtual void Isend(int dest, MPI_Comm comm)
+ virtual void Isend(int dest, MPI_Comm comm, gvtThreadContext& threadContext)
  {
+//   printf("sending pixels x y width heigh %d %d %d %d\n", x,y,width,height);
+//   assert((y+height) <= 512);
+//   assert(height != 0);
     // SetMPIState<StatePixels>(*this, comm, dest, MPI_CHAR, &request);
-  for(int y=0;y<height;y++)
-  {
-    requests.push_back(MPI_Request());
-    MPI_Request& request = requests.back();
-       // MPI_Isend(const_cast<char*>(framebuffer(x+y)), width, MPI_CHAR, dest,
-        // tag, comm, &request);
-  }
+//  for(int y=0;y<height;y++)
+//  {
+//    requests.push_back(MPI_Request());
+//    MPI_Request& request = requests.back();
+//       // MPI_Isend(const_cast<char*>(framebuffer(x+y)), width, MPI_CHAR, dest,
+//        // tag, comm, &request);
+//  }
+//    SetMPIState<StatePixels>(*this, comm, dest, MPI_CHAR);
+   
+   MPI_Request request;
+   MPI_Status status;
+
+   int ptag = 1677+tagOffset;
+   int info[] = {x,y,width,height};
+   int bytesSent=0;
+   int bytesToSend = width*height*sizeof(T);
+   char* buffer = threadContext.buffer;
+  int bufferSize = threadContext.bufferSize;
+   int y2=y;
+   assert ((width*sizeof(T) +4) <= bufferSize);
+   int headerSize=sizeof(int)*4;
+   while (bytesSent < bytesToSend)
+   {
+     if (threadContext.waitingOnRequest)
+     {
+       MPI_Wait(&threadContext.request,&status);
+       threadContext.waitingOnRequest=false;
+     }
+     int bytes=0;
+     int y1=y2;
+     while(y2 < (y+height))
+     {
+       char* bufferPtr=buffer+headerSize+bytes;
+       if ((bytes+headerSize+width*sizeof(T)) > bufferSize)
+         break;
+       memcpy(bufferPtr,(*framebuffer)(x,y2), width*sizeof(T));
+       bytes += width*sizeof(T);
+       y2++;
+     }
+     info[1]=y1;
+     info[3]=y2-y1;
+     memcpy(buffer,info,headerSize);
+     int* ib = (int*)buffer;
+//     printf("sending real info: %d %d %d %d\n", info[0],info[1],info[2],info[3]);
+     if (info[3] == 0)
+     {
+       printf("pixels 0 height!\n");
+       assert(0);
+     }
+     if (bytes == 0)
+     {
+       printf("bytes was 0!\n");
+       assert(0);
+     }
+     MPI_Isend(buffer,bytes+headerSize, MPI_CHAR, dest, tag, comm, &threadContext.request);
+     threadContext.waitingOnRequest=true;
+//     MPI_Wait(&threadContext.request,&status);
+     bytesSent += bytes;
+   }
+//   MPI_Isend(info, 5, MPI_INT, dest,
+//            tag, comm, &request);
+////   MPI_Request_free(&request);
+////   MPI_Wait(&request, &status);
+//   // printf("send framebuffer size: %d %d\n", framebuffer->width, framebuffer->height);
+//   // printf("StatePixels::Send tag: %d\n", ptag);
+//   
+//   for(int y2=0;y2<height;y2++)
+//   {
+//     MPI_Isend((*framebuffer)(x,y+y2), width*sizeof(T), MPI_CHAR, dest, ptag, comm, &request);
+////     MPI_Request_free(&request);
+////     MPI_Wait(&request, &status);
+//   }
 }
-virtual void Irecv(int dest, MPI_Comm comm, MPIBuffer& buffer)
+virtual void Irecv(int dest, MPI_Comm comm, MPIBuffer& buffer, gvtThreadContext& threadContext)
 {
   assert(0);
 } 
@@ -518,11 +638,11 @@ struct StateFrame : public State
   {
     return tag;
   }
-  virtual void Recv(int source, MPI_Comm comm, MPIBuffer& buffer)
+  virtual void Recv(int source, MPI_Comm comm, MPIBuffer& buffer, gvtThreadContext& threadContext)
   {
     GetMPIState<StateFrame>(*this, comm, source, MPI_CHAR, buffer,status);
   }
-  virtual void Send(int dest, MPI_Comm comm)
+  virtual void Send(int dest, MPI_Comm comm, gvtThreadContext& threadContext)
   {
     SetMPIState<StateFrame>(*this, comm, dest, MPI_CHAR);
   }
@@ -564,11 +684,11 @@ struct StateDomain : public State
   {
     return tag;
   }
-  virtual void Recv(int source, MPI_Comm comm, MPIBuffer& buffer)
+  virtual void Recv(int source, MPI_Comm comm, MPIBuffer& buffer, gvtThreadContext& threadContext)
   {
     GetMPIState<StateDomain>(*this, comm, source, MPI_CHAR, buffer,status);
   }
-  virtual void Send(int dest, MPI_Comm comm)
+  virtual void Send(int dest, MPI_Comm comm, gvtThreadContext& threadContext)
   {
     SetMPIState<StateDomain>(*this, comm, dest, MPI_CHAR);
   }
@@ -601,11 +721,11 @@ struct StateScene : public State
   {
     return tag;
   }
-  virtual void Recv(int source, MPI_Comm comm, MPIBuffer& buffer)
+  virtual void Recv(int source, MPI_Comm comm, MPIBuffer& buffer, gvtThreadContext& threadContext)
   {
     GetMPIState<StateScene>(*this, comm, source, MPI_CHAR, buffer,status);
   }
-  virtual void Send(int dest, MPI_Comm comm)
+  virtual void Send(int dest, MPI_Comm comm, gvtThreadContext& threadContext)
   {
     SetMPIState<StateScene>(*this, comm, dest, MPI_CHAR);
   }
@@ -621,17 +741,9 @@ struct StateScene : public State
   }
 };
 
-struct gvtContext
-{
-  int mpi_rank;
-  int mpi_size;
-  // Camera* camera;
-  // StateScene* scene;
-};
-
 struct StateWork : public State
 {
-  virtual void Run(const gvtContext& context)=0;
+  virtual void Run(const gvtContext& context, gvtThreadContext& threadContext)=0;
 };
 
 struct StateTile : public StateWork
@@ -649,15 +761,15 @@ struct StateTile : public StateWork
     return tag;
   }
 
-  virtual void Recv(int source, MPI_Comm comm, MPIBuffer& buffer)
+  virtual void Recv(int source, MPI_Comm comm, MPIBuffer& buffer, gvtThreadContext& threadContext)
   {
     GetMPIState<StateTile>(*this, comm, source, MPI_CHAR, buffer,status);
   }
-  virtual void Send(int dest, MPI_Comm comm)
+  virtual void Send(int dest, MPI_Comm comm, gvtThreadContext& threadContext)
   {
     SetMPIState<StateTile>(*this, comm, dest, MPI_CHAR);
   }
-  virtual void Run(const gvtContext& context)
+  virtual void Run(const gvtContext& context, gvtThreadContext& threadContext)
   {
     // 
     //  render
@@ -667,8 +779,8 @@ struct StateTile : public StateWork
     // Send pixels
     //
 
-    static StatePixelsT pixels;// = new StatePixels(0,0,102,102);
-    static int psize = 0;
+    StatePixelsT pixels;// = new StatePixels(0,0,102,102);
+//    static int psize = 0;
     // printf("TILE SIZE: %d %d\n", tile.width, tile.height);
 
     pixels.width= width;
@@ -676,12 +788,11 @@ struct StateTile : public StateWork
     pixels.framebuffer = framebuffer;
     pixels.x = x;
     pixels.y = y;
-    int rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    pixels.tagOffset = rank*1000;
-    // printf("tagOFfset: %d\n", tagOffset);
+    pixels.tagOffset = (context.mpiRank+1)*1000+(threadContext.threadID+1)+context.frame*300;
+//     printf("tagOFfset: %d threadID: %d\n", pixels.tagOffset,thread.threadID);
 
-    pixels.Send(0, MPI_COMM_WORLD);
+    pixels.Isend(0, MPI_COMM_WORLD,threadContext);
+//  todo: use isend instead of send.  Im not sure I can isend the initial message
 
   // for(size_t i =0;i < pixels_sent.size();i++)
   // {
@@ -714,6 +825,82 @@ struct StateTile : public StateWork
     ar & height;
   }
 };
+
+  struct StateRay
+  {
+    StateRay(){
+      domain=-1;
+      minT=FLT_MAX;
+    }
+    glm::vec3 position;
+    glm::vec3 direction;
+    float minT;
+    int domain;
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
+    {
+      ar & position[0];
+      ar & position[1];
+      ar & position[2];
+      ar & direction[0];
+      ar & direction[1];
+      ar & direction[2];
+      ar & minT;
+      ar & domain;
+    }
+    
+  };
+  struct StateRays : public StateWork
+  {
+    static int MAXRAYS;
+    StateRays()
+    : begin(0), end(0)
+    {
+      rays.resize(MAXRAYS);
+    }
+    virtual int GetTag()
+    {
+      return tag;
+    }
+    void SetRay(int index, glm::vec3 pos, glm::vec3 dir)
+    {
+      StateRay& r =rays[index];
+      r.position=pos;
+      r.direction=dir;
+    }
+    void Resize(int size)
+    {
+      begin=0;
+      end = size;
+    }
+    
+    virtual void Recv(int source, MPI_Comm comm, MPIBuffer& buffer, gvtThreadContext& threadContext)
+    {
+      GetMPIState<StateRays>(*this, comm, source, MPI_CHAR, buffer,status);
+    }
+    virtual void Send(int dest, MPI_Comm comm, gvtThreadContext& threadContext)
+    {
+      SetMPIState<StateRays>(*this, comm, dest, MPI_CHAR);
+    }
+    virtual void Run(const gvtContext& context, gvtThreadContext& threadContext)
+    {
+      
+    }
+    
+    std::vector<StateRay> rays;
+    int begin, end;
+    static int tag;
+    
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
+    {
+      ar & rays;
+      ar & begin;
+      ar & end;
+    }
+  };
 
 }
 

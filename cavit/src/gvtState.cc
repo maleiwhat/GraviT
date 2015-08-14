@@ -13,4 +13,6 @@ int StateMsg::tag = __LINE__;
 int StateRequest::tag = __LINE__;
 int StateDomain::tag = __LINE__;
 int StateScene::tag = __LINE__;
+int StateRays::tag = __LINE__;
+int StateRays::MAXRAYS = 64;
 int StateFrame::_frameCounter = 0;

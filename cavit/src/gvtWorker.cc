@@ -189,14 +189,18 @@ struct MantaContext
 std::vector<pthread_t> threads;
 std::vector<StateTile> work_pool;
 std::vector<StateTile> finished_work;
+StateTile g_tile;
+size_t g_tile_numTiles, g_tile_numTilesLeft;
 int thread_counter=0;
 pthread_mutex_t thread_counter_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t work_pool_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t finished_work_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t work_wait = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t mpi_lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t mpi_mutex = PTHREAD_MUTEX_INITIALIZER;
 MantaContext* mContext;
+gvtContext context;
 int numWorkWaiting = 0;
+int g_numThreads = 19;
 
 Camera camera;
 StateFrame frame;
@@ -229,6 +233,7 @@ void* worker_thread(void*)
   threadId = thread_counter++;
   pthread_mutex_unlock(&thread_counter_lock);
   StateTile work;
+  gvtThreadContext threadContext(threadId);
 
   while (1)
   {
@@ -256,7 +261,10 @@ void* worker_thread(void*)
       Manta::Vector direction(camera.direction[0], camera.direction[1], camera.direction[2]);
         // printf("frame width height: %d %d\n", frame.width, frame.height);
       int rayCounter = 0;
-
+      float min_u = FLT_MAX;
+      float min_v=FLT_MAX;
+      float max_u=-FLT_MAX;
+      float max_v=-FLT_MAX;
       for(int x = work.x; x < work.x +work.width;x++)
       {
         for(int y=work.y; y< work.y+work.height;y++)
@@ -265,6 +273,10 @@ void* worker_thread(void*)
           const float v_image = float(y)/float(frame.height)-.5;         
           Manta::Vector dir(v*v_image+u*u_image+direction);
           dir.normalize();
+          min_v=std::min(min_v,v_image);
+          max_v=std::max(max_v,v_image);
+          min_u=std::min(min_u,u_image);
+          max_u=std::max(max_u,u_image);
           pixIds[rayCounter] = x+y*frame.width;
           mRays.setRay(rayCounter, eye, dir);
           mRays.setFlag(Manta::RayPacket::ConstantOrigin);
@@ -273,6 +285,17 @@ void* worker_thread(void*)
           rayCounter++;
           if (rayCounter == 64)
           {
+            Manta::Vector corner[4]={v*min_v+u*min_u +dir,
+              v*min_v+u*max_u +dir,
+              v*max_v+u*min_u +dir,
+              v*max_v+u*max_u +dir};
+            mRays.setFlag(Manta::RayPacket::HaveCornerRays);
+            for(int i =0;i<4;i++)
+            {
+              mRays.data->corner_dir[0][i]=corner[i][0];
+              mRays.data->corner_dir[1][i]=corner[i][1];
+              mRays.data->corner_dir[2][i]=corner[i][2];
+            }
               //packet complete, trace rays
             rayCounter = 0;
 
@@ -288,16 +311,34 @@ void* worker_thread(void*)
         Manta::RayPacket subPacket(mRays, 0, rayCounter);
         intersectDomains(subPacket, pixIds, work.framebuffer);
       }
-
-
+//              pthread_mutex_lock(&mpi_mutex);
+      work.Run(context,threadContext);
+//              pthread_mutex_unlock(&mpi_mutex);
+      
       pthread_mutex_lock(&finished_work_lock);
-      finished_work.push_back(work);
-        // printf("thread completed work %d of %d\n", finished_work.size(), numWorkWaiting);
-      if (finished_work.size() == numWorkWaiting)
+      
+
+      
+      //      finished_work.push_back(work);
+      // printf("thread completed work %d of %d\n", finished_work.size(), numWorkWaiting);
+      //      if (finished_work.size() == numWorkWaiting)
+      //      {
+      //          // printf("worker threads completed, unlocking work wait\n");
+      //        pthread_mutex_unlock(&work_wait);
+      //      }
+      g_tile_numTilesLeft--;
+      if (g_tile_numTilesLeft==0)
       {
-          // printf("worker threads completed, unlocking work wait\n");
-        pthread_mutex_unlock(&work_wait);
+//        pthread_mutex_lock(&mpi_mutex);
+//        g_tile.Run(context,threadContext);
+//        pthread_mutex_unlock(&mpi_mutex);
+        StateRequest workRequest(GVT_WORK_REQUEST);
+        workRequest.Send(1, MPI_COMM_WORLD,threadContext);
+        //        g_tile.Run(context);
       }
+      //      if (g_tile.computed)
+      //      pixel_times_accumulated += pixel_timer.elapsed().wall;
+      //      pixel_timer.stop();
       pthread_mutex_unlock(&finished_work_lock);
     }
   }
@@ -310,6 +351,7 @@ void* worker_thread(void*)
 void Worker::Launch(int argc, char** argv)
 {
   mContext = new MantaContext();
+  gvtThreadContext threadContext(0);
   int rank, size;
 
   MPI_Comm intercomm;
@@ -333,7 +375,9 @@ void Worker::Launch(int argc, char** argv)
   stateLocal.intercomm = MPI_COMM_WORLD;
         #endif
 
-  threads.resize(19);
+  threads.resize(g_numThreads);
+  
+  int tile_granularity = g_numThreads;
   for(int i =0; i < threads.size();i++)
   {
     pthread_create(&threads[i],NULL,&worker_thread, NULL);
@@ -341,14 +385,14 @@ void Worker::Launch(int argc, char** argv)
 
   // int size;
   {
-    stateUniversal.Recv(MPI_ANY_SOURCE, stateLocal.intercomm, buffer);
+    stateUniversal.Recv(MPI_ANY_SOURCE, stateLocal.intercomm, buffer,threadContext);
   }
 
   bool done = false;
   StateMsg msg;
   camera = frame.camera;
   Framebuffer<uchar3> framebuffer;
-  StateTile tile;
+  StateRays rays;
 
   double times_render=0;
   boost::timer::cpu_timer render_timer, pixel_timer;
@@ -360,9 +404,7 @@ void Worker::Launch(int argc, char** argv)
   pixels_sent.resize(256);
   int pixels_sent_c=0;
 
-  gvtContext context;
-  context.mpi_rank = rank;
-  context.mpi_size = size;
+  context.Init();
 
   while(!done)
   {
@@ -370,11 +412,12 @@ void Worker::Launch(int argc, char** argv)
     // printf("worker got probe, tag: %d\n", status.MPI_TAG);
     if (status.MPI_TAG == msg.tag)
     {
+      printf("Worker done\n");
       done = true;
     }
     if (status.MPI_TAG == scene.tag)
     {
-      scene.Recv(MPI_ANY_SOURCE,stateLocal.intercomm, buffer);
+      scene.Recv(MPI_ANY_SOURCE,stateLocal.intercomm, buffer,threadContext);
       printf("worker got scene\n");
       for(int i =0; i < scene.domains.size(); i++)
       {
@@ -387,49 +430,57 @@ void Worker::Launch(int argc, char** argv)
     if (status.MPI_TAG == frame.tag)
     {
         //get frame
-      frame.Recv(MPI_ANY_SOURCE, MPI_COMM_WORLD, buffer);
+      frame.Recv(MPI_ANY_SOURCE, MPI_COMM_WORLD, buffer,threadContext);
       framebuffer.Resize(frame.width, frame.height);
       camera = frame.camera;
       camera.Update();
 
       StateRequest workRequest(GVT_WORK_REQUEST);
-      workRequest.Send(1, stateLocal.intercomm);
-
+      workRequest.Send(1, stateLocal.intercomm,threadContext);
+      context.frame++;
+      
     }
-    if (status.MPI_TAG == tile.tag)
+    if (status.MPI_TAG == g_tile.tag)
     {
       size = 0;
-      tile.Recv(MPI_ANY_SOURCE, stateLocal.intercomm, buffer);
-      tile.framebuffer = &framebuffer;
+      g_tile.Recv(MPI_ANY_SOURCE, stateLocal.intercomm, buffer,threadContext);
+      g_tile.framebuffer = &framebuffer;
               // printf("gvtRenderer %d: tile recieved\n", rank);
             // printf("rank %d recieved tile %d %d %d %d\n", rank, tile.x, tile.y, tile.width, tile.height);
-      if (tile.width <= 0 || tile.height <= 0)
+      if (g_tile.width <= 0 || g_tile.height <= 0)
         continue;
-//render
-      LoadBalancer2D<StateTile> loadBalancer = LoadBalancer2D<StateTile>(tile.x,tile.y,tile.width,tile.height,threads.size());
+      //render
+      LoadBalancer2D<StateTile> loadBalancer = LoadBalancer2D<StateTile>(g_tile.x,g_tile.y,g_tile.width,g_tile.height,tile_granularity);
       work_pool.resize(0);
       finished_work.resize(0);
       pthread_mutex_lock(&work_pool_lock);
-      pthread_mutex_unlock(&work_wait);
+//      pthread_mutex_unlock(&work_wait);
       StateTile work = loadBalancer.Next();
+      g_tile_numTilesLeft=0;
       while(work.width)
       {
         work.framebuffer = &framebuffer;
         work_pool.push_back(work);
         work = loadBalancer.Next();
+        g_tile_numTilesLeft++;
       }
       numWorkWaiting = work_pool.size();
-      if (numWorkWaiting > 0)
-        pthread_mutex_lock(&work_wait);
+//      if (numWorkWaiting > 0)
+//        pthread_mutex_lock(&work_wait);
       pthread_mutex_unlock(&work_pool_lock);
-      pthread_mutex_lock(&work_wait);  //wait for work to complete
+//      pthread_mutex_lock(&work_wait);  //wait for work to complete
           //end render
       pixel_timer.start();
-      tile.Run(context);
-      pixel_times_accumulated += pixel_timer.elapsed().wall;
-      pixel_timer.stop();
-      StateRequest workRequest(GVT_WORK_REQUEST);
-      workRequest.Send(1, stateLocal.intercomm);
+    }
+    if (status.MPI_TAG == rays.tag)
+    {
+      rays.Recv(MPI_ANY_SOURCE, stateLocal.intercomm, buffer,threadContext);
+      
+      pthread_mutex_lock(&work_pool_lock);
+//      work_pool.push_back(rays);
+      pthread_mutex_unlock(&work_pool_lock);
     }
   }
+  
+  //todo: clean up threads
 }

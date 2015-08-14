@@ -13,7 +13,7 @@
 
 using namespace cvt;
 
-int g_width =512, g_height=512;
+int g_width =1024, g_height=1024;
 
 int main(int argc, char** argv)
 {
@@ -24,7 +24,14 @@ int main(int argc, char** argv)
     printf("client spawned\n");
     MPI_Comm parentcomm;
     int errcodes[1];
-    MPI_Init(&argc, &argv);
+  int providedThreading;
+    MPI_Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &providedThreading);
+  //MPI_THREAD_SERIALIZED
+  if ((providedThreading != MPI_THREAD_MULTIPLE))
+  {
+    std::cerr  << "error: mpi_threaded not available\n";
+    exit(1);
+  }
     int rank,size;
     MPI_Comm_rank(MPI_COMM_WORLD  , &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);

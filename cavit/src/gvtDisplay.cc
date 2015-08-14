@@ -36,6 +36,7 @@ int bench_warmup = 0;
 int bench_frames = 0;
 int display_numRenderers=0;
 void resizeDisplay(int width, int height);
+gvtThreadContext display_threadContext;
 
 Framebuffer<uchar3> display_framebuffer(display_width, display_height);
 
@@ -73,7 +74,7 @@ void* parallelProcessPixels(void* args)
   static MPIBuffer buffer;
     // sem_wait(&g_frameMutex);
   StatePixelsT pixels(0,0,0,0,&display_framebuffer);
-  pixels.Recv(MPI_ANY_SOURCE, MPI_COMM_WORLD, buffer);
+  pixels.Recv(MPI_ANY_SOURCE, MPI_COMM_WORLD, buffer,display_threadContext);
   sleep(1);
   pthread_mutex_lock(&g_numPix_lock);
   g_numPix += pixels.width*pixels.height;
@@ -87,7 +88,7 @@ void* parallelProcessPixels(void* args)
 
 void displayFunc(void) 
 {
-  DEBUG("display");
+//  DEBUG("display");
   static         boost::timer::cpu_timer render_timer, bench_timer;
   static    boost::timer::nanosecond_type render_times_accumulated(0);
   static double bench_time=0;
@@ -117,12 +118,12 @@ void displayFunc(void)
     printf("total render time of %d frames: %f avg: %f fps: %f \n",bench_frames, time, time/double(bench_frames),double(bench_frames)/time);
     StateMsg msg;
     msg.msg = "exit";
-    msg.SendAll(MPI_COMM_WORLD); 
+    msg.SendAll(MPI_COMM_WORLD,display_threadContext);
     MPI_Finalize();
     sleep(5);
     exit(0);
   }
-  frame.SendAll(MPI_COMM_WORLD);
+  frame.SendAll(MPI_COMM_WORLD,display_threadContext);
   size_t numPix = 0;
   size_t maxPixels = display_width*display_height;
   g_numPixLimit = maxPixels;
@@ -130,9 +131,9 @@ void displayFunc(void)
   while (numPix < maxPixels)
   {
     StatePixelsT pixels(0,0,0,0,&display_framebuffer);
-    pixels.Recv(MPI_ANY_SOURCE, MPI_COMM_WORLD, buffer);
+    pixels.Recv(MPI_ANY_SOURCE, MPI_COMM_WORLD, buffer,display_threadContext);
     numPix += pixels.width*pixels.height;
-      // printf("gvtDisplay numpix: %d\n", numPix);
+//       printf("gvtDisplay numpix: %d/%d\n", numPix, maxPixels);
   }
 
     // glRasterPos2i(-1, 1);
@@ -143,7 +144,7 @@ void displayFunc(void)
   render_timer.stop();
   render_times_accumulated += render_timer.elapsed().wall;
   glutPostRedisplay();
-  DEBUG("display end");
+//  DEBUG("display end");
   if (bench_frames > 0)
     displayFunc();
 }
@@ -247,7 +248,7 @@ void gvtDisplay::Launch(int argc, char** argv)
 
   StateScene scene;
   scene.domains = domains;
-  scene.SendAll(stateLocal.intercomm);
+  scene.SendAll(stateLocal.intercomm,display_threadContext);
 
   initGlut("gvtDisplay", width,height);
   MPI_Comm_disconnect(&stateLocal.intercomm);
