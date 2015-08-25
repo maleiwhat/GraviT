@@ -46,24 +46,24 @@ int main(int argc, char** argv)
 
     glm::vec3 min(-50,-50,0);
       for(int i=0; i < 10;i++)
-  {
-    for (int j=0;j < 10;j++)
     {
-      for(int k=0;k<1;k++)
+      for (int j=0;j < 10;j++)
       {
-        StateDomain dom;
-        dom.bound_min = glm::vec3(i*10+min[0],j*10+min[1],k*10+min[2]);
-        dom.bound_max = glm::vec3(i*10+min[0]+9,j*10+min[1]+9,k*10+min[2]+9);
-        dom.id = k*100+j*10+i;
-        doms.push_back(dom);
+        for(int k=0;k<1;k++)
+        {
+          StateDomain dom;
+          dom.bound_min = glm::vec3(i*10+min[0],j*10+min[1],k*10+min[2]);
+          dom.bound_max = glm::vec3(i*10+min[0]+6,j*10+min[1]+6,k*10+min[2]+6);
+          dom.id = k*100+j*10+i;
+//          doms.push_back(dom);
+        }
       }
     }
-  }
-  // StateDomain dom;
-  //   dom.bound_min = glm::vec3(0,0,0);
-  //   dom.bound_max = glm::vec3(20,10,10);
-  //   dom.id = 10;
-  //   doms.push_back(dom);
+   StateDomain dom;
+     dom.bound_min = glm::vec3(-10,-25,-25);
+     dom.bound_max = glm::vec3(40,25,25);
+     dom.id = 0;
+     doms.push_back(dom);
 
     gvtDisplay display;
     display.domains = doms;

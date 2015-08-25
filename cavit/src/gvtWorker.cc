@@ -37,6 +37,7 @@
 #include <Model/Instances/InstanceMaterial.h>
 #include <Model/Instances/Instance.h>
 #include <Model/Groups/ObjGroup.h>
+#include <Core/Geometry/BBox.h>
 #include "gvtMCube.h"
 // end Manta includes
 
@@ -155,15 +156,22 @@ struct MantaContext
     Manta::Vector drange = dmax-dmin;
     Manta::AffineTransform t;
     t.initWithIdentity();
-    t.scale(drange*2);
+    t.scale(drange*4.0);
     // t.scale(Manta::Vector(100,100,100));
-    t.translate(dmin+drange/2.0);
+    t.translate(dmin+drange/5.0);
+//    t.translate(dmin);
     // t.translate(Manta::Vector(3,0,0));
     Manta::Instance* instance = new Manta::Instance(bunnyAS, t);
     instance->preprocess(*(pContext));
+//    Manta::gvtMCube* domBox = new Manta::gvtMCube(material,
+//      Manta::Vector(domain.bound_min[0], domain.bound_min[1], domain.bound_min[2]),
+//      Manta::Vector(domain.bound_max[0], domain.bound_max[1], domain.bound_max[2]), domain.id, instance);
+    Manta::BBox realBounds;
+    instance->computeBounds(*(pContext), realBounds);
     Manta::gvtMCube* domBox = new Manta::gvtMCube(material,
-      Manta::Vector(domain.bound_min[0], domain.bound_min[1], domain.bound_min[2]),
-      Manta::Vector(domain.bound_max[0], domain.bound_max[1], domain.bound_max[2]), domain.id, instance);
+            realBounds.getMin(),
+            realBounds.getMax(), domain.id, instance);
+    
     domBox->preprocess(*(pContext));
     
     world->add(domBox);
@@ -200,7 +208,7 @@ pthread_mutex_t mpi_mutex = PTHREAD_MUTEX_INITIALIZER;
 MantaContext* mContext;
 gvtContext context;
 int numWorkWaiting = 0;
-int g_numThreads = 19;
+int g_numThreads = 18;
 
 Camera camera;
 StateFrame frame;
@@ -216,9 +224,10 @@ void intersectDomains(Manta::RayPacket& mRays, unsigned int* pixIds, Framebuffer
   {
     if (mRays.wasHit(i))
     {
-      unsigned int id = mRays.getScratchpad<unsigned int>(0)[i];
+//      unsigned int id = mRays.getScratchpad<unsigned int>(0)[i];
+      int id=0;
         // uchar3 color = {0,0,255};
-      uchar3 color = {(id)%255,(id+128)%255,(id+200)%255};
+      uchar3 color = {(id*10)%255,(id*10+128)%255,(id*10+200)%255};
       framebuffer->data[pixIds[i]] = color;
         //successful hit
     } 

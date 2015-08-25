@@ -239,8 +239,8 @@ void gvtDisplay::Launch(int argc, char** argv)
   stateLocal.intercomm = MPI_COMM_WORLD;
     #endif
 
-  bench_frames = 15;
-  bench_warmup = 10;
+  bench_frames = 100;
+  bench_warmup = 20;
   g_camera.vfov = g_camera.hfov = 35;
   g_camera.eye = glm::vec3(0,0,-100);
   g_camera.lookat = glm::vec3(0,0,0);
