@@ -215,10 +215,12 @@ namespace gvt {
                         int rd = tContext.hitList[j][i+1];
                         if (domId != -1 && rd != domId)
                         {
-//                          gvt::render::actor::RayPacket subPacket(tContext.rays,start,j);
-//                          dom = gvt::render::Attributes::rta->dataset->getDomain(domId);
-//                          dom->load();
-//                          dom->trace(subPacket);
+                          gvt::render::actor::RayPacket subPacket(tContext.rays,start,j);
+                          dom = gvt::render::Attributes::rta->dataset->getDomain(domId);
+                          dom->load();
+                          dom->trace(subPacket);
+                          for(int sr =subPacket.begin();sr< subPacket.end();sr++)
+                            tContext.rays[start+sr] = subPacket[sr];
                           
                           start=j+1;
                         }
