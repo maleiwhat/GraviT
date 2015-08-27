@@ -109,6 +109,62 @@
             };
 
             typedef std::vector< Ray, boost::pool_allocator<Ray> > RayVector;
+          
+#define MAX_RAYPACKET 64
+          struct RayPacket
+          {
+            RayPacket() {}
+            RayPacket(RayPacket& toCopy, int begin, int end) : rays(toCopy.rays), _begin(begin), _end(end) {}
+            int _begin, _end;
+            int begin() { return _begin; }
+            int end() { return _end; }
+            void setDirection(int index, const gvt::core::math::Vector4f& dir)
+            {
+              rays[index].direction = dir;
+            }
+            int getId(int i)
+            {
+              return rays[i].id;
+            }
+            void setRay(int i,const Ray& r)
+            {
+              rays[i] = r;
+            }
+            Ray& getRay(int i)
+            {
+              return rays[i];
+            }
+            int size()
+            {
+              return _end-_begin;
+            }
+            Ray& operator[](int index)
+            {
+              return rays[index];
+            }
+            GVT_COLOR_ACCUM getColor(int i)
+            {
+              return rays[i].color;
+            }
+            void setOrigin(int index, const gvt::core::math::Vector4f& origin)
+            {
+              rays[index].origin = origin;
+            }
+            gvt::core::math::Vector4f getDirection(int index)
+            {
+              return rays[index].direction;
+            }
+            gvt::core::math::Vector4f getOrigin(int index)
+            {
+              return rays[index].origin;
+            }
+            void resize(int size) {
+              assert(size <= MAX_RAYPACKET);
+              _begin =0;
+              _end=size;
+            }
+            gvt::render::actor::Ray rays[MAX_RAYPACKET];
+          };
         }
     }
 }

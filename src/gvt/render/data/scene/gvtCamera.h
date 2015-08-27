@@ -62,7 +62,7 @@ namespace gvt {
 
 				/** Bunch-o-rays */
 				gvt::render::actor::RayVector rays;
-			protected:
+//			protected:
 				gvt::core::math::AffineTransformMatrix<float> cam2wrld; //!< transform from camera to world coords
 				gvt::core::math::AffineTransformMatrix<float> wrld2cam; //!< transform from world to camera coords
 				gvt::core::math::Point4f eye_point;      //!< camera location in world coordinates
@@ -96,8 +96,8 @@ namespace gvt {
 				void setFOV(const float fov);
 				/** Fill the ray data structure */
 				virtual void generateRays();
-			protected:
-				float field_of_view;			  //!< Angle subtended by the film plane height from eye_point 
+//			protected:
+				float field_of_view;			  //!< Angle subtended by the film plane height from eye_point
 			};
 
 			} // scene

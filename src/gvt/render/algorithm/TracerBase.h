@@ -75,11 +75,11 @@ class AbstractTrace {
       : rays(rays), image(image) {
     vtf = gvt::render::Attributes::rta->GetTransferFunction();
     sample_ratio = gvt::render::Attributes::rta->sample_ratio;
-    colorBuf = new GVT_COLOR_ACCUM[gvt::render::RTA::instance()->view.width *
-                                   gvt::render::RTA::instance()->view.height];
-    queue_mutex =
-        new boost::mutex[gvt::render::Attributes::rta->dataset->size()];
-    colorBuf_mutex = new boost::mutex[gvt::render::RTA::instance()->view.width];
+//    colorBuf = new GVT_COLOR_ACCUM[gvt::render::RTA::instance()->view.width *
+//                                   gvt::render::RTA::instance()->view.height];
+//    queue_mutex =
+//        new boost::mutex[gvt::render::Attributes::rta->dataset->size()];
+//    colorBuf_mutex = new boost::mutex[gvt::render::RTA::instance()->view.width];
 
     // for (int i = 0; i < gvt::render::Attributes::rta->dataset->size(); i++) {
     //   queue[i] = gvt::render::actor::RayVector();
@@ -136,6 +136,7 @@ class AbstractTrace {
           if (len2List.empty() && dom) dom->marchOut(r);
 
           if (len2List.empty()) {
+            boost::timer::auto_cpu_timer t("shuffle intersect dom %w\n");
             gvt::render::Attributes::rta->dataset->intersect(r, len2List);
           }
 
@@ -256,7 +257,7 @@ class AbstractTrace {
                   gvt::render::Attributes::rta->view.height;
 
 
-    for(size_t i =0; i < size; i++) image.Add(i, colorBuf[i]);                  
+    for(size_t i =0; i < size; i++) image.Add(i, colorBuf[i]);
 
     if (!mpi) return;
 

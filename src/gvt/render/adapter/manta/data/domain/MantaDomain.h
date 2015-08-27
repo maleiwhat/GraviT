@@ -52,7 +52,8 @@ namespace gvt {
                             Manta::Mesh*            getMantaMesh() { return meshManta; }
                             
                             void trace(gvt::render::actor::RayVector& rayList, gvt::render::actor::RayVector& moved_rays);
-                            
+                          
+                            virtual void trace(gvt::render::actor::RayPacket& rays);
                         protected:
                             Manta::RenderContext* rContext;
                             Manta::DynBVH* as;

@@ -31,7 +31,8 @@ namespace gvt {
                     virtual void marchOut(gvt::render::actor::Ray&  r);
                     virtual void trace(gvt::render::actor::RayVector& rayList, gvt::render::actor::RayVector& moved_rays);
                     
-
+                  virtual void trace(gvt::render::actor::RayPacket& rays) {    GVT_ASSERT(false,"Trace function for this domain was not implemented");}
+                  
                     virtual bool load();
                     virtual void free();
                     virtual int size() = 0;

@@ -36,7 +36,7 @@ using namespace gvt::render::data::primitives;
 
 static boost::atomic<size_t> counter(0);
 
-MantaDomain::MantaDomain(GeometryDomain* domain) : GeometryDomain(*domain) 
+MantaDomain::MantaDomain(GeometryDomain* domain) : GeometryDomain(*domain)
 {
     GVT_DEBUG(DBG_ALWAYS, "Converting domain");
 
@@ -45,7 +45,7 @@ MantaDomain::MantaDomain(GeometryDomain* domain) : GeometryDomain(*domain)
     Manta::Material *material = new Manta::Lambertian(Manta::Color(Manta::RGBColor(0.f, 0.f, 0.f)));
     Manta::MeshTriangle::TriangleType triangleType = Manta::MeshTriangle::KENSLER_SHIRLEY_TRI;
 
-    // Create BVH 
+    // Create BVH
     as = new Manta::DynBVH();
     as->setGroup(meshManta);
 
@@ -85,14 +85,14 @@ MantaDomain::MantaDomain(GeometryDomain* domain) : GeometryDomain(*domain)
 
 }
 
-MantaDomain::MantaDomain(std::string filename, gvt::core::math::AffineTransformMatrix<float> m) 
-: gvt::render::data::domain::GeometryDomain(filename, m) 
+MantaDomain::MantaDomain(std::string filename, gvt::core::math::AffineTransformMatrix<float> m)
+: gvt::render::data::domain::GeometryDomain(filename, m)
 {
-
+    GVT_ASSERT(false,"dont use this apparently");
 }
 
-MantaDomain::MantaDomain(const MantaDomain& other) 
-: gvt::render::data::domain::GeometryDomain(other) 
+MantaDomain::MantaDomain(const MantaDomain& other)
+: gvt::render::data::domain::GeometryDomain(other)
 {
 }
 
@@ -141,12 +141,12 @@ bool MantaDomain::load() {
     return true;
 }
 
-void MantaDomain::free() 
+void MantaDomain::free()
 {
 
 }
 
-struct parallelTrace 
+struct parallelTrace
 {
     gvt::render::adapter::manta::data::domain::MantaDomain* dom;
     gvt::render::actor::RayVector& rayList;
@@ -161,10 +161,10 @@ struct parallelTrace
             gvt::render::actor::RayVector& moved_rays,
             const size_t workSize,
             boost::atomic<size_t>& counter) :
-    dom(dom), rayList(rayList), moved_rays(moved_rays), workSize(workSize), counter(counter) 
+    dom(dom), rayList(rayList), moved_rays(moved_rays), workSize(workSize), counter(counter)
     {}
 
-    void operator()() 
+    void operator()()
     {
         const size_t maxPacketSize = 64;
 
@@ -187,7 +187,7 @@ struct parallelTrace
 //                    GVT_DEBUG(DBG_ALWAYS, i);
 //                }
 
-        while (!rayList.empty()) 
+        while (!rayList.empty())
         {
             boost::unique_lock<boost::mutex> queue(dom->_inqueue);
             std::size_t range = std::min(workSize, rayList.size());
@@ -196,12 +196,12 @@ struct parallelTrace
             queue.unlock();
 
 
-            GVT_DEBUG(DBG_ALWAYS, "Got " << localQueue.size() << " rays");
-            while (!localQueue.empty()) 
+            //GVT_DEBUG(DBG_ALWAYS, "Got " << localQueue.size() << " rays");
+            while (!localQueue.empty())
             {
                 rayPacket.clear();
 
-                while (rayPacket.size() < 64 && !localQueue.empty()) 
+                while (rayPacket.size() < 64 && !localQueue.empty())
                 {
                     rayPacket.push_back(localQueue.back());
                     localQueue.pop_back();
@@ -209,7 +209,7 @@ struct parallelTrace
 
 
                 Manta::RayPacket mRays(rpData, Manta::RayPacket::UnknownShape, 0, rayPacket.size(), 0, Manta::RayPacket::NormalizedDirections);
-                for (int i = 0; i < rayPacket.size(); i++) 
+                for (int i = 0; i < rayPacket.size(); i++)
                 {
                     mRays.setRay(i, transform<Ray, Manta::Ray>(dom->toLocal(rayPacket[i])));
                     //mRays.setRay(i, GVT::Data::transform<GVT::Data::ray, Manta::Ray>(rayPacket[i]));
@@ -221,32 +221,32 @@ struct parallelTrace
 
                 //                        GVT_DEBUG(DBG_ALWAYS,"Process packet");
 
-                for (int pindex = 0; pindex < rayPacket.size(); pindex++) 
+                for (int pindex = 0; pindex < rayPacket.size(); pindex++)
                 {
-                    if (mRays.wasHit(pindex)) 
+                    if (mRays.wasHit(pindex))
                     {
                         //                                GVT_DEBUG(DBG_ALWAYS,"Ray has hit " << pindex);
-                        if (rayPacket[pindex].type == gvt::render::actor::Ray::SHADOW) 
+                        if (rayPacket[pindex].type == gvt::render::actor::Ray::SHADOW)
                         {
                             //                                    GVT_DEBUG(DBG_ALWAYS,"Process ray in shadow");
-                            
+
                             continue;
                         }
-                        
 
-                        float t = mRays.getMinT(pindex);                              
+
+                        float t = mRays.getMinT(pindex);
                         rayPacket[pindex].t = t;
-                        
+
                         gvt::core::math::Vector4f normal = dom->toWorld(gvt::render::adapter::manta::data::transform<Manta::Vector, gvt::core::math::Vector4f>(mRays.getNormal(pindex)));
-                        
-                        if (rayPacket[pindex].type == gvt::render::actor::Ray::SECONDARY) 
+
+                        if (rayPacket[pindex].type == gvt::render::actor::Ray::SECONDARY)
                         {
                             t = (t > 1) ? 1.f / t : t;
                             rayPacket[pindex].w = rayPacket[pindex].w * t;
                         }
 
                         std::vector<gvt::render::data::scene::Light*> lights = dom->getLights();
-                        for (int lindex = 0; lindex < lights.size(); lindex++) 
+                        for (int lindex = 0; lindex < lights.size(); lindex++)
                         {
                             gvt::render::actor::Ray ray(rayPacket[pindex]);
                             ray.domains.clear();
@@ -263,7 +263,7 @@ struct parallelTrace
 
                         float p = 1.f - (float(rand()) / RAND_MAX);
 
-                        if (ndepth > 0 && rayPacket[pindex].w > p) 
+                        if (ndepth > 0 && rayPacket[pindex].w > p)
                         {
                             gvt::render::actor::Ray ray(rayPacket[pindex]);
                             ray.domains.clear();
@@ -285,7 +285,7 @@ struct parallelTrace
         }
 
 
-        GVT_DEBUG(DBG_ALWAYS, "Local dispatch : " << localDispatch.size());
+        //GVT_DEBUG(DBG_ALWAYS, "Local dispatch : " << localDispatch.size());
 
         boost::unique_lock<boost::mutex> moved(dom->_outqueue);
         moved_rays.insert(moved_rays.begin(), localDispatch.begin(), localDispatch.end());
@@ -293,20 +293,20 @@ struct parallelTrace
     }
 };
 
-void MantaDomain::trace(gvt::render::actor::RayVector& rayList, gvt::render::actor::RayVector& moved_rays) 
+void MantaDomain::trace(gvt::render::actor::RayVector& rayList, gvt::render::actor::RayVector& moved_rays)
 {
     GVT_DEBUG(DBG_ALWAYS, "trace<MantaDomain>: " << rayList.size());
     GVT_DEBUG(DBG_ALWAYS, "tracing geometry of domain " << domainID);
     size_t workload = std::max((size_t) 1, (size_t) (rayList.size() / (gvt::core::schedule::asyncExec::instance()->numThreads * 4)));
 
-    for (int rc = 0; rc < gvt::core::schedule::asyncExec::instance()->numThreads; ++rc) 
+    for (int rc = 0; rc < gvt::core::schedule::asyncExec::instance()->numThreads; ++rc)
     {
         gvt::core::schedule::asyncExec::instance()->run_task(parallelTrace(this, rayList, moved_rays, workload, counter));
     }
     gvt::core::schedule::asyncExec::instance()->sync();
     //            parallelTrace(this, rayList, moved_rays, rayList.size(),counter)();
 
-#ifdef NDEBUG            
+#ifdef NDEBUG
     std::cout << "Proccessed rays : " << counter << std::endl;
 #else
     GVT_DEBUG(DBG_ALWAYS, "Proccessed rays : " << counter);
@@ -315,4 +315,112 @@ void MantaDomain::trace(gvt::render::actor::RayVector& rayList, gvt::render::act
     rayList.clear();
 }
 
+void MantaDomain::trace(gvt::render::actor::RayPacket& rays)
+{
+  gvt::render::adapter::manta::data::domain::MantaDomain* dom;
+  //                            gvt::render::actor::RayVector& rayList;
+  //                            gvt::render::actor::RayVector& moved_rays;
+  const size_t maxPacketSize = 64;
+  
+  Manta::RenderContext& renderContext = *getRenderContext();
+  
+  
+  Manta::RayPacketData rpData;
+  
+  
+  //                GVT_DEBUG(DBG_ALWAYS, dom->meshManta->vertices.size());
+  //                GVT_DEBUG(DBG_ALWAYS, dom->meshManta->vertex_indices.size());
+  //
+  //                BOOST_FOREACH(int i, dom->meshManta->vertex_indices) {
+  //                    GVT_DEBUG(DBG_ALWAYS, i);
+  //                }
+  
+  int raysProcessed =0;
+  while (raysProcessed < rays.size())
+  {
+    
+    Manta::RayPacket mRays(rpData, Manta::RayPacket::UnknownShape, 0, std::min(64,rays.size()-raysProcessed), 0, Manta::RayPacket::NormalizedDirections);
+    int rayOffset=raysProcessed+rays._begin;
+    raysProcessed+=mRays.end();
+    for (int i = 0; i < mRays.end(); i++)
+    {
+      mRays.setRay(i, transform<Ray, Manta::Ray>(toLocal(rays.getRay(rayOffset+i))));
+      //mRays.setRay(i, GVT::Data::transform<GVT::Data::ray, Manta::Ray>(rayPacket[i]));
+    }
+    
+    mRays.resetHits();
+    getAccelStruct()->intersect(renderContext, mRays);
+    mRays.computeNormals<false>(renderContext);
+    
+    //                        GVT_DEBUG(DBG_ALWAYS,"Process packet");
+    
+    for (int pindex = 0; pindex < mRays.end(); pindex++)
+    {
+      int gindex = rayOffset+pindex;
+      if (mRays.wasHit(pindex))
+      {
+//                                        GVT_DEBUG(DBG_ALWAYS,"Ray has hit " << pindex);
+        if (rays[gindex].type == gvt::render::actor::Ray::SHADOW)
+        {
+          //                                    GVT_DEBUG(DBG_ALWAYS,"Process ray in shadow");
+          
+          continue;
+        }
+        
+        
+        float t = mRays.getMinT(pindex);
+        rays[gindex].t = t;
+        
+        gvt::core::math::Vector4f normal = toWorld(gvt::render::adapter::manta::data::transform<Manta::Vector, gvt::core::math::Vector4f>(mRays.getNormal(pindex)));
+        
+        if (rays[gindex].type == gvt::render::actor::Ray::SECONDARY)
+        {
+          t = (t > 1) ? 1.f / t : t;
+          rays[gindex].w = rays[gindex].w * t;
+        }
+        
+        std::vector<gvt::render::data::scene::Light*> lights = getLights();
+        for (int lindex = 0; lindex < lights.size(); lindex++)
+        {
+          gvt::render::actor::Ray ray(rays[gindex]);
+          ray.domains.clear();
+          ray.type = gvt::render::actor::Ray::SHADOW;
+          ray.origin = ray.origin + ray.direction * ray.t;
+          ray.setDirection(lights[lindex]->position - ray.origin);
+          gvt::render::data::Color c = getMesh()->shade(ray, normal, lights[lindex]);
+//          //ray.color = COLOR_ACCUM(1.f, c[0], c[1], c[2], 1.f);
+//          ray.color = GVT_COLOR_ACCUM(1.f, 1.0, c[1], c[2], 1.f);
+//          gvt::render::data::Color c = getMesh()->shade(ray, normal, lights[lindex]);
+//          if (c[0] > 0.0f)
+//            printf("color: %f %f %f\n", c[0], c[1], c[2]);
+          rays[gindex].color = GVT_COLOR_ACCUM(1.f, c[0], c[1], c[2], 1.f);
+          //                                        localQueue.push_back(ray);
+        }
+        
+        int ndepth = rays[gindex].depth - 1;
+//        rays[gindex].color.rgba[1]=1.f;
+//        rays[gindex].color.rgba[3]=1.f;
+        
+        //                                      float p = 1.f - (float(rand()) / RAND_MAX);  //Carson:  Never use rand() in critical sections!
+        //
+        //                                      if (ndepth > 0 && rayPacket[pindex].w > p)
+        //                                      {
+        //                                        gvt::render::actor::Ray ray(rayPacket[pindex]);
+        //                                        ray.domains.clear();
+        //                                        ray.type = gvt::render::actor::Ray::SECONDARY;
+        //                                        ray.origin = ray.origin + ray.direction * ray.t;
+        //                                        ray.setDirection(dom->getMesh()->getMaterial()->CosWeightedRandomHemisphereDirection2(normal).normalize());
+        //                                        ray.w = ray.w * (ray.direction * normal);
+        //                                        ray.depth = ndepth;
+        //                                        localQueue.push_back(ray);
+        //                                      }
+        //counter++;
+        continue;
+      }
+      //counter++;
+      //GVT_DEBUG(DBG_ALWAYS,"Add to local dispatch");
+      //                                    localDispatch.push_back(rayPacket[pindex]);
+    }
+  }
+}
 

@@ -36,9 +36,9 @@ namespace gvt {
                     void Add(int pixel, float* buf) 
                     {
                         int index = 3 * pixel;
-                        rgb[index + 0] = (unsigned char) (buf[0]*256.f);
-                        rgb[index + 1] = (unsigned char) (buf[1]*256.f);
-                        rgb[index + 2] = (unsigned char) (buf[2]*256.f);
+                        rgb[index + 0] = (unsigned char) (buf[0]*255.f);
+                        rgb[index + 1] = (unsigned char) (buf[1]*255.f);
+                        rgb[index + 2] = (unsigned char) (buf[2]*255.f);
                     }
 
                     void Add(int pixel, ColorAccumulator& ca) 
@@ -72,7 +72,7 @@ namespace gvt {
                         delete[] rgb;
                     }
 
-                private:
+//                private:
                     int width, height;
                     std::string filename;
                     ImageFormat format;
