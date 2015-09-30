@@ -94,11 +94,11 @@ namespace gvt {
                   //Carson trace
                   //
                   //
-                  
+
 
                   //compute camera rays for threadContext rays
 //                  threadContext.rays[i] = ... workContext.taskId/workContext.numTasks ...;
-                  
+
 //                  int buffer_width  = filmsize[0];
 //                  int buffer_height = filmsize[1];
                   int tileWidth =wContext.tileWidth;
@@ -108,10 +108,10 @@ namespace gvt {
                   int tx = (wContext.taskId%(numTilesX))*tileWidth;
                   int ty = ((wContext.taskId)/(numTilesX))*tileHeight;
                   int maxRays =rContext.image->width*rContext.image->height;
-                  
+
                   tileWidth = std::min(tileWidth, rContext.image->width-(tx));
                   tileHeight = std::min(tileHeight, rContext.image->height-(ty));
-                  
+
                   int numRaysInTile= (tileWidth*tileHeight);
                   float aspectRatio = float(rContext.image->width)/float(rContext.image->height);
                   float fov = rContext.camera->field_of_view;
@@ -165,11 +165,11 @@ namespace gvt {
 //                    printf("trace doms\n");
 
                   //instead of shuffling onto ray queues, do one domain at a time.  Still stupid but better than n ray queus
-                    
+
 //                  while rays are still going
 
                      //intersect active rays, store in threadContext hitList
-                    
+
                     for(int i=tContext.rays.begin();i!=tContext.rays.end();i++)
                     {
                       gvt::render::actor::isecDomList doms;
@@ -199,7 +199,7 @@ namespace gvt {
                      //walk hitlist, creating subpackets where needed
                        // trace subpacket with domain
                        // in case of overflow hitlist size, loop
-                    
+
                     //Carson:  I'm following the in order traversal... but I don't think this makes sense.  I say just intersect all packet rays
                     // with active domain, why bother sorting them out?
                     //
@@ -221,7 +221,7 @@ namespace gvt {
                           dom->trace(subPacket);
                           for(int sr =subPacket.begin();sr< subPacket.end();sr++)
                             tContext.rays[start+sr] = subPacket[sr];
-                          
+
                           start=j+1;
                         }
                         domId = rd;
