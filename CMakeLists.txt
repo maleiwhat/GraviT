@@ -17,7 +17,7 @@ if(COMMAND cmake_policy)
 endif(COMMAND cmake_policy)
 
 # show all warnings, but disable c11 warnings
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-c++11-extensions -Wno-reorder -Wno-unused-variable")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-reorder -Wno-unused-variable")
 
 # use C++11 foo explicitly
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
