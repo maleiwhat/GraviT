@@ -273,8 +273,10 @@ int main(int argc, char **argv) {
 
   gvt::core::DBNodeH filmNode =
       cntxt->createNodeFromType("Film", "conefilm", root.UUID());
-  filmNode["width"] = 512;
-  filmNode["height"] = 512;
+  //filmNode["width"] = 512;
+  //filmNode["height"] = 512;
+  filmNode["width"]=1920;
+  filmNode["height"]=1080;
 
   // TODO: schedule db design could be modified a bit
   gvt::core::DBNodeH schedNode =
