@@ -69,7 +69,7 @@ if (GVT_RENDER)
 	option(GVT_SIMPLE_APP			"Build the simple application" ON)
 	option(GVT_SIMPLE_FILE_LOAD_APP		"Build the simple application (load obj file)" ON)
 	add_definitions(-DGVT_RENDER)
-endif(GVT_RENDER) 
+endif(GVT_RENDER)
 
 
 
@@ -101,7 +101,7 @@ if(GVT_MPE)
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DGVT_USE_MPE=1")
 endif(GVT_MPE)
 # the compiler is ususally set through environment vars outside the cmake file
-# so this is redundant. CMake detects the compiler. 
+# so this is redundant. CMake detects the compiler.
 set(GVT_USE_ICC OFF CACHE BOOL "Use Intel Compiler?")
 set(GVT_VECTOR_TARGET "AVX" CACHE STRING "Target Vector ISA on host (SSE,AVX,AVX2)")
 mark_as_advanced(GVT_USE_ICC)
@@ -168,10 +168,25 @@ set(GVT_CORE_HDRS ${GVT_CORE_HDRS}
 	src/gvt/core/math/Vector.h
 	src/gvt/core/math/VectorOperators.inl
 	src/gvt/core/Math.h
+
+	#this will be removed
 	src/gvt/core/mpi/Comm.h
 	src/gvt/core/mpi/CommData.h
 	src/gvt/core/mpi/SingleNode.h
+	# removed end
+
+	src/gvt/core/mpi/Application.h
+	src/gvt/core/mpi/Application.cpp
+	src/gvt/core/mpi/Message.h
+	src/gvt/core/mpi/Message.cpp
+	src/gvt/core/mpi/MessageQ.h
+	src/gvt/core/mpi/MessageQ.cpp
+	src/gvt/core/mpi/Work.h
+	src/gvt/core/mpi/Work.cpp
+	src/gvt/core/mpi/RayWork.h
+	src/gvt/core/mpi/RenderWork.h
 	src/gvt/core/mpi/Wrapper.h
+
 	src/gvt/core/schedule/SchedulerBase.h
 	src/gvt/core/schedule/TaskScheduling.h
 	src/gvt/core/Schedule.h
@@ -283,7 +298,7 @@ if (GVT_RENDER_ADAPTER_OPTIX_PRIME)
 
 	set(GVT_RENDER_CUDA_SRCS ${GVT_RENDER_CUDA_SRCS}
 		)
-	set(GVT_RENDER_SRCS ${GVT_RENDER_SRCS} 
+	set(GVT_RENDER_SRCS ${GVT_RENDER_SRCS}
 		src/gvt/render/adapter/optix/data/OptixMeshAdapter.cpp
 		)
 	set(GVT_RENDER_HDRS ${GVT_RENDER_HDRS}
@@ -319,7 +334,7 @@ if (GVT_CORE)
     set(GVT_CORE_LIBS ${LIBS} ${Boost_LIBRARIES} ${TBB_LIBRARIES})
 
 	add_library(gvtCore STATIC
-		${GVT_CORE_HDRS} 
+		${GVT_CORE_HDRS}
 		${GVT_CORE_SRCS}
 		)
 
@@ -333,15 +348,15 @@ endif(GVT_CORE)
 
 
 if (GVT_RENDER)
-	# TODO: PlyReader in gvtRender requires Manta, 
+	# TODO: PlyReader in gvtRender requires Manta,
 	#       should only need Manta if including Manta adapter
 	find_package(Manta REQUIRED)
-	set(GVT_RENDER_LIBS ${GVT_RENDER_LIBS} ${MANTA_TARGET_LINK_LIBRARIES}) 
+	set(GVT_RENDER_LIBS ${GVT_RENDER_LIBS} ${MANTA_TARGET_LINK_LIBRARIES})
 
     find_package(Boost REQUIRED COMPONENTS thread timer system)
     include_directories(${Boost_INCLUDE_DIRS})
     set(GVT_RENDER_LIBS ${GVT_RENDER_LIBS} ${Boost_LIBRARIES})
-	
+
     if (GVT_RENDER_ADAPTER_OPTIX_PRIME)
     	find_package(CUDA REQUIRED)
     	find_package(OptiX REQUIRED)
@@ -369,7 +384,7 @@ if (GVT_RENDER)
 	endif(GVT_RENDER_ADAPTER_EMBREE)
 
 	add_library(gvtRender STATIC
-		${GVT_CORE_HDRS} 
+		${GVT_CORE_HDRS}
 		${GVT_CORE_SRCS}
 		${GVT_RENDER_HDRS}
 		${GVT_RENDER_SRCS}
@@ -458,4 +473,3 @@ if (GVT_GLRENDER_APP)
 		RUNTIME DESTINATION bin
 		)
 endif(GVT_GLRENDER_APP)
-
