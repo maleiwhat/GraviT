@@ -98,6 +98,11 @@ public:
   Tracer(gvt::render::actor::RayVector &rays,
          gvt::render::data::scene::Image &image)
       : AbstractTrace(rays, image) {
+
+    /* Ray start and end is now determined by renderwork */
+    // rays_start = rays.begin();
+    // ray_end = rays.end();
+
     int ray_portion = rays.size() / mpi.world_size;
     rays_start = mpi.rank * ray_portion;
     rays_end =

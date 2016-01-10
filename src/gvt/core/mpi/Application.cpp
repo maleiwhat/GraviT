@@ -4,7 +4,7 @@
 #include "mpi.h"
 #include "unistd.h"
 #include "iostream"
-#include <gvt/core/mpi/application.h>
+#include <gvt/core/mpi/Application.h>
 
 using namespace gvt::core::mpi;
 
