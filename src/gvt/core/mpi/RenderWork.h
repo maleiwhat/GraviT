@@ -10,10 +10,11 @@ namespace mpi {
 
 class RenderWork : public Work
 {
-
+public:
+  virtual bool Action() {return true;};
 private:
+  int uniqueId; 
   gvt::render::actor::RayVector rays;
-
 };
 
 } //ns mpi

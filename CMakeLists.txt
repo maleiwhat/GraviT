@@ -185,6 +185,7 @@ set(GVT_CORE_HDRS ${GVT_CORE_HDRS}
 	src/gvt/core/mpi/Work.cpp
 	src/gvt/core/mpi/RayWork.h
 	src/gvt/core/mpi/RenderWork.h
+	src/gvt/core/mpi/RenderTileWork.h
 	src/gvt/core/mpi/Wrapper.h
 
 	src/gvt/core/schedule/SchedulerBase.h
@@ -413,7 +414,7 @@ if (GVT_SIMPLE_APP)
 	find_package(MPI REQUIRED)
 	include_directories(${MPI_INCLUDE_PATH})
 	set(GVTSIMPLE_RENDER_LIBS ${GVTSIMPLE_RENDER_LIBS}  ${MPI_LIBRARIES})
-	set(GVTSIMPLE_RENDER_SRCS ${GVTSIMPLE_RENDER_SRCS} src/apps/render/SimpleApp.cpp)
+	set(GVTSIMPLE_RENDER_SRCS ${GVTSIMPLE_RENDER_SRCS} src/apps/render/SimpleMPIApp.cpp)
 	add_executable(gvtSimple ${GVTSIMPLE_RENDER_SRCS})
 	target_link_libraries(gvtSimple gvtCore gvtRender ${GVTSIMPLE_RENDER_LIBS} )
 endif(GVT_SIMPLE_APP)
