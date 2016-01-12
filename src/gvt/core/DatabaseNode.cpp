@@ -206,3 +206,9 @@ Vector<DBNodeH> DBNodeH::getChildren() {
     result.push_back(DBNodeH(children[i]->UUID()));
   return result;
 }
+
+std::size_t DBNodeH::getChildrenSize() {
+  CoreContext *ctx = CoreContext::instance();
+  Database &db = *(ctx->database());
+  return db.getChildren(UUID()).size();
+}

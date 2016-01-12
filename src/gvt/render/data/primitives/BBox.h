@@ -70,6 +70,7 @@ public:
   int wideRangingBoxDir() const;
   gvt::core::math::Point4f centroid() const;
   float surfaceArea() const;
+  gvt::core::math::Vector3f extent() const;
 
   friend std::ostream &operator<<(std::ostream &os, const Box3D &bbox) {
     os << bbox.bounds[0] << " x ";

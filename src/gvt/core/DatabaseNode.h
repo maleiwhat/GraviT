@@ -79,6 +79,7 @@ public:
   void setValue(Variant value);
 
   Vector<DBNodeH> getChildren();
+  std::size_t getChildrenSize();
 
   void propagateUpdate();
   DBNodeH deRef();

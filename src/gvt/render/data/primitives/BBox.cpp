@@ -213,3 +213,8 @@ float Box3D::surfaceArea() const {
   Point4f diag = bounds[1] - bounds[0];
   return (2.f * (diag.x * diag.y + diag.y * diag.z + diag.z * diag.x));
 }
+
+gvt::core::math::Vector3f Box3D::extent() const {
+  Point4f diag = bounds[1] - bounds[0];
+  return gvt::core::math::Vector3f(diag.x, diag.y, diag.z);
+}
