@@ -184,6 +184,9 @@ Uuid MpiRenderer::
   node["bbox"] = ibox;
   node["centroid"] = ibox->centroid();
 
+  printf("[new instance %d] bounds: min(%.3f %.3f %.3f), max(%.3f %.3f %.3f)\n",
+          instanceId, il[0], il[1], il[2], ih[0], ih[1], ih[2]);
+
   return node.UUID();
 }
 

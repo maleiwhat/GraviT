@@ -133,10 +133,11 @@ int main(int argc, char **argv) {
                   (extent[1] + gapY) * bunnyCountY * -0.5f,
                   (extent[2] + gapZ) * bunnyCountZ * -0.5f);
 
+  int instanceId = 0;
   for (int z=0; z<bunnyCountZ; ++z) {
     for (int y=0; y<bunnyCountY; ++y) {
       for (int x=0; x<bunnyCountX; ++x) {
-        int instanceId = y * 2 + x;
+        // int instanceId = y * 2 + x;
         // m: transform matrix
         auto m = new gvt::core::math::AffineTransformMatrix<float>(true);
         *m = *m * gvt::core::math::AffineTransformMatrix<float>::
@@ -147,7 +148,7 @@ int main(int argc, char **argv) {
             createScale(1.0f, 1.0f, 1.0f);
         Uuid bunnyId =
             renderer.addInstance(instancesNodeId, bunnyMeshNodeId,
-                                 instanceId, "bunny", m);
+                                 instanceId++, "bunny", m);
       }
     }
   }
@@ -162,7 +163,7 @@ int main(int argc, char **argv) {
                                             lightPosition, lightColor);
 
   // create camera node
-  Point4f eye(0.0, 0.0, 1.2, 1.0);
+  Point4f eye(0.0, 0.5, 1.2, 1.0);
   Point4f focus(0.0, 0.0, 0.0, 1.0);
   Vector4f upVector(0.0, 1.0, 0.0, 0.0);
   float fov = (45.0 * M_PI / 180.0);
