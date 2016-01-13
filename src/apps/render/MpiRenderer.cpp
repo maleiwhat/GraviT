@@ -81,8 +81,7 @@ using namespace gvt::render::data::primitives;
 using namespace apps::render;
 
 MpiRenderer::MpiRenderer(int *argc, char ***argv) :
-  camera(NULL), image(NULL), dbOption(NULL) {
-  // Application(argc, argv), camera(NULL), image(NULL) {
+  Application(argc, argv), camera(NULL), image(NULL), dbOption(NULL) {
 
   renderContext = gvt::render::RenderContext::instance();
 
@@ -371,6 +370,8 @@ Uuid MpiRenderer::createScheduleNode(int schedulerType, int adapterType) {
 
 void MpiRenderer::render() {
 
+  Application::Start(); 
+
   camera->AllocateCameraRays();
   camera->generateRays();
 
@@ -396,5 +397,7 @@ void MpiRenderer::render() {
   }
   std::cout << "writing image" << std::endl; 
   image->Write();
+
+  Application::QuitApplication(); 
 }
 

@@ -41,9 +41,9 @@ using namespace apps::render;
 
 int main(int argc, char** argv) {
 
-  MPI_Init(&argc, &argv);
-  int rank = -1;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  // MPI_Init(&argc, &argv);
+  // int rank = -1;
+  // MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
   // renderer instance
   MpiRenderer renderer(&argc, &argv);
@@ -51,6 +51,6 @@ int main(int argc, char** argv) {
   renderer.createDatabase();
   renderer.render();
 
-  if (MPI::COMM_WORLD.Get_size() > 1)
-    MPI_Finalize();
+  // if (MPI::COMM_WORLD.Get_size() > 1)
+  //   MPI_Finalize();
 }

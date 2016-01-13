@@ -75,7 +75,7 @@ struct TestDatabaseOption : public DatabaseOption {
   int instanceCountZ = 1;
 };
 
-class MpiRenderer { // : public Application {
+class MpiRenderer : public Application {
 public:
   MpiRenderer(int *argc, char ***argv);
   virtual ~MpiRenderer();
