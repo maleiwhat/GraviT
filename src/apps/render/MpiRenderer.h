@@ -34,8 +34,8 @@
 // MpiRenderer.h
 //
 
-#ifndef GVTAPPS_RENDER_MPI_RENDERER_APP_H
-#define GVTAPPS_RENDER_MPI_RENDERER_APP_H
+#ifndef APPS_RENDER_MPI_RENDERER_APP_H
+#define APPS_RENDER_MPI_RENDERER_APP_H
 
 #include <gvt/core/mpi/Application.h>
 #include <gvt/render/RenderContext.h>

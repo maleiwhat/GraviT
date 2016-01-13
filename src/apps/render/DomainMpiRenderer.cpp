@@ -30,22 +30,20 @@
    ACI-1339881 and ACI-1339840
    =======================================================================================
    */
-/**
- * A simple GraviT application that loads some geometry and renders it
- * using the MpiRenderer class.
- */
+//
+// DomainMpiRenderer.cpp
+//
 
-#include <apps/render/MpiRenderer.h>
 #include <apps/render/DomainMpiRenderer.h>
 
 using namespace apps::render;
 
-int main(int argc, char** argv) {
+DomainMpiRenderer::DomainMpiRenderer(int *argc, char ***argv) :
+  MpiRenderer(argc, argv) {}
 
-  MpiRenderer* renderer = new DomainMpiRenderer(&argc, &argv);
-  renderer->parseCommandLine(argc, argv);
-  renderer->createDatabase();
-  renderer->render();
+DomainMpiRenderer::~DomainMpiRenderer() {}
 
-  delete renderer;
+void DomainMpiRenderer::render() {
+  // TODO: let's use parent's render method for now
+  MpiRenderer::render();
 }
