@@ -44,6 +44,7 @@
 #include <gvt/render/data/primitives/BBox.h>
 #include <gvt/core/DatabaseNode.h>
 #include <gvt/core/Types.h>
+#include <gvt/render/Types.h>
 #include <gvt/core/math/Vector.h>
 
 using namespace gvt::core;
@@ -56,10 +57,35 @@ using namespace gvt::render::data::primitives;
 namespace apps {
 namespace render {
 
+// hpark TODO:
+//  We could utilize existing ConfigFileLoader
+//  instead of the following option structs.
+//  The following will suffice for now.
+
+struct DatabaseOption {
+  virtual ~DatabaseOption() {}
+  int schedulerType = gvt::render::scheduler::Domain;
+  int adapterType = gvt::render::adapter::Embree;
+  // std::vector<std::string> meshFilenames; // TODO
+};
+
+struct TestDatabaseOption : public DatabaseOption {
+  int instanceCountX = 2;
+  int instanceCountY = 2;
+  int instanceCountZ = 1;
+};
+
 class MpiRenderer { // : public Application {
 public:
   MpiRenderer(int *argc, char ***argv);
   virtual ~MpiRenderer();
+
+  // for configuring database
+
+  virtual void parseCommandLine(int argc, char** argv);
+  virtual void createDatabase();
+  
+  // helper APIs
 
   bool isNodeTypeReserved(const std::string& type);
 
@@ -99,10 +125,11 @@ public:
   Uuid createScheduleNode(int schedulerType, int adapterType);
   void render();
 
-private:
+protected:
   RenderContext* renderContext;
   gvtPerspectiveCamera* camera;
   Image* image;
+  DatabaseOption* dbOption; 
 };
 
 }

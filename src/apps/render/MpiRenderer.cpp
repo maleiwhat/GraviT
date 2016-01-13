@@ -81,7 +81,7 @@ using namespace gvt::render::data::primitives;
 using namespace apps::render;
 
 MpiRenderer::MpiRenderer(int *argc, char ***argv) :
-  camera(NULL), image(NULL) {
+  camera(NULL), image(NULL), dbOption(NULL) {
   // Application(argc, argv), camera(NULL), image(NULL) {
 
   renderContext = gvt::render::RenderContext::instance();
@@ -95,6 +95,119 @@ MpiRenderer::MpiRenderer(int *argc, char ***argv) :
 MpiRenderer::~MpiRenderer() {
   if (camera != NULL) delete camera;
   if (image != NULL) delete image;
+  if (dbOption != NULL) delete dbOption;
+}
+
+void MpiRenderer::parseCommandLine(int argc, char** argv) {
+
+  this->dbOption = new TestDatabaseOption;
+
+  if (argc > 1) {
+    TestDatabaseOption* option = static_cast<TestDatabaseOption*>(dbOption);
+    if (*argv[1] == 'i') {
+      option->schedulerType =  gvt::render::scheduler::Image;
+    } else if (*argv[1] == 'd') {
+      option->schedulerType =  gvt::render::scheduler::Domain;
+    }
+    if (argc > 4) {
+      option->instanceCountX = atoi(argv[2]);
+      option->instanceCountY = atoi(argv[3]);
+      option->instanceCountZ = atoi(argv[4]);
+    }
+  }  
+}
+
+void MpiRenderer::createDatabase() {
+  // create data node
+  Uuid dataNodeId = createNode("Data", "Data");
+
+  std::string objName("bunny"); // TODO: fixed for now
+
+  // add a mesh
+  Uuid meshNodeId
+      = addMesh(dataNodeId, objName + "_mesh",
+                "../data/geom/" + objName + ".obj");
+
+  // create instances node
+  Uuid instancesNodeId = createNode("Instances", "Instances");
+
+  // add instances
+  Box3D meshBounds = getMeshBounds(meshNodeId);
+  Vector3f extent = meshBounds.extent();
+
+  const float gapX = extent[0] * 0.2f;
+  const float gapY = extent[1] * 0.2f;
+  const float gapZ = extent[2] * 0.2f;
+
+  TestDatabaseOption* option = static_cast<TestDatabaseOption*>(dbOption);
+  int instanceCountX = option->instanceCountX;
+  int instanceCountY = option->instanceCountY;
+  int instanceCountZ = option->instanceCountZ;
+
+  Vector3f minPos((extent[0] + gapX) * instanceCountX * -0.5f,
+                  (extent[1] + gapY) * instanceCountY * -0.5f,
+                  (extent[2] + gapZ) * instanceCountZ * -0.5f);
+
+  int instanceId = 0;
+  for (int z=0; z<instanceCountZ; ++z) {
+    for (int y=0; y<instanceCountY; ++y) {
+      for (int x=0; x<instanceCountX; ++x) {
+        // int instanceId = y * 2 + x;
+        // m: transform matrix
+        auto m = new gvt::core::math::AffineTransformMatrix<float>(true);
+        *m = *m * gvt::core::math::AffineTransformMatrix<float>::
+            createTranslation(minPos[0] + x * (extent[0] + gapX),
+                              minPos[1] + y * (extent[1] + gapY),
+                              minPos[2] + z * (extent[2] + gapZ));
+        *m = *m * gvt::core::math::AffineTransformMatrix<float>::
+            createScale(1.0f, 1.0f, 1.0f);
+        Uuid instanceUuid =
+            addInstance(instancesNodeId, meshNodeId,
+                        instanceId++, objName, m);
+      }
+    }
+  }
+
+  // create lights node
+  Uuid lightsNodeId = createNode("Lights", "Lights");
+
+  // add lights
+  Vector4f lightPosition(0.0, 0.1, 0.5, 0.0);
+  Vector4f lightColor(1.0, 1.0, 1.0, 0.0);
+  Uuid lightNodeId = addPointLight(lightsNodeId, "point_light",
+                                   lightPosition, lightColor);
+
+  // create camera node
+  Point4f eye(0.0, 0.5, 1.2, 1.0);
+  Point4f focus(0.0, 0.0, 0.0, 1.0);
+  Vector4f upVector(0.0, 1.0, 0.0, 0.0);
+  float fov = (45.0 * M_PI / 180.0);
+  // const unsigned int width = 1920;
+  // const unsigned int height = 1080;
+  const unsigned int width = 640;
+  const unsigned int height = 480;
+  Uuid cameraNodeId =
+      createCameraNode(eye, focus, upVector, fov, width, height);
+
+  // create film node
+  Uuid filmNodeId = createFilmNode(width, height, objName);
+
+  // create the scheduler node
+  // valid schedulers = {Image, Domain}
+  // valid adapters = {Embree, Manta, Optix}
+#ifdef GVT_RENDER_ADAPTER_EMBREE
+  int adapterType = gvt::render::adapter::Embree;
+#elif GVT_RENDER_ADAPTER_MANTA
+  int adapterType = gvt::render::adapter::Manta;
+#elif GVT_RENDER_ADAPTER_OPTIX
+  int adapterType = gvt::render::adapter::Optix;
+#else
+  GVT_DEBUG(DBG_ALWAYS, "ERROR: missing valid adapter");
+#endif
+
+  adapterType = gvt::render::adapter::Embree;
+  Uuid scheduleNodeId =
+      createScheduleNode(option->schedulerType, option->adapterType);
 }
 
 bool MpiRenderer::isNodeTypeReserved(const std::string& type) {
@@ -136,7 +249,7 @@ Uuid MpiRenderer::addMesh(const Uuid& parentNodeId,
   mesh->generateNormals();
   mesh->computeBoundingBox();
   Box3D* meshbbox = mesh->getBoundingBox();
-  // add bunny mesh to the database
+  // add mesh to the database
   node["file"] = objFilename;
   node["bbox"] = meshbbox;
   node["ptr"] = mesh;

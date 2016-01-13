@@ -83,117 +83,16 @@ using namespace gvt::render::data::scene;
 using namespace gvt::render::schedule;
 using namespace gvt::render::data::primitives;
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
 
   MPI_Init(&argc, &argv);
   int rank = -1;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-  int bunnyCountX = 2;
-  int bunnyCountY = 2;
-  int bunnyCountZ = 1;
-
-  int schedulerType = gvt::render::scheduler::Domain;
-  if (argc > 1) {
-    if (*argv[1] == 'i') {
-       schedulerType =  gvt::render::scheduler::Image;
-    } else if (*argv[1] == 'd') {
-       schedulerType =  gvt::render::scheduler::Domain;
-    }
-    if (argc > 4) {
-      bunnyCountX = atoi(argv[2]);
-      bunnyCountY = atoi(argv[3]);
-      bunnyCountZ = atoi(argv[4]);
-    }
-  }
-
   // renderer instance
   MpiRenderer renderer(&argc, &argv);
-
-  // create data node
-  Uuid dataNodeId = renderer.createNode("Data", "Data");
-
-  // add a mesh
-  Uuid bunnyMeshNodeId
-      = renderer.addMesh(dataNodeId, "bunny_mesh",
-                         "../data/geom/bunny.obj");
-
-  // create instances node
-  Uuid instancesNodeId = renderer.createNode("Instances", "Instances");
-
-  // add instances
-  Box3D bunnyBounds = renderer.getMeshBounds(bunnyMeshNodeId);
-  Vector3f extent = bunnyBounds.extent();
-
-  const float gapX = extent[0] * 0.2f;
-  const float gapY = extent[1] * 0.2f;
-  const float gapZ = extent[2] * 0.2f;
-
-  Vector3f minPos((extent[0] + gapX) * bunnyCountX * -0.5f,
-                  (extent[1] + gapY) * bunnyCountY * -0.5f,
-                  (extent[2] + gapZ) * bunnyCountZ * -0.5f);
-
-  int instanceId = 0;
-  for (int z=0; z<bunnyCountZ; ++z) {
-    for (int y=0; y<bunnyCountY; ++y) {
-      for (int x=0; x<bunnyCountX; ++x) {
-        // int instanceId = y * 2 + x;
-        // m: transform matrix
-        auto m = new gvt::core::math::AffineTransformMatrix<float>(true);
-        *m = *m * gvt::core::math::AffineTransformMatrix<float>::
-            createTranslation(minPos[0] + x * (extent[0] + gapX),
-                              minPos[1] + y * (extent[1] + gapY),
-                              minPos[2] + z * (extent[2] + gapZ));
-        *m = *m * gvt::core::math::AffineTransformMatrix<float>::
-            createScale(1.0f, 1.0f, 1.0f);
-        Uuid bunnyId =
-            renderer.addInstance(instancesNodeId, bunnyMeshNodeId,
-                                 instanceId++, "bunny", m);
-      }
-    }
-  }
-
-  // create lights node
-  Uuid lightsNodeId = renderer.createNode("Lights", "Lights");
-
-  // add lights
-  Vector4f lightPosition(0.0, 0.1, 0.5, 0.0);
-  Vector4f lightColor(1.0, 1.0, 1.0, 0.0);
-  Uuid lightNodeId = renderer.addPointLight(lightsNodeId, "point_light",
-                                            lightPosition, lightColor);
-
-  // create camera node
-  Point4f eye(0.0, 0.5, 1.2, 1.0);
-  Point4f focus(0.0, 0.0, 0.0, 1.0);
-  Vector4f upVector(0.0, 1.0, 0.0, 0.0);
-  float fov = (45.0 * M_PI / 180.0);
-  // const unsigned int width = 1920;
-  // const unsigned int height = 1080;
-  const unsigned int width = 640;
-  const unsigned int height = 480;
-  Uuid cameraNodeId =
-      renderer.createCameraNode(eye, focus, upVector, fov, width, height);
-
-  // create film node
-  Uuid filmNodeId = renderer.createFilmNode(width, height, "bunnies");
-
-  // create the scheduler node
-  // valid schedulers = {Image, Domain}
-  // valid adapters = {Embree, Manta, Optix}
-#ifdef GVT_RENDER_ADAPTER_EMBREE
-  int adapterType = gvt::render::adapter::Embree;
-#elif GVT_RENDER_ADAPTER_MANTA
-  int adapterType = gvt::render::adapter::Manta;
-#elif GVT_RENDER_ADAPTER_OPTIX
-  int adapterType = gvt::render::adapter::Optix;
-#else
-  GVT_DEBUG(DBG_ALWAYS, "ERROR: missing valid adapter");
-#endif
-
-  adapterType = gvt::render::adapter::Embree;
-  Uuid scheduleNodeId =
-      renderer.createScheduleNode(schedulerType, adapterType);
-
+  renderer.parseCommandLine(argc, argv);
+  renderer.createDatabase();
   renderer.render();
 
   if (MPI::COMM_WORLD.Get_size() > 1)
