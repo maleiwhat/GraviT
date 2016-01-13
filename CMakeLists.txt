@@ -186,6 +186,7 @@ set(GVT_CORE_HDRS ${GVT_CORE_HDRS}
 	src/gvt/core/mpi/Work.cpp
 	src/gvt/core/mpi/RayWork.h
 	src/gvt/core/mpi/RenderWork.h
+  src/gvt/core/mpi/RenderWork.cpp
 	src/gvt/core/mpi/RenderTileWork.h
 	src/gvt/core/mpi/Wrapper.h
 

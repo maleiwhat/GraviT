@@ -44,6 +44,5 @@ DomainMpiRenderer::DomainMpiRenderer(int *argc, char ***argv) :
 DomainMpiRenderer::~DomainMpiRenderer() {}
 
 void DomainMpiRenderer::render() {
-  // TODO: let's use parent's render method for now
-  MpiRenderer::render();
+  // MpiRenderer::render();
 }

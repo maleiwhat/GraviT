@@ -31,7 +31,6 @@ public:
 	Work() {}
 	~Work() {}
 
-
 	static Work *Deserialize(size_t size, unsigned char * body);
 
 	virtual void initialize() {};
