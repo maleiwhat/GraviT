@@ -34,54 +34,10 @@
  * A simple GraviT application that loads some geometry and renders it
  * using the MpiRenderer class.
  */
-#include <gvt/render/RenderContext.h>
-#include <gvt/render/Types.h>
-#include <vector>
-#include <algorithm>
-#include <set>
-#include <gvt/core/mpi/Wrapper.h>
-#include <gvt/core/Math.h>
-#include <gvt/render/data/Dataset.h>
-#include <gvt/render/data/Domains.h>
-#include <gvt/render/Schedulers.h>
-
-#ifdef GVT_RENDER_ADAPTER_EMBREE
-#include <gvt/render/adapter/embree/Wrapper.h>
-#endif
-
-#ifdef GVT_RENDER_ADAPTER_MANTA
-#include <gvt/render/adapter/manta/Wrapper.h>
-#endif
-
-#ifdef GVT_RENDER_ADAPTER_OPTIX
-#include <gvt/render/adapter/optix/Wrapper.h>
-#endif
-
-// #ifdef GVT_USE_MPE
-// #include "mpe.h"
-// #endif
-#include <gvt/render/algorithm/Tracers.h>
-#include <gvt/render/data/scene/gvtCamera.h>
-#include <gvt/render/data/scene/Image.h>
-#include <gvt/render/data/Primitives.h>
-
-#include <boost/range/algorithm.hpp>
-#include <gvt/core/mpi/Application.h>
-#include <gvt/core/mpi/RenderWork.h>
 
 #include <apps/render/MpiRenderer.h>
 
-#include <iostream>
-#include <cstdlib>
-
-using namespace std;
 using namespace apps::render;
-using namespace gvt::render;
-using namespace gvt::core::math;
-using namespace gvt::core::mpi;
-using namespace gvt::render::data::scene;
-using namespace gvt::render::schedule;
-using namespace gvt::render::data::primitives;
 
 int main(int argc, char** argv) {
 
