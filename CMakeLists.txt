@@ -458,7 +458,6 @@ if (GVT_MPI_RENDERER_APP)
 	set(GVT_MPI_RENDERER_LIBS ${GVT_MPI_RENDERER_LIBS} ${MPI_LIBRARIES})
 	set(GVT_MPI_RENDERER_SRCS ${GVT_MPI_RENDERER_SRCS}
       src/apps/render/MpiRenderer.cpp
-      src/apps/render/DomainMpiRenderer.cpp
       src/apps/render/MpiRendererApp.cpp)
 	add_executable(gvtMpiRenderer ${GVT_MPI_RENDERER_SRCS})
 	target_link_libraries(gvtMpiRenderer gvtCore gvtRender ${GVT_MPI_RENDERER_LIBS} )

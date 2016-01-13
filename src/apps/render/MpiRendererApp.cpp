@@ -36,16 +36,13 @@
  */
 
 #include <apps/render/MpiRenderer.h>
-#include <apps/render/DomainMpiRenderer.h>
 
 using namespace apps::render;
 
 int main(int argc, char** argv) {
 
-  MpiRenderer* renderer = new DomainMpiRenderer(&argc, &argv);
-  renderer->parseCommandLine(argc, argv);
-  renderer->createDatabase();
-  renderer->render();
-
-  delete renderer;
+  MpiRenderer renderer(&argc, &argv);
+  renderer.parseCommandLine(argc, argv);
+  renderer.createDatabase();
+  renderer.render();
 }
