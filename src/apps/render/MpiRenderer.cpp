@@ -369,10 +369,17 @@ Uuid MpiRenderer::createScheduleNode(int schedulerType, int adapterType) {
   return node.UUID();
 }
 
+// #define SERVER_CLIENT_MODEL
+
 void MpiRenderer::render() {
 
-  Application::Start(); 
+  Application::Start();
 
+#ifdef SERVER_CLIENT_MODEL
+  if (GetRank() == rank::Server) {
+    distributeTiles();
+  }
+#else
   camera->AllocateCameraRays();
   camera->generateRays();
 
@@ -398,7 +405,11 @@ void MpiRenderer::render() {
   }
   std::cout << "writing image" << std::endl; 
   image->Write();
+#endif
 
   Application::QuitApplication(); 
 }
 
+void MpiRenderer::distributeTiles() {
+  // TODO 
+}

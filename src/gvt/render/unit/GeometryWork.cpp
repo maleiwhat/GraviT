@@ -30,33 +30,33 @@
    ACI-1339881 and ACI-1339840
    =======================================================================================
    */
-#ifndef GVT_RENDER_TYPES_H
-#define GVT_RENDER_TYPES_H
 
-namespace gvt {
-namespace render {
-namespace adapter {
-/// render engine used
-enum RenderType { Volume, Surface, Manta, Optix, Embree, Heterogeneous };
-} // namespace adapter
-  /// schedule used
-namespace scheduler {
-enum ScheduleType {
-  Image,
-  Domain,
-  RayWeightedSpread, // PAN: from EGPGV 2012 paper, deprecated, now called
-                     // LoadOnce
-  LoadOnce,          // PAN: from TVCG 2013 paper
-  LoadAnyOnce,       // PAN: from TVCG 2013 paper
-  LoadAnother,       // PAN: from TVCG 2013 paper
-  LoadMany
-};
-} // namespace scheduler
-  /// top-level acceleration structure to organize domains within GraviT
-namespace accelerator {
-enum AccelType { NoAccel, BVH };
+//
+// GeometryWork.cpp
+//
+
+#include "gvt/render/unit/GeometryWork.h"
+#include "gvt/core/mpi/Work.h"
+
+using namespace gvt::core::mpi;
+using namespace gvt::render::unit;
+
+WORK_CLASS(GeometryWork)
+
+void GeometryWork::intialize() {
+  // TODO
 }
-} // namespace render
-} // namespace gvt
 
-#endif // GVT_RENDER_TYPES_H
+void GeometryWork::Serialize(size_t& size, unsigned char*& serialized) {
+  // TODO
+}
+
+Work* GeometryWork::Deserialize(size_t size, unsigned char* serialized) {
+  // TODO
+  return Work::Deserialize(size, serialized);
+}
+
+bool GeometryWork::Action() {
+  // TODO
+  return true;
+}

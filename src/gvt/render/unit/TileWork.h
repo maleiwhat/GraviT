@@ -30,33 +30,42 @@
    ACI-1339881 and ACI-1339840
    =======================================================================================
    */
-#ifndef GVT_RENDER_TYPES_H
-#define GVT_RENDER_TYPES_H
+
+//
+// TileWork.h
+//
+
+#ifndef GVT_RENDER_UNIT_TILE_WORK_H
+#define GVT_RENDER_UNIT_TILE_WORK_H
+
+#include "gvt/core/mpi/Work.h"
+#include "gvt/core/mpi/Application.h"
+
+using namespace std;
+using namespace gvt::core::mpi;
 
 namespace gvt {
 namespace render {
-namespace adapter {
-/// render engine used
-enum RenderType { Volume, Surface, Manta, Optix, Embree, Heterogeneous };
-} // namespace adapter
-  /// schedule used
-namespace scheduler {
-enum ScheduleType {
-  Image,
-  Domain,
-  RayWeightedSpread, // PAN: from EGPGV 2012 paper, deprecated, now called
-                     // LoadOnce
-  LoadOnce,          // PAN: from TVCG 2013 paper
-  LoadAnyOnce,       // PAN: from TVCG 2013 paper
-  LoadAnother,       // PAN: from TVCG 2013 paper
-  LoadMany
-};
-} // namespace scheduler
-  /// top-level acceleration structure to organize domains within GraviT
-namespace accelerator {
-enum AccelType { NoAccel, BVH };
-}
-} // namespace render
-} // namespace gvt
+namespace unit {
 
-#endif // GVT_RENDER_TYPES_H
+class TileWork : public Work {
+  WORK_CLASS_HEADER(TileWork)
+public:
+  virtual void intialize();
+  virtual ~TileWork() {}
+  virtual void Serialize(size_t& size, unsigned char*& serialized);
+  static Work* Deserialize(size_t size, unsigned char* serialized);
+  virtual bool Action();
+  void set(int x, int y, int w, int h);
+protected:
+  int startX;
+  int startY;
+  int width;
+  int height;
+};
+
+}
+}
+}
+
+#endif

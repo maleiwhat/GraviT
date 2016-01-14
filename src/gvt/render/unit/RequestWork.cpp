@@ -30,33 +30,35 @@
    ACI-1339881 and ACI-1339840
    =======================================================================================
    */
-#ifndef GVT_RENDER_TYPES_H
-#define GVT_RENDER_TYPES_H
 
-namespace gvt {
-namespace render {
-namespace adapter {
-/// render engine used
-enum RenderType { Volume, Surface, Manta, Optix, Embree, Heterogeneous };
-} // namespace adapter
-  /// schedule used
-namespace scheduler {
-enum ScheduleType {
-  Image,
-  Domain,
-  RayWeightedSpread, // PAN: from EGPGV 2012 paper, deprecated, now called
-                     // LoadOnce
-  LoadOnce,          // PAN: from TVCG 2013 paper
-  LoadAnyOnce,       // PAN: from TVCG 2013 paper
-  LoadAnother,       // PAN: from TVCG 2013 paper
-  LoadMany
-};
-} // namespace scheduler
-  /// top-level acceleration structure to organize domains within GraviT
-namespace accelerator {
-enum AccelType { NoAccel, BVH };
+//
+// RequestWork.cpp
+//
+
+#include "gvt/render/unit/RequestWork.h"
+#include "gvt/core/mpi/Work.h"
+#include "gvt/core/mpi/Application.h"
+
+using namespace gvt::core::mpi;
+using namespace gvt::render::unit;
+
+WORK_CLASS(RequestWork)
+
+void RequestWork::intialize() {
+  // TODO
 }
-} // namespace render
-} // namespace gvt
 
-#endif // GVT_RENDER_TYPES_H
+Work* RequestWork::Deserialize(size_t size, unsigned char* serialized) {
+  if (size != 0) {
+    std::cerr << "RequestWork deserializer call with size != 0 rank "
+              << Application::GetApplication()->GetRank() << "\n";
+    exit(1);
+  }
+  RequestWork* requestWork = new RequestWork;
+  return static_cast<Work*>(requestWork);
+}
+
+bool RequestWork::Action() {
+  // TODO
+  return true;
+}

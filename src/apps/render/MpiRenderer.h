@@ -57,6 +57,8 @@ using namespace gvt::render::data::primitives;
 namespace apps {
 namespace render {
 
+namespace rank { enum RankType { Server=0 }; }
+
 // hpark TODO:
 //  We could utilize existing ConfigFileLoader
 //  instead of the following option structs.
@@ -124,6 +126,9 @@ public:
 
   Uuid createScheduleNode(int schedulerType, int adapterType);
   void render();
+
+private:
+  void distributeTiles();
 
 protected:
   RenderContext* renderContext;

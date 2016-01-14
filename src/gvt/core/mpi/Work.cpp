@@ -1,7 +1,6 @@
 #include <iostream>
-#include <gvt/core/mpi/Application.h>
-#include <gvt/core/mpi/Work.h>
-#include <gvt/core/mpi/Message.h>
+#include "gvt/core/mpi/Work.h"
+#include "gvt/core/mpi/Message.h"
 
 using namespace gvt::core::mpi;
 

@@ -32,59 +32,31 @@
    */
 
 //
-// RenderWork.cpp
+// RayWork.cpp
 //
 
-#include "gvt/core/mpi/RenderWork.h"
+#include "gvt/render/unit/RayWork.h"
 #include "gvt/core/mpi/Work.h"
 
 using namespace gvt::core::mpi;
-
-WORK_CLASS(TileWork)
-
-void TileWork::intialize() {
-  startX = 0;
-  startY = 0;
-  width = 0;
-  height = 0;
-}
-
-void TileWork::Serialize(size_t& size, unsigned char*& serialized) {
-
-  size = 4 * sizeof(int);
-  serialized = (unsigned char *)malloc(size);
-
-  unsigned char* buf = serialized;
-
-  *reinterpret_cast<int*>(buf) = startX; buf += sizeof(int);
-  *reinterpret_cast<int*>(buf) = startY; buf += sizeof(int);
-  *reinterpret_cast<int*>(buf) = width;  buf += sizeof(int);
-  *reinterpret_cast<int*>(buf) = height; buf += sizeof(int);
-}
-
-Work* TileWork::Deserialize(size_t size, unsigned char* serialized) {
-
-  if (size != (4 * sizeof(int))) {
-    std::cerr << "Test deserializer ctor with size != 4 * sizeof(int)\n";
-    exit(1);
-  }
-
-  unsigned char* buf = serialized;
-  TileWork* tileWork = new TileWork;
-
-  tileWork->startX = *reinterpret_cast<int*>(buf); buf += sizeof(int);
-  tileWork->startY = *reinterpret_cast<int*>(buf); buf += sizeof(int);
-  tileWork->width  = *reinterpret_cast<int*>(buf); buf += sizeof(int);
-  tileWork->height = *reinterpret_cast<int*>(buf); buf += sizeof(int);
-
-  return static_cast<Work*>(tileWork);
-}
-
-bool TileWork::Action() {
-  return true;
-}
+using namespace gvt::render::unit;
 
 WORK_CLASS(RayWork)
-WORK_CLASS(GeometryWork)
-WORK_CLASS(PixelWork)
 
+void RayWork::intialize() {
+  // TODO
+}
+
+void RayWork::Serialize(size_t& size, unsigned char*& serialized) {
+  // TODO
+}
+
+Work* RayWork::Deserialize(size_t size, unsigned char* serialized) {
+  // TODO
+  return Work::Deserialize(size, serialized);
+}
+
+bool RayWork::Action() {
+  // TODO
+  return true;
+}
