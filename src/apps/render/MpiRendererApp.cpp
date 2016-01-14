@@ -35,7 +35,7 @@
  * using the MpiRenderer class.
  */
 
-#include <apps/render/MpiRenderer.h>
+#include "apps/render/MpiRenderer.h"
 
 using namespace apps::render;
 

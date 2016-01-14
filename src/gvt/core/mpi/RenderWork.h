@@ -38,9 +38,9 @@
 #ifndef GVT_CORE_MPI_RENDER_WORK_H
 #define GVT_CORE_MPI_RENDER_WORK_H
 
-#include <gvt/core/mpi/Work.h>
-#include <gvt/render/actor/Ray.h>
-#include <gvt/core/mpi/Application.h>
+#include "gvt/core/mpi/Work.h"
+#include "gvt/render/actor/Ray.h"
+#include "gvt/core/mpi/Application.h"
 
 using namespace std;
 using namespace gvt::core::mpi;

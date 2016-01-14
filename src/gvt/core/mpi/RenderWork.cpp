@@ -35,8 +35,8 @@
 // RenderWork.cpp
 //
 
-#include <gvt/core/mpi/RenderWork.h>
-#include <gvt/core/mpi/Work.h>
+#include "gvt/core/mpi/RenderWork.h"
+#include "gvt/core/mpi/Work.h"
 
 using namespace gvt::core::mpi;
 

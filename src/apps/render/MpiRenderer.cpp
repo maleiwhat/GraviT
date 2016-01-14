@@ -30,44 +30,45 @@
    ACI-1339881 and ACI-1339840
    =======================================================================================
    */
-/**
- * A simple GraviT application that loads some geometry and renders it.
+
+/** MpiRenderer.cpp
+ *  A simple GraviT application that loads some geometry and renders it.
  */
 
-#include <apps/render/MpiRenderer.h>
+#include "apps/render/MpiRenderer.h"
 
-#include <gvt/render/RenderContext.h>
-#include <gvt/render/Types.h>
+#include "gvt/render/RenderContext.h"
+#include "gvt/render/Types.h"
 #include <vector>
 #include <algorithm>
 #include <set>
-#include <gvt/core/mpi/Wrapper.h>
-#include <gvt/core/Math.h>
-#include <gvt/render/data/Dataset.h>
-#include <gvt/render/data/Domains.h>
-#include <gvt/render/Schedulers.h>
+#include "gvt/core/mpi/Wrapper.h"
+#include "gvt/core/Math.h"
+#include "gvt/render/data/Dataset.h"
+#include "gvt/render/data/Domains.h"
+#include "gvt/render/Schedulers.h"
 
 #ifdef GVT_RENDER_ADAPTER_EMBREE
-#include <gvt/render/adapter/embree/Wrapper.h>
+#include "gvt/render/adapter/embree/Wrapper.h"
 #endif
 
 #ifdef GVT_RENDER_ADAPTER_MANTA
-#include <gvt/render/adapter/manta/Wrapper.h>
+#include "gvt/render/adapter/manta/Wrapper.h"
 #endif
 
 #ifdef GVT_RENDER_ADAPTER_OPTIX
-#include <gvt/render/adapter/optix/Wrapper.h>
+#include "gvt/render/adapter/optix/Wrapper.h"
 #endif
 
-#include <gvt/render/algorithm/Tracers.h>
-#include <gvt/render/data/scene/gvtCamera.h>
-#include <gvt/render/data/scene/Image.h>
-#include <gvt/render/data/Primitives.h>
-#include <gvt/render/data/domain/reader/ObjReader.h>
+#include "gvt/render/algorithm/Tracers.h"
+#include "gvt/render/data/scene/gvtCamera.h"
+#include "gvt/render/data/scene/Image.h"
+#include "gvt/render/data/Primitives.h"
+#include "gvt/render/data/domain/reader/ObjReader.h"
 
 #include <boost/range/algorithm.hpp>
-#include <gvt/core/mpi/Application.h>
-#include <gvt/core/mpi/RenderWork.h>
+#include "gvt/core/mpi/Application.h"
+#include "gvt/core/mpi/RenderWork.h"
 
 #include <iostream>
 

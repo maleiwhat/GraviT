@@ -3,10 +3,35 @@
 #include <unistd.h>
 #include <iostream>
 #include "Application.h"
-#include <gvt/core/mpi/Message.h>
-#include <gvt/core/mpi/MessageQ.h>
+#include "gvt/core/mpi/Message.h"
+#include "gvt/core/mpi/MessageQ.h"
+#include <string>
+#include <fstream>
+#include <strstream>
 
 using namespace gvt::core::mpi;
+
+#define COUNTING  1
+#ifdef COUNTING
+static pthread_mutex_t ctor_lock = PTHREAD_MUTEX_INITIALIZER;
+static int mknt = 0;
+static int mdel = 0;
+#endif
+
+#ifdef LOGGING
+static pthread_mutex_t log_lock = PTHREAD_MUTEX_INITIALIZER;
+
+void
+log(std::string s)
+{
+	pthread_mutex_lock(&log_lock);
+	std::fstream fs;
+	fs.open(std::string("log_") + std::to_string(Application::GetApplication()->GetMessageManager()->GetRank()),  std::fstream::in | std::fstream::out | std::fstream::app);
+	fs << s;
+	fs.close();
+	pthread_mutex_unlock(&log_lock);
+}
+#endif
 
 void *
 MessageManager::messageThread(void *p)
@@ -21,6 +46,7 @@ MessageManager::messageThread(void *p)
   pthread_mutex_lock(&theMessageManager->lock);
 
 	theMessageManager->wait = 1;
+
 	// bds put signal here to signal the main thread.
 	pthread_cond_signal(&theMessageManager->cond);
 	while (theMessageManager->wait == 1)
@@ -30,19 +56,21 @@ MessageManager::messageThread(void *p)
 	pthread_cond_signal(&theMessageManager->cond);
 	pthread_mutex_unlock(&theMessageManager->lock);
 
-  Message *message = new Message();
+  Message *pending_message = new Message();
   while (! theApplication->IsDoneSet())
   {
-    if (message->IsReady())
+    if (pending_message->IsReady())
     {
-      message->Receive();
+      pending_message->Receive();
 
 			// Handle collective operations in the MPI thread
 
-			if (message->header.collective)
+			if (pending_message->header.collective)
 			{
-				Work *w = theApplication->Deserialize(message);
-				delete message;
+				Work *w = theApplication->Deserialize(pending_message);
+				delete pending_message;
+				pending_message = NULL;
+
 				bool kill_me = w->Action();
 				delete w;
 				if (kill_me)
@@ -51,10 +79,9 @@ MessageManager::messageThread(void *p)
 				}
 			}
 			else
-				theApplication->GetIncomingMessageQueue()->Enqueue(message);
+				theApplication->GetIncomingMessageQueue()->Enqueue(pending_message);
 
-      if (! theApplication->IsDoneSet())
-        message = new Message();
+			pending_message = new Message();
     }
 
     while (theApplication->GetOutgoingMessageQueue()->IsReady())
@@ -70,7 +97,7 @@ MessageManager::messageThread(void *p)
 				{
 					Work *w = theApplication->Deserialize(m);
 					bool kill_me = w->Action();
-
+					
 					if (m->blocking)
 					{
 						pthread_mutex_lock(&m->lock);
@@ -85,16 +112,21 @@ MessageManager::messageThread(void *p)
 						theApplication->Kill();
 					}
 				}
+				else
+					delete m;
 			}
 			else
 				break;
     }
   }
 
+	if (pending_message)
+		delete pending_message;
 
   // Make sure outgoing queue is flushed to make sure any
   // quit message is propagated
 
+  Message *message;
   while ((message = theApplication->GetOutgoingMessageQueue()->Dequeue()) != NULL)
   {
 		message->Send();
@@ -103,6 +135,12 @@ MessageManager::messageThread(void *p)
 
 	MPI_Barrier(MPI_COMM_WORLD);
   MPI_Finalize();
+
+#ifdef COUNTING
+	sleep(theMessageManager->mpi_rank);
+	std::cerr << mknt << " created, " << mdel << " deleted\n";
+#endif
+
   pthread_exit(NULL);
 }
 
@@ -139,7 +177,7 @@ MessageManager::Initialize()
 		pthread_cond_wait(&cond, &lock);
 }
 
-void
+void 
 MessageManager::Start()
 {
 	wait = 2;
@@ -150,7 +188,14 @@ MessageManager::Start()
 
 Message::Message(Work* w, bool collective, bool b)
 {
-	header.type        = w->GetType();
+#ifdef COUNTING
+	pthread_mutex_lock(&ctor_lock);
+	id = mknt++;
+	pthread_mutex_unlock(&ctor_lock);
+#endif
+
+	header.type = w->GetType();
+	pending     = 0;
 
 	blocking = b;
 	if (blocking)
@@ -165,11 +210,24 @@ Message::Message(Work* w, bool collective, bool b)
 	header.destination = -1;
 
 	w->Serialize(header.size, serialized);
+
+#ifdef LOGGING
+	std::strstream s;
+	s << id << (header.collective ? "+c\n" : "+n\n");
+	log(s.str());
+#endif
 }
 
 Message::Message(Work* w, int destination)
 {
-	header.type        = w->GetType();
+#ifdef COUNTING
+	pthread_mutex_lock(&ctor_lock);
+	id = mknt++;
+	pthread_mutex_unlock(&ctor_lock);
+#endif
+
+	header.type = w->GetType();
+	pending     = 0;
 
 	blocking = false;
 
@@ -178,17 +236,59 @@ Message::Message(Work* w, int destination)
 	header.destination = destination;
 
 	w->Serialize(header.size, serialized);
+
+#ifdef LOGGING
+	std::strstream s;
+	s << id << "+n\n";
+	log(s.str());
+#endif
 }
 
-Message::Message()
+Message::Message() 
 {
+#ifdef COUNTING
+	pthread_mutex_lock(&ctor_lock);
+	id = mknt++;
+	pthread_mutex_unlock(&ctor_lock);
+#endif
+
 	serialized = NULL;
+	pending = 1;
+
+#ifdef LOGGING
+	std::strstream s;
+	s << "pending...  " << id << "\n";
+	log(s.str());
+#endif
+
 	MPI_Irecv((unsigned char *)&header, sizeof(header), MPI_UNSIGNED_CHAR, MPI_ANY_SOURCE, Message::HEADER_TAG, MPI_COMM_WORLD, &request);
 }
 
 
 Message::~Message()
 {
+#ifdef COUNTING
+	pthread_mutex_lock(&ctor_lock);
+	mdel ++;
+	pthread_mutex_unlock(&ctor_lock);
+#endif
+
+	if (pending)
+	{
+#ifdef LOGGING
+		std::strstream s;
+		s << "cancelling " << id << (header.collective ? "+c\n" : "+n\n");
+		log(s.str());
+#endif
+		MPI_Cancel(&request);
+	}
+
+#ifdef LOGGING
+	std::strstream s;
+	s << id << (header.collective ? "-c\n" : "-n\n");
+	log(s.str());
+#endif
+
 	if (serialized) free(serialized);
 }
 
@@ -218,6 +318,14 @@ Message::Enqueue()
 void
 Message::Receive()
 {
+#ifdef LOGGING
+	std::strstream s;
+	s << "satsisfied...  " << id << "\n";
+	log(s.str());
+#endif
+
+	pending = 0;
+
 	if (header.size)
 	{
 		serialized = (unsigned char *)malloc(header.size);

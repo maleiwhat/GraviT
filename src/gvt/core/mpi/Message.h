@@ -3,7 +3,7 @@
 
 #include <mpi.h>
 #include <stdlib.h>
-#include <gvt/core/mpi/Work.h>
+#include "gvt/core/mpi/Work.h"
 
 namespace gvt {
 namespace core {
@@ -69,19 +69,22 @@ public:
 	// be waiting until the collective completes.
 	// ONLY VALID IF BLOCKING
 
-	void Wait();
+	void Wait(); 
 
 protected:
 
 	struct
 	{
-		int		 	broadcast_root;
+		int		 	broadcast_root; 
 		int		 	type;
 		int		 	destination;
-		int 		source;
+		int 		source;						
 		size_t 	size;
 		bool		collective;
 	} header;
+
+	int id;
+	int pending;
 
 	bool blocking;
 	pthread_mutex_t lock;
@@ -90,7 +93,7 @@ protected:
 	unsigned char *serialized;
 	MPI_Status status;
 	MPI_Request request;
-
+	
 };
 
 } //ns mpi

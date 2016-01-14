@@ -38,7 +38,7 @@
 #ifndef GVT_CORE_MPI_RENDERTILE_H
 #define GVT_CORE_MPI_RENDERTILE_H
 
-#include <gvt/core/mpi/RenderWork.h>
+#include "gvt/core/mpi/RenderWork.h"
 
 namespace gvt {
 namespace core {
