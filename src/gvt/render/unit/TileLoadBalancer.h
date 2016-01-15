@@ -48,7 +48,7 @@ namespace unit {
 
 class TileLoadBalancer {
 public:
-  TileLoadBalancer(int x, int y, int width, int height, int granularity);
+  TileLoadBalancer(int width, int height, int granularity);
   
   TileWork Next();
 

@@ -68,9 +68,13 @@
 
 #include <boost/range/algorithm.hpp>
 #include "gvt/core/mpi/Application.h"
-#include "gvt/core/mpi/RenderWork.h"
+
+#include "gvt/render/unit/RequestWork.h"
+#include "gvt/render/unit/TileWork.h"
+#include "gvt/render/unit/PixelWork.h"
 
 #include <iostream>
+#include <mpi.h>
 
 using namespace std;
 using namespace gvt::render;
@@ -82,7 +86,9 @@ using namespace gvt::render::data::primitives;
 using namespace apps::render;
 
 MpiRenderer::MpiRenderer(int *argc, char ***argv) :
-  Application(argc, argv), camera(NULL), image(NULL), dbOption(NULL) {
+  Application(argc, argv),
+  camera(NULL), image(NULL), dbOption(NULL),
+  tileLoadBalancer(NULL) {
 
   renderContext = gvt::render::RenderContext::instance();
 
@@ -96,6 +102,7 @@ MpiRenderer::~MpiRenderer() {
   if (camera != NULL) delete camera;
   if (image != NULL) delete image;
   if (dbOption != NULL) delete dbOption;
+  if (tileLoadBalancer != NULL) delete tileLoadBalancer;
 }
 
 void MpiRenderer::parseCommandLine(int argc, char** argv) {
@@ -369,17 +376,39 @@ Uuid MpiRenderer::createScheduleNode(int schedulerType, int adapterType) {
   return node.UUID();
 }
 
-// #define SERVER_CLIENT_MODEL
+#define SERVER_CLIENT_MODEL
+#define DEBUG_MPI_RENDERER
 
 void MpiRenderer::render() {
 
-  Application::Start();
+  RequestWork::Register();
+  TileWork::Register();
+  PixelWork::Register();
+
+  Start();
 
 #ifdef SERVER_CLIENT_MODEL
-  if (GetRank() == rank::Server) {
-    distributeTiles();
+
+  #ifdef DEBUG_MPI_RENDERER
+  printf("Rank %d: world size: %d\n", GetRank(), GetSize());
+  #endif
+
+  int rank = GetRank();
+
+  if (rank == rank::Server) {
+    launchTileLoadBalancer();
   }
+
+  MPI_Barrier(MPI_COMM_WORLD);
+  
+  if (rank != rank::Server) { // workers
+    requestWorkToServer();
+  }
+
+  Wait();
+
 #else
+
   camera->AllocateCameraRays();
   camera->generateRays();
 
@@ -405,11 +434,29 @@ void MpiRenderer::render() {
   }
   std::cout << "writing image" << std::endl; 
   image->Write();
+
+  QuitApplication(); 
+
 #endif
 
-  Application::QuitApplication(); 
 }
 
-void MpiRenderer::distributeTiles() {
-  // TODO 
+void MpiRenderer::launchTileLoadBalancer() {
+
+  gvt::core::DBNodeH root = renderContext->getRootNode();
+  int width = gvt::core::variant_toInteger(root["Film"]["width"].value());
+  int height = gvt::core::variant_toInteger(root["Film"]["height"].value());
+
+  // TODO: hpark: For now, equally divide the image
+  // try finer granularity later
+  int numRanks = GetSize();
+  int granularity = numRanks - 1;
+
+  tileLoadBalancer = new TileLoadBalancer(width, height, granularity);
+}
+
+void MpiRenderer::requestWorkToServer() {
+  RequestWork request;
+  request.setSourceRank(GetRank());
+  request.Send(rank::Server);
 }

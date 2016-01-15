@@ -38,27 +38,63 @@
 #include "gvt/render/unit/RequestWork.h"
 #include "gvt/core/mpi/Work.h"
 #include "gvt/core/mpi/Application.h"
+#include "apps/render/MpiRenderer.h"
+
+#include <iostream>
 
 using namespace gvt::core::mpi;
 using namespace gvt::render::unit;
+using namespace apps::render;
+
+#define DEBUG_TILE_DISTRIBUTION
 
 WORK_CLASS(RequestWork)
 
-void RequestWork::intialize() {
-  // TODO
+void RequestWork::Serialize(size_t& size, unsigned char*& serialized) {
+
+  size = sizeof(int);
+  serialized = static_cast<unsigned char *>(malloc(size));
+  *reinterpret_cast<int*>(serialized) = sourceRank;
 }
 
 Work* RequestWork::Deserialize(size_t size, unsigned char* serialized) {
-  if (size != 0) {
-    std::cerr << "RequestWork deserializer call with size != 0 rank "
-              << Application::GetApplication()->GetRank() << "\n";
+
+  if (size != sizeof(int)) {
+    std::cerr << "RequestWork deserializer ctor with size != sizeof(int)\n";
     exit(1);
   }
-  RequestWork* requestWork = new RequestWork;
+  RequestWork *requestWork = new RequestWork;
+  requestWork->setSourceRank(*reinterpret_cast<int*>(serialized));
   return static_cast<Work*>(requestWork);
 }
 
 bool RequestWork::Action() {
-  // TODO
-  return true;
+
+  #ifdef DEBUG_TILE_DISTRIBUTION
+  printf("Rank %d: received RequestWork from rank %d\n",
+          Application::GetApplication()->GetRank(),
+          getSourceRank());
+  #endif
+
+  MpiRenderer* app = static_cast<MpiRenderer*>(Application::GetApplication());
+  TileLoadBalancer* loadBalancer = app->getTileLoadBalancer();
+
+  TileWork tile = loadBalancer->Next();
+
+  if (tile.isValid()) {
+    tile.Send(getSourceRank());
+
+    #ifdef DEBUG_TILE_DISTRIBUTION
+    printf("Rank %d: sending tile (%d %d %d %d) to Rank %d\n",
+          Application::GetApplication()->GetRank(),
+          tile.getStartX(), tile.getStartY(),
+          tile.getWidth(), tile.getHeight(),
+          getSourceRank());
+    #endif
+
+  } else {
+    Application::GetApplication()->QuitApplication();
+  }
+
+  return false;
 }

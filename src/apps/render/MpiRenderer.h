@@ -37,27 +37,30 @@
 #ifndef APPS_RENDER_MPI_RENDERER_APP_H
 #define APPS_RENDER_MPI_RENDERER_APP_H
 
-#include <gvt/core/mpi/Application.h>
-#include <gvt/render/RenderContext.h>
-#include <gvt/render/data/scene/gvtCamera.h>
-#include <gvt/render/data/scene/Image.h>
-#include <gvt/render/data/primitives/BBox.h>
-#include <gvt/core/DatabaseNode.h>
-#include <gvt/core/Types.h>
-#include <gvt/render/Types.h>
-#include <gvt/core/math/Vector.h>
+#include "gvt/core/mpi/Application.h"
+#include "gvt/core/DatabaseNode.h"
+#include "gvt/core/Types.h"
+#include "gvt/core/math/Vector.h"
 
+#include "gvt/render/Types.h"
+#include "gvt/render/RenderContext.h"
+#include "gvt/render/data/scene/gvtCamera.h"
+#include "gvt/render/data/scene/Image.h"
+#include "gvt/render/data/primitives/BBox.h"
+#include "gvt/render/unit/TileLoadBalancer.h"
+   
 using namespace gvt::core;
 using namespace gvt::core::math;
 using namespace gvt::core::mpi;
 using namespace gvt::render;
 using namespace gvt::render::data::scene;
 using namespace gvt::render::data::primitives;
+using namespace gvt::render::unit;
 
 namespace apps {
 namespace render {
 
-namespace rank { enum RankType { Server=0 }; }
+namespace rank { enum RankType { Server=0, Display=1 }; }
 
 // hpark TODO:
 //  We could utilize existing ConfigFileLoader
@@ -127,14 +130,19 @@ public:
   Uuid createScheduleNode(int schedulerType, int adapterType);
   void render();
 
+  TileLoadBalancer* getTileLoadBalancer() { return tileLoadBalancer; }
+  RenderContext* getRenderContext() { return renderContext; }
+
 private:
-  void distributeTiles();
+  void launchTileLoadBalancer();
+  void requestWorkToServer();
 
 protected:
   RenderContext* renderContext;
   gvtPerspectiveCamera* camera;
   Image* image;
-  DatabaseOption* dbOption; 
+  DatabaseOption* dbOption;
+  TileLoadBalancer* tileLoadBalancer;
 };
 
 }

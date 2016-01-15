@@ -36,19 +36,25 @@
 //
 
 #include "gvt/render/unit/TileWork.h"
+#include "gvt/render/unit/RequestWork.h"
+
+#include "gvt/core/mpi/Application.h"
 #include "gvt/core/mpi/Work.h"
+#include "gvt/core/math/Vector.h"
+#include "apps/render/MpiRenderer.h"
+#include "gvt/render/RenderContext.h"
+
+#include <iostream>
 
 using namespace gvt::core::mpi;
+using namespace gvt::core::math;
 using namespace gvt::render::unit;
+using namespace gvt::render;
+using namespace apps::render;
+
+#define DEBUG_TILE_WORK
 
 WORK_CLASS(TileWork)
-
-void TileWork::intialize() {
-  startX = 0;
-  startY = 0;
-  width = 0;
-  height = 0;
-}
 
 void TileWork::Serialize(size_t& size, unsigned char*& serialized) {
 
@@ -82,8 +88,22 @@ Work* TileWork::Deserialize(size_t size, unsigned char* serialized) {
 }
 
 bool TileWork::Action() {
-  // TODO
-  return true;
+
+#ifdef DEBUG_TILE_WORK
+  printf("Rank %d: start processing tile(%d, %d, %d, %d)\n",
+          Application::GetApplication()->GetRank(),
+          startX, startY, width, height);
+#endif
+
+  // RayVector rays;
+  // generatePrimaryRays(rays);
+  // traceRays(rays);
+
+  RequestWork request;
+  request.setSourceRank(Application::GetApplication()->GetRank());
+  request.Send(apps::render::rank::Server);
+
+  return false;
 }
 
 void TileWork::set(int x, int y, int w, int h) {
@@ -91,4 +111,64 @@ void TileWork::set(int x, int y, int w, int h) {
   startY = y;
   width = w;
   height = h;
+}
+
+void TileWork::generatePrimaryRays(RayVector& rays) {
+
+  MpiRenderer* app = static_cast<MpiRenderer*>(Application::GetApplication());
+  RenderContext* renderContext = app->getRenderContext();
+  gvt::core::DBNodeH root = renderContext->getRootNode();
+  int imageWidth = gvt::core::variant_toInteger(root["Film"]["width"].value());
+  int imageHeight = gvt::core::variant_toInteger(root["Film"]["height"].value());
+  int tileWidth = width;
+  int tileHeight = height;
+
+  Point4f eye = gvt::core::variant_toPoint4f(root["Camera"]["eyePoint"].value());
+  float fov = gvt::core::variant_toFloat(root["Camera"]["fov"].value());
+  gvt::core::math::AffineTransformMatrix<float> cameraToWorld =
+      gvt::core::variant_toFloat(root["Camera"]["mat"].value());
+
+  /////// do from here!!!! cam2world !!!
+
+  rays.resize(tileWidth * tileHeight);
+
+  // Generate rays direction in camera space and transform to world space.
+  int i, j, idx;
+  float aspectRatio = float(imageWidth) / float(imageHeight);
+  float x, y;
+  // these basis directions are scaled by the aspect ratio and
+  // the field of view.
+  Vector4f camera_vert_basis_vector =
+      Vector4f(0, 1, 0, 0) * tan(fov * 0.5);
+
+  Vector4f camera_horiz_basis_vector =
+      Vector4f(1, 0, 0, 0) * tan(fov * 0.5) * aspectRatio;
+
+  Vector4f camera_normal_basis_vector = Vector4f(0, 0, 1, 0);
+  Vector4f camera_space_ray_direction;
+
+  for (j = startY; j < startY + tileHeight; j++)
+    for (i = startX; i < startX + tileWidth; i++) {
+      // select a ray and load it up
+      idx = j * imageWidth + i;
+      Ray &ray = rays[idx];
+      ray.id = idx;
+      ray.w = 1.0; // ray weight 1 for no subsamples. mod later
+      ray.origin = eye;
+      ray.type = Ray::PRIMARY;
+      // calculate scale factors -1.0 < x,y < 1.0
+      x = 2.0 * float(i) / float(imageWidth - 1) - 1.0;
+      y = 2.0 * float(j) / float(imageHeight - 1) - 1.0;
+      // calculate ray direction in camera space;
+      camera_space_ray_direction = camera_normal_basis_vector +
+                                   x * camera_horiz_basis_vector +
+                                   y * camera_vert_basis_vector;
+      // transform ray to world coordinate space;
+      ray.setDirection(cameraToWorld * camera_space_ray_direction.normalize());
+      ray.depth = 0;
+    }
+}
+
+void TileWork::traceRays(const RayVector& rays) {
+  // TODO
 }

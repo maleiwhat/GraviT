@@ -40,9 +40,11 @@
 
 #include "gvt/core/mpi/Work.h"
 #include "gvt/core/mpi/Application.h"
+#include "gvt/render/actor/Ray.h"
 
 using namespace std;
 using namespace gvt::core::mpi;
+using namespace gvt::render::actor;
 
 namespace gvt {
 namespace render {
@@ -51,13 +53,21 @@ namespace unit {
 class TileWork : public Work {
   WORK_CLASS_HEADER(TileWork)
 public:
-  virtual void intialize();
+  virtual void initialize() { width = -1; } // for validity check
   virtual ~TileWork() {}
   virtual void Serialize(size_t& size, unsigned char*& serialized);
   static Work* Deserialize(size_t size, unsigned char* serialized);
   virtual bool Action();
   void set(int x, int y, int w, int h);
-protected:
+  bool isValid() { return (width > 0); }
+  int getStartX() const { return startX; }
+  int getStartY() const  { return startY; }
+  int getWidth() const { return width; }
+  int getHeight() const { return height; }
+private:
+  void generatePrimaryRays(RayVector& rays);
+  void traceRays(const RayVector& rays);
+private:
   int startX;
   int startY;
   int width;

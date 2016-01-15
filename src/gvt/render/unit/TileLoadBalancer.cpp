@@ -32,41 +32,42 @@
    */
 
 //
-// TileWork.cpp
+// TileLoadBalancer.cpp
 //
 
 #include "gvt/render/unit/TileLoadBalancer.h"
-
 #include <algorithm>
+
+#define DEBUG_LOAD_BALANCER
+
+#ifdef DEBUG_LOAD_BALANCER
+#include <iostream>
+#include "gvt/core/mpi/Application.h"
+using namespace gvt::core::mpi;
+#endif
 
 using namespace gvt::render::unit;
 using namespace std;
 
-TileLoadBalancer::TileLoadBalancer(int x, int y,
-                                   int width, int height,
-                                   int granularity) :
-  x(x), y(y), width(width), height(height), granularity(granularity) {
+TileLoadBalancer::TileLoadBalancer(int width, int height, int granularity) :
+  width(width), height(height), granularity(granularity) {
 
-  if (granularity < 1)
-    granularity = 1;
+  int stepw = width / granularity;
+  int steph = height / granularity;
 
-  size_t step = max(1, width * height);
-  int stepw, steph;
-
-  // stepw = width/sqrt(granularity);
-  // steph = height*float(height)/float(width)/sqrt(granularity);
-  // stepw = steph = width*height/granularity;
-  stepw = width / granularity;
-  steph = height / granularity;
-
-  for(int ty = y ; ty < y + height; ty += steph) {
-    for(int tx = x; tx < x + width; tx += stepw) {
-      int twidth = min(stepw, (x + width) - tx);
-      int theight = min(steph, (y + height) - ty);
+  for(int ty = 0 ; ty < height; ty += steph) {
+    for(int tx = 0; tx < width; tx += stepw) {
+      int twidth = min(stepw, width - tx);
+      int theight = min(steph, height - ty);
       TileWork tile;
       tile.set(tx, ty, twidth, theight);
       tiles.push(tile);
-      // printf("load balancer adding tile %d %d\n", tile.x, tile.y);
+
+      #ifdef DEBUG_LOAD_BALANCER
+      printf("Rank %d: load balancer ctor adding tile (%d %d %d %d)\n",
+              Application::GetApplication()->GetRank(),
+              tx, ty, twidth, theight);
+      #endif
     }
   }
   // printf("TileLoadBalancer : stepwh: %d %d tiles: %d\n", stepw, steph, tiles.size());
