@@ -76,6 +76,8 @@
 #include <iostream>
 #include <mpi.h>
 
+#define DEBUG_MPI_RENDERER
+
 using namespace std;
 using namespace gvt::render;
 using namespace gvt::core::math;
@@ -275,6 +277,7 @@ Uuid MpiRenderer::
                 int instanceId,
                 const std::string& instanceName,
                 gvt::core::math::AffineTransformMatrix<float>* transform) {
+
   gvt::core::DBNodeH node =
       renderContext->createNodeFromType("Instance", instanceName,
                                         parentNodeId);
@@ -304,8 +307,10 @@ Uuid MpiRenderer::
   node["bbox"] = ibox;
   node["centroid"] = ibox->centroid();
 
+  #ifdef DEBUG_MPI_RENDERER
   printf("[new instance %d] bounds: min(%.3f %.3f %.3f), max(%.3f %.3f %.3f)\n",
           instanceId, il[0], il[1], il[2], ih[0], ih[1], ih[2]);
+  #endif
 
   return node.UUID();
 }
@@ -377,7 +382,6 @@ Uuid MpiRenderer::createScheduleNode(int schedulerType, int adapterType) {
 }
 
 #define SERVER_CLIENT_MODEL
-#define DEBUG_MPI_RENDERER
 
 void MpiRenderer::render() {
 

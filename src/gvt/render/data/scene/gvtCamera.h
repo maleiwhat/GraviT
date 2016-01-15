@@ -109,6 +109,12 @@ public:
   gvt::core::math::Point4f getFocalPoint() { return focal_point; };
   gvt::core::math::Vector4f getUpVector() { return up_vector; };
 
+  const gvt::core::math::AffineTransformMatrix<float>&
+      getCameraToWorld() const { return cam2wrld; }
+
+  const gvt::core::math::AffineTransformMatrix<float>&
+      getWorldToCamera() const { return wrld2cam; }
+
 protected:
   gvt::core::math::AffineTransformMatrix<float> cam2wrld; //!< transform from
                                                           //!camera to world

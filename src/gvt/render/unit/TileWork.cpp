@@ -95,8 +95,8 @@ bool TileWork::Action() {
           startX, startY, width, height);
 #endif
 
-  // RayVector rays;
-  // generatePrimaryRays(rays);
+  RayVector rays;
+  generatePrimaryRays(rays);
   // traceRays(rays);
 
   RequestWork request;
@@ -118,23 +118,24 @@ void TileWork::generatePrimaryRays(RayVector& rays) {
   MpiRenderer* app = static_cast<MpiRenderer*>(Application::GetApplication());
   RenderContext* renderContext = app->getRenderContext();
   gvt::core::DBNodeH root = renderContext->getRootNode();
-  int imageWidth = gvt::core::variant_toInteger(root["Film"]["width"].value());
-  int imageHeight = gvt::core::variant_toInteger(root["Film"]["height"].value());
-  int tileWidth = width;
-  int tileHeight = height;
 
-  Point4f eye = gvt::core::variant_toPoint4f(root["Camera"]["eyePoint"].value());
+  int imageW = gvt::core::variant_toInteger(root["Film"]["width"].value());
+  int imageH = gvt::core::variant_toInteger(root["Film"]["height"].value());
+  int tileW = width;
+  int tileH = height;
+
+  Point4f eye =
+      gvt::core::variant_toPoint4f(root["Camera"]["eyePoint"].value());
   float fov = gvt::core::variant_toFloat(root["Camera"]["fov"].value());
-  gvt::core::math::AffineTransformMatrix<float> cameraToWorld =
-      gvt::core::variant_toFloat(root["Camera"]["mat"].value());
+  const gvt::core::math::AffineTransformMatrix<float>& cameraToWorld =
+      app->getCamera()->getCameraToWorld();
 
-  /////// do from here!!!! cam2world !!!
-
-  rays.resize(tileWidth * tileHeight);
+  rays.resize(tileW * tileH);
 
   // Generate rays direction in camera space and transform to world space.
-  int i, j, idx;
-  float aspectRatio = float(imageWidth) / float(imageHeight);
+  int i, j;
+  int localIndex, globalIndex;
+  float aspectRatio = float(imageW) / float(imageH);
   float x, y;
   // these basis directions are scaled by the aspect ratio and
   // the field of view.
@@ -147,18 +148,19 @@ void TileWork::generatePrimaryRays(RayVector& rays) {
   Vector4f camera_normal_basis_vector = Vector4f(0, 0, 1, 0);
   Vector4f camera_space_ray_direction;
 
-  for (j = startY; j < startY + tileHeight; j++)
-    for (i = startX; i < startX + tileWidth; i++) {
+  for (j = startY; j < startY + tileH; j++)
+    for (i = startX; i < startX + tileW; i++) {
       // select a ray and load it up
-      idx = j * imageWidth + i;
-      Ray &ray = rays[idx];
-      ray.id = idx;
+      localIndex = (j - startY) * tileW + (i - startX);
+      globalIndex = j * imageW + i;
+      Ray &ray = rays[localIndex];
+      ray.id = globalIndex;
       ray.w = 1.0; // ray weight 1 for no subsamples. mod later
       ray.origin = eye;
       ray.type = Ray::PRIMARY;
       // calculate scale factors -1.0 < x,y < 1.0
-      x = 2.0 * float(i) / float(imageWidth - 1) - 1.0;
-      y = 2.0 * float(j) / float(imageHeight - 1) - 1.0;
+      x = 2.0 * float(i) / float(imageW - 1) - 1.0;
+      y = 2.0 * float(j) / float(imageH - 1) - 1.0;
       // calculate ray direction in camera space;
       camera_space_ray_direction = camera_normal_basis_vector +
                                    x * camera_horiz_basis_vector +

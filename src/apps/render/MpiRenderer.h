@@ -132,6 +132,7 @@ public:
 
   TileLoadBalancer* getTileLoadBalancer() { return tileLoadBalancer; }
   RenderContext* getRenderContext() { return renderContext; }
+  const gvtPerspectiveCamera* getCamera() const { return camera; }
 
 private:
   void launchTileLoadBalancer();
