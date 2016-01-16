@@ -41,17 +41,20 @@
 #include "gvt/core/mpi/Work.h"
 #include "gvt/core/mpi/Application.h"
 
+#include "gvt/render/unit/TileWork.h"
+
 using namespace std;
 using namespace gvt::core::mpi;
+using namespace gvt::render::data::scene;
 
 namespace gvt {
 namespace render {
 namespace unit {
 
-class PixelWork : public Work {
+class PixelWork : public TileWork {
   WORK_CLASS_HEADER(PixelWork)
 public:
-  virtual void intialize();
+  virtual void intialize() { TileWork::initialize(); }
   virtual ~PixelWork() {}
   virtual void Serialize(size_t& size, unsigned char*& serialized);
   static Work* Deserialize(size_t size, unsigned char* serialized);

@@ -89,7 +89,10 @@ public:
 
   unsigned char *GetBuffer() { return rgb; }
 
-  void Write();
+  void Write(bool rankCheck = true);
+
+  int GetWidth() const { return width; }
+  int GetHeight() const { return height; }
 
   ~Image() { delete[] rgb; }
 

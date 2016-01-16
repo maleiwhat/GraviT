@@ -48,10 +48,10 @@
 
 using namespace gvt::render::data::scene;
 
-void Image::Write() {
+void Image::Write(bool rankCheck) {
   gvt::render::algorithm::GVT_COMM comm;
 
-  if (!comm.root())
+  if (rankCheck && !comm.root())
     return;
 
   std::string ext;

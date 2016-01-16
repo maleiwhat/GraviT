@@ -48,6 +48,8 @@
 #include "gvt/render/data/scene/Image.h"
 #include "gvt/render/data/primitives/BBox.h"
 #include "gvt/render/unit/TileLoadBalancer.h"
+
+#include <vector>
    
 using namespace gvt::core;
 using namespace gvt::core::math;
@@ -133,10 +135,18 @@ public:
   TileLoadBalancer* getTileLoadBalancer() { return tileLoadBalancer; }
   RenderContext* getRenderContext() { return renderContext; }
   const gvtPerspectiveCamera* getCamera() const { return camera; }
+  Image* getImage() { return image; }
+  std::vector<GVT_COLOR_ACCUM>* getFramebuffer() { return &framebuffer; }
+
+  int decrementPendingPixelCount(int amount) {
+    pendingPixelCount -= amount;
+    return pendingPixelCount;
+  }
 
 private:
-  void launchTileLoadBalancer();
-  void requestWorkToServer();
+  void initServer();
+  void initDisplay();
+  void initWorker();
 
 protected:
   RenderContext* renderContext;
@@ -144,6 +154,8 @@ protected:
   Image* image;
   DatabaseOption* dbOption;
   TileLoadBalancer* tileLoadBalancer;
+  std::vector<GVT_COLOR_ACCUM> framebuffer;
+  int pendingPixelCount;
 };
 
 }

@@ -60,7 +60,7 @@ TileLoadBalancer::TileLoadBalancer(int width, int height, int granularity) :
       int twidth = min(stepw, width - tx);
       int theight = min(steph, height - ty);
       TileWork tile;
-      tile.set(tx, ty, twidth, theight);
+      tile.setTileSize(tx, ty, twidth, theight);
       tiles.push(tile);
 
       #ifdef DEBUG_LOAD_BALANCER

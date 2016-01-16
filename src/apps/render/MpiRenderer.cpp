@@ -363,7 +363,7 @@ Uuid MpiRenderer::createFilmNode(int width,
   node["width"] = width;
   node["height"] = height;
 
-  image = new Image(width, height, sceneName);
+  // image = new Image(width, height, sceneName);
 
   return node.UUID();
 }
@@ -400,13 +400,15 @@ void MpiRenderer::render() {
   int rank = GetRank();
 
   if (rank == rank::Server) {
-    launchTileLoadBalancer();
+    initServer();
+  } else if (rank == rank::Display) {
+    initDisplay();
   }
 
   MPI_Barrier(MPI_COMM_WORLD);
   
-  if (rank != rank::Server) { // workers
-    requestWorkToServer();
+  if (rank != rank::Server && rank != rank::Display) { // workers
+    initWorker();
   }
 
   Wait();
@@ -415,6 +417,12 @@ void MpiRenderer::render() {
 
   camera->AllocateCameraRays();
   camera->generateRays();
+
+  gvt::core::DBNodeH root = renderContext->getRootNode();
+  int width = gvt::core::variant_toInteger(root["Film"]["width"].value());
+  int height = gvt::core::variant_toInteger(root["Film"]["height"].value());
+
+  image = new Image(width, height, "image");
 
   gvt::core::DBNodeH root = renderContext->getRootNode();
 
@@ -445,9 +453,9 @@ void MpiRenderer::render() {
 
 }
 
-void MpiRenderer::launchTileLoadBalancer() {
+void MpiRenderer::initServer() {
 
-  gvt::core::DBNodeH root = renderContext->getRootNode();
+  DBNodeH root = renderContext->getRootNode();
   int width = gvt::core::variant_toInteger(root["Film"]["width"].value());
   int height = gvt::core::variant_toInteger(root["Film"]["height"].value());
 
@@ -459,7 +467,19 @@ void MpiRenderer::launchTileLoadBalancer() {
   tileLoadBalancer = new TileLoadBalancer(width, height, granularity);
 }
 
-void MpiRenderer::requestWorkToServer() {
+void MpiRenderer::initDisplay() {
+  DBNodeH root = renderContext->getRootNode();
+  int width = variant_toInteger(root["Film"]["width"].value());
+  int height = variant_toInteger(root["Film"]["height"].value());
+  image = new Image(width, height, "image");
+  pendingPixelCount = width * height;
+}
+
+void MpiRenderer::initWorker() {
+  DBNodeH root = renderContext->getRootNode();
+  int width = variant_toInteger(root["Film"]["width"].value());
+  int height = variant_toInteger(root["Film"]["height"].value());
+  framebuffer.resize(width * height);
   RequestWork request;
   request.setSourceRank(GetRank());
   request.Send(rank::Server);

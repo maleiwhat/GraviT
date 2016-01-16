@@ -40,11 +40,16 @@
 
 #include "gvt/core/mpi/Work.h"
 #include "gvt/core/mpi/Application.h"
+#include "gvt/render/data/scene/ColorAccumulator.h"
+
 #include "gvt/render/actor/Ray.h"
+
+#include <vector>
 
 using namespace std;
 using namespace gvt::core::mpi;
 using namespace gvt::render::actor;
+using namespace gvt::core;
 
 namespace gvt {
 namespace render {
@@ -58,7 +63,10 @@ public:
   virtual void Serialize(size_t& size, unsigned char*& serialized);
   static Work* Deserialize(size_t size, unsigned char* serialized);
   virtual bool Action();
-  void set(int x, int y, int w, int h);
+  void setTileInfo(int x, int y, int w, int h,
+                   std::vector<GVT_COLOR_ACCUM>* framebuffer = NULL);
+  void setTileSize(int x, int y, int w, int h);
+  void setFramebuffer(std::vector<GVT_COLOR_ACCUM>* fb) { framebuffer = fb; }
   bool isValid() { return (width > 0); }
   int getStartX() const { return startX; }
   int getStartY() const  { return startY; }
@@ -66,12 +74,17 @@ public:
   int getHeight() const { return height; }
 private:
   void generatePrimaryRays(RayVector& rays);
-  void traceRays(const RayVector& rays);
-private:
+  void traceRaysImageScheduler(const RayVector& rays);
+  void traceRaysDomainScheduler(const RayVector& rays);
+  void sendRequest(int rank);
+  void sendPixels(int rank);
+  void renderMosaic();
+protected:
   int startX;
   int startY;
   int width;
   int height;
+  std::vector<GVT_COLOR_ACCUM>* framebuffer;
 };
 
 }

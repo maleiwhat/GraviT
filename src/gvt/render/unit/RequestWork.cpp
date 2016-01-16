@@ -91,10 +91,10 @@ bool RequestWork::Action() {
           tile.getWidth(), tile.getHeight(),
           getSourceRank());
     #endif
-
-  } else {
-    Application::GetApplication()->QuitApplication();
   }
+  // } else {
+  //   Application::GetApplication()->QuitApplication();
+  // }
 
   return false;
 }
