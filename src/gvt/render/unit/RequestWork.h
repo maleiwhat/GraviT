@@ -41,7 +41,6 @@
 #include "gvt/core/mpi/Work.h"
 #include "gvt/core/mpi/Application.h"
 
-using namespace std;
 using namespace gvt::core::mpi;
 
 namespace gvt {
@@ -52,8 +51,8 @@ class RequestWork : public Work {
   WORK_CLASS_HEADER(RequestWork)
 public:
   virtual ~RequestWork() {}
-  virtual void Serialize(size_t& size, unsigned char*& serialized);
-  static Work* Deserialize(size_t size, unsigned char* serialized);
+  virtual void Serialize(std::size_t& size, unsigned char*& serialized);
+  static Work* Deserialize(std::size_t size, unsigned char* serialized);
   virtual bool Action();
   void setSourceRank(int s) { sourceRank = s; }
   int getSourceRank() { return sourceRank; }

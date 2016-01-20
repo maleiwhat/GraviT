@@ -34,37 +34,41 @@
 // MpiRenderer.h
 //
 
-#ifndef APPS_RENDER_MPI_RENDERER_APP_H
-#define APPS_RENDER_MPI_RENDERER_APP_H
+#ifndef GVT_RENDER_UNIT_MPI_RENDERER_H
+#define GVT_RENDER_UNIT_MPI_RENDERER_H
 
 #include "gvt/core/mpi/Application.h"
 #include "gvt/core/DatabaseNode.h"
-#include "gvt/core/Types.h"
 #include "gvt/core/math/Vector.h"
+#include "gvt/core/Types.h"
 
 #include "gvt/render/Types.h"
-#include "gvt/render/RenderContext.h"
-#include "gvt/render/data/scene/gvtCamera.h"
-#include "gvt/render/data/scene/Image.h"
 #include "gvt/render/data/primitives/BBox.h"
-#include "gvt/render/unit/TileLoadBalancer.h"
-#include "gvt/render/data/accel/BVH.h"
 
 #include <vector>
    
-using namespace gvt::core;
-using namespace gvt::core::math;
 using namespace gvt::core::mpi;
-using namespace gvt::render;
-using namespace gvt::render::data::accel;
-using namespace gvt::render::data::scene;
-using namespace gvt::render::data::primitives;
-using namespace gvt::render::unit;
 
-namespace apps {
+namespace gvt { namespace render {
+  class RenderContext;
+}}
+
+namespace gvt { namespace render { namespace data { namespace scene {
+  class gvtPerspectiveCamera;
+  class Image;
+}}}}
+
+namespace gvt { namespace render { namespace data { namespace accel {
+  class AbstractAccel;
+}}}}
+
+namespace gvt {
 namespace render {
+namespace unit {
 
 namespace rank { enum RankType { Server=0, Display=1 }; }
+
+class TileLoadBalancer;
 
 // hpark TODO:
 //  We could utilize existing ConfigFileLoader
@@ -98,46 +102,48 @@ public:
 
   bool isNodeTypeReserved(const std::string& type);
 
-  DBNodeH getNode(const Uuid& id);
+  gvt::core::DBNodeH getNode(const gvt::core::Uuid& id);
 
-  Uuid createNode(const std::string& type,
-                  const std::string& name);
+  gvt::core::Uuid createNode(const std::string& type,
+                             const std::string& name);
 
-  Uuid addMesh(const Uuid& parentNodeId,
-               const std::string& meshName,
-               const std::string& objFilename);
+  gvt::core::Uuid addMesh(const gvt::core::Uuid& parentNodeId,
+                          const std::string& meshName,
+                          const std::string& objFilename);
 
-  Box3D getMeshBounds(const Uuid& id);
+  gvt::render::data::primitives::Box3D
+    getMeshBounds(const gvt::core::Uuid& id);
 
-  Uuid addInstance(const Uuid& parentNodeId,
-                   const Uuid& meshId,
-                   int instanceId,
-                   const std::string& instanceName,
-                   gvt::core::math::AffineTransformMatrix<float>* transform);
+  gvt::core::Uuid
+    addInstance(const gvt::core::Uuid& parentNodeId,
+                const gvt::core::Uuid& meshId,
+                int instanceId,
+                const std::string& instanceName,
+                gvt::core::math::AffineTransformMatrix<float>* transform);
 
-  Uuid addPointLight(const Uuid& parentNodeId,
+  gvt::core::Uuid addPointLight(const gvt::core::Uuid& parentNodeId,
                      const std::string& lightName,
-                     const Vector4f& position,
-                     const Vector4f& color);
+                     const gvt::core::math::Vector4f& position,
+                     const gvt::core::math::Vector4f& color);
 
-  Uuid createCameraNode(const Point4f& eye,
-                        const Point4f& focus,
-                        const Vector4f& upVector,
+  gvt::core::Uuid createCameraNode(const gvt::core::math::Point4f& eye,
+                        const gvt::core::math::Point4f& focus,
+                        const gvt::core::math::Vector4f& upVector,
                         float fov,
                         unsigned int width, 
                         unsigned int height);
 
-  Uuid createFilmNode(int width,
+  gvt::core::Uuid createFilmNode(int width,
                       int height,
                       const std::string& sceneName);
 
-  Uuid createScheduleNode(int schedulerType, int adapterType);
+  gvt::core::Uuid createScheduleNode(int schedulerType, int adapterType);
   void render();
 
   TileLoadBalancer* getTileLoadBalancer() { return tileLoadBalancer; }
-  RenderContext* getRenderContext() { return renderContext; }
-  const gvtPerspectiveCamera* getCamera() const { return camera; }
-  Image* getImage() { return image; }
+  gvt::render::RenderContext* getRenderContext() { return renderContext; }
+  const gvt::render::data::scene::gvtPerspectiveCamera* getCamera() const { return camera; }
+  gvt::render::data::scene::Image* getImage() { return image; }
   std::vector<GVT_COLOR_ACCUM>* getFramebuffer() { return &framebuffer; }
 
   int decrementPendingPixelCount(int amount) {
@@ -145,8 +151,8 @@ public:
     return pendingPixelCount;
   }
 
-  gvt::core::Vector<DBNodeH>& getInstanceNodes() { return instanceNodes; }
-  AbstractAccel* getAcceleration() { return acceleration; }
+  gvt::core::Vector<gvt::core::DBNodeH>& getInstanceNodes() { return instanceNodes; }
+  gvt::render::data::accel::AbstractAccel* getAcceleration() { return acceleration; }
 
 private:
   void initServer();
@@ -154,18 +160,19 @@ private:
   void initWorker();
 
 protected:
-  RenderContext* renderContext;
-  gvtPerspectiveCamera* camera;
-  Image* image;
+  gvt::render::RenderContext* renderContext;
+  gvt::render::data::scene::gvtPerspectiveCamera* camera;
+  gvt::render::data::scene::Image* image;
   DatabaseOption* dbOption;
   TileLoadBalancer* tileLoadBalancer;
   std::vector<GVT_COLOR_ACCUM> framebuffer;
   int pendingPixelCount;
 
-  gvt::core::Vector<DBNodeH> instanceNodes;
-  AbstractAccel* acceleration;
+  gvt::core::Vector<gvt::core::DBNodeH> instanceNodes;
+  gvt::render::data::accel::AbstractAccel* acceleration;
 };
 
+}
 }
 }
 

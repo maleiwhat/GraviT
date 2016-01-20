@@ -35,9 +35,9 @@
  * using the MpiRenderer class.
  */
 
-#include "apps/render/MpiRenderer.h"
+#include "gvt/render/unit/MpiRenderer.h"
 
-using namespace apps::render;
+using namespace gvt::render::unit;
 
 int main(int argc, char** argv) {
 

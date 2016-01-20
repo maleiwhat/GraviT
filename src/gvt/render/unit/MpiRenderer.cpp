@@ -35,7 +35,7 @@
  *  A simple GraviT application that loads some geometry and renders it.
  */
 
-#include "apps/render/MpiRenderer.h"
+#include "gvt/render/unit/MpiRenderer.h"
 
 #include "gvt/render/RenderContext.h"
 #include "gvt/render/Types.h"
@@ -65,6 +65,7 @@
 #include "gvt/render/data/scene/Image.h"
 #include "gvt/render/data/Primitives.h"
 #include "gvt/render/data/domain/reader/ObjReader.h"
+#include "gvt/render/data/accel/BVH.h"
 
 #include <boost/range/algorithm.hpp>
 #include "gvt/core/mpi/Application.h"
@@ -72,6 +73,7 @@
 #include "gvt/render/unit/RequestWork.h"
 #include "gvt/render/unit/TileWork.h"
 #include "gvt/render/unit/PixelWork.h"
+#include "gvt/render/unit/TileLoadBalancer.h"
 
 #include <iostream>
 #include <mpi.h>
@@ -80,12 +82,13 @@
 
 using namespace std;
 using namespace gvt::render;
+using namespace gvt::core;
 using namespace gvt::core::math;
 using namespace gvt::core::mpi;
 using namespace gvt::render::data::scene;
 using namespace gvt::render::schedule;
 using namespace gvt::render::data::primitives;
-using namespace apps::render;
+using namespace gvt::render::unit;
 
 MpiRenderer::MpiRenderer(int *argc, char ***argv) :
   Application(argc, argv),

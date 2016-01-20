@@ -41,7 +41,7 @@
 #include "gvt/render/RenderContext.h"
 #include "gvt/render/data/scene/ColorAccumulator.h"
 #include "gvt/render/data/scene/Image.h"
-#include "apps/render/MpiRenderer.h"
+#include "gvt/render/unit/MpiRenderer.h"
 
 using namespace std;
 using namespace gvt::core;
@@ -49,7 +49,6 @@ using namespace gvt::core::mpi;
 using namespace gvt::render::unit;
 using namespace gvt::render;
 using namespace gvt::render::data::scene;
-using namespace apps::render;
 
 // #define DEBUG_PIXEL_WORK
 // #define DEBUG_PIXEL_DESERIALIZE

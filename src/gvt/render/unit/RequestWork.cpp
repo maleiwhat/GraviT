@@ -36,15 +36,16 @@
 //
 
 #include "gvt/render/unit/RequestWork.h"
+#include "gvt/render/unit/MpiRenderer.h"
+#include "gvt/render/unit/TileWork.h"
+#include "gvt/render/unit/TileLoadBalancer.h"
 #include "gvt/core/mpi/Work.h"
 #include "gvt/core/mpi/Application.h"
-#include "apps/render/MpiRenderer.h"
 
 #include <iostream>
 
 using namespace gvt::core::mpi;
 using namespace gvt::render::unit;
-using namespace apps::render;
 
 #define DEBUG_TILE_DISTRIBUTION
 

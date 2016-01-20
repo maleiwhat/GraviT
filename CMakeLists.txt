@@ -176,22 +176,17 @@ set(GVT_CORE_HDRS ${GVT_CORE_HDRS}
 	src/gvt/core/mpi/SingleNode.h
 	# removed end
 
-	src/gvt/core/mpi/Application.h
-	src/gvt/core/mpi/Application.cpp
-	src/gvt/core/mpi/Message.h
-	src/gvt/core/mpi/Message.cpp
-	src/gvt/core/mpi/MessageQ.h
-	src/gvt/core/mpi/MessageQ.cpp
-  src/gvt/core/mpi/Work.h
-	src/gvt/core/mpi/Work.cpp
-  src/gvt/core/mpi/RenderWork.h
-  src/gvt/core/mpi/RenderTileWork.h
 	src/gvt/core/mpi/Wrapper.h
-
 	src/gvt/core/schedule/SchedulerBase.h
 	src/gvt/core/schedule/TaskScheduling.h
 	src/gvt/core/Schedule.h
 	src/gvt/core/Types.h
+	src/gvt/core/mpi/Application.h
+	src/gvt/core/mpi/Message.h
+	src/gvt/core/mpi/MessageQ.h
+    src/gvt/core/mpi/Work.h
+    src/gvt/core/mpi/RenderWork.h
+    src/gvt/core/mpi/RenderTileWork.h
 	)
 
 
@@ -200,6 +195,10 @@ set(GVT_CORE_SRCS ${GVT_CORE_SRCS}
 	src/gvt/core/Database.cpp
 	src/gvt/core/DatabaseNode.cpp
 	src/gvt/core/schedule/TaskScheduling.cpp
+	src/gvt/core/mpi/Application.cpp
+	src/gvt/core/mpi/Message.cpp
+	src/gvt/core/mpi/MessageQ.cpp
+	src/gvt/core/mpi/Work.cpp
 	)
 
 
@@ -245,12 +244,13 @@ set(GVT_RENDER_HDRS ${GVT_RENDER_HDRS}
 	src/gvt/render/schedule/HybridScheduler.h
 	src/gvt/render/schedule/ImageScheduler.h
 	src/gvt/render/Schedulers.h
-  src/gvt/render/unit/GeometryWork.h
-  src/gvt/render/unit/PixelWork.h
-  src/gvt/render/unit/RayWork.h
-  src/gvt/render/unit/RequestWork.h
-  src/gvt/render/unit/TileWork.h
-  src/gvt/render/unit/TileLoadBalancer.h
+    src/gvt/render/unit/GeometryWork.h
+	src/gvt/render/unit/PixelWork.h
+	src/gvt/render/unit/RayWork.h
+	src/gvt/render/unit/RequestWork.h
+	src/gvt/render/unit/TileWork.h
+	src/gvt/render/unit/TileLoadBalancer.h
+	src/gvt/render/unit/MpiRenderer.h
 	)
 
 
@@ -273,12 +273,13 @@ set(GVT_RENDER_SRCS ${GVT_RENDER_SRCS}
 	src/gvt/render/data/scene/Image.cpp
 	src/gvt/render/data/scene/Light.cpp
 	src/gvt/render/data/accel/BVH.cpp
-  src/gvt/render/unit/GeometryWork.cpp
-  src/gvt/render/unit/PixelWork.cpp
-  src/gvt/render/unit/RayWork.cpp
-  src/gvt/render/unit/RequestWork.cpp
-  src/gvt/render/unit/TileWork.cpp
-  src/gvt/render/unit/TileLoadBalancer.cpp
+	src/gvt/render/unit/GeometryWork.cpp
+	src/gvt/render/unit/PixelWork.cpp
+	src/gvt/render/unit/RayWork.cpp
+	src/gvt/render/unit/RequestWork.cpp
+	src/gvt/render/unit/TileWork.cpp
+	src/gvt/render/unit/TileLoadBalancer.cpp
+	src/gvt/render/unit/MpiRenderer.cpp
 	)
 
 
@@ -467,7 +468,6 @@ if (GVT_MPI_RENDERER_APP)
 	include_directories(${MPI_INCLUDE_PATH} src/apps/render)
 	set(GVT_MPI_RENDERER_LIBS ${GVT_MPI_RENDERER_LIBS} ${MPI_LIBRARIES})
 	set(GVT_MPI_RENDERER_SRCS ${GVT_MPI_RENDERER_SRCS}
-      src/apps/render/MpiRenderer.cpp
       src/apps/render/MpiRendererApp.cpp)
 	add_executable(gvtMpiRenderer ${GVT_MPI_RENDERER_SRCS})
 	target_link_libraries(gvtMpiRenderer gvtCore gvtRender ${GVT_MPI_RENDERER_LIBS} )

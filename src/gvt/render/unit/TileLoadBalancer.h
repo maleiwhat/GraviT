@@ -54,7 +54,7 @@ public:
 
   int granularity;
   int x,y,width, height;
-  stack<TileWork> tiles;
+  std::stack<TileWork> tiles;
 };
 
 }

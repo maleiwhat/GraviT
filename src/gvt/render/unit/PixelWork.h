@@ -38,14 +38,7 @@
 #ifndef GVT_RENDER_UNIT_PIXEL_WORK_H
 #define GVT_RENDER_UNIT_PIXEL_WORK_H
 
-#include "gvt/core/mpi/Work.h"
-#include "gvt/core/mpi/Application.h"
-
 #include "gvt/render/unit/TileWork.h"
-
-using namespace std;
-using namespace gvt::core::mpi;
-using namespace gvt::render::data::scene;
 
 namespace gvt {
 namespace render {
@@ -56,8 +49,8 @@ class PixelWork : public TileWork {
 public:
   virtual void intialize() { TileWork::initialize(); }
   virtual ~PixelWork() {}
-  virtual void Serialize(size_t& size, unsigned char*& serialized);
-  static Work* Deserialize(size_t size, unsigned char* serialized);
+  virtual void Serialize(std::size_t& size, unsigned char*& serialized);
+  static Work* Deserialize(std::size_t size, unsigned char* serialized);
   virtual bool Action();
 };
 

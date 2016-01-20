@@ -41,7 +41,6 @@
 #include "gvt/core/mpi/Work.h"
 #include "gvt/core/mpi/Application.h"
 
-using namespace std;
 using namespace gvt::core::mpi;
 
 namespace gvt {
@@ -53,8 +52,8 @@ class GeometryWork : public Work {
 public:
   virtual void intialize();
   virtual ~GeometryWork() {}
-  virtual void Serialize(size_t& size, unsigned char*& serialized);
-  static Work* Deserialize(size_t size, unsigned char* serialized);
+  virtual void Serialize(std::size_t& size, unsigned char*& serialized);
+  static Work* Deserialize(std::size_t size, unsigned char* serialized);
   virtual bool Action();
 };
 

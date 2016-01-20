@@ -39,41 +39,46 @@
 #define GVT_RENDER_UNIT_TILE_WORK_H
 
 #include "gvt/core/Types.h"
+#include "gvt/core/DatabaseNode.h"
 #include "gvt/core/mpi/Work.h"
 #include "gvt/core/mpi/Application.h"
+   
 #include "gvt/render/data/scene/ColorAccumulator.h"
-
 #include "gvt/render/actor/Ray.h"
-#include "gvt/render/Adapter.h"
-#include "gvt/render/data/accel/BVH.h"
 
 #include <vector>
 #include <map>
 
 #include <tbb/mutex.h>
 
-using namespace std;
-using namespace gvt::core;
 using namespace gvt::core::mpi;
-using namespace gvt::render;
 using namespace gvt::render::actor;
-using namespace gvt::render::data::accel;
+
+namespace gvt { namespace render { namespace data { namespace accel {
+  class AbstractAccel;
+}}}}
+
+namespace gvt { namespace render {
+  class Adapter;
+}}
 
 namespace gvt {
 namespace render {
 namespace unit {
+
+class MpiRenderer;
 
 class TileWork : public Work {
   WORK_CLASS_HEADER(TileWork)
 public:
   virtual void initialize() { width = -1; } // for validity check
   virtual ~TileWork() {}
-  virtual void Serialize(size_t& size, unsigned char*& serialized);
-  static Work* Deserialize(size_t size, unsigned char* serialized);
+  virtual void Serialize(std::size_t& size, unsigned char*& serialized);
+  static Work* Deserialize(std::size_t size, unsigned char* serialized);
   virtual bool Action();
   void setTileInfo(int x, int y, int w, int h,
                    std::vector<GVT_COLOR_ACCUM>* framebuffer = NULL);
-void setTileSize(int x, int y, int w, int h);
+  void setTileSize(int x, int y, int w, int h);
   void setFramebuffer(std::vector<GVT_COLOR_ACCUM>* fb) { framebuffer = fb; }
   bool isValid() { return (width > 0); }
   int getStartX() const { return startX; }
@@ -81,21 +86,26 @@ void setTileSize(int x, int y, int w, int h);
   int getWidth() const { return width; }
   int getHeight() const { return height; }
 protected:
-  virtual void generatePrimaryRays(RayVector& rays);
-  virtual void traceRaysImageScheduler(RayVector& rays);
-  virtual void traceRaysDomainScheduler(RayVector& rays);
+  virtual void generatePrimaryRays(gvt::render::actor::RayVector& rays);
+  virtual void traceRaysImageScheduler(gvt::render::actor::RayVector& rays);
+  virtual void traceRaysDomainScheduler(gvt::render::actor::RayVector& rays);
   virtual void sendRequest(int rank);
   virtual void sendPixels(int rank);
-private:
-  void renderMosaic();
 protected: 
-  virtual void filterRaysLocally(RayVector& rays);
+  virtual void filterRaysLocally(gvt::render::actor::RayVector& rays);
   virtual void shuffleRays(gvt::render::actor::RayVector &rays,
                            gvt::core::DBNodeH instNode);
 private:
-  std::map<int, RayVector> queue; ///< Node rays working
-  std::map<Uuid, Adapter*> adapterCache;
-  AbstractAccel* acceleration;
+  void setupAction();
+  void renderMosaic();
+private:
+  MpiRenderer* renderer;
+  gvt::core::DBNodeH root;
+  int imageWidth;
+  int imageHeight;
+  gvt::render::data::accel::AbstractAccel* acceleration;
+  std::map<int, gvt::render::actor::RayVector> queue;
+  std::map<gvt::core::Uuid, gvt::render::Adapter*> adapterCache;
   tbb::mutex* queue_mutex;
   tbb::mutex* colorBuf_mutex;
 protected:

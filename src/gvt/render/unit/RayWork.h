@@ -44,7 +44,6 @@
 
 using namespace std;
 using namespace gvt::core::mpi;
-using namespace gvt::render::actor;
 
 namespace gvt {
 namespace render {
@@ -59,7 +58,7 @@ public:
   static Work* Deserialize(size_t size, unsigned char* serialized);
   virtual bool Action();
 protected:
-  RayVector rays;
+  gvt::render::actor::RayVector rays;
 };
 
 }

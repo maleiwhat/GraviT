@@ -38,6 +38,7 @@
 #include "gvt/render/unit/TileWork.h"
 #include "gvt/render/unit/PixelWork.h"
 #include "gvt/render/unit/RequestWork.h"
+#include "gvt/render/unit/MpiRenderer.h"
 
 #include <gvt/core/Types.h>
 #include "gvt/core/mpi/Application.h"
@@ -46,10 +47,10 @@
 #include "gvt/core/DatabaseNode.h"
 
 #include "gvt/render/RenderContext.h"
+#include "gvt/render/Adapter.h"
 #include "gvt/render/actor/Ray.h"
 #include "gvt/render/data/primitives/BBox.h"
-
-#include "apps/render/MpiRenderer.h"
+#include "gvt/render/data/accel/BVH.h"
 
 #ifdef GVT_RENDER_ADAPTER_EMBREE
 #include <gvt/render/adapter/embree/Wrapper.h>
@@ -88,8 +89,6 @@ using namespace gvt::core;
 using namespace gvt::render;
 using namespace gvt::render::actor;
 using namespace gvt::render::data::primitives;
-
-using namespace apps::render;
 
 #define DEBUG_TILE_WORK
 // #define RENDER_MOSAIC_WITHOUT_TRACING
@@ -131,6 +130,15 @@ Work* TileWork::Deserialize(size_t size, unsigned char* serialized) {
   return static_cast<Work*>(tileWork);
 }
 
+void TileWork::setupAction() {
+  renderer = static_cast<MpiRenderer*>(Application::GetApplication());
+  framebuffer = renderer->getFramebuffer();
+  acceleration = renderer->getAcceleration();
+  root = RenderContext::instance()->getRootNode();
+  imageWidth = variant_toInteger(root["Film"]["width"].value());
+  imageHeight = variant_toInteger(root["Film"]["height"].value());
+}
+
 bool TileWork::Action() {
 
 #ifdef DEBUG_TILE_WORK
@@ -139,16 +147,10 @@ bool TileWork::Action() {
           startX, startY, width, height);
 #endif
 
-  MpiRenderer* app = static_cast<MpiRenderer*>(Application::GetApplication());
-  framebuffer = app->getFramebuffer();
-
-  DBNodeH root = RenderContext::instance()->getRootNode();
-  int imageWidth = variant_toInteger(root["Film"]["width"].value());
-
-  acceleration = app->getAcceleration();
+  setupAction();
 
   // TODO: create these here or in the app?
-  queue_mutex = new tbb::mutex[app->getInstanceNodes().size()];
+  queue_mutex = new tbb::mutex[renderer->getInstanceNodes().size()];
   colorBuf_mutex = new tbb::mutex[imageWidth];
 
   int schedType = variant_toInteger(root["Schedule"]["type"].value());
@@ -165,8 +167,8 @@ bool TileWork::Action() {
     exit(1);
   }
 
-  sendRequest(apps::render::rank::Server);
-  sendPixels(apps::render::rank::Display);
+  sendRequest(gvt::render::unit::rank::Server);
+  sendPixels(gvt::render::unit::rank::Display);
 
   delete [] queue_mutex;
   delete [] colorBuf_mutex;
@@ -209,25 +211,20 @@ void TileWork::sendPixels(int rank) {
 
 void TileWork::generatePrimaryRays(RayVector& rays) {
 
-  MpiRenderer* app = static_cast<MpiRenderer*>(Application::GetApplication());
-  DBNodeH root = RenderContext::instance()->getRootNode();
-
-  int imageW = variant_toInteger(root["Film"]["width"].value());
-  int imageH = variant_toInteger(root["Film"]["height"].value());
   int tileW = width;
   int tileH = height;
 
   Point4f eye = variant_toPoint4f(root["Camera"]["eyePoint"].value());
   float fov = variant_toFloat(root["Camera"]["fov"].value());
   const AffineTransformMatrix<float>& cameraToWorld =
-      app->getCamera()->getCameraToWorld();
+      renderer->getCamera()->getCameraToWorld();
 
   rays.resize(tileW * tileH);
 
   // Generate rays direction in camera space and transform to world space.
   int i, j;
   int tilePixelId, imagePixelId;
-  float aspectRatio = float(imageW) / float(imageH);
+  float aspectRatio = float(imageWidth) / float(imageHeight);
   float x, y;
   // these basis directions are scaled by the aspect ratio and
   // the field of view.
@@ -244,15 +241,15 @@ void TileWork::generatePrimaryRays(RayVector& rays) {
     for (i = startX; i < startX + tileW; i++) {
       // select a ray and load it up
       tilePixelId = (j - startY) * tileW + (i - startX);
-      imagePixelId = j * imageW + i;
+      imagePixelId = j * imageWidth + i;
       Ray &ray = rays[tilePixelId];
       ray.id = imagePixelId;
       ray.w = 1.0; // ray weight 1 for no subsamples. mod later
       ray.origin = eye;
       ray.type = Ray::PRIMARY;
       // calculate scale factors -1.0 < x,y < 1.0
-      x = 2.0 * float(i) / float(imageW - 1) - 1.0;
-      y = 2.0 * float(j) / float(imageH - 1) - 1.0;
+      x = 2.0 * float(i) / float(imageWidth - 1) - 1.0;
+      y = 2.0 * float(j) / float(imageHeight - 1) - 1.0;
       // calculate ray direction in camera space;
       camera_space_ray_direction = camera_normal_basis_vector +
                                    x * camera_horiz_basis_vector +
@@ -287,9 +284,6 @@ void TileWork::shuffleRays(gvt::render::actor::RayVector &rays,
   const gvt::render::data::primitives::Box3D domBB =
       (instNode) ? *gvt::core::variant_toBox3DPtr(instNode["bbox"].value())
                  : gvt::render::data::primitives::Box3D();
-
-  DBNodeH root = RenderContext::instance()->getRootNode();
-  int imageWidth = variant_toInteger(root["Film"]["width"].value());
 
   // tbb::parallel_for(size_t(0), size_t(rays.size()),
   //      [&] (size_t index) {
@@ -363,15 +357,13 @@ void TileWork::traceRaysImageScheduler(RayVector& rays) {
   renderMosaic();
   #else
 
-  MpiRenderer* app = static_cast<MpiRenderer*>(Application::GetApplication());
-  gvt::core::Vector<DBNodeH>& instancenodes = app->getInstanceNodes();
+  gvt::core::Vector<DBNodeH>& instancenodes = renderer->getInstanceNodes();
 
   // boost::timer::cpu_timer t_sched;
   // t_sched.start();
   // boost::timer::cpu_timer t_trace;
   GVT_DEBUG(DBG_ALWAYS,
             "image scheduler: starting, num rays: " << rays.size());
-  DBNodeH root = RenderContext::instance()->getRootNode();
   GVT_ASSERT((instancenodes.size() > 0),
              "image scheduler: instance list is null");
   int adapterType = variant_toInteger(root["Schedule"]["adapter"].value());
@@ -489,8 +481,6 @@ void TileWork::traceRaysDomainScheduler(RayVector& rays) {
 }
 
 void TileWork::renderMosaic() {
-  DBNodeH root = RenderContext::instance()->getRootNode();
-  int imageWidth = variant_toInteger(root["Film"]["width"].value());
 
   int rank = Application::GetApplication()->GetRank();
 
