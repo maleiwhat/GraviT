@@ -38,18 +38,26 @@
 #ifndef GVT_RENDER_UNIT_TILE_WORK_H
 #define GVT_RENDER_UNIT_TILE_WORK_H
 
+#include "gvt/core/Types.h"
 #include "gvt/core/mpi/Work.h"
 #include "gvt/core/mpi/Application.h"
 #include "gvt/render/data/scene/ColorAccumulator.h"
 
 #include "gvt/render/actor/Ray.h"
+#include "gvt/render/Adapter.h"
+#include "gvt/render/data/accel/BVH.h"
 
 #include <vector>
+#include <map>
+
+#include <tbb/mutex.h>
 
 using namespace std;
-using namespace gvt::core::mpi;
-using namespace gvt::render::actor;
 using namespace gvt::core;
+using namespace gvt::core::mpi;
+using namespace gvt::render;
+using namespace gvt::render::actor;
+using namespace gvt::render::data::accel;
 
 namespace gvt {
 namespace render {
@@ -65,20 +73,31 @@ public:
   virtual bool Action();
   void setTileInfo(int x, int y, int w, int h,
                    std::vector<GVT_COLOR_ACCUM>* framebuffer = NULL);
-  void setTileSize(int x, int y, int w, int h);
+void setTileSize(int x, int y, int w, int h);
   void setFramebuffer(std::vector<GVT_COLOR_ACCUM>* fb) { framebuffer = fb; }
   bool isValid() { return (width > 0); }
   int getStartX() const { return startX; }
   int getStartY() const  { return startY; }
   int getWidth() const { return width; }
   int getHeight() const { return height; }
+protected:
+  virtual void generatePrimaryRays(RayVector& rays);
+  virtual void traceRaysImageScheduler(RayVector& rays);
+  virtual void traceRaysDomainScheduler(RayVector& rays);
+  virtual void sendRequest(int rank);
+  virtual void sendPixels(int rank);
 private:
-  void generatePrimaryRays(RayVector& rays);
-  void traceRaysImageScheduler(const RayVector& rays);
-  void traceRaysDomainScheduler(const RayVector& rays);
-  void sendRequest(int rank);
-  void sendPixels(int rank);
   void renderMosaic();
+protected: 
+  virtual void filterRaysLocally(RayVector& rays);
+  virtual void shuffleRays(gvt::render::actor::RayVector &rays,
+                           gvt::core::DBNodeH instNode);
+private:
+  std::map<int, RayVector> queue; ///< Node rays working
+  std::map<Uuid, Adapter*> adapterCache;
+  AbstractAccel* acceleration;
+  tbb::mutex* queue_mutex;
+  tbb::mutex* colorBuf_mutex;
 protected:
   int startX;
   int startY;

@@ -48,6 +48,7 @@
 #include "gvt/render/data/scene/Image.h"
 #include "gvt/render/data/primitives/BBox.h"
 #include "gvt/render/unit/TileLoadBalancer.h"
+#include "gvt/render/data/accel/BVH.h"
 
 #include <vector>
    
@@ -55,6 +56,7 @@ using namespace gvt::core;
 using namespace gvt::core::math;
 using namespace gvt::core::mpi;
 using namespace gvt::render;
+using namespace gvt::render::data::accel;
 using namespace gvt::render::data::scene;
 using namespace gvt::render::data::primitives;
 using namespace gvt::render::unit;
@@ -143,6 +145,9 @@ public:
     return pendingPixelCount;
   }
 
+  gvt::core::Vector<DBNodeH>& getInstanceNodes() { return instanceNodes; }
+  AbstractAccel* getAcceleration() { return acceleration; }
+
 private:
   void initServer();
   void initDisplay();
@@ -156,6 +161,9 @@ protected:
   TileLoadBalancer* tileLoadBalancer;
   std::vector<GVT_COLOR_ACCUM> framebuffer;
   int pendingPixelCount;
+
+  gvt::core::Vector<DBNodeH> instanceNodes;
+  AbstractAccel* acceleration;
 };
 
 }

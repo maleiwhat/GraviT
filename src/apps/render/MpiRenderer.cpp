@@ -385,6 +385,11 @@ Uuid MpiRenderer::createScheduleNode(int schedulerType, int adapterType) {
 
 void MpiRenderer::render() {
 
+  DBNodeH root = renderContext->getRootNode();
+  instanceNodes = root["Instances"].getChildren();
+  GVT_DEBUG(DBG_ALWAYS, "num instances: " << instanceNodes.size());
+  acceleration = new gvt::render::data::accel::BVH(instanceNodes);
+
   RequestWork::Register();
   TileWork::Register();
   PixelWork::Register();
@@ -412,6 +417,8 @@ void MpiRenderer::render() {
   }
 
   Wait();
+
+  delete acceleration;
 
 #else
 

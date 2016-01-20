@@ -52,6 +52,7 @@ using namespace gvt::render::data::scene;
 using namespace apps::render;
 
 // #define DEBUG_PIXEL_WORK
+// #define DEBUG_PIXEL_DESERIALIZE
 
 WORK_CLASS(PixelWork)
 
@@ -121,6 +122,11 @@ Work* PixelWork::Deserialize(size_t size, unsigned char* serialized) {
   MpiRenderer* app = static_cast<MpiRenderer*>(Application::GetApplication());
   Image* image = app->getImage();
 
+  #ifdef DEBUG_PIXEL_DESERIALIZE
+  printf("Rank %d: de-serializing start\n",
+         Application::GetApplication()->GetRank());
+  #endif
+
   for (int y = 0; y < tileH; ++y) {
     for (int x = 0; x < tileW; ++x) {
       GVT_COLOR_ACCUM color;
@@ -143,6 +149,10 @@ Work* PixelWork::Deserialize(size_t size, unsigned char* serialized) {
       #endif
     }
   }
+  #ifdef DEBUG_PIXEL_DESERIALIZE
+  printf("Rank %d: de-serializing done\n",
+         Application::GetApplication()->GetRank());
+  #endif
 
   return static_cast<Work*>(pixelWork);
 }
