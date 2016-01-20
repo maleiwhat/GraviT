@@ -112,6 +112,7 @@ MpiRenderer::~MpiRenderer() {
 
 void MpiRenderer::parseCommandLine(int argc, char** argv) {
 
+  // TODO (hpark): generalize this
   this->dbOption = new TestDatabaseOption;
 
   if (argc > 1) {
@@ -384,22 +385,33 @@ Uuid MpiRenderer::createScheduleNode(int schedulerType, int adapterType) {
   return node.UUID();
 }
 
-#define SERVER_CLIENT_MODEL
+void MpiRenderer::setupRender() {
+  root = renderContext->getRootNode();
+  instanceNodes = root["Instances"].getChildren();
+  GVT_DEBUG(DBG_ALWAYS, "num instances: " << instanceNodes.size());
+  imageWidth = gvt::core::variant_toInteger(root["Film"]["width"].value());
+  imageHeight = gvt::core::variant_toInteger(root["Film"]["height"].value());
+  framebuffer.resize(imageWidth * imageHeight);
+  acceleration = new gvt::render::data::accel::BVH(instanceNodes);
+  queue_mutex = new tbb::mutex[instanceNodes.size()];
+  colorBuf_mutex = new tbb::mutex[imageWidth];
+}
+
+void MpiRenderer::freeRender() {
+  delete acceleration;
+  delete [] queue_mutex;
+  delete [] colorBuf_mutex;
+}
 
 void MpiRenderer::render() {
 
-  DBNodeH root = renderContext->getRootNode();
-  instanceNodes = root["Instances"].getChildren();
-  GVT_DEBUG(DBG_ALWAYS, "num instances: " << instanceNodes.size());
-  acceleration = new gvt::render::data::accel::BVH(instanceNodes);
+  setupRender();
 
   RequestWork::Register();
   TileWork::Register();
   PixelWork::Register();
 
   Start();
-
-#ifdef SERVER_CLIENT_MODEL
 
   #ifdef DEBUG_MPI_RENDERER
   printf("Rank %d: world size: %d\n", GetRank(), GetSize());
@@ -421,75 +433,25 @@ void MpiRenderer::render() {
 
   Wait();
 
-  delete acceleration;
-
-#else
-
-  camera->AllocateCameraRays();
-  camera->generateRays();
-
-  gvt::core::DBNodeH root = renderContext->getRootNode();
-  int width = gvt::core::variant_toInteger(root["Film"]["width"].value());
-  int height = gvt::core::variant_toInteger(root["Film"]["height"].value());
-
-  image = new Image(width, height, "image");
-
-  gvt::core::DBNodeH root = renderContext->getRootNode();
-
-  int schedType =
-      gvt::core::variant_toInteger(root["Schedule"]["type"].value());
-  switch (schedType) {
-    case gvt::render::scheduler::Image: {
-      std::cout << "starting image scheduler" << std::endl;
-      gvt::render::algorithm::Tracer<ImageScheduler>(camera->rays, *image)();
-      break;
-    }
-    case gvt::render::scheduler::Domain: {
-      std::cout << "starting domain scheduler" << std::endl;
-      gvt::render::algorithm::Tracer<DomainScheduler>(camera->rays, *image)();
-      break;
-    }
-    default: {
-      std::cout << "unknown schedule type provided: " << schedType << std::endl;
-      break;
-    }
-  }
-  std::cout << "writing image" << std::endl; 
-  image->Write();
-
-  QuitApplication(); 
-
-#endif
-
+  freeRender();
 }
 
 void MpiRenderer::initServer() {
-
-  DBNodeH root = renderContext->getRootNode();
-  int width = gvt::core::variant_toInteger(root["Film"]["width"].value());
-  int height = gvt::core::variant_toInteger(root["Film"]["height"].value());
-
   // TODO: hpark: For now, equally divide the image
   // try finer granularity later
   int numRanks = GetSize();
   int granularity = numRanks - 1;
 
-  tileLoadBalancer = new TileLoadBalancer(width, height, granularity);
+  tileLoadBalancer = new TileLoadBalancer(imageWidth, imageHeight, granularity);
 }
 
 void MpiRenderer::initDisplay() {
-  DBNodeH root = renderContext->getRootNode();
-  int width = variant_toInteger(root["Film"]["width"].value());
-  int height = variant_toInteger(root["Film"]["height"].value());
-  image = new Image(width, height, "image");
-  pendingPixelCount = width * height;
+  image = new Image(imageWidth, imageHeight, "image");
+  pendingPixelCount = imageWidth * imageHeight;
 }
 
 void MpiRenderer::initWorker() {
-  DBNodeH root = renderContext->getRootNode();
-  int width = variant_toInteger(root["Film"]["width"].value());
-  int height = variant_toInteger(root["Film"]["height"].value());
-  framebuffer.resize(width * height);
+  // framebuffer.resize(imageWidth * imageHeight);
   RequestWork request;
   request.setSourceRank(GetRank());
   request.Send(rank::Server);

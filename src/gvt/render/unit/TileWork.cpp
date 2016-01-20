@@ -134,6 +134,8 @@ void TileWork::setupAction() {
   renderer = static_cast<MpiRenderer*>(Application::GetApplication());
   framebuffer = renderer->getFramebuffer();
   acceleration = renderer->getAcceleration();
+  queue_mutex = renderer->getQueueMutex();
+  colorBuf_mutex = renderer->getColorBufMutex();
   root = RenderContext::instance()->getRootNode();
   imageWidth = variant_toInteger(root["Film"]["width"].value());
   imageHeight = variant_toInteger(root["Film"]["height"].value());
@@ -148,10 +150,6 @@ bool TileWork::Action() {
 #endif
 
   setupAction();
-
-  // TODO: create these here or in the app?
-  queue_mutex = new tbb::mutex[renderer->getInstanceNodes().size()];
-  colorBuf_mutex = new tbb::mutex[imageWidth];
 
   int schedType = variant_toInteger(root["Schedule"]["type"].value());
 
@@ -169,9 +167,6 @@ bool TileWork::Action() {
 
   sendRequest(gvt::render::unit::rank::Server);
   sendPixels(gvt::render::unit::rank::Display);
-
-  delete [] queue_mutex;
-  delete [] colorBuf_mutex;
 
   return false;
 }
@@ -316,6 +311,7 @@ void TileWork::shuffleRays(gvt::render::actor::RayVector &rays,
             local_queue[firstDomainOnList].push_back(r);
           } else if (instNode) {
             assert(r.id < 307200 && r.id > -1);
+            // TODO (hpark): do we need this lock? 
             tbb::mutex::scoped_lock fbloc(colorBuf_mutex[r.id % imageWidth]);
             GVT_COLOR_ACCUM& color = (*framebuffer)[r.id];
             for (int i = 0; i < 3; i++)

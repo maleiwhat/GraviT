@@ -46,6 +46,7 @@
 #include "gvt/render/data/primitives/BBox.h"
 
 #include <vector>
+#include <tbb/mutex.h>
    
 using namespace gvt::core::mpi;
 
@@ -70,7 +71,7 @@ namespace rank { enum RankType { Server=0, Display=1 }; }
 
 class TileLoadBalancer;
 
-// hpark TODO:
+// TODO (hpark): make a command line parser using ConfigFileLoader
 //  We could utilize existing ConfigFileLoader
 //  instead of the following option structs.
 //  The following will suffice for now.
@@ -140,6 +141,7 @@ public:
   gvt::core::Uuid createScheduleNode(int schedulerType, int adapterType);
   void render();
 
+public:
   TileLoadBalancer* getTileLoadBalancer() { return tileLoadBalancer; }
   gvt::render::RenderContext* getRenderContext() { return renderContext; }
   const gvt::render::data::scene::gvtPerspectiveCamera* getCamera() const { return camera; }
@@ -153,23 +155,33 @@ public:
 
   gvt::core::Vector<gvt::core::DBNodeH>& getInstanceNodes() { return instanceNodes; }
   gvt::render::data::accel::AbstractAccel* getAcceleration() { return acceleration; }
+  tbb::mutex* getQueueMutex() { return queue_mutex; }
+  tbb::mutex* getColorBufMutex() { return colorBuf_mutex; }
 
 private:
   void initServer();
   void initDisplay();
   void initWorker();
+  void setupRender();
+  void freeRender();
 
-protected:
+private:
+  DatabaseOption* dbOption;
   gvt::render::RenderContext* renderContext;
+  gvt::core::Vector<gvt::core::DBNodeH> instanceNodes;
+  gvt::core::DBNodeH root;
+
   gvt::render::data::scene::gvtPerspectiveCamera* camera;
   gvt::render::data::scene::Image* image;
-  DatabaseOption* dbOption;
-  TileLoadBalancer* tileLoadBalancer;
   std::vector<GVT_COLOR_ACCUM> framebuffer;
   int pendingPixelCount;
+  int imageWidth;
+  int imageHeight;
 
-  gvt::core::Vector<gvt::core::DBNodeH> instanceNodes;
+  TileLoadBalancer* tileLoadBalancer;
   gvt::render::data::accel::AbstractAccel* acceleration;
+  tbb::mutex* queue_mutex;
+  tbb::mutex* colorBuf_mutex;
 };
 
 }
