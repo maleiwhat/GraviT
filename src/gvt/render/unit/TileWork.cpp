@@ -151,19 +151,10 @@ bool TileWork::Action() {
 
   setupAction();
 
-  int schedType = variant_toInteger(root["Schedule"]["type"].value());
-
   RayVector rays;
   generatePrimaryRays(rays);
 
-  if (schedType == scheduler::Image) {
-    traceRaysImageScheduler(rays);
-  } else if (schedType == scheduler::Domain) {
-    traceRaysDomainScheduler(rays);
-  } else {
-    printf("unknown schedule type provided: %d\n", schedType);
-    exit(1);
-  }
+  traceRays(rays);
 
   sendRequest(gvt::render::unit::rank::Server);
   sendPixels(gvt::render::unit::rank::Display);
@@ -342,7 +333,7 @@ void TileWork::shuffleRays(gvt::render::actor::RayVector &rays,
   rays.clear();
 }
 
-void TileWork::traceRaysImageScheduler(RayVector& rays) {
+void TileWork::traceRays(RayVector& rays) {
 
   #ifdef DEBUG_TILE_WORK
   printf("Rank %d: tracing rays using image scheduler\n",
@@ -461,20 +452,20 @@ void TileWork::traceRaysImageScheduler(RayVector& rays) {
   #endif // RENDER_MOSAIC_WITHOUT_TRACING
 }
 
-void TileWork::traceRaysDomainScheduler(RayVector& rays) {
+// void TileWork::traceRaysDomainScheduler(RayVector& rays) {
 
-  #ifdef DEBUG_TILE_WORK
-  printf("Rank %d: tracing rays using domain scheduler\n",
-         Application::GetApplication()->GetRank());
-  #endif
+//   #ifdef DEBUG_TILE_WORK
+//   printf("Rank %d: tracing rays using domain scheduler\n",
+//          Application::GetApplication()->GetRank());
+//   #endif
 
-  #ifdef RENDER_MOSAIC_WITHOUT_TRACING
-  renderMosaic();
-  #else
-  // TODO
-  #endif
+//   #ifdef RENDER_MOSAIC_WITHOUT_TRACING
+//   renderMosaic();
+//   #else
+//   // TODO
+//   #endif
 
-}
+// }
 
 void TileWork::renderMosaic() {
 

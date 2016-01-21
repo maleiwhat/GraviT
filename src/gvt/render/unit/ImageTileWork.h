@@ -32,33 +32,47 @@
    */
 
 //
-// TileLoadBalancer.h
+// ImageTileWork.h
 //
 
-#ifndef GVT_RENDER_UNIT_TILE_LOAD_BALANCER_H
-#define GVT_RENDER_UNIT_TILE_LOAD_BALANCER_H
+#ifndef GVT_RENDER_UNIT_IMAGE_TILE_WORK_H
+#define GVT_RENDER_UNIT_IMAGE_TILE_WORK_H
 
-#include <stack>
+#include "gvt/render/unit/TileWork.h"
+
+// #include "gvt/core/Types.h"
+// #include "gvt/core/DatabaseNode.h"
+// #include "gvt/core/mpi/Work.h"
+// #include "gvt/core/mpi/Application.h"
+   
+// #include "gvt/render/data/scene/ColorAccumulator.h"
+// #include "gvt/render/actor/Ray.h"
+
+// #include <vector>
+// #include <map>
+
+// #include <tbb/mutex.h>
+
+// using namespace gvt::core::mpi;
+// using namespace gvt::render::actor;
+
+// namespace gvt { namespace render { namespace data { namespace accel {
+//   class AbstractAccel;
+// }}}}
+
+// namespace gvt { namespace render {
+//   class Adapter;
+// }}
 
 namespace gvt {
 namespace render {
 namespace unit {
 
-class TileWork;
-
-class TileLoadBalancer {
+class ImageTileWork : public TileWork {
+  WORK_CLASS_HEADER(ImageTileWork)
 public:
-  TileLoadBalancer(int schedType, int width, int height, int granularity);
-  
-  TileWork* next();
-
-  int schedType;
-  int granularity;
-  int x;
-  int y;
-  int width;
-  int height;
-  std::stack<TileWork*> tileStack;
+  virtual ~ImageTileWork() {}
+  static Work* Deserialize(std::size_t size, unsigned char* serialized);
 };
 
 }

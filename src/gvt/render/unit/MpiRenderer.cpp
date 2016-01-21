@@ -72,6 +72,7 @@
 
 #include "gvt/render/unit/RequestWork.h"
 #include "gvt/render/unit/TileWork.h"
+#include "gvt/render/unit/ImageTileWork.h"
 #include "gvt/render/unit/PixelWork.h"
 #include "gvt/render/unit/TileLoadBalancer.h"
 
@@ -409,6 +410,7 @@ void MpiRenderer::render() {
 
   RequestWork::Register();
   TileWork::Register();
+  ImageTileWork::Register();
   PixelWork::Register();
 
   Start();
@@ -437,12 +439,14 @@ void MpiRenderer::render() {
 }
 
 void MpiRenderer::initServer() {
-  // TODO: hpark: For now, equally divide the image
-  // try finer granularity later
+  // TODO (hpark): For now, equally divide the image
+  // try coarser/finer granularity later
   int numRanks = GetSize();
-  int granularity = numRanks - 1;
+  int granularity = numRanks - 2;
+  int schedType = variant_toInteger(root["Schedule"]["type"].value());
 
-  tileLoadBalancer = new TileLoadBalancer(imageWidth, imageHeight, granularity);
+  tileLoadBalancer =
+    new TileLoadBalancer(schedType, imageWidth, imageHeight, granularity);
 }
 
 void MpiRenderer::initDisplay() {

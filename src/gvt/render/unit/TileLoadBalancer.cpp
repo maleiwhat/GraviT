@@ -36,7 +36,12 @@
 //
 
 #include "gvt/render/unit/TileLoadBalancer.h"
+#include "gvt/render/Types.h"
+#include "gvt/render/unit/TileWork.h"
+#include "gvt/render/unit/ImageTileWork.h"
+
 #include <algorithm>
+#include <cstdlib>
 
 #define DEBUG_LOAD_BALANCER
 
@@ -46,11 +51,14 @@
 using namespace gvt::core::mpi;
 #endif
 
+using namespace gvt::render;
 using namespace gvt::render::unit;
 using namespace std;
 
-TileLoadBalancer::TileLoadBalancer(int width, int height, int granularity) :
-  width(width), height(height), granularity(granularity) {
+TileLoadBalancer::TileLoadBalancer(int schedType, int width, int height,
+                                   int granularity) :
+  schedType(schedType), width(width), height(height),
+  granularity(granularity) {
 
   int stepw = width / granularity;
   int steph = height / granularity;
@@ -59,9 +67,23 @@ TileLoadBalancer::TileLoadBalancer(int width, int height, int granularity) :
     for(int tx = 0; tx < width; tx += stepw) {
       int twidth = min(stepw, width - tx);
       int theight = min(steph, height - ty);
-      TileWork tile;
-      tile.setTileSize(tx, ty, twidth, theight);
-      tiles.push(tile);
+
+      TileWork* tile;
+      if (schedType == scheduler::Image) {
+        tile = new ImageTileWork;
+      } else if (schedType == scheduler::Domain) {
+        tile = new ImageTileWork;
+        // tile = new DomainTileWork;
+      } else if (schedType == scheduler::Hybrid) {
+        tile = new ImageTileWork;
+        // tile = new HybridTileWork;
+      } else {
+        printf("unknown schedule type provided: %d\n", schedType);
+        exit(1);
+      }
+
+      tile->setTileSize(tx, ty, twidth, theight);
+      tileStack.push(tile);
 
       #ifdef DEBUG_LOAD_BALANCER
       printf("Rank %d: load balancer ctor adding tile (%d %d %d %d)\n",
@@ -70,14 +92,13 @@ TileLoadBalancer::TileLoadBalancer(int width, int height, int granularity) :
       #endif
     }
   }
-  // printf("TileLoadBalancer : stepwh: %d %d tiles: %d\n", stepw, steph, tiles.size());
 }
 
-TileWork TileLoadBalancer::Next() {
-  TileWork tile;
-  if (!tiles.empty()) {
-    tile = tiles.top();
-    tiles.pop();
+TileWork* TileLoadBalancer::next() {
+  TileWork* tile = NULL;
+  if (!tileStack.empty()) {
+    tile = tileStack.top();
+    tileStack.pop();
   }
   return tile;
 }

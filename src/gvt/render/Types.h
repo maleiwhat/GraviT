@@ -44,6 +44,7 @@ namespace scheduler {
 enum ScheduleType {
   Image,
   Domain,
+  Hybrid,
   RayWeightedSpread, // PAN: from EGPGV 2012 paper, deprecated, now called
                      // LoadOnce
   LoadOnce,          // PAN: from TVCG 2013 paper

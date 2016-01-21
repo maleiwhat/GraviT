@@ -32,37 +32,16 @@
    */
 
 //
-// TileLoadBalancer.h
+// ImageTileWork.cpp
 //
 
-#ifndef GVT_RENDER_UNIT_TILE_LOAD_BALANCER_H
-#define GVT_RENDER_UNIT_TILE_LOAD_BALANCER_H
+#include "gvt/render/unit/ImageTileWork.h"
 
-#include <stack>
+using namespace gvt::core::mpi;
+using namespace gvt::render::unit;
 
-namespace gvt {
-namespace render {
-namespace unit {
+WORK_CLASS(ImageTileWork)
 
-class TileWork;
-
-class TileLoadBalancer {
-public:
-  TileLoadBalancer(int schedType, int width, int height, int granularity);
-  
-  TileWork* next();
-
-  int schedType;
-  int granularity;
-  int x;
-  int y;
-  int width;
-  int height;
-  std::stack<TileWork*> tileStack;
-};
-
+Work* ImageTileWork::Deserialize(size_t size, unsigned char* serialized) {
+  return TileWork::Deserialize(size, serialized);
 }
-}
-}
-
-#endif

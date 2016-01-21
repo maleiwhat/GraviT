@@ -80,22 +80,22 @@ bool RequestWork::Action() {
   MpiRenderer* app = static_cast<MpiRenderer*>(Application::GetApplication());
   TileLoadBalancer* loadBalancer = app->getTileLoadBalancer();
 
-  TileWork tile = loadBalancer->Next();
+  TileWork* tile = loadBalancer->next();
 
-  if (tile.isValid()) {
-    tile.Send(getSourceRank());
-
-    #ifdef DEBUG_TILE_DISTRIBUTION
-    printf("Rank %d: sending tile (%d %d %d %d) to Rank %d\n",
-          Application::GetApplication()->GetRank(),
-          tile.getStartX(), tile.getStartY(),
-          tile.getWidth(), tile.getHeight(),
-          getSourceRank());
-    #endif
+  if (tile != NULL) {
+    if (tile->isValid()) {
+      tile->Send(getSourceRank());
+  
+      #ifdef DEBUG_TILE_DISTRIBUTION
+      printf("Rank %d: sending tile (%d %d %d %d) to Rank %d\n",
+            Application::GetApplication()->GetRank(),
+            tile->getStartX(), tile->getStartY(),
+            tile->getWidth(), tile->getHeight(),
+            getSourceRank());
+      #endif
+    }
+    delete tile;
   }
-  // } else {
-  //   Application::GetApplication()->QuitApplication();
-  // }
-
+  
   return false;
 }

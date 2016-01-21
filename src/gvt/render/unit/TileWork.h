@@ -86,19 +86,17 @@ public:
   int getWidth() const { return width; }
   int getHeight() const { return height; }
 protected:
+  virtual void setupAction();
   virtual void generatePrimaryRays(gvt::render::actor::RayVector& rays);
-  virtual void traceRaysImageScheduler(gvt::render::actor::RayVector& rays);
-  virtual void traceRaysDomainScheduler(gvt::render::actor::RayVector& rays);
+  virtual void traceRays(gvt::render::actor::RayVector& rays);
   virtual void sendRequest(int rank);
   virtual void sendPixels(int rank);
 protected: 
   virtual void filterRaysLocally(gvt::render::actor::RayVector& rays);
   virtual void shuffleRays(gvt::render::actor::RayVector &rays,
                            gvt::core::DBNodeH instNode);
-private:
-  void setupAction();
   void renderMosaic();
-private:
+protected:
   MpiRenderer* renderer;
   gvt::core::DBNodeH root;
   int imageWidth;
