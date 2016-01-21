@@ -127,7 +127,7 @@ Work* TileWork::Deserialize(size_t size, unsigned char* serialized) {
   tileWork->width  = *reinterpret_cast<int*>(buf); buf += sizeof(int);
   tileWork->height = *reinterpret_cast<int*>(buf); buf += sizeof(int);
 
-  return static_cast<Work*>(tileWork);
+  return tileWork;
 }
 
 void TileWork::setupAction() {
@@ -451,21 +451,6 @@ void TileWork::traceRays(RayVector& rays) {
 
   #endif // RENDER_MOSAIC_WITHOUT_TRACING
 }
-
-// void TileWork::traceRaysDomainScheduler(RayVector& rays) {
-
-//   #ifdef DEBUG_TILE_WORK
-//   printf("Rank %d: tracing rays using domain scheduler\n",
-//          Application::GetApplication()->GetRank());
-//   #endif
-
-//   #ifdef RENDER_MOSAIC_WITHOUT_TRACING
-//   renderMosaic();
-//   #else
-//   // TODO
-//   #endif
-
-// }
 
 void TileWork::renderMosaic() {
 

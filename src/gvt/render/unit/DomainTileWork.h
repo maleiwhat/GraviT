@@ -32,29 +32,29 @@
    */
 
 //
-// ImageTileWork.cpp
+// DomainTileWork.h
 //
 
-#include "gvt/render/unit/ImageTileWork.h"
+#ifndef GVT_RENDER_UNIT_DOMAIN_TILE_WORK_H
+#define GVT_RENDER_UNIT_DOMAIN_TILE_WORK_H
 
-using namespace gvt::core::mpi;
-using namespace gvt::render::unit;
+#include "gvt/render/unit/TileWork.h"
 
-WORK_CLASS(ImageTileWork)
+namespace gvt {
+namespace render {
+namespace unit {
 
-Work* ImageTileWork::Deserialize(size_t size, unsigned char* serialized) {
-  if (size != (4 * sizeof(int))) {
-    std::cerr << "Test deserializer ctor with size != 4 * sizeof(int)\n";
-    exit(1);
-  }
+class DomainTileWork : public TileWork {
+  WORK_CLASS_HEADER(DomainTileWork)
+public:
+  virtual ~DomainTileWork() {}
+  static Work* Deserialize(std::size_t size, unsigned char* serialized);
+protected:
+  virtual void traceRays(gvt::render::actor::RayVector& rays);
+};
 
-  unsigned char* buf = serialized;
-  ImageTileWork* tileWork = new ImageTileWork;
-
-  tileWork->startX = *reinterpret_cast<int*>(buf); buf += sizeof(int);
-  tileWork->startY = *reinterpret_cast<int*>(buf); buf += sizeof(int);
-  tileWork->width  = *reinterpret_cast<int*>(buf); buf += sizeof(int);
-  tileWork->height = *reinterpret_cast<int*>(buf); buf += sizeof(int);
-
-  return tileWork;
 }
+}
+}
+
+#endif

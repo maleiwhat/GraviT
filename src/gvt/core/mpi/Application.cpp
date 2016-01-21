@@ -38,12 +38,16 @@
 #ifndef GVT_CORE_MPI_APPLICATION_CPP
 #define GVT_CORE_MPI_APPLICATION_CPP
 
-#include "mpi.h"
-#include "unistd.h"
-#include "iostream"
-#include <gvt/core/mpi/Application.h>
+#include <mpi.h>
+#include <unistd.h>
+#include <iostream>
+#include "gvt/core/mpi/Application.h"
+#include "gvt/render/unit/TileWork.h"
+#include "gvt/render/unit/ImageTileWork.h"
+#include "gvt/render/unit/DomainTileWork.h"
 
 using namespace gvt::core::mpi;
+using namespace gvt::render::unit;
 
 WORK_CLASS(Quit)
 
@@ -141,8 +145,8 @@ Application::workThread(void *p)
 	Message *m;
   while (theApplication->Running() && (m = theApplication->GetIncomingMessageQueue()->Dequeue()) != NULL)
   {
-    Work *w = theApplication->Deserialize(m);
-    delete m;
+	    Work *w = theApplication->Deserialize(m);
+	    delete m;
 
 		if (w->Action())
 		{

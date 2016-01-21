@@ -73,6 +73,7 @@
 #include "gvt/render/unit/RequestWork.h"
 #include "gvt/render/unit/TileWork.h"
 #include "gvt/render/unit/ImageTileWork.h"
+#include "gvt/render/unit/DomainTileWork.h"
 #include "gvt/render/unit/PixelWork.h"
 #include "gvt/render/unit/TileLoadBalancer.h"
 
@@ -411,6 +412,7 @@ void MpiRenderer::render() {
   RequestWork::Register();
   TileWork::Register();
   ImageTileWork::Register();
+  DomainTileWork::Register();
   PixelWork::Register();
 
   Start();

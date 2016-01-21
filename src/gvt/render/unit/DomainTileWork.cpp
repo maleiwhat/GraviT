@@ -32,24 +32,26 @@
    */
 
 //
-// ImageTileWork.cpp
+// DomainTileWork.cpp
 //
 
-#include "gvt/render/unit/ImageTileWork.h"
+#include "gvt/render/unit/DomainTileWork.h"
 
 using namespace gvt::core::mpi;
 using namespace gvt::render::unit;
 
-WORK_CLASS(ImageTileWork)
+#define DEBUG_DOMAIN_TILE_WORK
 
-Work* ImageTileWork::Deserialize(size_t size, unsigned char* serialized) {
+WORK_CLASS(DomainTileWork)
+
+Work* DomainTileWork::Deserialize(size_t size, unsigned char* serialized) {
   if (size != (4 * sizeof(int))) {
     std::cerr << "Test deserializer ctor with size != 4 * sizeof(int)\n";
     exit(1);
   }
 
   unsigned char* buf = serialized;
-  ImageTileWork* tileWork = new ImageTileWork;
+  DomainTileWork* tileWork = new DomainTileWork;
 
   tileWork->startX = *reinterpret_cast<int*>(buf); buf += sizeof(int);
   tileWork->startY = *reinterpret_cast<int*>(buf); buf += sizeof(int);
@@ -57,4 +59,14 @@ Work* ImageTileWork::Deserialize(size_t size, unsigned char* serialized) {
   tileWork->height = *reinterpret_cast<int*>(buf); buf += sizeof(int);
 
   return tileWork;
+}
+
+void DomainTileWork::traceRays(RayVector& rays) {
+
+  #ifdef DEBUG_DOMAIN_TILE_WORK
+  printf("Rank %d: tracing rays using domain scheduler\n",
+         Application::GetApplication()->GetRank());
+  #endif
+
+  renderMosaic();
 }

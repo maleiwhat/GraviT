@@ -40,30 +40,6 @@
 
 #include "gvt/render/unit/TileWork.h"
 
-// #include "gvt/core/Types.h"
-// #include "gvt/core/DatabaseNode.h"
-// #include "gvt/core/mpi/Work.h"
-// #include "gvt/core/mpi/Application.h"
-   
-// #include "gvt/render/data/scene/ColorAccumulator.h"
-// #include "gvt/render/actor/Ray.h"
-
-// #include <vector>
-// #include <map>
-
-// #include <tbb/mutex.h>
-
-// using namespace gvt::core::mpi;
-// using namespace gvt::render::actor;
-
-// namespace gvt { namespace render { namespace data { namespace accel {
-//   class AbstractAccel;
-// }}}}
-
-// namespace gvt { namespace render {
-//   class Adapter;
-// }}
-
 namespace gvt {
 namespace render {
 namespace unit {

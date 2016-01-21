@@ -39,6 +39,7 @@
 #include "gvt/render/Types.h"
 #include "gvt/render/unit/TileWork.h"
 #include "gvt/render/unit/ImageTileWork.h"
+#include "gvt/render/unit/DomainTileWork.h"
 
 #include <algorithm>
 #include <cstdlib>
@@ -72,11 +73,9 @@ TileLoadBalancer::TileLoadBalancer(int schedType, int width, int height,
       if (schedType == scheduler::Image) {
         tile = new ImageTileWork;
       } else if (schedType == scheduler::Domain) {
-        tile = new ImageTileWork;
-        // tile = new DomainTileWork;
-      } else if (schedType == scheduler::Hybrid) {
-        tile = new ImageTileWork;
-        // tile = new HybridTileWork;
+        tile = new DomainTileWork;
+      // } else if (schedType == scheduler::Hybrid) {
+      //   tile = new HybridTileWork;
       } else {
         printf("unknown schedule type provided: %d\n", schedType);
         exit(1);
