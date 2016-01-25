@@ -67,7 +67,7 @@ void RayWork::Serialize(size_t& size, unsigned char*& serialized) {
   *reinterpret_cast<int*>(buf) = numRays; buf += sizeof(int);
 
   for (size_t i=0; i<outgoingRays->size(); ++i) {
-    (*outgoingRays)[i].pack(buf);
+    (*outgoingRays)[i].serialize(buf);
   }
 }
 

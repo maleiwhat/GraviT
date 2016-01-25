@@ -122,10 +122,59 @@ int Ray::packedSize() {
   return total_size;
 }
 
-void Ray::serialize(unsigned char *buffer) {
+// int Ray::pack(unsigned char *buf) {
 
-  unsigned char* buf = buffer;
+//   unsigned char *buf0 = buf;
+//   unsigned char *buf1 = buf;
+
+//   serialize(buf);
+
+//   if (packedSize() != (buf - buf0)) {
+//     std::cout << " error in pack " << buf - buf0 << " " << packedSize()
+//               << std::endl;
+//     exit(0);
+//   }
+//   return packedSize();
+// }
+
+int Ray::pack(unsigned char *buffer) {
+
+  unsigned char *buf = buffer;
   unsigned char *buf0 = buffer;
+
+  buf += origin.pack(buf);
+  buf += direction.pack(buf);
+  *((int *)buf) = id; 
+  buf += sizeof(int);
+  *((int *)buf) = depth;
+  buf += sizeof(int);
+  *((int *)buf) = type;
+  buf += sizeof(int);
+  *((double *)buf) = w;
+  buf += sizeof(double);
+  *((double *)buf) = t;
+  buf += sizeof(double);
+  buf += color.pack(buf);
+  *((int *)buf) = domains.size();
+  buf += sizeof(int);
+
+  for (auto &dom : domains) {
+    *((int *)buf) = dom;
+    buf += sizeof(int);
+    *((float *)buf) = dom;
+    buf += sizeof(float);
+  }
+
+  if (packedSize() != (buf - buf0)) {
+    std::cout << " error in pack " << buf - buf0 << " " << packedSize() << std::endl;
+    exit(0);
+  }
+  return packedSize();
+}
+
+void Ray::serialize(unsigned char *buf) {
+
+  unsigned char *buf0 = buf;
 
   buf += origin.pack(buf);
   buf += direction.pack(buf);
@@ -149,21 +198,12 @@ void Ray::serialize(unsigned char *buffer) {
     *((float *)buf) = dom;
     buf += sizeof(float);
   }
-}
-
-int Ray::pack(unsigned char *buffer) {
-
-  unsigned char *buf = buffer;
-  unsigned char *buf0 = buffer;
-
-  serialize(buf);
 
   if (packedSize() != (buf - buf0)) {
     std::cout << " error in pack " << buf - buf0 << " " << packedSize()
               << std::endl;
     exit(0);
   }
-  return packedSize();
 }
 
 void Ray::setDirection(Vector4f dir) {

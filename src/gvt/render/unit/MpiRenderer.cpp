@@ -171,6 +171,11 @@ void MpiRenderer::createDatabase() {
   for (int z=0; z<instanceCountZ; ++z) {
     for (int y=0; y<instanceCountY; ++y) {
       for (int x=0; x<instanceCountX; ++x) {
+        // add a mesh
+        Uuid meshNodeUuid
+            = addMesh(dataNodeId, objName + "_mesh",
+                      "../data/geom/" + objName + ".obj");
+
         // int instanceId = y * 2 + x;
         // m: transform matrix
         auto m = new gvt::core::math::AffineTransformMatrix<float>(true);
@@ -181,7 +186,7 @@ void MpiRenderer::createDatabase() {
         *m = *m * gvt::core::math::AffineTransformMatrix<float>::
             createScale(1.0f, 1.0f, 1.0f);
         Uuid instanceUuid =
-            addInstance(instancesNodeId, meshNodeId,
+            addInstance(instancesNodeId, meshNodeUuid,
                         instanceId++, objName, m);
       }
     }

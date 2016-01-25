@@ -357,7 +357,7 @@ void DomainTileWork::sendRays() {
       if (rays.size() > 0) {
         RayWork work;
         work.setRays(domainId, &rays);
-        work.Send(domainId);
+        work.Send(ownerRank);
       }
       queue[q->first].clear();
     }
