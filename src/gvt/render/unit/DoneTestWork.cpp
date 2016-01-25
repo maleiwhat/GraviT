@@ -73,28 +73,14 @@ bool DoneTestWork::Action() {
   int numRanks = renderer->GetSize();
   std::vector<int> buf(numRanks, 0);
 
-#ifdef DEBUG_DONE_TEST_WORK
-  printf("Rank %d: DoneTestWork::Action not ready\n",
-         renderer->GetRank());
-#endif
-
   // TODO (hpark): find the way to get rid of (or improve) this synchronization
   // check if all ranks are ready for the done test
   bool ready = false;
   do {
     int running = renderer->isDoneTestRunning();
-// #ifdef DEBUG_DONE_TEST_WORK
-//   printf("Rank %d: DoneTestWork::Action running=%d\n",
-//          renderer->GetRank(), running);
-// #endif
     MPI_Allgather(&running, 1, MPI_INT, &buf[0], 1, MPI_INT, MPI_COMM_WORLD);
     ready = allFlagsSet(buf);
   } while(!ready);
-
-// #ifdef DEBUG_DONE_TEST_WORK
-//   printf("Rank %d: DoneTestWork::Action ready!!!\n",
-//          renderer->GetRank());
-// #endif
 
   buf = std::vector<int>(numRanks, 0);
 
@@ -103,11 +89,6 @@ bool DoneTestWork::Action() {
   MPI_Allgather(&empty, 1, MPI_INT, &buf[0], 1, MPI_INT, MPI_COMM_WORLD);
 
   if (allFlagsSet(buf)) renderer->setAllWorkDone();
-
-#ifdef DEBUG_DONE_TEST_WORK
-  printf("Rank %d: DoneTestWork: allFlagsSet(buf)= %d !!!!!!!!!\n",
-          Application::GetApplication()->GetRank(), allFlagsSet(buf));
-#endif
 
   renderer->clearDoneTestRunning();
 

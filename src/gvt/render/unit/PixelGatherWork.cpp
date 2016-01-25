@@ -95,10 +95,6 @@ bool PixelGatherWork::Action() {
              bufs, rgb_buf_size, MPI_UNSIGNED_CHAR,
              0, MPI_COMM_WORLD);
 
-#ifdef DEBUG_PIXEL_GATHER_WORK
-    printf("Rank %d: PixelGatherWork: MPI_Gather done\n", renderer->GetRank());
-#endif
-
   if (displayRank) {
     int nchunks = std::thread::hardware_concurrency() * 2;
     int chunk_size = size / nchunks;

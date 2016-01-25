@@ -178,15 +178,9 @@ void DomainTileWork::traceRays(RayVector& rays) {
                 "domain scheduler: selecting next instance, num queues: "
                     << queue.size());
       for (auto &q : queue) {
-#ifdef DEBUG_DOMAIN_TILE_WORK
-        printf("Rank %d, Domain %d, owner %d\n", myRank, q.first, renderer->getInstanceOwner(q.first));
-#endif
         const bool inRank = (renderer->getInstanceOwner(q.first) == myRank);
         if (q.second.empty() || !inRank) {
           to_del.push_back(q.first);
-#ifdef DEBUG_DOMAIN_TILE_WORK
-          printf("Rank %d: adding domain (%d) to delete list q.second.empty()=%d, inRank=%d\n", myRank, q.first, q.second.empty(), inRank);
-#endif
           continue;
         }
         if (inRank && q.second.size() > instTargetCount) {
@@ -313,37 +307,18 @@ void DomainTileWork::traceRays(RayVector& rays) {
     // done with current domain, send off rays to their proper processors.
     GVT_DEBUG(DBG_ALWAYS, "Rank [ " << myRank << "]  calling SendRays");
 
-#ifdef DEBUG_DOMAIN_TILE_WORK
-    printf("Rank %d: calling sendRays queue.size()=%lu\n", myRank, queue.size());
-#endif
     sendRays();
     
-#ifdef DEBUG_DOMAIN_TILE_WORK
-    printf("Rank %d: after sendRays queue.size()=%lu\n", myRank, queue.size());
-#endif
-
     renderer->setDoneTestRunning();
 
     if (myRank == 0) {
       DoneTestWork work;
       work.Broadcast(true, true);
-#ifdef DEBUG_DOMAIN_TILE_WORK
-    printf("Rank %d: broadcast done test finished\n", myRank);
-#endif
     }
-
-
-#ifdef DEBUG_DOMAIN_TILE_WORK
-    printf("Rank %d: waiting for the done test to finish\n", myRank);
-#endif
 
     // TODO (hpark): find the way to get rid of this synchronization
     while(renderer->isDoneTestRunning());
     all_done = renderer->isAllWorkDone();
-
-#ifdef DEBUG_DOMAIN_TILE_WORK
-    printf("Rank %d: done test finished (all_done=%d)\n", myRank, all_done);
-#endif
   } // while (!all_done) {
 
   if (myRank == 0) {
@@ -367,10 +342,6 @@ void DomainTileWork::sendRays() {
     RayVector& rays = q->second; 
 
     if (ownerRank != myRank) {
-#ifdef DEBUG_DOMAIN_TILE_WORK
-      printf("Rank %d: domain %d: found rays to send (size=%lu)\n"
-              , myRank, domainId, rays.size());
-#endif
       if (rays.size() > 0) {
         RayWork work;
         work.setRays(domainId, &rays);

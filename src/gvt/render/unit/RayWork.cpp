@@ -72,10 +72,6 @@ void RayWork::Serialize(size_t& size, unsigned char*& serialized) {
   for (size_t i=0; i<outgoingRays->size(); ++i) {
     (*outgoingRays)[i].serialize(buf);
   }
-
-  #ifdef DEBUG_RAY_WORK
-  printf("Rank %d: serializing raywork (domainId, numRays, size)=(%d, %d, %lu)\n", Application::GetApplication()->GetRank(), domainId, numRays, size);
-  #endif
 }
 
 Work* RayWork::Deserialize(size_t size, unsigned char* serialized) {
@@ -105,12 +101,6 @@ Work* RayWork::Deserialize(size_t size, unsigned char* serialized) {
     rayWork->incomingRays[i] = Ray(buf);
   }
 
-  #ifdef DEBUG_RAY_WORK
-  printf("Rank %d: de-serializing raywork (domainId, numRays, size)=(%d, %d, %lu)\n",
-         Application::GetApplication()->GetRank(),
-         rayWork->domainId, numRays, raysize + 2*sizeof(int));
-  #endif
-
   return rayWork;
 }
 
@@ -126,39 +116,17 @@ bool RayWork::Action() {
       = static_cast<MpiRenderer*>(Application::GetApplication());
   std::map<int, RayVector>* rayQueue = renderer->getRayQueue(); 
 
-  #ifdef DEBUG_RAY_WORK
-  printf("Rank %d: RayWork::Action begin domainId=%d, numRays=%d\n",
-         Application::GetApplication()->GetRank(), domainId, numRays);
-  #endif
-
   tbb::mutex* rayQueueMutex = renderer->getRayQueueMutex(); 
   {
     tbb::mutex::scoped_lock queueLock(rayQueueMutex[domainId]);
 
     if (rayQueue->find(domainId) != rayQueue->end()) {
-#ifdef DEBUG_RAY_WORK
-    printf("Rank %d: RayWork::Action, domain %d found adding to existing one ray.size(before)=%lu\n",
-           Application::GetApplication()->GetRank(), domainId, (*rayQueue)[domainId].size());
-#endif
       (*rayQueue)[domainId].insert((*rayQueue)[domainId].end(),
                                    incomingRays.begin(), incomingRays.end()); 
-#ifdef DEBUG_RAY_WORK
-    printf("Rank %d: RayWork::Action, domain %d found adding to existing one ray.size(after)=%lu\n",
-           Application::GetApplication()->GetRank(), domainId, (*rayQueue)[domainId].size());
-#endif
     } else {
       (*rayQueue)[domainId] = incomingRays;
-#ifdef DEBUG_RAY_WORK
-    printf("Rank %d: RayWork::Action, domain %d not found adding new one ray.size() = %lu\n",
-           Application::GetApplication()->GetRank(), domainId, (*rayQueue)[domainId].size());
-#endif
     }
   }
-
-  #ifdef DEBUG_RAY_WORK
-  printf("Rank %d: RayWork::Action end domainId=%d, numRays=%d\n",
-         Application::GetApplication()->GetRank(), domainId, numRays);
-  #endif
 
   return false;
 }
