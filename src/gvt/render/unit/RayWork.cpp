@@ -38,11 +38,14 @@
 #include "gvt/render/unit/RayWork.h"
 #include "gvt/render/unit/MpiRenderer.h"
 #include "gvt/core/mpi/Work.h"
+#include "gvt/render/actor/Ray.h"
 
 using namespace std;
 using namespace gvt::core::mpi;
 using namespace gvt::render::unit;
 using namespace gvt::render::actor;
+
+// #define DEBUG_RAY_WORK
 
 WORK_CLASS(RayWork)
 
@@ -69,6 +72,10 @@ void RayWork::Serialize(size_t& size, unsigned char*& serialized) {
   for (size_t i=0; i<outgoingRays->size(); ++i) {
     (*outgoingRays)[i].serialize(buf);
   }
+
+  #ifdef DEBUG_RAY_WORK
+  printf("Rank %d: serializing raywork (domainId, numRays, size)=(%d, %d, %lu)\n", Application::GetApplication()->GetRank(), domainId, numRays, size);
+  #endif
 }
 
 Work* RayWork::Deserialize(size_t size, unsigned char* serialized) {
@@ -84,16 +91,25 @@ Work* RayWork::Deserialize(size_t size, unsigned char* serialized) {
   // TODO (hpark): need some static function in Ray.h
   //               to evaluate the ray size
   // if not available, do some hand calculation and hard code it here
-  // if (size != (2 * sizeof(int) + (raysize))) {
-  //   std::cerr << "Test deserializer ctor with size != 2 * sizeof(int)\n";
-  //   exit(1);
-  // }
+  Ray dummyRay;
+  size_t raysize = dummyRay.packedSize() * numRays;
+  if (size != (2 * sizeof(int) + (raysize))) {
+    std::cerr << "Test deserializer ctor with received size (" << size
+              << ") != expected size ("<< raysize <<")\n";
+    exit(1);
+  }
   
   rayWork->incomingRays.resize(numRays);
   
   for(int i=0; i<numRays; ++i) {
     rayWork->incomingRays[i] = Ray(buf);
   }
+
+  #ifdef DEBUG_RAY_WORK
+  printf("Rank %d: de-serializing raywork (domainId, numRays, size)=(%d, %d, %lu)\n",
+         Application::GetApplication()->GetRank(),
+         rayWork->domainId, numRays, raysize + 2*sizeof(int));
+  #endif
 
   return rayWork;
 }
@@ -105,23 +121,44 @@ void RayWork::setRays(int domainId,
   this->outgoingRays = rays;
 }
 
-void RayWork::setupAction() {
-  renderer = static_cast<MpiRenderer*>(Application::GetApplication());
-  rayQueue = renderer->getRayQueue(); 
-  rayQueueMutex = renderer->getRayQueueMutex(); 
-}
-
 bool RayWork::Action() {
+  MpiRenderer* renderer
+      = static_cast<MpiRenderer*>(Application::GetApplication());
+  std::map<int, RayVector>* rayQueue = renderer->getRayQueue(); 
 
-  setupAction();
+  #ifdef DEBUG_RAY_WORK
+  printf("Rank %d: RayWork::Action begin domainId=%d, numRays=%d\n",
+         Application::GetApplication()->GetRank(), domainId, numRays);
+  #endif
+
+  tbb::mutex* rayQueueMutex = renderer->getRayQueueMutex(); 
   {
     tbb::mutex::scoped_lock queueLock(rayQueueMutex[domainId]);
+
     if (rayQueue->find(domainId) != rayQueue->end()) {
+#ifdef DEBUG_RAY_WORK
+    printf("Rank %d: RayWork::Action, domain %d found adding to existing one ray.size(before)=%lu\n",
+           Application::GetApplication()->GetRank(), domainId, (*rayQueue)[domainId].size());
+#endif
       (*rayQueue)[domainId].insert((*rayQueue)[domainId].end(),
-                                incomingRays.begin(), incomingRays.end()); 
+                                   incomingRays.begin(), incomingRays.end()); 
+#ifdef DEBUG_RAY_WORK
+    printf("Rank %d: RayWork::Action, domain %d found adding to existing one ray.size(after)=%lu\n",
+           Application::GetApplication()->GetRank(), domainId, (*rayQueue)[domainId].size());
+#endif
     } else {
       (*rayQueue)[domainId] = incomingRays;
+#ifdef DEBUG_RAY_WORK
+    printf("Rank %d: RayWork::Action, domain %d not found adding new one ray.size() = %lu\n",
+           Application::GetApplication()->GetRank(), domainId, (*rayQueue)[domainId].size());
+#endif
     }
   }
+
+  #ifdef DEBUG_RAY_WORK
+  printf("Rank %d: RayWork::Action end domainId=%d, numRays=%d\n",
+         Application::GetApplication()->GetRank(), domainId, numRays);
+  #endif
+
   return false;
 }

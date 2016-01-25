@@ -113,6 +113,7 @@ public:
                           const std::string& objFilename);
 
   gvt::render::data::primitives::Box3D getMeshBounds(const gvt::core::Uuid& id);
+  gvt::render::data::primitives::Box3D getMeshBounds(const std::string& objFilename);
 
   gvt::core::Uuid
     addInstance(const gvt::core::Uuid& parentNodeId,

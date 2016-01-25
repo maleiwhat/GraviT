@@ -143,15 +143,16 @@ void MpiRenderer::createDatabase() {
   std::string objName("bunny"); // TODO: fixed for now
 
   // add a mesh
-  Uuid meshNodeId
-      = addMesh(dataNodeId, objName + "_mesh",
-                "../data/geom/" + objName + ".obj");
+  // Uuid meshNodeId
+  //     = addMesh(dataNodeId, objName + "_mesh",
+  //               "../data/geom/" + objName + ".obj");
 
   // create instances node
   Uuid instancesNodeId = createNode("Instances", "Instances");
 
   // add instances
-  Box3D meshBounds = getMeshBounds(meshNodeId);
+  // Box3D meshBounds = getMeshBounds(meshNodeId);
+  Box3D meshBounds = getMeshBounds("../data/geom/" + objName + ".obj");
   Vector3f extent = meshBounds.extent();
 
   const float gapX = extent[0] * 0.2f;
@@ -172,7 +173,7 @@ void MpiRenderer::createDatabase() {
     for (int y=0; y<instanceCountY; ++y) {
       for (int x=0; x<instanceCountX; ++x) {
         // add a mesh
-        Uuid meshNodeUuid
+        Uuid meshNodeId
             = addMesh(dataNodeId, objName + "_mesh",
                       "../data/geom/" + objName + ".obj");
 
@@ -186,7 +187,7 @@ void MpiRenderer::createDatabase() {
         *m = *m * gvt::core::math::AffineTransformMatrix<float>::
             createScale(1.0f, 1.0f, 1.0f);
         Uuid instanceUuid =
-            addInstance(instancesNodeId, meshNodeUuid,
+            addInstance(instancesNodeId, meshNodeId,
                         instanceId++, objName, m);
       }
     }
@@ -278,6 +279,15 @@ Uuid MpiRenderer::addMesh(const Uuid& parentNodeId,
   node["bbox"] = meshbbox;
   node["ptr"] = mesh;
   return node.UUID();
+}
+
+Box3D MpiRenderer::getMeshBounds(const std::string& objFilename) {
+  gvt::render::data::domain::reader::ObjReader objReader(objFilename);
+  Mesh* mesh = objReader.getMesh();
+  // mesh->generateNormals();
+  mesh->computeBoundingBox();
+  Box3D* bounds = mesh->getBoundingBox();
+  return *bounds;
 }
 
 Box3D MpiRenderer::getMeshBounds(const Uuid& id) {
@@ -458,59 +468,60 @@ void MpiRenderer::freeRender() {
 
 void MpiRenderer::render() {
 
-#ifdef SEPARATE_SERVER_WORKERS
-
   setupRender();
-
-  RequestWork::Register();
-  TileWork::Register();
-  ImageTileWork::Register();
-  PixelWork::Register();
-
-  Start();
-
-  #ifdef DEBUG_MPI_RENDERER
-  printf("Rank %d: world size: %d\n", GetRank(), GetSize());
-  #endif
-
-  int rank = GetRank();
-
-  if (rank == rank::Server) {
-    initServer();
-  } else {
-    initDisplay();
-  }
-
-  MPI_Barrier(MPI_COMM_WORLD);
+  int schedType = variant_toInteger(root["Schedule"]["type"].value());
+  // TODO (hpark):
+  // collapse the following two if-else blocks into a single block
+  if (schedType == scheduler::Image) {
   
-  if (rank != rank::Server && rank != rank::Display) { // workers
-    initWorker();
+    RequestWork::Register();
+    TileWork::Register();
+    ImageTileWork::Register();
+    PixelWork::Register();
+  
+    Start();
+  
+    #ifdef DEBUG_MPI_RENDERER
+    printf("Rank %d: world size: %d\n", GetRank(), GetSize());
+    #endif
+  
+    int rank = GetRank();
+  
+    if (rank == rank::Server) {
+      initServer();
+    } else {
+      initDisplay();
+    }
+  
+    MPI_Barrier(MPI_COMM_WORLD);
+    
+    if (rank != rank::Server && rank != rank::Display) { // workers
+      initWorker();
+    }
+  
+    Wait();
+  
+    freeRender();
+
+  } else {
+  
+    // setupRender();
+  
+    DomainTileWork::Register();
+    RayWork::Register();
+    DoneTestWork::Register();
+    PixelGatherWork::Register();
+  
+    Start();
+  
+    image = new Image(imageWidth, imageHeight, "image");
+    DomainTileWork work;
+    work.setTileSize(0, 0, imageWidth, imageHeight);
+    work.Action();
+  
+    Wait();
+    freeRender();
   }
-
-  Wait();
-
-  freeRender();
-
-#else
-
-  setupRender();
-
-  DomainTileWork::Register();
-  RayWork::Register();
-  DoneTestWork::Register();
-  PixelGatherWork::Register();
-
-  Start();
-
-  image = new Image(imageWidth, imageHeight, "image");
-  DomainTileWork work;
-  work.setTileSize(0, 0, imageWidth, imageHeight);
-  work.Action();
-
-  Wait();
-  freeRender();
-
-#endif
 }
 
 void MpiRenderer::initServer() {

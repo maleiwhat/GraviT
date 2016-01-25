@@ -83,7 +83,7 @@ TileLoadBalancer::TileLoadBalancer(int schedType, int width, int height,
       }
     }
 
-  } else if (schedType == scheduler::Domain) {
+  } else if (schedType == scheduler::Domain) { // hpark: unused
 
     for (int i=0; i<numWorkers; ++i) {
       TileWork* tile = new DomainTileWork;

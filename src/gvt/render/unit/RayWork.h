@@ -52,8 +52,6 @@ namespace gvt {
 namespace render {
 namespace unit {
 
-class MpiRenderer;
-
 class RayWork : public Work {
   WORK_CLASS_HEADER(RayWork)
 public:
@@ -64,14 +62,10 @@ public:
   virtual bool Action();
   void setRays(int domainId, gvt::render::actor::RayVector* rays);
 private:
-  void setupAction();
   int domainId;
   int numRays;
   gvt::render::actor::RayVector* outgoingRays;
   gvt::render::actor::RayVector incomingRays;
-  MpiRenderer* renderer;
-  std::map<int, gvt::render::actor::RayVector>* rayQueue;
-  tbb::mutex* rayQueueMutex;
 };
 
 }
