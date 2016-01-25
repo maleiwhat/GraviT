@@ -32,34 +32,37 @@
    */
 
 //
-// TileLoadBalancer.h
+// DoneTestWork.h
 //
 
-#ifndef GVT_RENDER_UNIT_TILE_LOAD_BALANCER_H
-#define GVT_RENDER_UNIT_TILE_LOAD_BALANCER_H
+#ifndef GVT_RENDER_UNIT_TEST_DONE_WORK_H
+#define GVT_RENDER_UNIT_TEST_DONE_WORK_H
 
-#include <stack>
+#include "gvt/core/mpi/Work.h"
+#include "gvt/core/mpi/Application.h"
+
+#include <pthread.h>
+#include <tbb/mutex.h>
+#include <vector>
+
+using namespace gvt::core::mpi;
 
 namespace gvt {
 namespace render {
 namespace unit {
 
-class TileWork;
+class MpiRenderer;
 
-class TileLoadBalancer {
+class DoneTestWork : public Work {
+  WORK_CLASS_HEADER(DoneTestWork)
 public:
-  TileLoadBalancer(int schedType, int width, int height,
-                   int granularity, int numWorkers);
-  
-  TileWork* next();
-
-  int schedType;
-  int granularity;
-  int x;
-  int y;
-  int width;
-  int height;
-  std::stack<TileWork*> tileStack;
+  virtual ~DoneTestWork() {}
+  virtual void Serialize(std::size_t& size, unsigned char*& serialized);
+  static Work* Deserialize(std::size_t size, unsigned char* serialized);
+  virtual bool Action();
+private:
+  bool allFlagsSet(std::vector<int>& buf);
+  MpiRenderer* renderer;
 };
 
 }

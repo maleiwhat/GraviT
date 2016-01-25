@@ -134,7 +134,8 @@ void TileWork::setupAction() {
   renderer = static_cast<MpiRenderer*>(Application::GetApplication());
   framebuffer = renderer->getFramebuffer();
   acceleration = renderer->getAcceleration();
-  queue_mutex = renderer->getQueueMutex();
+  rayQueue = renderer->getRayQueue();
+  queue_mutex = renderer->getRayQueueMutex();
   colorBuf_mutex = renderer->getColorBufMutex();
   root = RenderContext::instance()->getRootNode();
   imageWidth = variant_toInteger(root["Film"]["width"].value());
@@ -264,6 +265,9 @@ void TileWork::shuffleRays(gvt::render::actor::RayVector &rays,
   GVT_DEBUG(DBG_ALWAYS, "[" << mpi.rank << "] Shuffle: start");
   GVT_DEBUG(DBG_ALWAYS, "[" << mpi.rank
                             << "] Shuffle: rays: " << rays.size());
+
+   std::map<int, RayVector>& queue = *rayQueue;
+
   const size_t raycount = rays.size();
   const int domID =
       (instNode) ? gvt::core::variant_toInteger(instNode["id"].value()) : -1;
@@ -301,14 +305,9 @@ void TileWork::shuffleRays(gvt::render::actor::RayVector &rays,
             // tbb::mutex::scoped_lock sl(queue_mutex[firstDomainOnList]);
             local_queue[firstDomainOnList].push_back(r);
           } else if (instNode) {
-            assert(r.id < 307200 && r.id > -1);
             // TODO (hpark): do we need this lock? 
             tbb::mutex::scoped_lock fbloc(colorBuf_mutex[r.id % imageWidth]);
-            GVT_COLOR_ACCUM& color = (*framebuffer)[r.id];
-            for (int i = 0; i < 3; i++)
-              color.rgba[i] += r.color.rgba[i];
-            color.rgba[3] = 1.f;
-            color.clamp();
+            renderer->aggregatePixel(r.id, r.color);
           }
         }
 
@@ -344,6 +343,8 @@ void TileWork::traceRays(RayVector& rays) {
   renderMosaic();
   #else
 
+  std::map<int, RayVector>& queue = *rayQueue;
+
   gvt::core::Vector<DBNodeH>& instancenodes = renderer->getInstanceNodes();
 
   // boost::timer::cpu_timer t_sched;
@@ -365,9 +366,9 @@ void TileWork::traceRays(RayVector& rays) {
     instTargetCount = 0;
     GVT_DEBUG(DBG_ALWAYS,
               "image scheduler: selecting next instance, num queues: "
-                  << this->queue.size());
-    for (std::map<int, RayVector>::iterator q = this->queue.begin();
-         q != this->queue.end(); ++q) {
+                  << queue.size());
+    for (std::map<int, RayVector>::iterator q = queue.begin();
+         q != queue.end(); ++q) {
       if (q->second.size() > static_cast<size_t>(instTargetCount)) {
         instTargetCount = q->second.size();
         instTarget = q->first;
@@ -427,21 +428,21 @@ void TileWork::traceRays(RayVector& rays) {
       GVT_DEBUG(DBG_ALWAYS, "image scheduler: calling process queue");
       {
         // t_trace.resume();
-        moved_rays.reserve(this->queue[instTarget].size() * 10);
+        moved_rays.reserve(queue[instTarget].size() * 10);
 
         #ifdef GVT_USE_DEBUG
         boost::timer::auto_cpu_timer t("Tracing rays in adapter: %w\n");
         #endif
 
-        adapter->trace(this->queue[instTarget], moved_rays,
+        adapter->trace(queue[instTarget], moved_rays,
                        instancenodes[instTarget]);
-        this->queue[instTarget].clear();
+        queue[instTarget].clear();
         // t_trace.stop();
       }
       GVT_DEBUG(DBG_ALWAYS, "image scheduler: marching rays");
       shuffleRays(moved_rays, instancenodes[instTarget]);
       moved_rays.clear();
-    }
+    } // if (instTarget >= 0) {
   } while (instTarget != -1);
 
   GVT_DEBUG(DBG_ALWAYS,

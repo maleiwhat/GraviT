@@ -36,27 +36,92 @@
 //
 
 #include "gvt/render/unit/RayWork.h"
+#include "gvt/render/unit/MpiRenderer.h"
 #include "gvt/core/mpi/Work.h"
 
+using namespace std;
 using namespace gvt::core::mpi;
 using namespace gvt::render::unit;
+using namespace gvt::render::actor;
 
 WORK_CLASS(RayWork)
 
 void RayWork::intialize() {
-  // TODO
+  Work::initialize();
+  domainId = -1;
+  numRays = -1;
+  outgoingRays = NULL;
 }
 
 void RayWork::Serialize(size_t& size, unsigned char*& serialized) {
-  // TODO
+
+  // assume raySize > 0
+  size_t raySize = static_cast<size_t>(numRays *
+                                       (*outgoingRays)[0].packedSize());
+  size = 2 * sizeof(int) + raySize;
+  serialized = static_cast<unsigned char*>(malloc(size));
+
+  unsigned char* buf = serialized;
+
+  *reinterpret_cast<int*>(buf) = domainId; buf += sizeof(int);
+  *reinterpret_cast<int*>(buf) = numRays; buf += sizeof(int);
+
+  for (size_t i=0; i<outgoingRays->size(); ++i) {
+    (*outgoingRays)[i].pack(buf);
+  }
 }
 
 Work* RayWork::Deserialize(size_t size, unsigned char* serialized) {
-  // TODO
-  return Work::Deserialize(size, serialized);
+
+  unsigned char* buf = serialized;
+
+  RayWork* rayWork = new RayWork;
+
+  rayWork->domainId = *reinterpret_cast<int*>(buf); buf += sizeof(int);
+  int numRays = *reinterpret_cast<int*>(buf); buf += sizeof(int);
+  rayWork->numRays = numRays;
+
+  // TODO (hpark): need some static function in Ray.h
+  //               to evaluate the ray size
+  // if not available, do some hand calculation and hard code it here
+  // if (size != (2 * sizeof(int) + (raysize))) {
+  //   std::cerr << "Test deserializer ctor with size != 2 * sizeof(int)\n";
+  //   exit(1);
+  // }
+  
+  rayWork->incomingRays.resize(numRays);
+  
+  for(int i=0; i<numRays; ++i) {
+    rayWork->incomingRays[i] = Ray(buf);
+  }
+
+  return rayWork;
+}
+
+void RayWork::setRays(int domainId,
+                      gvt::render::actor::RayVector* rays) {
+  this->domainId = domainId;
+  this->numRays = rays->size();
+  this->outgoingRays = rays;
+}
+
+void RayWork::setupAction() {
+  renderer = static_cast<MpiRenderer*>(Application::GetApplication());
+  rayQueue = renderer->getRayQueue(); 
+  rayQueueMutex = renderer->getRayQueueMutex(); 
 }
 
 bool RayWork::Action() {
-  // TODO
-  return true;
+
+  setupAction();
+  {
+    tbb::mutex::scoped_lock queueLock(rayQueueMutex[domainId]);
+    if (rayQueue->find(domainId) != rayQueue->end()) {
+      (*rayQueue)[domainId].insert((*rayQueue)[domainId].end(),
+                                incomingRays.begin(), incomingRays.end()); 
+    } else {
+      (*rayQueue)[domainId] = incomingRays;
+    }
+  }
+  return false;
 }

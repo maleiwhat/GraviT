@@ -77,8 +77,10 @@ bool RequestWork::Action() {
           getSourceRank());
   #endif
 
-  MpiRenderer* app = static_cast<MpiRenderer*>(Application::GetApplication());
-  TileLoadBalancer* loadBalancer = app->getTileLoadBalancer();
+  MpiRenderer* renderer =
+      static_cast<MpiRenderer*>(Application::GetApplication());
+      
+  TileLoadBalancer* loadBalancer = renderer->getTileLoadBalancer();
 
   TileWork* tile = loadBalancer->next();
 

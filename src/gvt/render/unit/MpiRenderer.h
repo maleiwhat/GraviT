@@ -46,7 +46,9 @@
 #include "gvt/render/data/primitives/BBox.h"
 
 #include <vector>
+#include <map>
 #include <tbb/mutex.h>
+#include <pthread.h>
    
 using namespace gvt::core::mpi;
 
@@ -67,7 +69,7 @@ namespace gvt {
 namespace render {
 namespace unit {
 
-namespace rank { enum RankType { Server=0, Display=1 }; }
+namespace rank { enum RankType { Server=0, Display=1, FirstWorker }; }
 
 class TileLoadBalancer;
 
@@ -95,12 +97,10 @@ public:
   virtual ~MpiRenderer();
 
   // for configuring database
-
   virtual void parseCommandLine(int argc, char** argv);
   virtual void createDatabase();
   
-  // helper APIs
-
+  // helper APIs for creating database
   bool isNodeTypeReserved(const std::string& type);
 
   gvt::core::DBNodeH getNode(const gvt::core::Uuid& id);
@@ -112,8 +112,7 @@ public:
                           const std::string& meshName,
                           const std::string& objFilename);
 
-  gvt::render::data::primitives::Box3D
-    getMeshBounds(const gvt::core::Uuid& id);
+  gvt::render::data::primitives::Box3D getMeshBounds(const gvt::core::Uuid& id);
 
   gvt::core::Uuid
     addInstance(const gvt::core::Uuid& parentNodeId,
@@ -123,40 +122,22 @@ public:
                 gvt::core::math::AffineTransformMatrix<float>* transform);
 
   gvt::core::Uuid addPointLight(const gvt::core::Uuid& parentNodeId,
-                     const std::string& lightName,
-                     const gvt::core::math::Vector4f& position,
-                     const gvt::core::math::Vector4f& color);
+                                const std::string& lightName,
+                                const gvt::core::math::Vector4f& position,
+                                const gvt::core::math::Vector4f& color);
 
   gvt::core::Uuid createCameraNode(const gvt::core::math::Point4f& eye,
-                        const gvt::core::math::Point4f& focus,
-                        const gvt::core::math::Vector4f& upVector,
-                        float fov,
-                        unsigned int width, 
-                        unsigned int height);
+                                   const gvt::core::math::Point4f& focus,
+                                   const gvt::core::math::Vector4f& upVector,
+                                   float fov,
+                                   unsigned int width, 
+                                   unsigned int height);
 
-  gvt::core::Uuid createFilmNode(int width,
-                      int height,
-                      const std::string& sceneName);
+  gvt::core::Uuid createFilmNode(int width, int height,
+                                 const std::string& sceneName);
 
   gvt::core::Uuid createScheduleNode(int schedulerType, int adapterType);
   void render();
-
-public:
-  TileLoadBalancer* getTileLoadBalancer() { return tileLoadBalancer; }
-  gvt::render::RenderContext* getRenderContext() { return renderContext; }
-  const gvt::render::data::scene::gvtPerspectiveCamera* getCamera() const { return camera; }
-  gvt::render::data::scene::Image* getImage() { return image; }
-  std::vector<GVT_COLOR_ACCUM>* getFramebuffer() { return &framebuffer; }
-
-  int decrementPendingPixelCount(int amount) {
-    pendingPixelCount -= amount;
-    return pendingPixelCount;
-  }
-
-  gvt::core::Vector<gvt::core::DBNodeH>& getInstanceNodes() { return instanceNodes; }
-  gvt::render::data::accel::AbstractAccel* getAcceleration() { return acceleration; }
-  tbb::mutex* getQueueMutex() { return queue_mutex; }
-  tbb::mutex* getColorBufMutex() { return colorBuf_mutex; }
 
 private:
   void initServer();
@@ -164,24 +145,78 @@ private:
   void initWorker();
   void setupRender();
   void freeRender();
+  void initInstanceRankMap();
 
+public:
+  // database, context, and domain mapping
+  gvt::render::RenderContext* getRenderContext() { return renderContext; }
+  gvt::core::Vector<gvt::core::DBNodeH>& getInstanceNodes() { return instanceNodes; }
+  std::size_t getInstanceNodesSize() const { return instanceNodes.size(); }
+  gvt::core::DBNodeH getMeshNode(int domainId) { return instanceNodes[domainId]["meshRef"].deRef(); }
+  gvt::core::DBNodeH getInstanceNode(int domainId) { return instanceNodes[domainId]; }
+  int getInstanceOwner(int domainId) { return instanceRankMap[instanceNodes[domainId].UUID()]; }
 private:
   DatabaseOption* dbOption;
   gvt::render::RenderContext* renderContext;
   gvt::core::Vector<gvt::core::DBNodeH> instanceNodes;
   gvt::core::DBNodeH root;
+  std::map<gvt::core::Uuid, int> instanceRankMap;
 
+public:
+  // camera, load balancer, world bvh
+  const gvt::render::data::scene::gvtPerspectiveCamera* getCamera() const { return camera; }
+  TileLoadBalancer* getTileLoadBalancer() { return tileLoadBalancer; }
+  gvt::render::data::accel::AbstractAccel* getAcceleration() { return acceleration; }
+private:
   gvt::render::data::scene::gvtPerspectiveCamera* camera;
+  TileLoadBalancer* tileLoadBalancer;
+  gvt::render::data::accel::AbstractAccel* acceleration;
+
+public:
+  // ray queue
+  std::map<int, gvt::render::actor::RayVector>* getRayQueue() { return &rayQueue; }
+  tbb::mutex* getRayQueueMutex() { return rayQueueMutex; }
+  bool isRayQueueEmpty() const { return rayQueue.empty(); }
+private:
+  std::map<int, gvt::render::actor::RayVector> rayQueue;
+  tbb::mutex* rayQueueMutex;
+  
+public:
+  // image
+  tbb::mutex* getColorBufMutex() { return colorBufMutex; }
+  gvt::render::data::scene::Image* getImage() { return image; }
+  std::vector<GVT_COLOR_ACCUM>* getFramebuffer() { return &framebuffer; }
+  void aggregatePixel(int pixelId, const GVT_COLOR_ACCUM& color);
+  void updatePixel(int pixelId, const GVT_COLOR_ACCUM& color) { framebuffer[pixelId] = color; }
+  int decrementPendingPixelCount(int amount) {
+    pendingPixelCount -= amount;
+    return pendingPixelCount;
+  }
+  int getImageWidth() const { return imageWidth; }
+  int getImageHeight() const { return imageHeight; }
+private:
+  tbb::mutex* colorBufMutex;
   gvt::render::data::scene::Image* image;
   std::vector<GVT_COLOR_ACCUM> framebuffer;
   int pendingPixelCount;
   int imageWidth;
   int imageHeight;
 
-  TileLoadBalancer* tileLoadBalancer;
-  gvt::render::data::accel::AbstractAccel* acceleration;
-  tbb::mutex* queue_mutex;
-  tbb::mutex* colorBuf_mutex;
+public:
+  // synchronization (domain and hybrid only)
+  pthread_mutex_t* getDoneTestLock() { return &doneTestLock; }
+  pthread_cond_t* getDoneTestCondition() { return &doneTestCondition; }
+  void setDoneTestRunning() { doneTestRunning = true; }
+  void clearDoneTestRunning() { doneTestRunning = false; }
+  bool isDoneTestRunning() const { return doneTestRunning; }
+  void setAllWorkDone() { allWorkDone = true; }
+  void clearAllWorkDone() { allWorkDone = false; }
+  bool isAllWorkDone() { return allWorkDone; }
+private:
+  bool doneTestRunning;
+  bool allWorkDone;
+  pthread_mutex_t doneTestLock;
+  pthread_cond_t  doneTestCondition;
 };
 
 }

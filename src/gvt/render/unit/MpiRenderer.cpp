@@ -75,12 +75,16 @@
 #include "gvt/render/unit/ImageTileWork.h"
 #include "gvt/render/unit/DomainTileWork.h"
 #include "gvt/render/unit/PixelWork.h"
+#include "gvt/render/unit/RayWork.h"
+#include "gvt/render/unit/DoneTestWork.h"
+#include "gvt/render/unit/PixelGatherWork.h"
 #include "gvt/render/unit/TileLoadBalancer.h"
 
 #include <iostream>
 #include <mpi.h>
 
 #define DEBUG_MPI_RENDERER
+// #define SEPARATE_SERVER_WORKERS
 
 using namespace std;
 using namespace gvt::render;
@@ -387,6 +391,39 @@ Uuid MpiRenderer::createScheduleNode(int schedulerType, int adapterType) {
   return node.UUID();
 }
 
+void MpiRenderer::initInstanceRankMap() {
+
+  gvt::core::Vector<gvt::core::DBNodeH> dataNodes = root["Data"].getChildren();
+
+  std::cout<<"instance node size: "<<instanceNodes.size()
+           <<"data node size: "<<dataNodes.size()<<"\n";
+
+  // create a map of instances to mpi rank
+  for (size_t i = 0; i < instanceNodes.size(); ++i) {
+    gvt::core::DBNodeH meshNode = instanceNodes[i]["meshRef"].deRef();
+    size_t dataIdx = -1;
+    for (size_t d = 0; d < dataNodes.size(); ++d) {
+      if (dataNodes[d].UUID() == meshNode.UUID()) {
+        dataIdx = d;
+        break;
+      }
+    }
+    // NOTE: mpi-data(domain) assignment strategy
+    int ownerRank = static_cast<int>(dataIdx) % GetSize();
+    GVT_DEBUG(DBG_ALWAYS, "[" << GetRank() << "] domain scheduler: instId: "
+                              << i << ", dataIdx: " << dataIdx
+                              << ", target mpi node: " << ownerRank
+                              << ", world size: " << GetSize());
+    std::cout<<"[" << GetRank() << "] domain scheduler: instId: "
+                              << i << ", dataIdx: " << dataIdx
+                              << ", target mpi node: " << ownerRank
+                              << ", world size: " << GetSize() << "\n";
+    GVT_ASSERT(dataIdx != (size_t)-1,
+               "domain scheduler: could not find data node");
+    instanceRankMap[instanceNodes[i].UUID()] = ownerRank;
+  }
+}
+
 void MpiRenderer::setupRender() {
   root = renderContext->getRootNode();
   instanceNodes = root["Instances"].getChildren();
@@ -395,24 +432,34 @@ void MpiRenderer::setupRender() {
   imageHeight = gvt::core::variant_toInteger(root["Film"]["height"].value());
   framebuffer.resize(imageWidth * imageHeight);
   acceleration = new gvt::render::data::accel::BVH(instanceNodes);
-  queue_mutex = new tbb::mutex[instanceNodes.size()];
-  colorBuf_mutex = new tbb::mutex[imageWidth];
+  rayQueueMutex = new tbb::mutex[instanceNodes.size()];
+  colorBufMutex = new tbb::mutex[imageWidth];
+
+  int schedType = variant_toInteger(root["Schedule"]["type"].value());
+  if (schedType == scheduler::Domain) {
+    initInstanceRankMap();
+    doneTestRunning = false;
+    allWorkDone = false;
+    pthread_mutex_init(&doneTestLock, NULL);
+    pthread_cond_init(&doneTestCondition, NULL);
+  }
 }
 
 void MpiRenderer::freeRender() {
   delete acceleration;
-  delete [] queue_mutex;
-  delete [] colorBuf_mutex;
+  delete [] rayQueueMutex;
+  delete [] colorBufMutex;
 }
 
 void MpiRenderer::render() {
+
+#ifdef SEPARATE_SERVER_WORKERS
 
   setupRender();
 
   RequestWork::Register();
   TileWork::Register();
   ImageTileWork::Register();
-  DomainTileWork::Register();
   PixelWork::Register();
 
   Start();
@@ -425,7 +472,7 @@ void MpiRenderer::render() {
 
   if (rank == rank::Server) {
     initServer();
-  } else if (rank == rank::Display) {
+  } else {
     initDisplay();
   }
 
@@ -438,17 +485,40 @@ void MpiRenderer::render() {
   Wait();
 
   freeRender();
+
+#else
+
+  setupRender();
+
+  DomainTileWork::Register();
+  RayWork::Register();
+  DoneTestWork::Register();
+  PixelGatherWork::Register();
+
+  Start();
+
+  image = new Image(imageWidth, imageHeight, "image");
+  DomainTileWork work;
+  work.setTileSize(0, 0, imageWidth, imageHeight);
+  work.Action();
+
+  Wait();
+  freeRender();
+
+#endif
 }
 
 void MpiRenderer::initServer() {
   // TODO (hpark): For now, equally divide the image
   // try coarser/finer granularity later
-  int numRanks = GetSize();
-  int granularity = numRanks - 2;
   int schedType = variant_toInteger(root["Schedule"]["type"].value());
+  int numRanks = GetSize();
+  int numWorkers = numRanks - rank::FirstWorker;
+  int granularity = numWorkers;
 
   tileLoadBalancer =
-    new TileLoadBalancer(schedType, imageWidth, imageHeight, granularity);
+      new TileLoadBalancer(schedType, imageWidth, imageHeight,
+                           granularity, numWorkers);
 }
 
 void MpiRenderer::initDisplay() {
@@ -461,4 +531,11 @@ void MpiRenderer::initWorker() {
   RequestWork request;
   request.setSourceRank(GetRank());
   request.Send(rank::Server);
+}
+
+void MpiRenderer::aggregatePixel(int pixelId, const GVT_COLOR_ACCUM& addend) {
+  GVT_COLOR_ACCUM& color = framebuffer[pixelId];
+  color.add(addend);
+  color.rgba[3] = 1.f;
+  color.clamp();
 }

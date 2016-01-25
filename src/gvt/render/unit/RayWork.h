@@ -42,12 +42,17 @@
 #include "gvt/core/mpi/Application.h"
 #include "gvt/render/actor/Ray.h"
 
+#include <tbb/mutex.h>
+#include <map>
+
 using namespace std;
 using namespace gvt::core::mpi;
 
 namespace gvt {
 namespace render {
 namespace unit {
+
+class MpiRenderer;
 
 class RayWork : public Work {
   WORK_CLASS_HEADER(RayWork)
@@ -57,8 +62,16 @@ public:
   virtual void Serialize(size_t& size, unsigned char*& serialized);
   static Work* Deserialize(size_t size, unsigned char* serialized);
   virtual bool Action();
-protected:
-  gvt::render::actor::RayVector rays;
+  void setRays(int domainId, gvt::render::actor::RayVector* rays);
+private:
+  void setupAction();
+  int domainId;
+  int numRays;
+  gvt::render::actor::RayVector* outgoingRays;
+  gvt::render::actor::RayVector incomingRays;
+  MpiRenderer* renderer;
+  std::map<int, gvt::render::actor::RayVector>* rayQueue;
+  tbb::mutex* rayQueueMutex;
 };
 
 }

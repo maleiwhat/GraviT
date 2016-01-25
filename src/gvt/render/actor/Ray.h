@@ -112,6 +112,7 @@ public:
   /// packs the ray information onto the given buffer and returns the number of
   /// bytes packed
   int pack(unsigned char *buffer);
+  void serialize(unsigned char *buffer);
 
   friend std::ostream &operator<<(std::ostream &stream, Ray const &ray) {
     stream << ray.origin << "-->" << ray.direction << " [" << ray.type << "]";

@@ -91,7 +91,6 @@ protected:
   virtual void traceRays(gvt::render::actor::RayVector& rays);
   virtual void sendRequest(int rank);
   virtual void sendPixels(int rank);
-protected: 
   virtual void filterRaysLocally(gvt::render::actor::RayVector& rays);
   virtual void shuffleRays(gvt::render::actor::RayVector &rays,
                            gvt::core::DBNodeH instNode);
@@ -102,7 +101,7 @@ protected:
   int imageWidth;
   int imageHeight;
   gvt::render::data::accel::AbstractAccel* acceleration;
-  std::map<int, gvt::render::actor::RayVector> queue;
+  std::map<int, gvt::render::actor::RayVector>* rayQueue;
   std::map<gvt::core::Uuid, gvt::render::Adapter*> adapterCache;
   tbb::mutex* queue_mutex;
   tbb::mutex* colorBuf_mutex;

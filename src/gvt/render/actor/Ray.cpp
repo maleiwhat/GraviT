@@ -122,9 +122,9 @@ int Ray::packedSize() {
   return total_size;
 }
 
-int Ray::pack(unsigned char *buffer) {
+void Ray::serialize(unsigned char *buffer) {
 
-  unsigned char *buf = buffer;
+  unsigned char* buf = buffer;
   unsigned char *buf0 = buffer;
 
   buf += origin.pack(buf);
@@ -149,6 +149,14 @@ int Ray::pack(unsigned char *buffer) {
     *((float *)buf) = dom;
     buf += sizeof(float);
   }
+}
+
+int Ray::pack(unsigned char *buffer) {
+
+  unsigned char *buf = buffer;
+  unsigned char *buf0 = buffer;
+
+  serialize(buf);
 
   if (packedSize() != (buf - buf0)) {
     std::cout << " error in pack " << buf - buf0 << " " << packedSize()

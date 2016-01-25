@@ -39,6 +39,7 @@
 #define GVT_RENDER_UNIT_DOMAIN_TILE_WORK_H
 
 #include "gvt/render/unit/TileWork.h"
+#include <pthread.h>
 
 namespace gvt {
 namespace render {
@@ -49,8 +50,16 @@ class DomainTileWork : public TileWork {
 public:
   virtual ~DomainTileWork() {}
   static Work* Deserialize(std::size_t size, unsigned char* serialized);
+  virtual bool Action();
 protected:
+  virtual void setupAction();
   virtual void traceRays(gvt::render::actor::RayVector& rays);
+  virtual void filterRaysLocally(gvt::render::actor::RayVector& rays);
+private:
+  void sendRays();
+  int myRank;
+  pthread_mutex_t* doneTestLock;
+  pthread_cond_t* doneTestCondition;
 };
 
 }
