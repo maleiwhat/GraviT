@@ -42,19 +42,23 @@ using namespace gvt::render::unit;
 
 WORK_CLASS(ImageTileWork)
 
-Work* ImageTileWork::Deserialize(size_t size, unsigned char* serialized) {
+Work *ImageTileWork::Deserialize(size_t size, unsigned char *serialized) {
   if (size != (4 * sizeof(int))) {
     std::cerr << "Test deserializer ctor with size != 4 * sizeof(int)\n";
     exit(1);
   }
 
-  unsigned char* buf = serialized;
-  ImageTileWork* tileWork = new ImageTileWork;
+  unsigned char *buf = serialized;
+  ImageTileWork *tileWork = new ImageTileWork;
 
-  tileWork->startX = *reinterpret_cast<int*>(buf); buf += sizeof(int);
-  tileWork->startY = *reinterpret_cast<int*>(buf); buf += sizeof(int);
-  tileWork->width  = *reinterpret_cast<int*>(buf); buf += sizeof(int);
-  tileWork->height = *reinterpret_cast<int*>(buf); buf += sizeof(int);
+  tileWork->startX = *reinterpret_cast<int *>(buf);
+  buf += sizeof(int);
+  tileWork->startY = *reinterpret_cast<int *>(buf);
+  buf += sizeof(int);
+  tileWork->width = *reinterpret_cast<int *>(buf);
+  buf += sizeof(int);
+  tileWork->height = *reinterpret_cast<int *>(buf);
+  buf += sizeof(int);
 
   return tileWork;
 }

@@ -56,57 +56,63 @@ using namespace gvt::render::data::scene;
 
 WORK_CLASS(PixelWork)
 
-void PixelWork::Serialize(size_t& size, unsigned char*& serialized) {
+void PixelWork::Serialize(size_t &size, unsigned char *&serialized) {
 
   size = 4 * sizeof(int) + width * height * 3 * sizeof(float);
-  serialized = static_cast<unsigned char*>(malloc(size));
+  serialized = static_cast<unsigned char *>(malloc(size));
 
-  unsigned char* buf = serialized;
+  unsigned char *buf = serialized;
 
-  *reinterpret_cast<int*>(buf) = startX; buf += sizeof(int);
-  *reinterpret_cast<int*>(buf) = startY; buf += sizeof(int);
-  *reinterpret_cast<int*>(buf) = width;  buf += sizeof(int);
-  *reinterpret_cast<int*>(buf) = height; buf += sizeof(int);
+  *reinterpret_cast<int *>(buf) = startX;
+  buf += sizeof(int);
+  *reinterpret_cast<int *>(buf) = startY;
+  buf += sizeof(int);
+  *reinterpret_cast<int *>(buf) = width;
+  buf += sizeof(int);
+  *reinterpret_cast<int *>(buf) = height;
+  buf += sizeof(int);
 
   DBNodeH root = RenderContext::instance()->getRootNode();
   int imageWidth = root["Film"]["width"].value().toInteger();
 
-  #ifdef DEBUG_PIXEL_WORK
-  printf("Rank %d: serializing PixelWork tile(%d %d %d %d) imageWidth: %d\n",
-         Application::GetApplication()->GetRank(),
+#ifdef DEBUG_PIXEL_WORK
+  printf("Rank %d: serializing PixelWork tile(%d %d %d %d) imageWidth: %d\n", Application::GetApplication()->GetRank(),
          startX, startY, width, height, imageWidth);
-  #endif
+#endif
 
   for (int y = 0; y < height; ++y) {
     for (int x = 0; x < width; ++x) {
       int pixelId = (startY + y) * imageWidth + (startX + x);
-      GVT_COLOR_ACCUM& color = (*framebuffer)[pixelId]; // float rgba[4]
-      *reinterpret_cast<float*>(buf) = color.rgba[0]; buf += sizeof(float);
-      *reinterpret_cast<float*>(buf) = color.rgba[1]; buf += sizeof(float);
-      *reinterpret_cast<float*>(buf) = color.rgba[2]; buf += sizeof(float);
+      GVT_COLOR_ACCUM &color = (*framebuffer)[pixelId]; // float rgba[4]
+      *reinterpret_cast<float *>(buf) = color.rgba[0];
+      buf += sizeof(float);
+      *reinterpret_cast<float *>(buf) = color.rgba[1];
+      buf += sizeof(float);
+      *reinterpret_cast<float *>(buf) = color.rgba[2];
+      buf += sizeof(float);
 
-      #ifdef DEBUG_PIXEL_WORK
+#ifdef DEBUG_PIXEL_WORK
       printf("Rank %d: serializing PixelWork pixelId: %d \
               rgba(%.2f, %.2f, %.2f)\n",
-             Application::GetApplication()->GetRank(),
-             pixelId,
-             color.rgba[0],
-             color.rgba[1],
-             color.rgba[2]);
-      #endif
+             Application::GetApplication()->GetRank(), pixelId, color.rgba[0], color.rgba[1], color.rgba[2]);
+#endif
     }
   }
 }
 
-Work* PixelWork::Deserialize(size_t size, unsigned char* serialized) {
+Work *PixelWork::Deserialize(size_t size, unsigned char *serialized) {
 
-  unsigned char* buf = serialized;
-  TileWork* pixelWork = new PixelWork;
+  unsigned char *buf = serialized;
+  TileWork *pixelWork = new PixelWork;
 
-  int tileX = *reinterpret_cast<int*>(buf); buf += sizeof(int);
-  int tileY = *reinterpret_cast<int*>(buf); buf += sizeof(int);
-  int tileW = *reinterpret_cast<int*>(buf); buf += sizeof(int);
-  int tileH = *reinterpret_cast<int*>(buf); buf += sizeof(int);
+  int tileX = *reinterpret_cast<int *>(buf);
+  buf += sizeof(int);
+  int tileY = *reinterpret_cast<int *>(buf);
+  buf += sizeof(int);
+  int tileW = *reinterpret_cast<int *>(buf);
+  buf += sizeof(int);
+  int tileH = *reinterpret_cast<int *>(buf);
+  buf += sizeof(int);
 
   pixelWork->setTileSize(tileX, tileY, tileW, tileH);
 
@@ -119,46 +125,43 @@ Work* PixelWork::Deserialize(size_t size, unsigned char* serialized) {
   DBNodeH root = RenderContext::instance()->getRootNode();
   int imageWidth = root["Film"]["width"].value().toInteger();
 
-  MpiRenderer* app = static_cast<MpiRenderer*>(Application::GetApplication());
-  Image* image = app->getImage();
+  MpiRenderer *app = static_cast<MpiRenderer *>(Application::GetApplication());
+  Image *image = app->getImage();
 
-  #ifdef DEBUG_PIXEL_DESERIALIZE
-  printf("Rank %d: de-serializing start\n",
-         Application::GetApplication()->GetRank());
-  #endif
+#ifdef DEBUG_PIXEL_DESERIALIZE
+  printf("Rank %d: de-serializing start\n", Application::GetApplication()->GetRank());
+#endif
 
   for (int y = 0; y < tileH; ++y) {
     for (int x = 0; x < tileW; ++x) {
       GVT_COLOR_ACCUM color;
-      color.rgba[0] = *reinterpret_cast<float*>(buf); buf += sizeof(float);
-      color.rgba[1] = *reinterpret_cast<float*>(buf); buf += sizeof(float);
-      color.rgba[2] = *reinterpret_cast<float*>(buf); buf += sizeof(float);
+      color.rgba[0] = *reinterpret_cast<float *>(buf);
+      buf += sizeof(float);
+      color.rgba[1] = *reinterpret_cast<float *>(buf);
+      buf += sizeof(float);
+      color.rgba[2] = *reinterpret_cast<float *>(buf);
+      buf += sizeof(float);
       color.rgba[3] = 1.f;
       int pixelId = (tileY + y) * imageWidth + (tileX + x);
 
       image->Add(pixelId, color);
 
-      #ifdef DEBUG_PIXEL_WORK
+#ifdef DEBUG_PIXEL_WORK
       printf("Rank %d: de-serializing PixelWork pixelId: %d \
               rgba(%.2f, %.2f, %.2f)\n",
-             Application::GetApplication()->GetRank(),
-             pixelId,
-             color.rgba[0],
-             color.rgba[1],
-             color.rgba[2]);
-      #endif
+             Application::GetApplication()->GetRank(), pixelId, color.rgba[0], color.rgba[1], color.rgba[2]);
+#endif
     }
   }
-  #ifdef DEBUG_PIXEL_DESERIALIZE
-  printf("Rank %d: de-serializing done\n",
-         Application::GetApplication()->GetRank());
-  #endif
+#ifdef DEBUG_PIXEL_DESERIALIZE
+  printf("Rank %d: de-serializing done\n", Application::GetApplication()->GetRank());
+#endif
 
-  return static_cast<Work*>(pixelWork);
+  return static_cast<Work *>(pixelWork);
 }
 
 bool PixelWork::Action() {
-  MpiRenderer* app = static_cast<MpiRenderer*>(Application::GetApplication());
+  MpiRenderer *app = static_cast<MpiRenderer *>(Application::GetApplication());
   int count = app->decrementPendingPixelCount(width * height);
   if (count == 0) {
     app->getImage()->Write(false);

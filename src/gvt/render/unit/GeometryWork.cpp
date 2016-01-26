@@ -47,11 +47,11 @@ void GeometryWork::intialize() {
   // TODO
 }
 
-void GeometryWork::Serialize(size_t& size, unsigned char*& serialized) {
+void GeometryWork::Serialize(size_t &size, unsigned char *&serialized) {
   // TODO
 }
 
-Work* GeometryWork::Deserialize(size_t size, unsigned char* serialized) {
+Work *GeometryWork::Deserialize(size_t size, unsigned char *serialized) {
   // TODO
   return Work::Deserialize(size, serialized);
 }

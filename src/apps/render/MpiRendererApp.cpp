@@ -39,7 +39,7 @@
 
 using namespace gvt::render::unit;
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
 
   MpiRenderer renderer(&argc, &argv);
   renderer.parseCommandLine(argc, argv);

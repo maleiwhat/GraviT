@@ -42,7 +42,7 @@
 #include "gvt/core/DatabaseNode.h"
 #include "gvt/core/mpi/Work.h"
 #include "gvt/core/mpi/Application.h"
-   
+
 #include "gvt/render/data/scene/ColorAccumulator.h"
 #include "gvt/render/actor/Ray.h"
 
@@ -54,13 +54,21 @@
 using namespace gvt::core::mpi;
 using namespace gvt::render::actor;
 
-namespace gvt { namespace render { namespace data { namespace accel {
-  class AbstractAccel;
-}}}}
+namespace gvt {
+namespace render {
+namespace data {
+namespace accel {
+class AbstractAccel;
+}
+}
+}
+}
 
-namespace gvt { namespace render {
-  class Adapter;
-}}
+namespace gvt {
+namespace render {
+class Adapter;
+}
+}
 
 namespace gvt {
 namespace render {
@@ -73,46 +81,46 @@ class TileWork : public Work {
 public:
   virtual void initialize() { width = -1; } // for validity check
   virtual ~TileWork() {}
-  virtual void Serialize(std::size_t& size, unsigned char*& serialized);
-  static Work* Deserialize(std::size_t size, unsigned char* serialized);
+  virtual void Serialize(std::size_t &size, unsigned char *&serialized);
+  static Work *Deserialize(std::size_t size, unsigned char *serialized);
   virtual bool Action();
-  void setTileInfo(int x, int y, int w, int h,
-                   std::vector<GVT_COLOR_ACCUM>* framebuffer = NULL);
+  void setTileInfo(int x, int y, int w, int h, std::vector<GVT_COLOR_ACCUM> *framebuffer = NULL);
   void setTileSize(int x, int y, int w, int h);
-  void setFramebuffer(std::vector<GVT_COLOR_ACCUM>* fb) { framebuffer = fb; }
+  void setFramebuffer(std::vector<GVT_COLOR_ACCUM> *fb) { framebuffer = fb; }
   bool isValid() { return (width > 0); }
   int getStartX() const { return startX; }
-  int getStartY() const  { return startY; }
+  int getStartY() const { return startY; }
   int getWidth() const { return width; }
   int getHeight() const { return height; }
+
 protected:
   virtual void setupAction();
-  virtual void generatePrimaryRays(gvt::render::actor::RayVector& rays);
-  virtual void traceRays(gvt::render::actor::RayVector& rays);
+  virtual void generatePrimaryRays(gvt::render::actor::RayVector &rays);
+  virtual void traceRays(gvt::render::actor::RayVector &rays);
   virtual void sendRequest(int rank);
   virtual void sendPixels(int rank);
-  virtual void filterRaysLocally(gvt::render::actor::RayVector& rays);
-  virtual void shuffleRays(gvt::render::actor::RayVector &rays,
-                           gvt::core::DBNodeH instNode);
+  virtual void filterRaysLocally(gvt::render::actor::RayVector &rays);
+  virtual void shuffleRays(gvt::render::actor::RayVector &rays, gvt::core::DBNodeH instNode);
   void renderMosaic();
+
 protected:
-  MpiRenderer* renderer;
+  MpiRenderer *renderer;
   gvt::core::DBNodeH root;
   int imageWidth;
   int imageHeight;
-  gvt::render::data::accel::AbstractAccel* acceleration;
-  std::map<int, gvt::render::actor::RayVector>* rayQueue;
-  std::map<gvt::core::Uuid, gvt::render::Adapter*> adapterCache;
-  tbb::mutex* queue_mutex;
-  tbb::mutex* colorBuf_mutex;
+  gvt::render::data::accel::AbstractAccel *acceleration;
+  std::map<int, gvt::render::actor::RayVector> *rayQueue;
+  std::map<gvt::core::Uuid, gvt::render::Adapter *> adapterCache;
+  tbb::mutex *queue_mutex;
+  tbb::mutex *colorBuf_mutex;
+
 protected:
   int startX;
   int startY;
   int width;
   int height;
-  std::vector<GVT_COLOR_ACCUM>* framebuffer;
+  std::vector<GVT_COLOR_ACCUM> *framebuffer;
 };
-
 }
 }
 }

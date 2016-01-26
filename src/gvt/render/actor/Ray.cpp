@@ -132,7 +132,7 @@ int Ray::pack(unsigned char *buffer) {
 
   buf += origin.pack(buf);
   buf += direction.pack(buf);
-  *((int *)buf) = id; 
+  *((int *)buf) = id;
   buf += sizeof(int);
   *((int *)buf) = depth;
   buf += sizeof(int);

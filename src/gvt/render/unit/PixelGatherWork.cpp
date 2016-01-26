@@ -51,58 +51,54 @@ using namespace gvt::render::data::scene;
 
 WORK_CLASS(PixelGatherWork)
 
-void PixelGatherWork::Serialize(size_t& size, unsigned char*& serialized) {
+void PixelGatherWork::Serialize(size_t &size, unsigned char *&serialized) {
   size = 0;
-  serialized = NULL;;
+  serialized = NULL;
+  ;
 }
 
-Work* PixelGatherWork::Deserialize(size_t size, unsigned char* serialized) {
+Work *PixelGatherWork::Deserialize(size_t size, unsigned char *serialized) {
   if (size != 0) {
-    std::cerr << "PixelGatherWork deserializer call with size != 0 rank " << Application::GetApplication()->GetRank() << "\n";
+    std::cerr << "PixelGatherWork deserializer call with size != 0 rank " << Application::GetApplication()->GetRank()
+              << "\n";
     exit(1);
   }
-  PixelGatherWork* work = new PixelGatherWork;
+  PixelGatherWork *work = new PixelGatherWork;
   return work;
 }
 
 bool PixelGatherWork::Action() {
 
-  MpiRenderer* renderer
-      = static_cast<MpiRenderer*>(Application::GetApplication());
+  MpiRenderer *renderer = static_cast<MpiRenderer *>(Application::GetApplication());
   int width = renderer->getImageWidth();
   int height = renderer->getImageHeight();
-  Image* image = renderer->getImage(); 
-  std::vector<GVT_COLOR_ACCUM>* framebuffer = renderer->getFramebuffer();
+  Image *image = renderer->getImage();
+  std::vector<GVT_COLOR_ACCUM> *framebuffer = renderer->getFramebuffer();
 
   bool displayRank = (renderer->GetRank() == 0);
   int numRanks = renderer->GetSize();
 
   size_t size = width * height;
 
-  for (size_t i = 0; i < size; i++)
-    image->Add(i, (*framebuffer)[i]);
+  for (size_t i = 0; i < size; i++) image->Add(i, (*framebuffer)[i]);
 
   // if (!mpi)
   //   return;
 
-  unsigned char* rgb = image->GetBuffer();
+  unsigned char *rgb = image->GetBuffer();
   int rgb_buf_size = 3 * size;
 
-  unsigned char* bufs =
-      displayRank ? new unsigned char[numRanks * rgb_buf_size] : NULL;
+  unsigned char *bufs = displayRank ? new unsigned char[numRanks * rgb_buf_size] : NULL;
 
-  MPI_Gather(rgb, rgb_buf_size, MPI_UNSIGNED_CHAR,
-             bufs, rgb_buf_size, MPI_UNSIGNED_CHAR,
-             0, MPI_COMM_WORLD);
+  MPI_Gather(rgb, rgb_buf_size, MPI_UNSIGNED_CHAR, bufs, rgb_buf_size, MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);
 
   if (displayRank) {
     int nchunks = std::thread::hardware_concurrency() * 2;
     int chunk_size = size / nchunks;
-    std::vector<std::pair<int, int>> chunks(nchunks);
-    std::vector<std::future<void>> futures;
+    std::vector<std::pair<int, int> > chunks(nchunks);
+    std::vector<std::future<void> > futures;
     for (int ii = 0; ii < nchunks - 1; ii++) {
-      chunks.push_back(
-          std::make_pair(ii * chunk_size, ii * chunk_size + chunk_size));
+      chunks.push_back(std::make_pair(ii * chunk_size, ii * chunk_size + chunk_size));
     }
     int ii = nchunks - 1;
     chunks.push_back(std::make_pair(ii * chunk_size, size));

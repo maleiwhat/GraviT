@@ -49,11 +49,10 @@ class PixelWork : public TileWork {
 public:
   virtual void intialize() { TileWork::initialize(); }
   virtual ~PixelWork() {}
-  virtual void Serialize(std::size_t& size, unsigned char*& serialized);
-  static Work* Deserialize(std::size_t size, unsigned char* serialized);
+  virtual void Serialize(std::size_t &size, unsigned char *&serialized);
+  static Work *Deserialize(std::size_t size, unsigned char *serialized);
   virtual bool Action();
 };
-
 }
 }
 }

@@ -49,19 +49,20 @@ class DomainTileWork : public TileWork {
   WORK_CLASS_HEADER(DomainTileWork)
 public:
   virtual ~DomainTileWork() {}
-  static Work* Deserialize(std::size_t size, unsigned char* serialized);
+  static Work *Deserialize(std::size_t size, unsigned char *serialized);
   virtual bool Action();
+
 protected:
   virtual void setupAction();
-  virtual void traceRays(gvt::render::actor::RayVector& rays);
-  virtual void filterRaysLocally(gvt::render::actor::RayVector& rays);
+  virtual void traceRays(gvt::render::actor::RayVector &rays);
+  virtual void filterRaysLocally(gvt::render::actor::RayVector &rays);
+
 private:
   void sendRays();
   int myRank;
-  pthread_mutex_t* doneTestLock;
-  pthread_cond_t* doneTestCondition;
+  pthread_mutex_t *doneTestLock;
+  pthread_cond_t *doneTestCondition;
 };
-
 }
 }
 }

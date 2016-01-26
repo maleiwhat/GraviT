@@ -48,10 +48,9 @@ class TileWork;
 
 class TileLoadBalancer {
 public:
-  TileLoadBalancer(int schedType, int width, int height,
-                   int granularity, int numWorkers);
-  
-  TileWork* next();
+  TileLoadBalancer(int schedType, int width, int height, int granularity, int numWorkers);
+
+  TileWork *next();
 
   int schedType;
   int granularity;
@@ -59,9 +58,8 @@ public:
   int y;
   int width;
   int height;
-  std::stack<TileWork*> tileStack;
+  std::stack<TileWork *> tileStack;
 };
-
 }
 }
 }

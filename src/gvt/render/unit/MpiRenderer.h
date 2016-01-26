@@ -49,27 +49,43 @@
 #include <map>
 #include <tbb/mutex.h>
 #include <pthread.h>
-   
+
 using namespace gvt::core::mpi;
 
-namespace gvt { namespace render {
-  class RenderContext;
-}}
+namespace gvt {
+namespace render {
+class RenderContext;
+}
+}
 
-namespace gvt { namespace render { namespace data { namespace scene {
-  class gvtPerspectiveCamera;
-  class Image;
-}}}}
+namespace gvt {
+namespace render {
+namespace data {
+namespace scene {
+class gvtPerspectiveCamera;
+class Image;
+}
+}
+}
+}
 
-namespace gvt { namespace render { namespace data { namespace accel {
-  class AbstractAccel;
-}}}}
+namespace gvt {
+namespace render {
+namespace data {
+namespace accel {
+class AbstractAccel;
+}
+}
+}
+}
 
 namespace gvt {
 namespace render {
 namespace unit {
 
-namespace rank { enum RankType { Server=0, Display=1, FirstWorker }; }
+namespace rank {
+enum RankType { Server = 0, Display = 1, FirstWorker };
+}
 
 class TileLoadBalancer;
 
@@ -97,45 +113,34 @@ public:
   virtual ~MpiRenderer();
 
   // for configuring database
-  virtual void parseCommandLine(int argc, char** argv);
+  virtual void parseCommandLine(int argc, char **argv);
   virtual void createDatabase();
-  
+
   // helper APIs for creating database
-  bool isNodeTypeReserved(const std::string& type);
+  bool isNodeTypeReserved(const std::string &type);
 
-  gvt::core::DBNodeH getNode(const gvt::core::Uuid& id);
+  gvt::core::DBNodeH getNode(const gvt::core::Uuid &id);
 
-  gvt::core::Uuid createNode(const std::string& type,
-                             const std::string& name);
+  gvt::core::Uuid createNode(const std::string &type, const std::string &name);
 
-  gvt::core::Uuid addMesh(const gvt::core::Uuid& parentNodeId,
-                          const std::string& meshName,
-                          const std::string& objFilename);
+  gvt::core::Uuid addMesh(const gvt::core::Uuid &parentNodeId, const std::string &meshName,
+                          const std::string &objFilename);
 
-  gvt::render::data::primitives::Box3D getMeshBounds(const gvt::core::Uuid& id);
-  gvt::render::data::primitives::Box3D getMeshBounds(const std::string& objFilename);
+  gvt::render::data::primitives::Box3D getMeshBounds(const gvt::core::Uuid &id);
+  gvt::render::data::primitives::Box3D getMeshBounds(const std::string &objFilename);
 
-  gvt::core::Uuid
-    addInstance(const gvt::core::Uuid& parentNodeId,
-                const gvt::core::Uuid& meshId,
-                int instanceId,
-                const std::string& instanceName,
-                gvt::core::math::AffineTransformMatrix<float>* transform);
+  gvt::core::Uuid addInstance(const gvt::core::Uuid &parentNodeId, const gvt::core::Uuid &meshId, int instanceId,
+                              const std::string &instanceName,
+                              gvt::core::math::AffineTransformMatrix<float> *transform);
 
-  gvt::core::Uuid addPointLight(const gvt::core::Uuid& parentNodeId,
-                                const std::string& lightName,
-                                const gvt::core::math::Vector4f& position,
-                                const gvt::core::math::Vector4f& color);
+  gvt::core::Uuid addPointLight(const gvt::core::Uuid &parentNodeId, const std::string &lightName,
+                                const gvt::core::math::Vector4f &position, const gvt::core::math::Vector4f &color);
 
-  gvt::core::Uuid createCameraNode(const gvt::core::math::Point4f& eye,
-                                   const gvt::core::math::Point4f& focus,
-                                   const gvt::core::math::Vector4f& upVector,
-                                   float fov,
-                                   unsigned int width, 
+  gvt::core::Uuid createCameraNode(const gvt::core::math::Point4f &eye, const gvt::core::math::Point4f &focus,
+                                   const gvt::core::math::Vector4f &upVector, float fov, unsigned int width,
                                    unsigned int height);
 
-  gvt::core::Uuid createFilmNode(int width, int height,
-                                 const std::string& sceneName);
+  gvt::core::Uuid createFilmNode(int width, int height, const std::string &sceneName);
 
   gvt::core::Uuid createScheduleNode(int schedulerType, int adapterType);
   void render();
@@ -150,54 +155,58 @@ private:
 
 public:
   // database, context, and domain mapping
-  gvt::render::RenderContext* getRenderContext() { return renderContext; }
-  gvt::core::Vector<gvt::core::DBNodeH>& getInstanceNodes() { return instanceNodes; }
+  gvt::render::RenderContext *getRenderContext() { return renderContext; }
+  gvt::core::Vector<gvt::core::DBNodeH> &getInstanceNodes() { return instanceNodes; }
   std::size_t getInstanceNodesSize() const { return instanceNodes.size(); }
   gvt::core::DBNodeH getMeshNode(int domainId) { return instanceNodes[domainId]["meshRef"].deRef(); }
   gvt::core::DBNodeH getInstanceNode(int domainId) { return instanceNodes[domainId]; }
   int getInstanceOwner(int domainId) { return instanceRankMap[instanceNodes[domainId].UUID()]; }
+
 private:
-  DatabaseOption* dbOption;
-  gvt::render::RenderContext* renderContext;
+  DatabaseOption *dbOption;
+  gvt::render::RenderContext *renderContext;
   gvt::core::Vector<gvt::core::DBNodeH> instanceNodes;
   gvt::core::DBNodeH root;
   std::map<gvt::core::Uuid, int> instanceRankMap;
 
 public:
   // camera, load balancer, world bvh
-  const gvt::render::data::scene::gvtPerspectiveCamera* getCamera() const { return camera; }
-  TileLoadBalancer* getTileLoadBalancer() { return tileLoadBalancer; }
-  gvt::render::data::accel::AbstractAccel* getAcceleration() { return acceleration; }
+  const gvt::render::data::scene::gvtPerspectiveCamera *getCamera() const { return camera; }
+  TileLoadBalancer *getTileLoadBalancer() { return tileLoadBalancer; }
+  gvt::render::data::accel::AbstractAccel *getAcceleration() { return acceleration; }
+
 private:
-  gvt::render::data::scene::gvtPerspectiveCamera* camera;
-  TileLoadBalancer* tileLoadBalancer;
-  gvt::render::data::accel::AbstractAccel* acceleration;
+  gvt::render::data::scene::gvtPerspectiveCamera *camera;
+  TileLoadBalancer *tileLoadBalancer;
+  gvt::render::data::accel::AbstractAccel *acceleration;
 
 public:
   // ray queue
-  std::map<int, gvt::render::actor::RayVector>* getRayQueue() { return &rayQueue; }
-  tbb::mutex* getRayQueueMutex() { return rayQueueMutex; }
+  std::map<int, gvt::render::actor::RayVector> *getRayQueue() { return &rayQueue; }
+  tbb::mutex *getRayQueueMutex() { return rayQueueMutex; }
   bool isRayQueueEmpty() const { return rayQueue.empty(); }
+
 private:
   std::map<int, gvt::render::actor::RayVector> rayQueue;
-  tbb::mutex* rayQueueMutex;
-  
+  tbb::mutex *rayQueueMutex;
+
 public:
   // image
-  tbb::mutex* getColorBufMutex() { return colorBufMutex; }
-  gvt::render::data::scene::Image* getImage() { return image; }
-  std::vector<GVT_COLOR_ACCUM>* getFramebuffer() { return &framebuffer; }
-  void aggregatePixel(int pixelId, const GVT_COLOR_ACCUM& color);
-  void updatePixel(int pixelId, const GVT_COLOR_ACCUM& color) { framebuffer[pixelId] = color; }
+  tbb::mutex *getColorBufMutex() { return colorBufMutex; }
+  gvt::render::data::scene::Image *getImage() { return image; }
+  std::vector<GVT_COLOR_ACCUM> *getFramebuffer() { return &framebuffer; }
+  void aggregatePixel(int pixelId, const GVT_COLOR_ACCUM &color);
+  void updatePixel(int pixelId, const GVT_COLOR_ACCUM &color) { framebuffer[pixelId] = color; }
   int decrementPendingPixelCount(int amount) {
     pendingPixelCount -= amount;
     return pendingPixelCount;
   }
   int getImageWidth() const { return imageWidth; }
   int getImageHeight() const { return imageHeight; }
+
 private:
-  tbb::mutex* colorBufMutex;
-  gvt::render::data::scene::Image* image;
+  tbb::mutex *colorBufMutex;
+  gvt::render::data::scene::Image *image;
   std::vector<GVT_COLOR_ACCUM> framebuffer;
   int pendingPixelCount;
   int imageWidth;
@@ -205,21 +214,21 @@ private:
 
 public:
   // synchronization (domain and hybrid only)
-  pthread_mutex_t* getDoneTestLock() { return &doneTestLock; }
-  pthread_cond_t* getDoneTestCondition() { return &doneTestCondition; }
+  pthread_mutex_t *getDoneTestLock() { return &doneTestLock; }
+  pthread_cond_t *getDoneTestCondition() { return &doneTestCondition; }
   void setDoneTestRunning() { doneTestRunning = true; }
   void clearDoneTestRunning() { doneTestRunning = false; }
   bool isDoneTestRunning() const { return doneTestRunning; }
   void setAllWorkDone() { allWorkDone = true; }
   void clearAllWorkDone() { allWorkDone = false; }
   bool isAllWorkDone() { return allWorkDone; }
+
 private:
   bool doneTestRunning;
   bool allWorkDone;
   pthread_mutex_t doneTestLock;
-  pthread_cond_t  doneTestCondition;
+  pthread_cond_t doneTestCondition;
 };
-
 }
 }
 }

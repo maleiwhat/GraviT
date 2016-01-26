@@ -96,11 +96,9 @@ public:
   };
   // clang-format on
 
-  const gvt::core::math::AffineTransformMatrix<float>&
-      getCameraToWorld() const { return cam2wrld; }
+  const gvt::core::math::AffineTransformMatrix<float> &getCameraToWorld() const { return cam2wrld; }
 
-  const gvt::core::math::AffineTransformMatrix<float>&
-      getWorldToCamera() const { return wrld2cam; }
+  const gvt::core::math::AffineTransformMatrix<float> &getWorldToCamera() const { return wrld2cam; }
 
 protected:
   gvt::core::math::AffineTransformMatrix<float> cam2wrld; //!< transform from camera to world coords

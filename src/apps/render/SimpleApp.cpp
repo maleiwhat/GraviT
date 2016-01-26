@@ -90,9 +90,7 @@ int main(int argc, char **argv) {
 
   Application theApplication(&argc, &argv);
 
-  if (theApplication.GetRank() == 0)
-  {
-
+  if (theApplication.GetRank() == 0) {
   }
   /*
 

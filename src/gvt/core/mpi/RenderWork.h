@@ -8,19 +8,17 @@ namespace gvt {
 namespace core {
 namespace mpi {
 
-class RenderWork : public Work
-{
+class RenderWork : public Work {
 public:
-  virtual bool Action() {return true;};
+  virtual bool Action() { return true; };
+
 private:
-  int uniqueId; 
+  int uniqueId;
   gvt::render::actor::RayVector rays;
 };
 
-} //ns mpi
-} //ns core
-} //ns gvt
-
+} // ns mpi
+} // ns core
+} // ns gvt
 
 #endif /* GVT_CORE_MPI_RENDER_H */
-

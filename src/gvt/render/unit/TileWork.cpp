@@ -99,39 +99,47 @@ using namespace gvt::render::data::primitives;
 
 WORK_CLASS(TileWork)
 
-void TileWork::Serialize(size_t& size, unsigned char*& serialized) {
+void TileWork::Serialize(size_t &size, unsigned char *&serialized) {
 
   size = 4 * sizeof(int);
-  serialized = static_cast<unsigned char*>(malloc(size));
+  serialized = static_cast<unsigned char *>(malloc(size));
 
-  unsigned char* buf = serialized;
+  unsigned char *buf = serialized;
 
-  *reinterpret_cast<int*>(buf) = startX; buf += sizeof(int);
-  *reinterpret_cast<int*>(buf) = startY; buf += sizeof(int);
-  *reinterpret_cast<int*>(buf) = width;  buf += sizeof(int);
-  *reinterpret_cast<int*>(buf) = height; buf += sizeof(int);
+  *reinterpret_cast<int *>(buf) = startX;
+  buf += sizeof(int);
+  *reinterpret_cast<int *>(buf) = startY;
+  buf += sizeof(int);
+  *reinterpret_cast<int *>(buf) = width;
+  buf += sizeof(int);
+  *reinterpret_cast<int *>(buf) = height;
+  buf += sizeof(int);
 }
 
-Work* TileWork::Deserialize(size_t size, unsigned char* serialized) {
+Work *TileWork::Deserialize(size_t size, unsigned char *serialized) {
 
   if (size != (4 * sizeof(int))) {
     std::cerr << "Test deserializer ctor with size != 4 * sizeof(int)\n";
     exit(1);
   }
 
-  unsigned char* buf = serialized;
-  TileWork* tileWork = new TileWork;
+  unsigned char *buf = serialized;
+  TileWork *tileWork = new TileWork;
 
-  tileWork->startX = *reinterpret_cast<int*>(buf); buf += sizeof(int);
-  tileWork->startY = *reinterpret_cast<int*>(buf); buf += sizeof(int);
-  tileWork->width  = *reinterpret_cast<int*>(buf); buf += sizeof(int);
-  tileWork->height = *reinterpret_cast<int*>(buf); buf += sizeof(int);
+  tileWork->startX = *reinterpret_cast<int *>(buf);
+  buf += sizeof(int);
+  tileWork->startY = *reinterpret_cast<int *>(buf);
+  buf += sizeof(int);
+  tileWork->width = *reinterpret_cast<int *>(buf);
+  buf += sizeof(int);
+  tileWork->height = *reinterpret_cast<int *>(buf);
+  buf += sizeof(int);
 
   return tileWork;
 }
 
 void TileWork::setupAction() {
-  renderer = static_cast<MpiRenderer*>(Application::GetApplication());
+  renderer = static_cast<MpiRenderer *>(Application::GetApplication());
   framebuffer = renderer->getFramebuffer();
   acceleration = renderer->getAcceleration();
   rayQueue = renderer->getRayQueue();
@@ -145,9 +153,8 @@ void TileWork::setupAction() {
 bool TileWork::Action() {
 
 #ifdef DEBUG_TILE_WORK
-  printf("Rank %d: start processing tile(%d, %d, %d, %d)\n",
-          Application::GetApplication()->GetRank(),
-          startX, startY, width, height);
+  printf("Rank %d: start processing tile(%d, %d, %d, %d)\n", Application::GetApplication()->GetRank(), startX, startY,
+         width, height);
 #endif
 
   setupAction();
@@ -163,8 +170,7 @@ bool TileWork::Action() {
   return false;
 }
 
-void TileWork::setTileInfo(int x, int y, int w, int h,
-                           std::vector<GVT_COLOR_ACCUM>* framebuffer) {
+void TileWork::setTileInfo(int x, int y, int w, int h, std::vector<GVT_COLOR_ACCUM> *framebuffer) {
   startX = x;
   startY = y;
   width = w;
@@ -186,25 +192,23 @@ void TileWork::sendRequest(int rank) {
 }
 
 void TileWork::sendPixels(int rank) {
-  #ifdef DEBUG_TILE_WORK
-  printf("Rank %d: sending pixels tile(%d %d %d %d) to Rank %d\n",
-         Application::GetApplication()->GetRank(),
-         startX, startY, width, height, rank);
-  #endif
+#ifdef DEBUG_TILE_WORK
+  printf("Rank %d: sending pixels tile(%d %d %d %d) to Rank %d\n", Application::GetApplication()->GetRank(), startX,
+         startY, width, height, rank);
+#endif
   PixelWork pixels;
   pixels.setTileInfo(startX, startY, width, height, framebuffer);
   pixels.Send(rank);
 }
 
-void TileWork::generatePrimaryRays(RayVector& rays) {
+void TileWork::generatePrimaryRays(RayVector &rays) {
 
   int tileW = width;
   int tileH = height;
 
   Point4f eye = root["Camera"]["eyePoint"].value().toPoint4f();
   float fov = root["Camera"]["fov"].value().toFloat();
-  const AffineTransformMatrix<float>& cameraToWorld =
-      renderer->getCamera()->getCameraToWorld();
+  const AffineTransformMatrix<float> &cameraToWorld = renderer->getCamera()->getCameraToWorld();
 
   rays.resize(tileW * tileH);
 
@@ -215,11 +219,9 @@ void TileWork::generatePrimaryRays(RayVector& rays) {
   float x, y;
   // these basis directions are scaled by the aspect ratio and
   // the field of view.
-  Vector4f camera_vert_basis_vector =
-      Vector4f(0, 1, 0, 0) * tan(fov * 0.5);
+  Vector4f camera_vert_basis_vector = Vector4f(0, 1, 0, 0) * tan(fov * 0.5);
 
-  Vector4f camera_horiz_basis_vector =
-      Vector4f(1, 0, 0, 0) * tan(fov * 0.5) * aspectRatio;
+  Vector4f camera_horiz_basis_vector = Vector4f(1, 0, 0, 0) * tan(fov * 0.5) * aspectRatio;
 
   Vector4f camera_normal_basis_vector = Vector4f(0, 0, 1, 0);
   Vector4f camera_space_ray_direction;
@@ -238,9 +240,8 @@ void TileWork::generatePrimaryRays(RayVector& rays) {
       x = 2.0 * float(i) / float(imageWidth - 1) - 1.0;
       y = 2.0 * float(j) / float(imageHeight - 1) - 1.0;
       // calculate ray direction in camera space;
-      camera_space_ray_direction = camera_normal_basis_vector +
-                                   x * camera_horiz_basis_vector +
-                                   y * camera_vert_basis_vector;
+      camera_space_ray_direction =
+          camera_normal_basis_vector + x * camera_horiz_basis_vector + y * camera_vert_basis_vector;
       // transform ray to world coordinate space;
       ray.setDirection(cameraToWorld * camera_space_ray_direction.normalize());
       ray.depth = 0;
@@ -248,11 +249,10 @@ void TileWork::generatePrimaryRays(RayVector& rays) {
   }
 }
 
-void TileWork::filterRaysLocally(RayVector& rays) {
+void TileWork::filterRaysLocally(RayVector &rays) {
   auto nullNode = gvt::core::DBNodeH(); // temporary workaround until
                                         // shuffleRays is fully replaced
-  GVT_DEBUG(DBG_ALWAYS,
-            "image scheduler: filter locally non mpi: " << rays.size());
+  GVT_DEBUG(DBG_ALWAYS, "image scheduler: filter locally non mpi: " << rays.size());
   shuffleRays(rays, nullNode);
 }
 
@@ -260,32 +260,26 @@ void TileWork::filterRaysLocally(RayVector& rays) {
  * Given a queue of rays, intersects them against the accel structure
  * to find out what instance they will hit next
  */
-void TileWork::shuffleRays(gvt::render::actor::RayVector &rays,
-                           gvt::core::DBNodeH instNode) {
+void TileWork::shuffleRays(gvt::render::actor::RayVector &rays, gvt::core::DBNodeH instNode) {
   GVT_DEBUG(DBG_ALWAYS, "[" << mpi.rank << "] Shuffle: start");
-  GVT_DEBUG(DBG_ALWAYS, "[" << mpi.rank
-                            << "] Shuffle: rays: " << rays.size());
+  GVT_DEBUG(DBG_ALWAYS, "[" << mpi.rank << "] Shuffle: rays: " << rays.size());
 
-   std::map<int, RayVector>& queue = *rayQueue;
+  std::map<int, RayVector> &queue = *rayQueue;
 
   const size_t raycount = rays.size();
-  const int domID =
-      (instNode) ? instNode["id"].value().toInteger() : -1;
+  const int domID = (instNode) ? instNode["id"].value().toInteger() : -1;
   const gvt::render::data::primitives::Box3D domBB =
-        (instNode) ? *((Box3D*)instNode["bbox"].value().toULongLong())
-                   : gvt::render::data::primitives::Box3D();
+      (instNode) ? *((Box3D *)instNode["bbox"].value().toULongLong()) : gvt::render::data::primitives::Box3D();
 
   // tbb::parallel_for(size_t(0), size_t(rays.size()),
   //      [&] (size_t index) {
   tbb::parallel_for(
-      tbb::blocked_range<gvt::render::actor::RayVector::iterator>(
-          rays.begin(), rays.end()),
-      [&](tbb::blocked_range<gvt::render::actor::RayVector::iterator>
-              raysit) {
+      tbb::blocked_range<gvt::render::actor::RayVector::iterator>(rays.begin(), rays.end()),
+      [&](tbb::blocked_range<gvt::render::actor::RayVector::iterator> raysit) {
         std::map<int, gvt::render::actor::RayVector> local_queue;
         for (gvt::render::actor::Ray &r : raysit) {
-        // for (gvt::render::actor::RayVector::iterator it = rays.begin(); it != rays.end(); ++it) {
-        //   gvt::render::actor::Ray &r = *it;
+          // for (gvt::render::actor::RayVector::iterator it = rays.begin(); it != rays.end(); ++it) {
+          //   gvt::render::actor::Ray &r = *it;
           if (domID != -1) {
             float t = FLT_MAX;
             if (r.domains.empty() && domBB.intersectDistance(r, t)) {
@@ -305,55 +299,49 @@ void TileWork::shuffleRays(gvt::render::actor::RayVector &rays,
             // tbb::mutex::scoped_lock sl(queue_mutex[firstDomainOnList]);
             local_queue[firstDomainOnList].push_back(r);
           } else if (instNode) {
-            // TODO (hpark): do we need this lock? 
+            // TODO (hpark): do we need this lock?
             tbb::mutex::scoped_lock fbloc(colorBuf_mutex[r.id % imageWidth]);
             renderer->aggregatePixel(r.id, r.color);
           }
         }
 
         std::vector<int> _doms;
-        std::transform(
-            local_queue.begin(), local_queue.end(), std::back_inserter(_doms),
-            [](const std::map<int, gvt::render::actor::RayVector>::value_type
-                   &pair) { return pair.first; });
-        while(!_doms.empty()) {
-            int dom = _doms.front();
-            _doms.erase(_doms.begin());
-            if(queue_mutex[dom].try_lock()) {
-              queue[dom].insert(queue[dom].end(),
-                            std::make_move_iterator(local_queue[dom].begin()),
-                            std::make_move_iterator(local_queue[dom].end()));
-              queue_mutex[dom].unlock();
-            } else {
-              _doms.push_back(dom);
-            }
+        std::transform(local_queue.begin(), local_queue.end(), std::back_inserter(_doms),
+                       [](const std::map<int, gvt::render::actor::RayVector>::value_type &pair) { return pair.first; });
+        while (!_doms.empty()) {
+          int dom = _doms.front();
+          _doms.erase(_doms.begin());
+          if (queue_mutex[dom].try_lock()) {
+            queue[dom].insert(queue[dom].end(), std::make_move_iterator(local_queue[dom].begin()),
+                              std::make_move_iterator(local_queue[dom].end()));
+            queue_mutex[dom].unlock();
+          } else {
+            _doms.push_back(dom);
+          }
         }
       });
   rays.clear();
 }
 
-void TileWork::traceRays(RayVector& rays) {
+void TileWork::traceRays(RayVector &rays) {
 
-  #ifdef DEBUG_TILE_WORK
-  printf("Rank %d: tracing rays using image scheduler\n",
-         Application::GetApplication()->GetRank());
-  #endif
+#ifdef DEBUG_TILE_WORK
+  printf("Rank %d: tracing rays using image scheduler\n", Application::GetApplication()->GetRank());
+#endif
 
-  #ifdef RENDER_MOSAIC_WITHOUT_TRACING
+#ifdef RENDER_MOSAIC_WITHOUT_TRACING
   renderMosaic();
-  #else
+#else
 
-  std::map<int, RayVector>& queue = *rayQueue;
+  std::map<int, RayVector> &queue = *rayQueue;
 
-  gvt::core::Vector<DBNodeH>& instancenodes = renderer->getInstanceNodes();
+  gvt::core::Vector<DBNodeH> &instancenodes = renderer->getInstanceNodes();
 
   // boost::timer::cpu_timer t_sched;
   // t_sched.start();
   // boost::timer::cpu_timer t_trace;
-  GVT_DEBUG(DBG_ALWAYS,
-            "image scheduler: starting, num rays: " << rays.size());
-  GVT_ASSERT((instancenodes.size() > 0),
-             "image scheduler: instance list is null");
+  GVT_DEBUG(DBG_ALWAYS, "image scheduler: starting, num rays: " << rays.size());
+  GVT_ASSERT((instancenodes.size() > 0), "image scheduler: instance list is null");
   int adapterType = root["Schedule"]["adapter"].value().toInteger();
   // sort rays into queues
   filterRaysLocally(rays);
@@ -364,18 +352,14 @@ void TileWork::traceRays(RayVector& rays) {
     // process domain with most rays queued
     instTarget = -1;
     instTargetCount = 0;
-    GVT_DEBUG(DBG_ALWAYS,
-              "image scheduler: selecting next instance, num queues: "
-                  << queue.size());
-    for (std::map<int, RayVector>::iterator q = queue.begin();
-         q != queue.end(); ++q) {
+    GVT_DEBUG(DBG_ALWAYS, "image scheduler: selecting next instance, num queues: " << queue.size());
+    for (std::map<int, RayVector>::iterator q = queue.begin(); q != queue.end(); ++q) {
       if (q->second.size() > static_cast<size_t>(instTargetCount)) {
         instTargetCount = q->second.size();
         instTarget = q->first;
       }
     }
-    GVT_DEBUG(DBG_ALWAYS, "image scheduler: next instance: "
-                              << instTarget << ", rays: " << instTargetCount);
+    GVT_DEBUG(DBG_ALWAYS, "image scheduler: next instance: " << instTarget << ", rays: " << instTargetCount);
     if (instTarget >= 0) {
       Adapter *adapter = 0;
       DBNodeH meshNode = instancenodes[instTarget]["meshRef"].deRef();
@@ -384,42 +368,34 @@ void TileWork::traceRays(RayVector& rays) {
       auto it = adapterCache.find(meshNode.UUID());
       if (it != adapterCache.end()) {
         adapter = it->second;
-        GVT_DEBUG(DBG_ALWAYS, "image scheduler: using adapter from cache["
-                                  << gvt::core::uuid_toString(meshNode.UUID())
-                                  << "], " << (void *)adapter);
+        GVT_DEBUG(DBG_ALWAYS, "image scheduler: using adapter from cache[" << gvt::core::uuid_toString(meshNode.UUID())
+                                                                           << "], " << (void *)adapter);
       }
       if (!adapter) {
         GVT_DEBUG(DBG_ALWAYS, "image scheduler: creating new adapter");
         switch (adapterType) {
-        #ifdef GVT_RENDER_ADAPTER_EMBREE
+#ifdef GVT_RENDER_ADAPTER_EMBREE
         case gvt::render::adapter::Embree:
-          adapter = new gvt::render::adapter::embree::data::EmbreeMeshAdapter(
-              meshNode);
+          adapter = new gvt::render::adapter::embree::data::EmbreeMeshAdapter(meshNode);
           break;
-        #endif
-        #ifdef GVT_RENDER_ADAPTER_MANTA
+#endif
+#ifdef GVT_RENDER_ADAPTER_MANTA
         case gvt::render::adapter::Manta:
-          adapter = new gvt::render::adapter::manta::data::MantaMeshAdapter(
-              meshNode);
+          adapter = new gvt::render::adapter::manta::data::MantaMeshAdapter(meshNode);
           break;
-        #endif
-        #ifdef GVT_RENDER_ADAPTER_OPTIX
+#endif
+#ifdef GVT_RENDER_ADAPTER_OPTIX
         case gvt::render::adapter::Optix:
-          adapter = new gvt::render::adapter::optix::data::OptixMeshAdapter(
-              meshNode);
+          adapter = new gvt::render::adapter::optix::data::OptixMeshAdapter(meshNode);
           break;
-        #endif
-        #if defined(GVT_RENDER_ADAPTER_OPTIX) && \
-            defined(GVT_RENDER_ADAPTER_EMBREE)
+#endif
+#if defined(GVT_RENDER_ADAPTER_OPTIX) && defined(GVT_RENDER_ADAPTER_EMBREE)
         case gvt::render::adapter::Heterogeneous:
-          adapter = new gvt::render::adapter::heterogeneous::data::HeterogeneousMeshAdapter(
-              meshNode);
+          adapter = new gvt::render::adapter::heterogeneous::data::HeterogeneousMeshAdapter(meshNode);
           break;
-        #endif
+#endif
         default:
-          GVT_DEBUG(DBG_SEVERE,
-                    "image scheduler: unknown adapter type: "
-                    << adapterType);
+          GVT_DEBUG(DBG_SEVERE, "image scheduler: unknown adapter type: " << adapterType);
         }
         adapterCache[meshNode.UUID()] = adapter;
       }
@@ -430,12 +406,11 @@ void TileWork::traceRays(RayVector& rays) {
         // t_trace.resume();
         moved_rays.reserve(queue[instTarget].size() * 10);
 
-        #ifdef GVT_USE_DEBUG
+#ifdef GVT_USE_DEBUG
         boost::timer::auto_cpu_timer t("Tracing rays in adapter: %w\n");
-        #endif
+#endif
 
-        adapter->trace(queue[instTarget], moved_rays,
-                       instancenodes[instTarget]);
+        adapter->trace(queue[instTarget], moved_rays, instancenodes[instTarget]);
         queue[instTarget].clear();
         // t_trace.stop();
       }
@@ -445,12 +420,11 @@ void TileWork::traceRays(RayVector& rays) {
     } // if (instTarget >= 0) {
   } while (instTarget != -1);
 
-  GVT_DEBUG(DBG_ALWAYS,
-            "image scheduler: adapter cache size: " << adapterCache.size());
-  // std::cout << "image scheduler: trace time: " << t_trace.format();
-  // std::cout << "image scheduler: sched time: " << t_sched.format();
+  GVT_DEBUG(DBG_ALWAYS, "image scheduler: adapter cache size: " << adapterCache.size());
+// std::cout << "image scheduler: trace time: " << t_trace.format();
+// std::cout << "image scheduler: sched time: " << t_sched.format();
 
-  #endif // RENDER_MOSAIC_WITHOUT_TRACING
+#endif // RENDER_MOSAIC_WITHOUT_TRACING
 }
 
 void TileWork::renderMosaic() {
@@ -464,7 +438,7 @@ void TileWork::renderMosaic() {
   for (int j = startY; j < startY + height; j++) {
     for (int i = startX; i < startX + width; i++) {
       imagePixelId = j * imageWidth + i;
-      GVT_COLOR_ACCUM& color = (*framebuffer)[imagePixelId];
+      GVT_COLOR_ACCUM &color = (*framebuffer)[imagePixelId];
       color.rgba[0] = rank + offsetR;
       color.rgba[1] = rank + offsetG;
       color.rgba[2] = rank + offsetB;

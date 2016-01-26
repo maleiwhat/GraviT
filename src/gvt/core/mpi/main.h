@@ -6,15 +6,12 @@
 
 using namespace std;
 
-class AllG : public Work
-{
+class AllG : public Work {
   WORK_CLASS_HEADER(AllG)
 
 public:
-  static Work *Deserialize(size_t size, unsigned char *serialized)
-  {
-    if (size != 0)
-    {
+  static Work *Deserialize(size_t size, unsigned char *serialized) {
+    if (size != 0) {
       std::cerr << "AllG deserializer call with size != 0 rank " << Application::GetApplication()->GetRank() << "\n";
       exit(1);
     }
@@ -23,24 +20,21 @@ public:
     return (Work *)allg;
   }
 
-  void Serialize(size_t& size, unsigned char *& serialized)
-  {
+  void Serialize(size_t &size, unsigned char *&serialized) {
     size = 0;
-    serialized = NULL;;
+    serialized = NULL;
+    ;
   }
 
   bool Action();
 };
 
-class Ping : public Work
-{
+class Ping : public Work {
   WORK_CLASS_HEADER(Ping)
 
 public:
-  static Work *Deserialize(size_t size, unsigned char *serialized)
-  {
-    if (size != sizeof(int))
-    {
+  static Work *Deserialize(size_t size, unsigned char *serialized) {
+    if (size != sizeof(int)) {
       std::cerr << "Test deserializer ctor with size != sizeof(int)\n";
       exit(1);
     }
@@ -52,8 +46,7 @@ public:
   int GetValue() { return value; }
   void SetValue(int v) { value = v; }
 
-  void Serialize(size_t& size, unsigned char *& serialized)
-  {
+  void Serialize(size_t &size, unsigned char *&serialized) {
     size = sizeof(int);
     serialized = (unsigned char *)malloc(size);
     *(int *)serialized = value;
@@ -63,5 +56,4 @@ public:
 
 private:
   int value;
-
 };

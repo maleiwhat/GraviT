@@ -11,85 +11,82 @@ namespace gvt {
 namespace core {
 namespace mpi {
 
-class Application
-{
+class Application {
 public:
   Application(int *argc, char ***argv);
   ~Application();
 
-	static Application *GetApplication();
+  static Application *GetApplication();
 
-	void QuitApplication();
+  void QuitApplication();
 
-	int *GetPArgC() {return argcp;}
-	char ***GetPArgV() {return argvp;}
+  int *GetPArgC() { return argcp; }
+  char ***GetPArgV() { return argvp; }
 
-	int GetSize() { return GetMessageManager()->GetSize(); }
-	int GetRank() { return GetMessageManager()->GetRank(); }
+  int GetSize() { return GetMessageManager()->GetSize(); }
+  int GetRank() { return GetMessageManager()->GetRank(); }
 
-	void Start();
-	void Kill();
-	void Wait();
-	bool Running() { return !application_done; }
+  void Start();
+  void Kill();
+  void Wait();
+  bool Running() { return !application_done; }
 
-	MessageQ *GetIncomingMessageQueue() { return theIncomingQueue; }
-	MessageQ *GetOutgoingMessageQueue() { return theOutgoingQueue; }
+  MessageQ *GetIncomingMessageQueue() { return theIncomingQueue; }
+  MessageQ *GetOutgoingMessageQueue() { return theOutgoingQueue; }
 
-	Work *Deserialize(Message *message)
-	{
-		return deserializers[message->GetType()](message->GetSize(), message->GetBytes());
-	}
+  Work *Deserialize(Message *message) {
+    return deserializers[message->GetType()](message->GetSize(), message->GetBytes());
+  }
 
-	int RegisterWork(Work *(*f)(size_t size, unsigned char *serialized))
-	{
-		int n = deserializers.size();
-		deserializers.push_back(f);
-		return n;
-	}
+  int RegisterWork(Work *(*f)(size_t size, unsigned char *serialized)) {
+    int n = deserializers.size();
+    deserializers.push_back(f);
+    return n;
+  }
 
-	MessageManager *GetMessageManager() { return &theMessageManager; }
+  MessageManager *GetMessageManager() { return &theMessageManager; }
 
-	bool IsDoneSet() { return application_done; }
+  bool IsDoneSet() { return application_done; }
 
 private:
+  vector<Work *(*)(size_t, unsigned char *)> deserializers;
 
-	vector<Work *(*)(size_t, unsigned char *)> deserializers;
+  static void *workThread(void *);
+  pthread_t work_thread_tid;
 
-	static void *workThread(void *);
-	pthread_t work_thread_tid;
+  MessageManager theMessageManager;
 
-	MessageManager theMessageManager;
+  MessageQ *theIncomingQueue;
+  MessageQ *theOutgoingQueue;
 
-	MessageQ *theIncomingQueue;
-	MessageQ *theOutgoingQueue;
+  bool application_done;
 
-	bool application_done;
+  int *argcp;
+  char ***argvp;
 
-	int *argcp;
-	char ***argvp;
-
-	pthread_mutex_t lock;
-	pthread_cond_t cond;
+  pthread_mutex_t lock;
+  pthread_cond_t cond;
 };
 
-class Quit : public Work
-{
+class Quit : public Work {
   WORK_CLASS_HEADER(Quit)
 
 public:
-  static Work *Deserialize(size_t size, unsigned char *serialized)
-  {
+  static Work *Deserialize(size_t size, unsigned char *serialized) {
     Quit *bcast = new Quit;
     return (Work *)bcast;
   }
 
-  void Serialize(size_t& size, unsigned char *& serialized) { size = 0; serialized = NULL;}
+  void Serialize(size_t &size, unsigned char *&serialized) {
+    size = 0;
+    serialized = NULL;
+  }
 
   bool Action() { return true; }
 };
 
-} //ns mpi
-} //ns core
-} //ns gvt
+} // ns mpi
+} // ns core
+} // ns gvt
 
 #endif /* GVT_CORE_MPI_APPLICATION_H */

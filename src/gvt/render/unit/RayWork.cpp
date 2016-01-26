@@ -56,32 +56,35 @@ void RayWork::intialize() {
   outgoingRays = NULL;
 }
 
-void RayWork::Serialize(size_t& size, unsigned char*& serialized) {
+void RayWork::Serialize(size_t &size, unsigned char *&serialized) {
 
   // assume raySize > 0
-  size_t raySize = static_cast<size_t>(numRays *
-                                       (*outgoingRays)[0].packedSize());
+  size_t raySize = static_cast<size_t>(numRays * (*outgoingRays)[0].packedSize());
   size = 2 * sizeof(int) + raySize;
-  serialized = static_cast<unsigned char*>(malloc(size));
+  serialized = static_cast<unsigned char *>(malloc(size));
 
-  unsigned char* buf = serialized;
+  unsigned char *buf = serialized;
 
-  *reinterpret_cast<int*>(buf) = domainId; buf += sizeof(int);
-  *reinterpret_cast<int*>(buf) = numRays; buf += sizeof(int);
+  *reinterpret_cast<int *>(buf) = domainId;
+  buf += sizeof(int);
+  *reinterpret_cast<int *>(buf) = numRays;
+  buf += sizeof(int);
 
-  for (size_t i=0; i<outgoingRays->size(); ++i) {
+  for (size_t i = 0; i < outgoingRays->size(); ++i) {
     (*outgoingRays)[i].serialize(buf);
   }
 }
 
-Work* RayWork::Deserialize(size_t size, unsigned char* serialized) {
+Work *RayWork::Deserialize(size_t size, unsigned char *serialized) {
 
-  unsigned char* buf = serialized;
+  unsigned char *buf = serialized;
 
-  RayWork* rayWork = new RayWork;
+  RayWork *rayWork = new RayWork;
 
-  rayWork->domainId = *reinterpret_cast<int*>(buf); buf += sizeof(int);
-  int numRays = *reinterpret_cast<int*>(buf); buf += sizeof(int);
+  rayWork->domainId = *reinterpret_cast<int *>(buf);
+  buf += sizeof(int);
+  int numRays = *reinterpret_cast<int *>(buf);
+  buf += sizeof(int);
   rayWork->numRays = numRays;
 
   // TODO (hpark): need some static function in Ray.h
@@ -90,39 +93,35 @@ Work* RayWork::Deserialize(size_t size, unsigned char* serialized) {
   Ray dummyRay;
   size_t raysize = dummyRay.packedSize() * numRays;
   if (size != (2 * sizeof(int) + (raysize))) {
-    std::cerr << "Test deserializer ctor with received size (" << size
-              << ") != expected size ("<< raysize <<")\n";
+    std::cerr << "Test deserializer ctor with received size (" << size << ") != expected size (" << raysize << ")\n";
     exit(1);
   }
-  
+
   rayWork->incomingRays.resize(numRays);
-  
-  for(int i=0; i<numRays; ++i) {
+
+  for (int i = 0; i < numRays; ++i) {
     rayWork->incomingRays[i] = Ray(buf);
   }
 
   return rayWork;
 }
 
-void RayWork::setRays(int domainId,
-                      gvt::render::actor::RayVector* rays) {
+void RayWork::setRays(int domainId, gvt::render::actor::RayVector *rays) {
   this->domainId = domainId;
   this->numRays = rays->size();
   this->outgoingRays = rays;
 }
 
 bool RayWork::Action() {
-  MpiRenderer* renderer
-      = static_cast<MpiRenderer*>(Application::GetApplication());
-  std::map<int, RayVector>* rayQueue = renderer->getRayQueue(); 
+  MpiRenderer *renderer = static_cast<MpiRenderer *>(Application::GetApplication());
+  std::map<int, RayVector> *rayQueue = renderer->getRayQueue();
 
-  tbb::mutex* rayQueueMutex = renderer->getRayQueueMutex(); 
+  tbb::mutex *rayQueueMutex = renderer->getRayQueueMutex();
   {
     tbb::mutex::scoped_lock queueLock(rayQueueMutex[domainId]);
 
     if (rayQueue->find(domainId) != rayQueue->end()) {
-      (*rayQueue)[domainId].insert((*rayQueue)[domainId].end(),
-                                   incomingRays.begin(), incomingRays.end()); 
+      (*rayQueue)[domainId].insert((*rayQueue)[domainId].end(), incomingRays.begin(), incomingRays.end());
     } else {
       (*rayQueue)[domainId] = incomingRays;
     }

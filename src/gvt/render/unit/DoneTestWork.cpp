@@ -47,29 +47,31 @@ using namespace gvt::render::unit;
 
 WORK_CLASS(DoneTestWork)
 
-void DoneTestWork::Serialize(size_t& size, unsigned char*& serialized) {
+void DoneTestWork::Serialize(size_t &size, unsigned char *&serialized) {
   size = 0;
-  serialized = NULL;;
+  serialized = NULL;
+  ;
 }
 
-Work* DoneTestWork::Deserialize(size_t size, unsigned char* serialized) {
+Work *DoneTestWork::Deserialize(size_t size, unsigned char *serialized) {
   if (size != 0) {
-    std::cerr << "DoneTestWork deserializer call with size != 0 rank " << Application::GetApplication()->GetRank() << "\n";
+    std::cerr << "DoneTestWork deserializer call with size != 0 rank " << Application::GetApplication()->GetRank()
+              << "\n";
     exit(1);
   }
-  DoneTestWork* work = new DoneTestWork;
+  DoneTestWork *work = new DoneTestWork;
   return work;
 }
 
-bool DoneTestWork::allFlagsSet(std::vector<int>& buf) {
+bool DoneTestWork::allFlagsSet(std::vector<int> &buf) {
   int count = 0;
-  for (int i=0; i<buf.size(); ++i) count += buf[i];
+  for (int i = 0; i < buf.size(); ++i) count += buf[i];
   return (count == buf.size());
 }
 
 bool DoneTestWork::Action() {
 
-  renderer = static_cast<MpiRenderer*>(Application::GetApplication());
+  renderer = static_cast<MpiRenderer *>(Application::GetApplication());
   int numRanks = renderer->GetSize();
   std::vector<int> buf(numRanks, 0);
 
@@ -80,7 +82,7 @@ bool DoneTestWork::Action() {
     int running = renderer->isDoneTestRunning();
     MPI_Allgather(&running, 1, MPI_INT, &buf[0], 1, MPI_INT, MPI_COMM_WORLD);
     ready = allFlagsSet(buf);
-  } while(!ready);
+  } while (!ready);
 
   buf = std::vector<int>(numRanks, 0);
 

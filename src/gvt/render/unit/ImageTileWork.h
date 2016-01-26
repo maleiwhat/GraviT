@@ -48,9 +48,8 @@ class ImageTileWork : public TileWork {
   WORK_CLASS_HEADER(ImageTileWork)
 public:
   virtual ~ImageTileWork() {}
-  static Work* Deserialize(std::size_t size, unsigned char* serialized);
+  static Work *Deserialize(std::size_t size, unsigned char *serialized);
 };
-
 }
 }
 }

@@ -57,14 +57,14 @@ class DoneTestWork : public Work {
   WORK_CLASS_HEADER(DoneTestWork)
 public:
   virtual ~DoneTestWork() {}
-  virtual void Serialize(std::size_t& size, unsigned char*& serialized);
-  static Work* Deserialize(std::size_t size, unsigned char* serialized);
+  virtual void Serialize(std::size_t &size, unsigned char *&serialized);
+  static Work *Deserialize(std::size_t size, unsigned char *serialized);
   virtual bool Action();
-private:
-  bool allFlagsSet(std::vector<int>& buf);
-  MpiRenderer* renderer;
-};
 
+private:
+  bool allFlagsSet(std::vector<int> &buf);
+  MpiRenderer *renderer;
+};
 }
 }
 }

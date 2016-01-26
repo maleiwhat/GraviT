@@ -52,11 +52,10 @@ class GeometryWork : public Work {
 public:
   virtual void intialize();
   virtual ~GeometryWork() {}
-  virtual void Serialize(std::size_t& size, unsigned char*& serialized);
-  static Work* Deserialize(std::size_t size, unsigned char* serialized);
+  virtual void Serialize(std::size_t &size, unsigned char *&serialized);
+  static Work *Deserialize(std::size_t size, unsigned char *serialized);
   virtual bool Action();
 };
-
 }
 }
 }

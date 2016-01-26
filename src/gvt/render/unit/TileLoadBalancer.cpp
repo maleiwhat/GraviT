@@ -56,44 +56,41 @@ using namespace gvt::render;
 using namespace gvt::render::unit;
 using namespace std;
 
-TileLoadBalancer::TileLoadBalancer(int schedType, int width, int height,
-                                   int granularity, int numWorkers) :
-  schedType(schedType), width(width), height(height),
-  granularity(granularity) {
+TileLoadBalancer::TileLoadBalancer(int schedType, int width, int height, int granularity, int numWorkers)
+    : schedType(schedType), width(width), height(height), granularity(granularity) {
 
   if (schedType == scheduler::Image) {
-    
+
     int stepw = width / granularity;
     int steph = height / granularity;
-  
-    for(int ty = 0 ; ty < height; ty += steph) {
-      for(int tx = 0; tx < width; tx += stepw) {
+
+    for (int ty = 0; ty < height; ty += steph) {
+      for (int tx = 0; tx < width; tx += stepw) {
         int twidth = min(stepw, width - tx);
         int theight = min(steph, height - ty);
-  
-        TileWork* tile = new ImageTileWork;
+
+        TileWork *tile = new ImageTileWork;
         tile->setTileSize(tx, ty, twidth, theight);
         tileStack.push(tile);
-  
-        #ifdef DEBUG_LOAD_BALANCER
-        printf("Rank %d: load balancer ctor adding tile (%d %d %d %d)\n",
-                Application::GetApplication()->GetRank(),
-                tx, ty, twidth, theight);
-        #endif
+
+#ifdef DEBUG_LOAD_BALANCER
+        printf("Rank %d: load balancer ctor adding tile (%d %d %d %d)\n", Application::GetApplication()->GetRank(), tx,
+               ty, twidth, theight);
+#endif
       }
     }
 
   } else if (schedType == scheduler::Domain) { // hpark: unused
 
-    for (int i=0; i<numWorkers; ++i) {
-      TileWork* tile = new DomainTileWork;
+    for (int i = 0; i < numWorkers; ++i) {
+      TileWork *tile = new DomainTileWork;
       tile->setTileSize(0, 0, width, height);
       tileStack.push(tile);
 
-      #ifdef DEBUG_LOAD_BALANCER
-      printf("Rank %d: load balancer ctor adding tile (0 0 %d %d)\n",
-              Application::GetApplication()->GetRank(), width, height);
-      #endif
+#ifdef DEBUG_LOAD_BALANCER
+      printf("Rank %d: load balancer ctor adding tile (0 0 %d %d)\n", Application::GetApplication()->GetRank(), width,
+             height);
+#endif
     }
   } else {
     printf("unknown schedule type provided: %d\n", schedType);
@@ -101,8 +98,8 @@ TileLoadBalancer::TileLoadBalancer(int schedType, int width, int height,
   }
 }
 
-TileWork* TileLoadBalancer::next() {
-  TileWork* tile = NULL;
+TileWork *TileLoadBalancer::next() {
+  TileWork *tile = NULL;
   if (!tileStack.empty()) {
     tile = tileStack.top();
     tileStack.pop();

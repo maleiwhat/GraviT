@@ -87,9 +87,7 @@ using namespace gvt::render::data::primitives;
 
 void test_bvh(gvtPerspectiveCamera &camera);
 
-
-class SimpleWork : public RenderTileWork
-{
+class SimpleWork : public RenderTileWork {
   WORK_CLASS_HEADER(SimpleWork)
 
 public:
@@ -106,16 +104,13 @@ public:
   // }
   //
 
-  void Serialize(size_t& size, unsigned char *& serialized)
-  {
+  void Serialize(size_t &size, unsigned char *&serialized) {
     size = 0;
-    serialized = NULL;;
+    serialized = NULL;
+    ;
   }
 
-  bool Action()
-  {
-    return true;
-  }
+  bool Action() { return true; }
 };
 
 WORK_CLASS(SimpleWork)
@@ -128,36 +123,34 @@ int main(int argc, char **argv) {
 
   Application theApplication(&argc, &argv);
 
-  SimpleWork::Register();  // Register Ping work-unit class
+  SimpleWork::Register(); // Register Ping work-unit class
 
   theApplication.Start(); // Start the various component threads
 
-  if (theApplication.GetRank() == 0)
-  {
-
+  if (theApplication.GetRank() == 0) {
   }
   /*
 
   old code
   */
 
-//   MPI_Init(&argc, &argv);
-//   MPI_Pcontrol(0);
-//   int rank = -1;
-//   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-// #ifdef GVT_USE_MPE
-//   // MPE_Init_log();
-//   int readstart, readend;
-//   int renderstart, renderend;
-//   MPE_Log_get_state_eventIDs(&readstart, &readend);
-//   MPE_Log_get_state_eventIDs(&renderstart, &renderend);
-//   if (rank == 0) {
-//     MPE_Describe_state(readstart, readend, "Initialize context state", "red");
-//     MPE_Describe_state(renderstart, renderend, "Render", "yellow");
-//   }
-//   MPI_Pcontrol(1);
-//   MPE_Log_event(readstart, 0, NULL);
-// #endif
+  //   MPI_Init(&argc, &argv);
+  //   MPI_Pcontrol(0);
+  //   int rank = -1;
+  //   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  // #ifdef GVT_USE_MPE
+  //   // MPE_Init_log();
+  //   int readstart, readend;
+  //   int renderstart, renderend;
+  //   MPE_Log_get_state_eventIDs(&readstart, &readend);
+  //   MPE_Log_get_state_eventIDs(&renderstart, &renderend);
+  //   if (rank == 0) {
+  //     MPE_Describe_state(readstart, readend, "Initialize context state", "red");
+  //     MPE_Describe_state(renderstart, renderend, "Render", "yellow");
+  //   }
+  //   MPI_Pcontrol(1);
+  //   MPE_Log_event(readstart, 0, NULL);
+  // #endif
   gvt::render::RenderContext *cntxt = gvt::render::RenderContext::instance();
   if (cntxt == NULL) {
     std::cout << "Something went wrong initializing the context" << std::endl;
@@ -170,11 +163,9 @@ int main(int argc, char **argv) {
 
   // TODO: maybe rename to 'Data' - as it can store different types of data
   // [mesh, volume, lines]
-  gvt::core::DBNodeH dataNodes =
-      cntxt->createNodeFromType("Data", "Data", root.UUID());
+  gvt::core::DBNodeH dataNodes = cntxt->createNodeFromType("Data", "Data", root.UUID());
 
-  gvt::core::DBNodeH coneMeshNode =
-      cntxt->createNodeFromType("Mesh", "conemesh", dataNodes.UUID());
+  gvt::core::DBNodeH coneMeshNode = cntxt->createNodeFromType("Mesh", "conemesh", dataNodes.UUID());
   {
     Mesh *mesh = new Mesh(new Lambert(Vector4f(0.5, 0.5, 0.5, 1.0)));
     int numPoints = 7;
@@ -214,8 +205,7 @@ int main(int argc, char **argv) {
     coneMeshNode["ptr"] = mesh;
   }
 
-  gvt::core::DBNodeH cubeMeshNode =
-      cntxt->createNodeFromType("Mesh", "cubemesh", dataNodes.UUID());
+  gvt::core::DBNodeH cubeMeshNode = cntxt->createNodeFromType("Mesh", "cubemesh", dataNodes.UUID());
   {
     Mesh *mesh = new Mesh(new Lambert(Vector4f(0.5, 0.5, 0.5, 1.0)));
     int numPoints = 8;
@@ -263,8 +253,7 @@ int main(int argc, char **argv) {
     cubeMeshNode["ptr"] = mesh;
   }
 
-  gvt::core::DBNodeH instNodes =
-      cntxt->createNodeFromType("Instances", "Instances", root.UUID());
+  gvt::core::DBNodeH instNodes = cntxt->createNodeFromType("Instances", "Instances", root.UUID());
 
   // create a NxM grid of alternating cones / cubes, offset using i and j
   int instId = 0;
@@ -272,8 +261,7 @@ int main(int argc, char **argv) {
   int jj[2] = { -2, 3 }; // j range
   for (int i = ii[0]; i < ii[1]; i++) {
     for (int j = jj[0]; j < jj[1]; j++) {
-      gvt::core::DBNodeH instnode =
-          cntxt->createNodeFromType("Instance", "inst", instNodes.UUID());
+      gvt::core::DBNodeH instnode = cntxt->createNodeFromType("Instance", "inst", instNodes.UUID());
       // gvt::core::DBNodeH meshNode = (instId % 2) ? coneMeshNode :
       // cubeMeshNode;
       gvt::core::DBNodeH meshNode = (instId % 2) ? cubeMeshNode : coneMeshNode;
@@ -286,11 +274,8 @@ int main(int argc, char **argv) {
       auto m = new gvt::core::math::AffineTransformMatrix<float>(true);
       auto minv = new gvt::core::math::AffineTransformMatrix<float>(true);
       auto normi = new gvt::core::math::Matrix3f();
-      *m =
-          *m * gvt::core::math::AffineTransformMatrix<float>::createTranslation(
-                   0.0, i * 0.5, j * 0.5);
-      *m = *m * gvt::core::math::AffineTransformMatrix<float>::createScale(
-                    0.4, 0.4, 0.4);
+      *m = *m * gvt::core::math::AffineTransformMatrix<float>::createTranslation(0.0, i * 0.5, j * 0.5);
+      *m = *m * gvt::core::math::AffineTransformMatrix<float>::createScale(0.4, 0.4, 0.4);
       instnode["mat"] = m;
       *minv = m->inverse();
       instnode["matInv"] = minv;
@@ -306,10 +291,8 @@ int main(int argc, char **argv) {
   }
 
   // add lights, camera, and film to the database
-  gvt::core::DBNodeH lightNodes =
-      cntxt->createNodeFromType("Lights", "Lights", root.UUID());
-  gvt::core::DBNodeH lightNode =
-      cntxt->createNodeFromType("PointLight", "conelight", lightNodes.UUID());
+  gvt::core::DBNodeH lightNodes = cntxt->createNodeFromType("Lights", "Lights", root.UUID());
+  gvt::core::DBNodeH lightNode = cntxt->createNodeFromType("PointLight", "conelight", lightNodes.UUID());
   lightNode["position"] = Vector4f(1.0, 0.0, 0.0, 0.0);
   lightNode["color"] = Vector4f(1.0, 1.0, 1.0, 0.0);
 
@@ -319,23 +302,20 @@ int main(int argc, char **argv) {
   // lN2["position"] = Vector4f(2.0, 2.0, 2.0, 0.0);
   // lN2["color"] = Vector4f(0.0, 0.0, 0.0, 0.0);
 
-  gvt::core::DBNodeH camNode =
-      cntxt->createNodeFromType("Camera", "conecam", root.UUID());
+  gvt::core::DBNodeH camNode = cntxt->createNodeFromType("Camera", "conecam", root.UUID());
   camNode["eyePoint"] = Point4f(4.0, 0.0, 0.0, 1.0);
   camNode["focus"] = Point4f(0.0, 0.0, 0.0, 1.0);
   camNode["upVector"] = Vector4f(0.0, 1.0, 0.0, 0.0);
   camNode["fov"] = (float)(45.0 * M_PI / 180.0);
 
-  gvt::core::DBNodeH filmNode =
-      cntxt->createNodeFromType("Film", "conefilm", root.UUID());
-  //filmNode["width"] = 512;
-  //filmNode["height"] = 512;
-  filmNode["width"]=1920;
-  filmNode["height"]=1080;
+  gvt::core::DBNodeH filmNode = cntxt->createNodeFromType("Film", "conefilm", root.UUID());
+  // filmNode["width"] = 512;
+  // filmNode["height"] = 512;
+  filmNode["width"] = 1920;
+  filmNode["height"] = 1080;
 
   // TODO: schedule db design could be modified a bit
-  gvt::core::DBNodeH schedNode =
-      cntxt->createNodeFromType("Schedule", "conesched", root.UUID());
+  gvt::core::DBNodeH schedNode = cntxt->createNodeFromType("Schedule", "conesched", root.UUID());
   schedNode["type"] = gvt::render::scheduler::Image;
 // schedNode["type"] = gvt::render::scheduler::Domain;
 
@@ -350,9 +330,7 @@ int main(int argc, char **argv) {
 #endif
 
   schedNode["adapter"] = gvt::render::adapter::Embree;
-  //schedNode["adapter"] = gvt::render::adapter::Heterogeneous;
-
-
+  // schedNode["adapter"] = gvt::render::adapter::Heterogeneous;
 
   // end db setup
 
@@ -368,12 +346,11 @@ int main(int argc, char **argv) {
   mycamera.setFOV(fov);
   mycamera.setFilmsize(filmNode["width"].value().toInteger(), filmNode["height"].value().toInteger());
 
-// #ifdef GVT_USE_MPE
-//   MPE_Log_event(readend, 0, NULL);
-// #endif
+  // #ifdef GVT_USE_MPE
+  //   MPE_Log_event(readend, 0, NULL);
+  // #endif
   // setup image from database sizes
-  Image myimage(mycamera.getFilmSizeWidth(), mycamera.getFilmSizeHeight(),
-                "cone");
+  Image myimage(mycamera.getFilmSizeWidth(), mycamera.getFilmSizeHeight(), "cone");
 
   mycamera.AllocateCameraRays();
   mycamera.generateRays();
@@ -411,14 +388,12 @@ int main(int argc, char **argv) {
   MPE_Log_sync_clocks();
 // MPE_Finish_log("gvtSimplelog");
 #endif
-  if (MPI::COMM_WORLD.Get_size() > 1)
-    MPI_Finalize();
+  if (MPI::COMM_WORLD.Get_size() > 1) MPI_Finalize();
 }
 
 // bvh intersection list test
 void test_bvh(gvtPerspectiveCamera &mycamera) {
-  gvt::core::DBNodeH root =
-      gvt::render::RenderContext::instance()->getRootNode();
+  gvt::core::DBNodeH root = gvt::render::RenderContext::instance()->getRootNode();
 
   cout << "\n-- bvh test --" << endl;
 
@@ -430,17 +405,14 @@ void test_bvh(gvtPerspectiveCamera &mycamera) {
   rays.push_back(mycamera.rays[100 * 512 + 100]);
   rays.push_back(mycamera.rays[182 * 512 + 182]);
   rays.push_back(mycamera.rays[256 * 512 + 256]);
-  auto dir = (gvt::core::math::Vector4f(0.0, 0.0, 0.0, 0.0) -
-              gvt::core::math::Vector4f(1.0, 1.0, 1.0, 0.0))
-                 .normalize();
-  rays.push_back(gvt::render::actor::Ray(
-      gvt::core::math::Point4f(1.0, 1.0, 1.0, 1.0), dir));
+  auto dir =
+      (gvt::core::math::Vector4f(0.0, 0.0, 0.0, 0.0) - gvt::core::math::Vector4f(1.0, 1.0, 1.0, 0.0)).normalize();
+  rays.push_back(gvt::render::actor::Ray(gvt::core::math::Point4f(1.0, 1.0, 1.0, 1.0), dir));
   rays.push_back(mycamera.rays[300 * 512 + 300]);
   rays.push_back(mycamera.rays[400 * 512 + 400]);
   rays.push_back(mycamera.rays[470 * 512 + 470]);
-  rays.push_back(
-      gvt::render::actor::Ray(gvt::core::math::Point4f(0.0, 0.0, 1.0, 1.0),
-                              gvt::core::math::Vector4f(0.0, 0.0, -1.0, 1.0)));
+  rays.push_back(gvt::render::actor::Ray(gvt::core::math::Point4f(0.0, 0.0, 1.0, 1.0),
+                                         gvt::core::math::Vector4f(0.0, 0.0, -1.0, 1.0)));
   rays.push_back(mycamera.rays[144231]);
 
   // test rays and print out which instances were hit

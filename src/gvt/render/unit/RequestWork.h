@@ -51,15 +51,15 @@ class RequestWork : public Work {
   WORK_CLASS_HEADER(RequestWork)
 public:
   virtual ~RequestWork() {}
-  virtual void Serialize(std::size_t& size, unsigned char*& serialized);
-  static Work* Deserialize(std::size_t size, unsigned char* serialized);
+  virtual void Serialize(std::size_t &size, unsigned char *&serialized);
+  static Work *Deserialize(std::size_t size, unsigned char *serialized);
   virtual bool Action();
   void setSourceRank(int s) { sourceRank = s; }
   int getSourceRank() { return sourceRank; }
+
 private:
   int sourceRank;
 };
-
 }
 }
 }

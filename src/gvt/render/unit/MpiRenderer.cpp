@@ -96,10 +96,8 @@ using namespace gvt::render::schedule;
 using namespace gvt::render::data::primitives;
 using namespace gvt::render::unit;
 
-MpiRenderer::MpiRenderer(int *argc, char ***argv) :
-  Application(argc, argv),
-  camera(NULL), image(NULL), dbOption(NULL),
-  tileLoadBalancer(NULL) {
+MpiRenderer::MpiRenderer(int *argc, char ***argv)
+    : Application(argc, argv), camera(NULL), image(NULL), dbOption(NULL), tileLoadBalancer(NULL) {
 
   renderContext = gvt::render::RenderContext::instance();
 
@@ -116,24 +114,24 @@ MpiRenderer::~MpiRenderer() {
   if (tileLoadBalancer != NULL) delete tileLoadBalancer;
 }
 
-void MpiRenderer::parseCommandLine(int argc, char** argv) {
+void MpiRenderer::parseCommandLine(int argc, char **argv) {
 
   // TODO (hpark): generalize this
   this->dbOption = new TestDatabaseOption;
 
   if (argc > 1) {
-    TestDatabaseOption* option = static_cast<TestDatabaseOption*>(dbOption);
+    TestDatabaseOption *option = static_cast<TestDatabaseOption *>(dbOption);
     if (*argv[1] == 'i') {
-      option->schedulerType =  gvt::render::scheduler::Image;
+      option->schedulerType = gvt::render::scheduler::Image;
     } else if (*argv[1] == 'd') {
-      option->schedulerType =  gvt::render::scheduler::Domain;
+      option->schedulerType = gvt::render::scheduler::Domain;
     }
     if (argc > 4) {
       option->instanceCountX = atoi(argv[2]);
       option->instanceCountY = atoi(argv[3]);
       option->instanceCountZ = atoi(argv[4]);
     }
-  }  
+  }
 }
 
 void MpiRenderer::createDatabase() {
@@ -159,36 +157,29 @@ void MpiRenderer::createDatabase() {
   const float gapY = extent[1] * 0.2f;
   const float gapZ = extent[2] * 0.2f;
 
-  TestDatabaseOption* option = static_cast<TestDatabaseOption*>(dbOption);
+  TestDatabaseOption *option = static_cast<TestDatabaseOption *>(dbOption);
   int instanceCountX = option->instanceCountX;
   int instanceCountY = option->instanceCountY;
   int instanceCountZ = option->instanceCountZ;
 
-  Vector3f minPos((extent[0] + gapX) * instanceCountX * -0.5f,
-                  (extent[1] + gapY) * instanceCountY * -0.5f,
+  Vector3f minPos((extent[0] + gapX) * instanceCountX * -0.5f, (extent[1] + gapY) * instanceCountY * -0.5f,
                   (extent[2] + gapZ) * instanceCountZ * -0.5f);
 
   int instanceId = 0;
-  for (int z=0; z<instanceCountZ; ++z) {
-    for (int y=0; y<instanceCountY; ++y) {
-      for (int x=0; x<instanceCountX; ++x) {
+  for (int z = 0; z < instanceCountZ; ++z) {
+    for (int y = 0; y < instanceCountY; ++y) {
+      for (int x = 0; x < instanceCountX; ++x) {
         // add a mesh
-        Uuid meshNodeId
-            = addMesh(dataNodeId, objName + "_mesh",
-                      "../data/geom/" + objName + ".obj");
+        Uuid meshNodeId = addMesh(dataNodeId, objName + "_mesh", "../data/geom/" + objName + ".obj");
 
         // int instanceId = y * 2 + x;
         // m: transform matrix
         auto m = new gvt::core::math::AffineTransformMatrix<float>(true);
-        *m = *m * gvt::core::math::AffineTransformMatrix<float>::
-            createTranslation(minPos[0] + x * (extent[0] + gapX),
-                              minPos[1] + y * (extent[1] + gapY),
-                              minPos[2] + z * (extent[2] + gapZ));
-        *m = *m * gvt::core::math::AffineTransformMatrix<float>::
-            createScale(1.0f, 1.0f, 1.0f);
-        Uuid instanceUuid =
-            addInstance(instancesNodeId, meshNodeId,
-                        instanceId++, objName, m);
+        *m = *m * gvt::core::math::AffineTransformMatrix<float>::createTranslation(minPos[0] + x * (extent[0] + gapX),
+                                                                                   minPos[1] + y * (extent[1] + gapY),
+                                                                                   minPos[2] + z * (extent[2] + gapZ));
+        *m = *m * gvt::core::math::AffineTransformMatrix<float>::createScale(1.0f, 1.0f, 1.0f);
+        Uuid instanceUuid = addInstance(instancesNodeId, meshNodeId, instanceId++, objName, m);
       }
     }
   }
@@ -199,8 +190,7 @@ void MpiRenderer::createDatabase() {
   // add lights
   Vector4f lightPosition(0.0, 0.1, 0.5, 0.0);
   Vector4f lightColor(1.0, 1.0, 1.0, 0.0);
-  Uuid lightNodeId = addPointLight(lightsNodeId, "point_light",
-                                   lightPosition, lightColor);
+  Uuid lightNodeId = addPointLight(lightsNodeId, "point_light", lightPosition, lightColor);
 
   // create camera node
   Point4f eye(0.0, 0.5, 1.2, 1.0);
@@ -211,15 +201,14 @@ void MpiRenderer::createDatabase() {
   // const unsigned int height = 1080;
   const unsigned int width = 640;
   const unsigned int height = 480;
-  Uuid cameraNodeId =
-      createCameraNode(eye, focus, upVector, fov, width, height);
+  Uuid cameraNodeId = createCameraNode(eye, focus, upVector, fov, width, height);
 
   // create film node
   Uuid filmNodeId = createFilmNode(width, height, objName);
 
-  // create the scheduler node
-  // valid schedulers = {Image, Domain}
-  // valid adapters = {Embree, Manta, Optix}
+// create the scheduler node
+// valid schedulers = {Image, Domain}
+// valid adapters = {Embree, Manta, Optix}
 #ifdef GVT_RENDER_ADAPTER_EMBREE
   int adapterType = gvt::render::adapter::Embree;
 #elif GVT_RENDER_ADAPTER_MANTA
@@ -231,49 +220,35 @@ void MpiRenderer::createDatabase() {
 #endif
 
   adapterType = gvt::render::adapter::Embree;
-  Uuid scheduleNodeId =
-      createScheduleNode(option->schedulerType, option->adapterType);
+  Uuid scheduleNodeId = createScheduleNode(option->schedulerType, option->adapterType);
 }
 
-bool MpiRenderer::isNodeTypeReserved(const std::string& type) {
-  return ((type == std::string("Camera")) ||
-          (type == std::string("Film")) ||
-          (type == std::string("View")) ||
-          (type == std::string("Dataset")) ||
-          (type == std::string("Attribute")) ||
-          (type == std::string("Mesh")) ||
-          (type == std::string("Instance")) ||
-          (type == std::string("PointLight")) ||
+bool MpiRenderer::isNodeTypeReserved(const std::string &type) {
+  return ((type == std::string("Camera")) || (type == std::string("Film")) || (type == std::string("View")) ||
+          (type == std::string("Dataset")) || (type == std::string("Attribute")) || (type == std::string("Mesh")) ||
+          (type == std::string("Instance")) || (type == std::string("PointLight")) ||
           (type == std::string("Schedule")));
 }
 
-DBNodeH MpiRenderer::getNode(const Uuid& id) {
-  return renderContext->getNode(id); 
-}
+DBNodeH MpiRenderer::getNode(const Uuid &id) { return renderContext->getNode(id); }
 
-Uuid MpiRenderer::createNode(const std::string& type,
-                             const std::string& name) {
+Uuid MpiRenderer::createNode(const std::string &type, const std::string &name) {
   if (isNodeTypeReserved(type)) {
     std::cout << "error: reserved node type " << type << std::endl;
     exit(1);
   }
   gvt::core::DBNodeH root = renderContext->getRootNode();
-  gvt::core::DBNodeH node =
-      renderContext->createNodeFromType(type, name, root.UUID());
+  gvt::core::DBNodeH node = renderContext->createNodeFromType(type, name, root.UUID());
   return node.UUID();
 }
 
-
-Uuid MpiRenderer::addMesh(const Uuid& parentNodeId,
-                          const std::string& meshName,
-                          const std::string& objFilename) {
-  gvt::core::DBNodeH node =
-      renderContext->createNodeFromType("Mesh", meshName, parentNodeId);
+Uuid MpiRenderer::addMesh(const Uuid &parentNodeId, const std::string &meshName, const std::string &objFilename) {
+  gvt::core::DBNodeH node = renderContext->createNodeFromType("Mesh", meshName, parentNodeId);
   gvt::render::data::domain::reader::ObjReader objReader(objFilename);
-  Mesh* mesh = objReader.getMesh();
+  Mesh *mesh = objReader.getMesh();
   mesh->generateNormals();
   mesh->computeBoundingBox();
-  Box3D* meshbbox = mesh->getBoundingBox();
+  Box3D *meshbbox = mesh->getBoundingBox();
   // add mesh to the database
   node["file"] = objFilename;
   node["bbox"] = (unsigned long long)meshbbox;
@@ -281,36 +256,31 @@ Uuid MpiRenderer::addMesh(const Uuid& parentNodeId,
   return node.UUID();
 }
 
-Box3D MpiRenderer::getMeshBounds(const std::string& objFilename) {
+Box3D MpiRenderer::getMeshBounds(const std::string &objFilename) {
   gvt::render::data::domain::reader::ObjReader objReader(objFilename);
-  Mesh* mesh = objReader.getMesh();
+  Mesh *mesh = objReader.getMesh();
   // mesh->generateNormals();
   mesh->computeBoundingBox();
-  Box3D* bounds = mesh->getBoundingBox();
+  Box3D *bounds = mesh->getBoundingBox();
   return *bounds;
 }
 
-Box3D MpiRenderer::getMeshBounds(const Uuid& id) {
+Box3D MpiRenderer::getMeshBounds(const Uuid &id) {
   gvt::core::DBNodeH meshNode = renderContext->getNode(id);
   // Box3D* bounds = *gvt::core::variant_toBox3DPtr(meshNode["bbox"].value());
-  Box3D* bounds = (Box3D*)meshNode["bbox"].value().toULongLong();
+  Box3D *bounds = (Box3D *)meshNode["bbox"].value().toULongLong();
   return *bounds;
 }
 
-Uuid MpiRenderer::
-    addInstance(const Uuid& parentNodeId,
-                const Uuid& meshId,
-                int instanceId,
-                const std::string& instanceName,
-                gvt::core::math::AffineTransformMatrix<float>* transform) {
+Uuid MpiRenderer::addInstance(const Uuid &parentNodeId, const Uuid &meshId, int instanceId,
+                              const std::string &instanceName,
+                              gvt::core::math::AffineTransformMatrix<float> *transform) {
 
-  gvt::core::DBNodeH node =
-      renderContext->createNodeFromType("Instance", instanceName,
-                                        parentNodeId);
+  gvt::core::DBNodeH node = renderContext->createNodeFromType("Instance", instanceName, parentNodeId);
 
   gvt::core::DBNodeH meshNode = renderContext->getNode(meshId);
   // Box3D* mbox = *gvt::core::variant_toBox3DPtr(meshNode["bbox"].value());
-  Box3D* mbox = (Box3D*)meshNode["bbox"].value().toULongLong();
+  Box3D *mbox = (Box3D *)meshNode["bbox"].value().toULongLong();
 
   node["id"] = instanceId; // unique id per instance
   node["meshRef"] = meshNode.UUID();
@@ -334,36 +304,28 @@ Uuid MpiRenderer::
   node["bbox"] = (unsigned long long)ibox;
   node["centroid"] = ibox->centroid();
 
-  #ifdef DEBUG_MPI_RENDERER
-  printf("[new instance %d] bounds: min(%.3f %.3f %.3f), max(%.3f %.3f %.3f)\n",
-          instanceId, il[0], il[1], il[2], ih[0], ih[1], ih[2]);
-  #endif
+#ifdef DEBUG_MPI_RENDERER
+  printf("[new instance %d] bounds: min(%.3f %.3f %.3f), max(%.3f %.3f %.3f)\n", instanceId, il[0], il[1], il[2], ih[0],
+         ih[1], ih[2]);
+#endif
 
   return node.UUID();
 }
 
-Uuid MpiRenderer::addPointLight(const Uuid& parentNodeId,
-                                const std::string& lightName,
-                                const Vector4f& position,
-                                const Vector4f& color) {
-  gvt::core::DBNodeH node =
-      renderContext->createNodeFromType("PointLight", lightName, parentNodeId);
+Uuid MpiRenderer::addPointLight(const Uuid &parentNodeId, const std::string &lightName, const Vector4f &position,
+                                const Vector4f &color) {
+  gvt::core::DBNodeH node = renderContext->createNodeFromType("PointLight", lightName, parentNodeId);
   node["position"] = Vector4f(0.0, 0.1, 0.5, 0.0);
   node["color"] = Vector4f(1.0, 1.0, 1.0, 0.0);
   return node.UUID();
 }
 
-Uuid MpiRenderer::createCameraNode(const Point4f& eye,
-                                   const Point4f& focus,
-                                   const Vector4f& upVector,
-                                   float fov,
-                                   unsigned int width, 
-                                   unsigned int height) {
+Uuid MpiRenderer::createCameraNode(const Point4f &eye, const Point4f &focus, const Vector4f &upVector, float fov,
+                                   unsigned int width, unsigned int height) {
 
   gvt::core::DBNodeH root = renderContext->getRootNode();
 
-  gvt::core::DBNodeH node =
-      renderContext->createNodeFromType("Camera", "cam", root.UUID());
+  gvt::core::DBNodeH node = renderContext->createNodeFromType("Camera", "cam", root.UUID());
 
   node["eyePoint"] = eye;
   node["focus"] = focus;
@@ -378,14 +340,11 @@ Uuid MpiRenderer::createCameraNode(const Point4f& eye,
   return node.UUID();
 }
 
-Uuid MpiRenderer::createFilmNode(int width,
-                                 int height,
-                                 const std::string& sceneName) {
+Uuid MpiRenderer::createFilmNode(int width, int height, const std::string &sceneName) {
 
   gvt::core::DBNodeH root = renderContext->getRootNode();
 
-  gvt::core::DBNodeH node =
-      renderContext->createNodeFromType("Film", "film", root.UUID());
+  gvt::core::DBNodeH node = renderContext->createNodeFromType("Film", "film", root.UUID());
 
   node["width"] = width;
   node["height"] = height;
@@ -399,8 +358,7 @@ Uuid MpiRenderer::createScheduleNode(int schedulerType, int adapterType) {
 
   gvt::core::DBNodeH root = renderContext->getRootNode();
 
-  gvt::core::DBNodeH node =
-      renderContext->createNodeFromType("Schedule", "sched", root.UUID());
+  gvt::core::DBNodeH node = renderContext->createNodeFromType("Schedule", "sched", root.UUID());
 
   node["type"] = schedulerType;
   node["adapter"] = adapterType;
@@ -412,8 +370,7 @@ void MpiRenderer::initInstanceRankMap() {
 
   gvt::core::Vector<gvt::core::DBNodeH> dataNodes = root["Data"].getChildren();
 
-  std::cout<<"instance node size: "<<instanceNodes.size()
-           <<"data node size: "<<dataNodes.size()<<"\n";
+  std::cout << "instance node size: " << instanceNodes.size() << "data node size: " << dataNodes.size() << "\n";
 
   // create a map of instances to mpi rank
   for (size_t i = 0; i < instanceNodes.size(); ++i) {
@@ -427,16 +384,11 @@ void MpiRenderer::initInstanceRankMap() {
     }
     // NOTE: mpi-data(domain) assignment strategy
     int ownerRank = static_cast<int>(dataIdx) % GetSize();
-    GVT_DEBUG(DBG_ALWAYS, "[" << GetRank() << "] domain scheduler: instId: "
-                              << i << ", dataIdx: " << dataIdx
-                              << ", target mpi node: " << ownerRank
-                              << ", world size: " << GetSize());
-    std::cout<<"[" << GetRank() << "] domain scheduler: instId: "
-                              << i << ", dataIdx: " << dataIdx
-                              << ", target mpi node: " << ownerRank
-                              << ", world size: " << GetSize() << "\n";
-    GVT_ASSERT(dataIdx != (size_t)-1,
-               "domain scheduler: could not find data node");
+    GVT_DEBUG(DBG_ALWAYS, "[" << GetRank() << "] domain scheduler: instId: " << i << ", dataIdx: " << dataIdx
+                              << ", target mpi node: " << ownerRank << ", world size: " << GetSize());
+    std::cout << "[" << GetRank() << "] domain scheduler: instId: " << i << ", dataIdx: " << dataIdx
+              << ", target mpi node: " << ownerRank << ", world size: " << GetSize() << "\n";
+    GVT_ASSERT(dataIdx != (size_t)-1, "domain scheduler: could not find data node");
     instanceRankMap[instanceNodes[i].UUID()] = ownerRank;
   }
 }
@@ -464,8 +416,8 @@ void MpiRenderer::setupRender() {
 
 void MpiRenderer::freeRender() {
   delete acceleration;
-  delete [] rayQueueMutex;
-  delete [] colorBufMutex;
+  delete[] rayQueueMutex;
+  delete[] colorBufMutex;
 }
 
 void MpiRenderer::render() {
@@ -475,52 +427,52 @@ void MpiRenderer::render() {
   // TODO (hpark):
   // collapse the following two if-else blocks into a single block
   if (schedType == scheduler::Image) {
-  
+
     RequestWork::Register();
     TileWork::Register();
     ImageTileWork::Register();
     PixelWork::Register();
-  
+
     Start();
-  
-    #ifdef DEBUG_MPI_RENDERER
+
+#ifdef DEBUG_MPI_RENDERER
     printf("Rank %d: world size: %d\n", GetRank(), GetSize());
-    #endif
-  
+#endif
+
     int rank = GetRank();
-  
+
     if (rank == rank::Server) {
       initServer();
     } else {
       initDisplay();
     }
-  
+
     MPI_Barrier(MPI_COMM_WORLD);
-    
+
     if (rank != rank::Server && rank != rank::Display) { // workers
       initWorker();
     }
-  
+
     Wait();
-  
+
     freeRender();
 
   } else {
-  
+
     // setupRender();
-  
+
     DomainTileWork::Register();
     RayWork::Register();
     DoneTestWork::Register();
     PixelGatherWork::Register();
-  
+
     Start();
-  
+
     image = new Image(imageWidth, imageHeight, "image");
     DomainTileWork work;
     work.setTileSize(0, 0, imageWidth, imageHeight);
     work.Action();
-  
+
     Wait();
     freeRender();
   }
@@ -534,9 +486,7 @@ void MpiRenderer::initServer() {
   int numWorkers = numRanks - rank::FirstWorker;
   int granularity = numWorkers;
 
-  tileLoadBalancer =
-      new TileLoadBalancer(schedType, imageWidth, imageHeight,
-                           granularity, numWorkers);
+  tileLoadBalancer = new TileLoadBalancer(schedType, imageWidth, imageHeight, granularity, numWorkers);
 }
 
 void MpiRenderer::initDisplay() {
@@ -551,8 +501,8 @@ void MpiRenderer::initWorker() {
   request.Send(rank::Server);
 }
 
-void MpiRenderer::aggregatePixel(int pixelId, const GVT_COLOR_ACCUM& addend) {
-  GVT_COLOR_ACCUM& color = framebuffer[pixelId];
+void MpiRenderer::aggregatePixel(int pixelId, const GVT_COLOR_ACCUM &addend) {
+  GVT_COLOR_ACCUM &color = framebuffer[pixelId];
   color.add(addend);
   color.rgba[3] = 1.f;
   color.clamp();

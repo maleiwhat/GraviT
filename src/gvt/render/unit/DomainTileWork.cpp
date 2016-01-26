@@ -67,19 +67,23 @@ using namespace gvt::render::actor;
 
 WORK_CLASS(DomainTileWork)
 
-Work* DomainTileWork::Deserialize(size_t size, unsigned char* serialized) {
+Work *DomainTileWork::Deserialize(size_t size, unsigned char *serialized) {
   if (size != (4 * sizeof(int))) {
     std::cerr << "Test deserializer ctor with size != 4 * sizeof(int)\n";
     exit(1);
   }
 
-  unsigned char* buf = serialized;
-  DomainTileWork* tileWork = new DomainTileWork;
+  unsigned char *buf = serialized;
+  DomainTileWork *tileWork = new DomainTileWork;
 
-  tileWork->startX = *reinterpret_cast<int*>(buf); buf += sizeof(int);
-  tileWork->startY = *reinterpret_cast<int*>(buf); buf += sizeof(int);
-  tileWork->width  = *reinterpret_cast<int*>(buf); buf += sizeof(int);
-  tileWork->height = *reinterpret_cast<int*>(buf); buf += sizeof(int);
+  tileWork->startX = *reinterpret_cast<int *>(buf);
+  buf += sizeof(int);
+  tileWork->startY = *reinterpret_cast<int *>(buf);
+  buf += sizeof(int);
+  tileWork->width = *reinterpret_cast<int *>(buf);
+  buf += sizeof(int);
+  tileWork->height = *reinterpret_cast<int *>(buf);
+  buf += sizeof(int);
 
   return tileWork;
 }
@@ -94,9 +98,8 @@ void DomainTileWork::setupAction() {
 bool DomainTileWork::Action() {
 
 #ifdef DEBUG_TILE_WORK
-  printf("Rank %d: start processing tile(%d, %d, %d, %d)\n",
-          Application::GetApplication()->GetRank(),
-          startX, startY, width, height);
+  printf("Rank %d: start processing tile(%d, %d, %d, %d)\n", Application::GetApplication()->GetRank(), startX, startY,
+         width, height);
 #endif
 
   setupAction();
@@ -109,43 +112,40 @@ bool DomainTileWork::Action() {
   return false;
 }
 
-void DomainTileWork::filterRaysLocally(RayVector& rays) {
+void DomainTileWork::filterRaysLocally(RayVector &rays) {
   auto nullNode = gvt::core::DBNodeH(); // temporary workaround until
                                         // shuffleRays is fully replaced
-  std::map<int, RayVector>& queue = *rayQueue; 
+  std::map<int, RayVector> &queue = *rayQueue;
   shuffleRays(rays, nullNode);
   for (auto e : queue) {
     if (renderer->getInstanceOwner(e.first) != myRank) {
-      GVT_DEBUG(DBG_ALWAYS, " rank[" << myRank
-                                     << "] FILTERRAYS: removing queue "
-                                     << e.first);
+      GVT_DEBUG(DBG_ALWAYS, " rank[" << myRank << "] FILTERRAYS: removing queue " << e.first);
       queue[e.first].clear();
     }
   }
 }
 
-void DomainTileWork::traceRays(RayVector& rays) {
+void DomainTileWork::traceRays(RayVector &rays) {
 
 #ifdef DEBUG_DOMAIN_TILE_WORK
   printf("Rank %d: tracing rays using domain scheduler\n", myRank);
 #endif
 
-  std::map<int, RayVector>& queue = *rayQueue; 
+  std::map<int, RayVector> &queue = *rayQueue;
 
   boost::timer::cpu_timer t_sched;
   t_sched.start();
   boost::timer::cpu_timer t_trace;
-  GVT_DEBUG(DBG_ALWAYS,
-            "domain scheduler: starting, num rays: " << rays.size());
+  GVT_DEBUG(DBG_ALWAYS, "domain scheduler: starting, num rays: " << rays.size());
   int adapterType = root["Schedule"]["adapter"].value().toInteger();
   long domain_counter = 0;
 
-  // FindNeighbors();
+// FindNeighbors();
 
-  // sort rays into queues
-  // note: right now throws away rays that do not hit any domain owned by the
-  // current
-  // rank
+// sort rays into queues
+// note: right now throws away rays that do not hit any domain owned by the
+// current
+// rank
 #ifdef GVT_USE_MPE
   MPE_Log_event(localrayfilterstart, 0, NULL);
 #endif
@@ -173,9 +173,7 @@ void DomainTileWork::traceRays(RayVector& rays) {
       instTarget = -1;
       instTargetCount = 0;
       std::vector<int> to_del;
-      GVT_DEBUG(DBG_ALWAYS,
-                "domain scheduler: selecting next instance, num queues: "
-                    << queue.size());
+      GVT_DEBUG(DBG_ALWAYS, "domain scheduler: selecting next instance, num queues: " << queue.size());
       for (auto &q : queue) {
         const bool inRank = (renderer->getInstanceOwner(q.first) == myRank);
         if (q.second.empty() || !inRank) {
@@ -189,18 +187,14 @@ void DomainTileWork::traceRays(RayVector& rays) {
       }
       // erase empty queues
       for (int instId : to_del) {
-        GVT_DEBUG(DBG_ALWAYS,
-                  "rank[" << myRank
-                          << "] DOMAINTRACER: deleting queue for instance "
-                          << instId);
+        GVT_DEBUG(DBG_ALWAYS, "rank[" << myRank << "] DOMAINTRACER: deleting queue for instance " << instId);
         queue.erase(instId);
       }
       if (instTarget == -1) {
         continue;
       }
-      GVT_DEBUG(DBG_ALWAYS, "domain scheduler: next instance: "
-                                << instTarget << ", rays: " << instTargetCount
-                                << " [" << myRank << "]");
+      GVT_DEBUG(DBG_ALWAYS, "domain scheduler: next instance: " << instTarget << ", rays: " << instTargetCount << " ["
+                                                                << myRank << "]");
       // doms_to_send.clear();
       // pnav: use this to ignore domain x:        int domi=0;if (0)
       if (instTarget >= 0) {
@@ -225,34 +219,26 @@ void DomainTileWork::traceRays(RayVector& rays) {
             switch (adapterType) {
 #ifdef GVT_RENDER_ADAPTER_EMBREE
             case gvt::render::adapter::Embree:
-              adapter =
-                  new gvt::render::adapter::embree::data::EmbreeMeshAdapter(
-                      meshNode);
+              adapter = new gvt::render::adapter::embree::data::EmbreeMeshAdapter(meshNode);
               break;
 #endif
 #ifdef GVT_RENDER_ADAPTER_MANTA
             case gvt::render::adapter::Manta:
-              adapter =
-                  new gvt::render::adapter::manta::data::MantaMeshAdapter(
-                      meshNode);
+              adapter = new gvt::render::adapter::manta::data::MantaMeshAdapter(meshNode);
               break;
 #endif
 #ifdef GVT_RENDER_ADAPTER_OPTIX
             case gvt::render::adapter::Optix:
-              adapter =
-                  new gvt::render::adapter::optix::data::OptixMeshAdapter(
-                      meshNode);
+              adapter = new gvt::render::adapter::optix::data::OptixMeshAdapter(meshNode);
               break;
 #endif
 #if defined(GVT_RENDER_ADAPTER_OPTIX) && defined(GVT_RENDER_ADAPTER_EMBREE)
             case gvt::render::adapter::Heterogeneous:
-              adapter = new gvt::render::adapter::heterogeneous::data::HeterogeneousMeshAdapter(
-                  meshNode);
+              adapter = new gvt::render::adapter::heterogeneous::data::HeterogeneousMeshAdapter(meshNode);
               break;
 #endif
             default:
-              GVT_DEBUG(DBG_SEVERE, "domain scheduler: unknown adapter type: "
-                                        << adapterType);
+              GVT_DEBUG(DBG_SEVERE, "domain scheduler: unknown adapter type: " << adapterType);
             }
             // adapterCache[meshNode.UUID()] = adapter; // note: cache logic
             // comes later when we implement hybrid
@@ -261,9 +247,7 @@ void DomainTileWork::traceRays(RayVector& rays) {
           //
         }
         GVT_ASSERT(adapter != nullptr, "domain scheduler: adapter not set");
-        GVT_DEBUG(DBG_ALWAYS,
-                  "[" << myRank
-                      << "] domain scheduler: calling process queue");
+        GVT_DEBUG(DBG_ALWAYS, "[" << myRank << "] domain scheduler: calling process queue");
         gvt::core::DBNodeH instNode = renderer->getInstanceNode(instTarget);
         {
           t_trace.resume();
@@ -297,8 +281,7 @@ void DomainTileWork::traceRays(RayVector& rays) {
     if (!queue.empty()) {
       std::cout << "[" << mpi.rank << "] Queue is not empty" << std::endl;
       for (auto q : queue) {
-        std::cout << "[" << myRank << "] [" << q.first
-                  << "] : " << q.second.size() << std::endl;
+        std::cout << "[" << myRank << "] [" << q.first << "] : " << q.second.size() << std::endl;
       }
     }
 #endif
@@ -307,7 +290,7 @@ void DomainTileWork::traceRays(RayVector& rays) {
     GVT_DEBUG(DBG_ALWAYS, "Rank [ " << myRank << "]  calling SendRays");
 
     sendRays();
-    
+
     renderer->setDoneTestRunning();
 
     if (myRank == 0) {
@@ -316,7 +299,8 @@ void DomainTileWork::traceRays(RayVector& rays) {
     }
 
     // TODO (hpark): find the way to get rid of this synchronization
-    while(renderer->isDoneTestRunning());
+    while (renderer->isDoneTestRunning())
+      ;
     all_done = renderer->isAllWorkDone();
   } // while (!all_done) {
 
@@ -331,14 +315,14 @@ void DomainTileWork::traceRays(RayVector& rays) {
 void DomainTileWork::sendRays() {
 
   typedef std::map<int, RayVector>::iterator RayQueueIter;
-  std::map<int, RayVector>& queue = *rayQueue; 
+  std::map<int, RayVector> &queue = *rayQueue;
 
   for (RayQueueIter q = queue.begin(); q != queue.end(); ++q) {
 
     int domainId = q->first;
     int ownerRank = renderer->getInstanceOwner(domainId);
 
-    RayVector& rays = q->second; 
+    RayVector &rays = q->second;
 
     if (ownerRank != myRank) {
       if (rays.size() > 0) {
@@ -350,4 +334,3 @@ void DomainTileWork::sendRays() {
     }
   }
 }
-

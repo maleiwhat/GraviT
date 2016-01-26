@@ -57,17 +57,17 @@ class RayWork : public Work {
 public:
   virtual void intialize();
   virtual ~RayWork() {}
-  virtual void Serialize(size_t& size, unsigned char*& serialized);
-  static Work* Deserialize(size_t size, unsigned char* serialized);
+  virtual void Serialize(size_t &size, unsigned char *&serialized);
+  static Work *Deserialize(size_t size, unsigned char *serialized);
   virtual bool Action();
-  void setRays(int domainId, gvt::render::actor::RayVector* rays);
+  void setRays(int domainId, gvt::render::actor::RayVector *rays);
+
 private:
   int domainId;
   int numRays;
-  gvt::render::actor::RayVector* outgoingRays;
+  gvt::render::actor::RayVector *outgoingRays;
   gvt::render::actor::RayVector incomingRays;
 };
-
 }
 }
 }

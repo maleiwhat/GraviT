@@ -51,53 +51,47 @@ using namespace gvt::render::unit;
 
 WORK_CLASS(RequestWork)
 
-void RequestWork::Serialize(size_t& size, unsigned char*& serialized) {
+void RequestWork::Serialize(size_t &size, unsigned char *&serialized) {
 
   size = sizeof(int);
   serialized = static_cast<unsigned char *>(malloc(size));
-  *reinterpret_cast<int*>(serialized) = sourceRank;
+  *reinterpret_cast<int *>(serialized) = sourceRank;
 }
 
-Work* RequestWork::Deserialize(size_t size, unsigned char* serialized) {
+Work *RequestWork::Deserialize(size_t size, unsigned char *serialized) {
 
   if (size != sizeof(int)) {
     std::cerr << "RequestWork deserializer ctor with size != sizeof(int)\n";
     exit(1);
   }
   RequestWork *requestWork = new RequestWork;
-  requestWork->setSourceRank(*reinterpret_cast<int*>(serialized));
-  return static_cast<Work*>(requestWork);
+  requestWork->setSourceRank(*reinterpret_cast<int *>(serialized));
+  return static_cast<Work *>(requestWork);
 }
 
 bool RequestWork::Action() {
 
-  #ifdef DEBUG_TILE_DISTRIBUTION
-  printf("Rank %d: received RequestWork from rank %d\n",
-          Application::GetApplication()->GetRank(),
-          getSourceRank());
-  #endif
+#ifdef DEBUG_TILE_DISTRIBUTION
+  printf("Rank %d: received RequestWork from rank %d\n", Application::GetApplication()->GetRank(), getSourceRank());
+#endif
 
-  MpiRenderer* renderer =
-      static_cast<MpiRenderer*>(Application::GetApplication());
-      
-  TileLoadBalancer* loadBalancer = renderer->getTileLoadBalancer();
+  MpiRenderer *renderer = static_cast<MpiRenderer *>(Application::GetApplication());
 
-  TileWork* tile = loadBalancer->next();
+  TileLoadBalancer *loadBalancer = renderer->getTileLoadBalancer();
+
+  TileWork *tile = loadBalancer->next();
 
   if (tile != NULL) {
     if (tile->isValid()) {
       tile->Send(getSourceRank());
-  
-      #ifdef DEBUG_TILE_DISTRIBUTION
-      printf("Rank %d: sending tile (%d %d %d %d) to Rank %d\n",
-            Application::GetApplication()->GetRank(),
-            tile->getStartX(), tile->getStartY(),
-            tile->getWidth(), tile->getHeight(),
-            getSourceRank());
-      #endif
+
+#ifdef DEBUG_TILE_DISTRIBUTION
+      printf("Rank %d: sending tile (%d %d %d %d) to Rank %d\n", Application::GetApplication()->GetRank(),
+             tile->getStartX(), tile->getStartY(), tile->getWidth(), tile->getHeight(), getSourceRank());
+#endif
     }
     delete tile;
   }
-  
+
   return false;
 }
