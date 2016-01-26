@@ -137,8 +137,7 @@ void DomainTileWork::traceRays(RayVector& rays) {
   boost::timer::cpu_timer t_trace;
   GVT_DEBUG(DBG_ALWAYS,
             "domain scheduler: starting, num rays: " << rays.size());
-  int adapterType =
-      gvt::core::variant_toInteger(root["Schedule"]["adapter"].value());
+  int adapterType = root["Schedule"]["adapter"].value().toInteger();
   long domain_counter = 0;
 
   // FindNeighbors();

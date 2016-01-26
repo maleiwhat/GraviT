@@ -138,8 +138,8 @@ void TileWork::setupAction() {
   queue_mutex = renderer->getRayQueueMutex();
   colorBuf_mutex = renderer->getColorBufMutex();
   root = RenderContext::instance()->getRootNode();
-  imageWidth = variant_toInteger(root["Film"]["width"].value());
-  imageHeight = variant_toInteger(root["Film"]["height"].value());
+  imageWidth = root["Film"]["width"].value().toInteger();
+  imageHeight = root["Film"]["height"].value().toInteger();
 }
 
 bool TileWork::Action() {
@@ -201,8 +201,8 @@ void TileWork::generatePrimaryRays(RayVector& rays) {
   int tileW = width;
   int tileH = height;
 
-  Point4f eye = variant_toPoint4f(root["Camera"]["eyePoint"].value());
-  float fov = variant_toFloat(root["Camera"]["fov"].value());
+  Point4f eye = root["Camera"]["eyePoint"].value().toPoint4f();
+  float fov = root["Camera"]["fov"].value().toFloat();
   const AffineTransformMatrix<float>& cameraToWorld =
       renderer->getCamera()->getCameraToWorld();
 
@@ -270,10 +270,10 @@ void TileWork::shuffleRays(gvt::render::actor::RayVector &rays,
 
   const size_t raycount = rays.size();
   const int domID =
-      (instNode) ? gvt::core::variant_toInteger(instNode["id"].value()) : -1;
+      (instNode) ? instNode["id"].value().toInteger() : -1;
   const gvt::render::data::primitives::Box3D domBB =
-      (instNode) ? *gvt::core::variant_toBox3DPtr(instNode["bbox"].value())
-                 : gvt::render::data::primitives::Box3D();
+        (instNode) ? *((Box3D*)instNode["bbox"].value().toULongLong())
+                   : gvt::render::data::primitives::Box3D();
 
   // tbb::parallel_for(size_t(0), size_t(rays.size()),
   //      [&] (size_t index) {
@@ -354,7 +354,7 @@ void TileWork::traceRays(RayVector& rays) {
             "image scheduler: starting, num rays: " << rays.size());
   GVT_ASSERT((instancenodes.size() > 0),
              "image scheduler: instance list is null");
-  int adapterType = variant_toInteger(root["Schedule"]["adapter"].value());
+  int adapterType = root["Schedule"]["adapter"].value().toInteger();
   // sort rays into queues
   filterRaysLocally(rays);
   RayVector moved_rays;

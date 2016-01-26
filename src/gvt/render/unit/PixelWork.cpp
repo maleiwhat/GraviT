@@ -42,6 +42,7 @@
 #include "gvt/render/data/scene/ColorAccumulator.h"
 #include "gvt/render/data/scene/Image.h"
 #include "gvt/render/unit/MpiRenderer.h"
+#include "gvt/core/Types.h"
 
 using namespace std;
 using namespace gvt::core;
@@ -68,7 +69,7 @@ void PixelWork::Serialize(size_t& size, unsigned char*& serialized) {
   *reinterpret_cast<int*>(buf) = height; buf += sizeof(int);
 
   DBNodeH root = RenderContext::instance()->getRootNode();
-  int imageWidth = variant_toInteger(root["Film"]["width"].value());
+  int imageWidth = root["Film"]["width"].value().toInteger();
 
   #ifdef DEBUG_PIXEL_WORK
   printf("Rank %d: serializing PixelWork tile(%d %d %d %d) imageWidth: %d\n",
@@ -116,7 +117,7 @@ Work* PixelWork::Deserialize(size_t size, unsigned char* serialized) {
   }
 
   DBNodeH root = RenderContext::instance()->getRootNode();
-  int imageWidth = variant_toInteger(root["Film"]["width"].value());
+  int imageWidth = root["Film"]["width"].value().toInteger();
 
   MpiRenderer* app = static_cast<MpiRenderer*>(Application::GetApplication());
   Image* image = app->getImage();

@@ -69,6 +69,7 @@ if (GVT_RENDER)
 	option(GVT_SIMPLE_APP			"Build the simple application" ON)
 	option(GVT_SIMPLE_FILE_LOAD_APP		"Build the simple application (load obj file)" ON)
 	option(GVT_MPI_RENDERER_APP		"Build the MPI renderer application (load obj file)" ON)
+	option(GVT_PLY_APP "Build the ply reader application (load ply file)" ON)
 	add_definitions(-DGVT_RENDER)
 endif(GVT_RENDER)
 
@@ -128,6 +129,12 @@ if (${TINYOBJPATH} MATCHES "TINYOBJPATH-NOTFOUND")
 	MESSAGE(SEND_ERRORS "tiny obj reader not found")
 endif (${TINYOBJPATH} MATCHES "TINYOBJPATH-NOTFOUND")
 
+set(GVT_THIRDPARTY_PLY "${CMAKE_SOURCE_DIR}/third-party/ply")
+find_path(PLYPATH "ply.h" ${GVT_THIRDPARTY_PLY})
+if (${PLYPATH} MATCHES "PLYPATH-NOTFOUND")
+	MESSAGE(SEND ERRORS "ply reader header not found")
+endif (${PLYPATH} MATCHES "PLYPATH-NOTFOUND")
+
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
   set(GVT_COMPILER ${CMAKE_CXX_COMPILER_ID} CACHE STRING "GraviT Compiler?")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
@@ -180,6 +187,7 @@ set(GVT_CORE_HDRS ${GVT_CORE_HDRS}
 	src/gvt/core/schedule/SchedulerBase.h
 	src/gvt/core/schedule/TaskScheduling.h
 	src/gvt/core/Schedule.h
+	src/gvt/core/String.h
 	src/gvt/core/Types.h
 	src/gvt/core/mpi/Application.h
 	src/gvt/core/mpi/Message.h
@@ -187,6 +195,8 @@ set(GVT_CORE_HDRS ${GVT_CORE_HDRS}
     src/gvt/core/mpi/Work.h
     src/gvt/core/mpi/RenderWork.h
     src/gvt/core/mpi/RenderTileWork.h
+	src/gvt/core/Uuid.h
+	src/gvt/core/Variant.h
 	)
 
 
@@ -199,6 +209,8 @@ set(GVT_CORE_SRCS ${GVT_CORE_SRCS}
 	src/gvt/core/mpi/Message.cpp
 	src/gvt/core/mpi/MessageQ.cpp
 	src/gvt/core/mpi/Work.cpp
+	src/gvt/core/Uuid.cpp
+	src/gvt/core/Variant.cpp
 	)
 
 
@@ -255,6 +267,7 @@ set(GVT_RENDER_HDRS ${GVT_RENDER_HDRS}
 	src/gvt/render/unit/PixelGatherWork.h
 	src/gvt/render/unit/TileLoadBalancer.h
 	src/gvt/render/unit/MpiRenderer.h
+	src/gvt/render/Types.h
 	)
 
 
@@ -439,6 +452,28 @@ if (GVT_SIMPLE_APP)
 	add_executable(gvtSimple ${GVTSIMPLE_RENDER_SRCS})
 	target_link_libraries(gvtSimple gvtCore gvtRender ${GVTSIMPLE_RENDER_LIBS} )
 endif(GVT_SIMPLE_APP)
+
+if (GVT_PLY_APP)
+  if (GVT_MPE)
+    if (DEFINED ENV{MPEHOME})
+      set(MPE_HOME_DIR $ENV{MPEHOME})
+      set (MPE_INCLUDE_DIR ${MPE_HOME_DIR}/include)
+      include_directories(${MPE_INCLUDE_DIR})
+      FIND_LIBRARY(MPE_LIB1 NAME mpe PATHS ${MPE_HOME_DIR} PATH_SUFFIXES lib )
+      FIND_LIBRARY(MPE_LIB2 NAME lmpe PATHS ${MPE_HOME_DIR} PATH_SUFFIXES lib)
+      set(GVTPLY_RENDER_LIBS ${GVTPLY_RENDER_LIBS} ${MPE_LIB2})
+      set(GVTPLY_RENDER_LIBS ${GVTPLY_RENDER_LIBS} ${MPE_LIB1})
+    endif(DEFINED ENV{MPEHOME})
+  endif (GVT_MPE)
+	find_package(MPI REQUIRED)
+	include_directories(${MPI_INCLUDE_PATH} ${PLYPATH})
+	set(GVTPLY_RENDER_LIBS ${GVTPLY_RENDER_LIBS}  ${MPI_LIBRARIES})
+	set(GVTPLY_RENDER_SRCS ${GVTPLY_RENDER_SRCS} 
+		src/apps/render/PlyApp.cpp
+		${PLYPATH}/ply.c)
+	add_executable(gvtPly ${GVTPLY_RENDER_SRCS})
+	target_link_libraries(gvtPly gvtCore gvtRender ${GVTPLY_RENDER_LIBS} )
+endif(GVT_PLY_APP)
 
 if (GVT_SIMPLE_FILE_LOAD_APP)
   if (GVT_MPE)

@@ -292,7 +292,8 @@ Box3D MpiRenderer::getMeshBounds(const std::string& objFilename) {
 
 Box3D MpiRenderer::getMeshBounds(const Uuid& id) {
   gvt::core::DBNodeH meshNode = renderContext->getNode(id);
-  Box3D* bounds = gvt::core::variant_toBox3DPtr(meshNode["bbox"].value());
+  // Box3D* bounds = *gvt::core::variant_toBox3DPtr(meshNode["bbox"].value());
+  Box3D* bounds = (Box3D*)meshNode["bbox"].value().toULongLong();
   return *bounds;
 }
 
@@ -308,7 +309,8 @@ Uuid MpiRenderer::
                                         parentNodeId);
 
   gvt::core::DBNodeH meshNode = renderContext->getNode(meshId);
-  Box3D* mbox = gvt::core::variant_toBox3DPtr(meshNode["bbox"].value());
+  // Box3D* mbox = *gvt::core::variant_toBox3DPtr(meshNode["bbox"].value());
+  Box3D* mbox = (Box3D*)meshNode["bbox"].value().toULongLong();
 
   node["id"] = instanceId; // unique id per instance
   node["meshRef"] = meshNode.UUID();
@@ -443,14 +445,14 @@ void MpiRenderer::setupRender() {
   root = renderContext->getRootNode();
   instanceNodes = root["Instances"].getChildren();
   GVT_DEBUG(DBG_ALWAYS, "num instances: " << instanceNodes.size());
-  imageWidth = gvt::core::variant_toInteger(root["Film"]["width"].value());
-  imageHeight = gvt::core::variant_toInteger(root["Film"]["height"].value());
+  imageWidth = root["Film"]["width"].value().toInteger();
+  imageHeight = root["Film"]["height"].value().toInteger();
   framebuffer.resize(imageWidth * imageHeight);
   acceleration = new gvt::render::data::accel::BVH(instanceNodes);
   rayQueueMutex = new tbb::mutex[instanceNodes.size()];
   colorBufMutex = new tbb::mutex[imageWidth];
 
-  int schedType = variant_toInteger(root["Schedule"]["type"].value());
+  int schedType = root["Schedule"]["type"].value().toInteger();
   if (schedType == scheduler::Domain) {
     initInstanceRankMap();
     doneTestRunning = false;
@@ -469,7 +471,7 @@ void MpiRenderer::freeRender() {
 void MpiRenderer::render() {
 
   setupRender();
-  int schedType = variant_toInteger(root["Schedule"]["type"].value());
+  int schedType = root["Schedule"]["type"].value().toInteger();
   // TODO (hpark):
   // collapse the following two if-else blocks into a single block
   if (schedType == scheduler::Image) {
@@ -527,7 +529,7 @@ void MpiRenderer::render() {
 void MpiRenderer::initServer() {
   // TODO (hpark): For now, equally divide the image
   // try coarser/finer granularity later
-  int schedType = variant_toInteger(root["Schedule"]["type"].value());
+  int schedType = root["Schedule"]["type"].value().toInteger();
   int numRanks = GetSize();
   int numWorkers = numRanks - rank::FirstWorker;
   int granularity = numWorkers;
