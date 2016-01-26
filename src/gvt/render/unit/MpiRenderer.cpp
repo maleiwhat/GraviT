@@ -276,8 +276,8 @@ Uuid MpiRenderer::addMesh(const Uuid& parentNodeId,
   Box3D* meshbbox = mesh->getBoundingBox();
   // add mesh to the database
   node["file"] = objFilename;
-  node["bbox"] = meshbbox;
-  node["ptr"] = mesh;
+  node["bbox"] = (unsigned long long)meshbbox;
+  node["ptr"] = (unsigned long long)mesh;
   return node.UUID();
 }
 
@@ -321,17 +321,17 @@ Uuid MpiRenderer::
   auto normi = new gvt::core::math::Matrix3f();
 
   auto m = transform;
-  node["mat"] = m;
+  node["mat"] = (unsigned long long)m;
   *minv = m->inverse();
-  node["matInv"] = minv;
+  node["matInv"] = (unsigned long long)minv;
   *normi = m->upper33().inverse().transpose();
-  node["normi"] = normi;
+  node["normi"] = (unsigned long long)normi;
 
   // transform mesh bounding box
   auto il = (*m) * mbox->bounds[0];
   auto ih = (*m) * mbox->bounds[1];
   Box3D *ibox = new gvt::render::data::primitives::Box3D(il, ih);
-  node["bbox"] = ibox;
+  node["bbox"] = (unsigned long long)ibox;
   node["centroid"] = ibox->centroid();
 
   #ifdef DEBUG_MPI_RENDERER
