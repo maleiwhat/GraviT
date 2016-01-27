@@ -117,18 +117,9 @@ void RayWork::setRays(int domainId, gvt::render::actor::RayVector &rays) {
 bool RayWork::Action() {
   MpiRenderer *renderer = static_cast<MpiRenderer *>(Application::GetApplication());
   std::map<int, RayVector> *remoteRayQ = renderer->getIncomingRayQueue(); 
-  // tbb::mutex *mainRayQMutex = renderer->getRayQueueMutex(); 
   tbb::mutex *remoteRayQMutex = renderer->getIncomingRayQueueMutex(); 
   {
     tbb::mutex::scoped_lock remoteRayQLock(*remoteRayQMutex);
-
-  // {
-    // tbb::mutex::scoped_lock mainRayQLock(*mainRayQMutex);
-#ifdef FIND_THE_BUG
-    int myRank = renderer->GetRank();
-    if (myRank==0)
-    printf("RayWork::Action: Rank %d: domain %d: incomingRays count: %lu\n", myRank, domainId, incomingRays.size());
-#endif
 
     if (remoteRayQ->find(domainId) != remoteRayQ->end()) {
       (*remoteRayQ)[domainId].insert((*remoteRayQ)[domainId].end(), incomingRays.begin(), incomingRays.end()); 
@@ -137,11 +128,10 @@ bool RayWork::Action() {
     }
 
 #ifdef FIND_THE_BUG
-    // int myRank = renderer->GetRank();
+    int myRank = renderer->GetRank();
     printf("RayWork::Action: Rank %d: domain %d: %lu\n", myRank, domainId, (*remoteRayQ)[domainId].size());
 #endif
   }
-  // }
 
   return false;
 }
