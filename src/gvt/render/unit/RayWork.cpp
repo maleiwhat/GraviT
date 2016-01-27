@@ -46,6 +46,7 @@ using namespace gvt::render::unit;
 using namespace gvt::render::actor;
 
 // #define DEBUG_RAY_WORK
+#define FIND_THE_BUG
 
 WORK_CLASS(RayWork)
 
@@ -53,13 +54,13 @@ void RayWork::intialize() {
   Work::initialize();
   domainId = -1;
   numRays = -1;
-  outgoingRays = NULL;
+  // outgoingRays = NULL;
 }
 
 void RayWork::Serialize(size_t &size, unsigned char *&serialized) {
 
   // assume raySize > 0
-  size_t raySize = static_cast<size_t>(numRays * (*outgoingRays)[0].packedSize());
+  size_t raySize = static_cast<size_t>(numRays * outgoingRays[0].packedSize());
   size = 2 * sizeof(int) + raySize;
   serialized = static_cast<unsigned char *>(malloc(size));
 
@@ -70,8 +71,8 @@ void RayWork::Serialize(size_t &size, unsigned char *&serialized) {
   *reinterpret_cast<int *>(buf) = numRays;
   buf += sizeof(int);
 
-  for (size_t i = 0; i < outgoingRays->size(); ++i) {
-    (*outgoingRays)[i].serialize(buf);
+  for (size_t i = 0; i < outgoingRays.size(); ++i) {
+    outgoingRays[i].serialize(buf);
   }
 }
 
@@ -99,33 +100,48 @@ Work *RayWork::Deserialize(size_t size, unsigned char *serialized) {
 
   rayWork->incomingRays.resize(numRays);
 
-  for (int i = 0; i < numRays; ++i) {
+  for(size_t i = 0; i < numRays; ++i) {
     rayWork->incomingRays[i] = Ray(buf);
   }
 
   return rayWork;
 }
 
-void RayWork::setRays(int domainId, gvt::render::actor::RayVector *rays) {
+void RayWork::setRays(int domainId, gvt::render::actor::RayVector &rays) {
   this->domainId = domainId;
-  this->numRays = rays->size();
+  this->numRays = rays.size();
+  // TODO (hpark): can we somehow remove this unnecessary copy of rays?
   this->outgoingRays = rays;
 }
 
 bool RayWork::Action() {
   MpiRenderer *renderer = static_cast<MpiRenderer *>(Application::GetApplication());
-  std::map<int, RayVector> *rayQueue = renderer->getRayQueue();
-
-  tbb::mutex *rayQueueMutex = renderer->getRayQueueMutex();
+  std::map<int, RayVector> *remoteRayQ = renderer->getIncomingRayQueue(); 
+  // tbb::mutex *mainRayQMutex = renderer->getRayQueueMutex(); 
+  tbb::mutex *remoteRayQMutex = renderer->getIncomingRayQueueMutex(); 
   {
-    tbb::mutex::scoped_lock queueLock(rayQueueMutex[domainId]);
+    tbb::mutex::scoped_lock remoteRayQLock(*remoteRayQMutex);
 
-    if (rayQueue->find(domainId) != rayQueue->end()) {
-      (*rayQueue)[domainId].insert((*rayQueue)[domainId].end(), incomingRays.begin(), incomingRays.end());
+  // {
+    // tbb::mutex::scoped_lock mainRayQLock(*mainRayQMutex);
+#ifdef FIND_THE_BUG
+    int myRank = renderer->GetRank();
+    if (myRank==0)
+    printf("RayWork::Action: Rank %d: domain %d: incomingRays count: %lu\n", myRank, domainId, incomingRays.size());
+#endif
+
+    if (remoteRayQ->find(domainId) != remoteRayQ->end()) {
+      (*remoteRayQ)[domainId].insert((*remoteRayQ)[domainId].end(), incomingRays.begin(), incomingRays.end()); 
     } else {
-      (*rayQueue)[domainId] = incomingRays;
+      (*remoteRayQ)[domainId] = incomingRays;
     }
+
+#ifdef FIND_THE_BUG
+    // int myRank = renderer->GetRank();
+    printf("RayWork::Action: Rank %d: domain %d: %lu\n", myRank, domainId, (*remoteRayQ)[domainId].size());
+#endif
   }
+  // }
 
   return false;
 }

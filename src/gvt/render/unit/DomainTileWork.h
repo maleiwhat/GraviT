@@ -59,7 +59,11 @@ protected:
 
 private:
   void sendRays();
+  bool SendRays();
+  void receiveRays();
   int myRank;
+  std::map<int, gvt::render::actor::RayVector> *incomingRayQueue;
+  tbb::mutex *incomingRayQueueMutex;
   pthread_mutex_t *doneTestLock;
   pthread_cond_t *doneTestCondition;
 };

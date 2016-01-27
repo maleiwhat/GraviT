@@ -183,12 +183,17 @@ private:
 public:
   // ray queue
   std::map<int, gvt::render::actor::RayVector> *getRayQueue() { return &rayQueue; }
+  std::map<int, gvt::render::actor::RayVector> *getIncomingRayQueue() { return &incomingRayQueue; }
   tbb::mutex *getRayQueueMutex() { return rayQueueMutex; }
+  tbb::mutex *getIncomingRayQueueMutex() { return &incomingRayQueueMutex; }
   bool isRayQueueEmpty() const { return rayQueue.empty(); }
+  bool isIncomingRayQueueEmpty() const { return incomingRayQueue.empty(); }
 
 private:
   std::map<int, gvt::render::actor::RayVector> rayQueue;
+  std::map<int, gvt::render::actor::RayVector> incomingRayQueue;
   tbb::mutex *rayQueueMutex;
+  tbb::mutex incomingRayQueueMutex;
 
 public:
   // image
@@ -222,10 +227,18 @@ public:
   void setAllWorkDone() { allWorkDone = true; }
   void clearAllWorkDone() { allWorkDone = false; }
   bool isAllWorkDone() { return allWorkDone; }
+  void incrementNumRaysSent(std::size_t value) { numRaysSent += value; }
+  void incrementNumRaysReceived(std::size_t value) { numRaysReceived += value; }
+  void setNumRaysSent(std::size_t value) { numRaysSent = value; }
+  void setNumRaysReceived(std::size_t value) { numRaysReceived = value; }
+  std::size_t getNumRaysSent() const { return numRaysSent; }
+  std::size_t getNumRaysReceived() const { return numRaysReceived; }
 
 private:
   bool doneTestRunning;
   bool allWorkDone;
+  std::size_t numRaysSent;
+  std::size_t numRaysReceived;
   pthread_mutex_t doneTestLock;
   pthread_cond_t doneTestCondition;
 };

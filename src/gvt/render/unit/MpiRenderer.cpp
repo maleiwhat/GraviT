@@ -97,7 +97,7 @@ using namespace gvt::render::data::primitives;
 using namespace gvt::render::unit;
 
 MpiRenderer::MpiRenderer(int *argc, char ***argv)
-    : Application(argc, argv), camera(NULL), image(NULL), dbOption(NULL), tileLoadBalancer(NULL) {
+    : Application(argc, argv), camera(NULL), image(NULL), dbOption(NULL), tileLoadBalancer(NULL), numRaysSent(0), numRaysReceived(0) {
 
   renderContext = gvt::render::RenderContext::instance();
 
@@ -140,7 +140,7 @@ void MpiRenderer::createDatabase() {
 
   std::string objName("bunny"); // TODO: fixed for now
 
-  // add a mesh
+  // // add a mesh
   // Uuid meshNodeId
   //     = addMesh(dataNodeId, objName + "_mesh",
   //               "../data/geom/" + objName + ".obj");
