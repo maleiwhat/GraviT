@@ -172,11 +172,6 @@ void DomainTileWork::traceRays(RayVector &rays) {
   gvt::render::Adapter *adapter = 0;
   while (!all_done) {
 
-// #ifdef FIND_THE_BUG
-//     for (auto& q : queue)
-//       printf("[initial rays] Rank %d: domain %d: %lu\n", myRank, q.first, q.second.size());
-// #endif
-
     if (!queue.empty()) {
       // process domain assigned to this proc with most rays queued
       // if there are queues for instances that are not assigned
@@ -299,54 +294,65 @@ void DomainTileWork::traceRays(RayVector &rays) {
     // done with current domain, send off rays to their proper processors.
     GVT_DEBUG(DBG_ALWAYS, "Rank [ " << myRank << "]  calling SendRays");
 
-// #ifdef FIND_THE_BUG
-//     for (auto& q : queue)
-//       printf("[before sending rays] Rank %d: domain %d: %lu\n", myRank, q.first, q.second.size());
-// #endif
-
-    // sendRays();
-
-// #ifdef FIND_THE_BUG
-//     for (auto& q : queue)
-//       printf("[before receving rays] Rank %d: domain %d: %lu\n", myRank, q.first, q.second.size());
-// #endif
-    // receiveRays();
-
-// #ifdef FIND_THE_BUG
-//     for (auto& q : queue)
-//       printf("[after receving rays] Rank %d: domain %d: %lu\n", myRank, q.first, q.second.size());
-// #endif
-
+#ifdef FIND_THE_BUG
+    printf("Rank %d: trace done! prepare done test!\n", myRank);
+#endif
 
     // test if all work is done
     renderer->setDoneTestRunning(true);
-
     if (myRank == 0) {
       DoneTestWork test;
-      test.Broadcast(true, true);
+      test.Broadcast(true, false);
     }
-
     // TODO (hpark): find a way to get rid of this synchronization
     while (renderer->isDoneTestRunning())
       ;
-
     all_done = renderer->isAllWorkDone();
+
+#ifdef FIND_THE_BUG
+    printf("Rank %d: done test done! all_done=%d\n", myRank, all_done);
+#endif
 
     if (!all_done) {
 
       // evaluate expected amount of rays to receive
+      renderer->setLocalRayCountDone(false);
+      renderer->initRayCounts(renderer->GetSize());
+
       if (myRank == 0) {
         RayTallyWork countRays;
-        countRays.Broadcast(true, true);
+        countRays.Broadcast(true, false);
       }
-  
+
+      for (auto &q : *rayQueue) {
+        int instance = q.first;
+        RayVector& rays = q.second; 
+        int ownerRank = renderer->getInstanceOwner(instance);
+        if (ownerRank != myRank) {
+          renderer->incrementRayCount(ownerRank, rays.size());
+        }
+      }
+
+// #ifdef FIND_THE_BUG
+//       printf("Rank %d: hey you can now go ahead counting the rays\n", myRank);
+//       std::vector<unsigned int>* rcounts = renderer->getRayCounts();
+//       for (int i=0; i<rcounts->size(); ++i)
+//         printf("Rank %d: targetRank %d count %d\n", myRank, i, rcounts->at(i));
+// #endif
+
+      renderer->setLocalRayCountDone(true);
+
       // transfer rays
       renderer->setRayTransferDone(false);
       renderer->setNumRaysReceived(0);
       transferRays();
   
-      while (renderer->isRayTransferDone())
+      // TODO (hpark): find a way to get rid of this synchronization
+      while (!renderer->isRayTransferDone())
         ;
+#ifdef FIND_THE_BUG
+      printf("Rank %d: ray transfer done\n", myRank);
+#endif
 
       // copy all incoming rays into the main ray queue
       // TODO (hpark): parallelize this
@@ -379,42 +385,9 @@ void DomainTileWork::transferRays() {
     RayVector& rays = q.second; 
     int ownerRank = renderer->getInstanceOwner(instance);
     if (ownerRank != myRank && rays.size() > 0) {
-// #ifdef FIND_THE_BUG
-//       printf("DomainTileWork::sendRays: myRank %d: ownerRank %d : domain %d: %lu\n", myRank, ownerRank, instance, rays.size());
-// #endif
       RayTransferWork transferRays;
       transferRays.setRays(instance, rays);
       transferRays.Send(ownerRank);
     }
   }
 }
-
-// void DomainTileWork::receiveRays() {
-//   {
-//     tbb::mutex::scoped_lock remoteRayQLock(*incomingRayQueueMutex);
-//     typedef std::map<int, RayVector>::iterator RayQueueIter;
-//     std::map<int, RayVector>& remoteRayQ = *incomingRayQ;
-//     std::size_t numRaysReceived = 0;
-//     for (RayQueueIter q = remoteRayQ.begin(); q != remoteRayQ.end(); ++q) {
-
-//       int domainId = q->first;
-//       RayVector& remoteRays = q->second;
-//       if (remoteRays.empty()) {
-//         std::cout << "error: received empty rays\n";
-//         exit(1);
-//       }
-//       if (rayQueue->find(domainId) != rayQueue->end()) {
-//         (*rayQueue)[domainId].insert((*rayQueue)[domainId].end(),
-//                                      remoteRays.begin(), remoteRays.end()); 
-//       } else {
-//         (*rayQueue)[domainId] = remoteRays;
-//       }
-//       numRaysReceived += remoteRays.size();
-// #ifdef FIND_THE_BUG
-//       printf("DomainTileWork::receiveRays: Rank %d: domain %d: %lu\n", myRank, domainId, remoteRays.size());
-// #endif
-//     }
-//     renderer->incrementNumRaysReceived(numRaysReceived);
-//     remoteRayQ.clear();
-//   }
-// }

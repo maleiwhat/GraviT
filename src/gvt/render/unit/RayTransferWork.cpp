@@ -121,14 +121,13 @@ bool RayTransferWork::Action() {
   }
 
   int numRaysReceived = renderer->incrementNumRaysReceived(numRays);
+
+#ifdef FIND_THE_BUG
+  printf("Rank %d: num rays received so far: %d num rays to receive: %d\n", renderer->GetRank(),
+         numRaysReceived, renderer->getNumRaysToReceive());
+#endif
   if (numRaysReceived == renderer->getNumRaysToReceive()) {
     renderer->setRayTransferDone(true);
   }
-
-#ifdef FIND_THE_BUG
-  int myRank = renderer->GetRank();
-  printf("RayTransferWork::Action: Rank %d: domain %d: %d\n", myRank, instanceId, numRays);
-#endif
-
   return false;
 }

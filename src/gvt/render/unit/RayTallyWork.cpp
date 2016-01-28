@@ -72,22 +72,24 @@ bool RayTallyWork::Action() {
   int numRanks = renderer->GetSize();
   int myRank = renderer->GetRank();
 
-  // count the number of rays to send
-  std::vector<unsigned int> rayCounts = std::vector<unsigned int>(numRanks, 0);
+  int readyForTest = 0;
+  do {
+    int done = renderer->isLocalRayCountDone();
+    MPI_Allreduce(&done, &readyForTest, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+  } while(readyForTest != numRanks);
 
-  for (auto &q : *rayQ) {
-    int instance = q.first;
-    RayVector& rays = q.second; 
-    int ownerRank = renderer->getInstanceOwner(instance);
-    if (ownerRank != myRank) {
-      rayCounts[ownerRank] += rays.size();
-    }
-  }
+  std::vector<unsigned int>* rayCounts = renderer->getRayCounts();
+  std::vector<unsigned int> numRaysToReceive = std::vector<unsigned int>(numRanks, 0);
 
-  unsigned int numRaysToReceive = 0;
-  MPI_Allreduce(&rayCounts[myRank], &numRaysToReceive, 1, MPI_UNSIGNED, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(&(*rayCounts)[0], &numRaysToReceive[0], numRanks, MPI_UNSIGNED, MPI_SUM, MPI_COMM_WORLD);
 
-  renderer->setNumRaysToReceive(numRaysToReceive);
+#ifdef FIND_THE_BUG
+  printf("RayTallyWork::Action: Rank %d: setting num rays to receive to %d\n", myRank, numRaysToReceive[myRank]);
+#endif
+
+  renderer->setNumRaysToReceive(numRaysToReceive[myRank]);
+
+  if (numRaysToReceive[myRank] == 0) renderer->setRayTransferDone(true);
   
   return false;
 }

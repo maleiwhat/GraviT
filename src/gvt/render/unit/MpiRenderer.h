@@ -223,6 +223,8 @@ public:
   pthread_cond_t *getDoneTestCondition() { return &doneTestCondition; }
   void setDoneTestRunning(bool flag) { doneTestRunning = flag; }
   bool isDoneTestRunning() const { return doneTestRunning; }
+  void setLocalRayCountDone(bool flag) { localRayCountDone = flag; }
+  bool isLocalRayCountDone() const { return localRayCountDone; }
   void setAllWorkDone(bool flag) { allWorkDone = flag; }
   void setRayTransferDone(bool flag) { rayTransferDone = flag; }
   bool isAllWorkDone() const { return allWorkDone; }
@@ -231,9 +233,14 @@ public:
   void setNumRaysToReceive(unsigned int value) { numRaysToReceive = value; }
   void setNumRaysReceived(unsigned int value) { numRaysReceived = value; }
   unsigned int getNumRaysToReceive() const { return numRaysToReceive; }
+  void initRayCounts(unsigned int numRanks) { rayCounts = std::vector<unsigned int>(numRanks, 0); }
+  void incrementRayCount(unsigned int rank, unsigned int value) { rayCounts[rank] += value; }
+  std::vector<unsigned int> *getRayCounts() { return &rayCounts; }
 
 private:
+  std::vector<unsigned int> rayCounts;
   bool doneTestRunning;
+  bool localRayCountDone;
   bool allWorkDone;
   bool rayTransferDone;
   unsigned int numRaysToReceive;
