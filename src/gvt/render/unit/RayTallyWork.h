@@ -32,11 +32,11 @@
    */
 
 //
-// RayWork.h
+// RayTallyWork.h
 //
 
-#ifndef GVT_RENDER_UNIT_RAY_WORK_H
-#define GVT_RENDER_UNIT_RAY_WORK_H
+#ifndef GVT_RENDER_UNIT_RAY_TALLY_WORK_H
+#define GVT_RENDER_UNIT_RAY_TALLY_WORK_H
 
 #include "gvt/core/mpi/Work.h"
 #include "gvt/core/mpi/Application.h"
@@ -52,27 +52,13 @@ namespace gvt {
 namespace render {
 namespace unit {
 
-class MpiRenderer;
-
-class RayWork : public Work {
-  WORK_CLASS_HEADER(RayWork)
+class RayTallyWork : public Work {
+  WORK_CLASS_HEADER(RayTallyWork)
 public:
-  virtual void intialize();
-  virtual ~RayWork() {}
+  virtual ~RayTallyWork() {}
   virtual void Serialize(size_t &size, unsigned char *&serialized);
   static Work *Deserialize(size_t size, unsigned char *serialized);
   virtual bool Action();
-//   void setRays(int domainId, gvt::render::actor::RayVector &rays);
-private:
-  MpiRenderer *renderer;
-  std::map<int, RayVector> *rayQ;
-  int numRanks;
-  int myRank;
-
-//   int domainId;
-//   int numRays;
-//   gvt::render::actor::RayVector outgoingRays;
-//   gvt::render::actor::RayVector incomingRays;
 };
 }
 }

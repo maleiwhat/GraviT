@@ -221,24 +221,23 @@ public:
   // synchronization (domain and hybrid only)
   pthread_mutex_t *getDoneTestLock() { return &doneTestLock; }
   pthread_cond_t *getDoneTestCondition() { return &doneTestCondition; }
-  void setDoneTestRunning() { doneTestRunning = true; }
-  void clearDoneTestRunning() { doneTestRunning = false; }
+  void setDoneTestRunning(bool flag) { doneTestRunning = flag; }
   bool isDoneTestRunning() const { return doneTestRunning; }
-  void setAllWorkDone() { allWorkDone = true; }
-  void clearAllWorkDone() { allWorkDone = false; }
-  bool isAllWorkDone() { return allWorkDone; }
-  void incrementNumRaysSent(std::size_t value) { numRaysSent += value; }
-  void incrementNumRaysReceived(std::size_t value) { numRaysReceived += value; }
-  void setNumRaysSent(std::size_t value) { numRaysSent = value; }
-  void setNumRaysReceived(std::size_t value) { numRaysReceived = value; }
-  std::size_t getNumRaysSent() const { return numRaysSent; }
-  std::size_t getNumRaysReceived() const { return numRaysReceived; }
+  void setAllWorkDone(bool flag) { allWorkDone = flag; }
+  void setRayTransferDone(bool flag) { rayTransferDone = flag; }
+  bool isAllWorkDone() const { return allWorkDone; }
+  bool isRayTransferDone() const { return rayTransferDone; }
+  unsigned int incrementNumRaysReceived(std::size_t value) { numRaysReceived += value; return numRaysReceived; }
+  void setNumRaysToReceive(unsigned int value) { numRaysToReceive = value; }
+  void setNumRaysReceived(unsigned int value) { numRaysReceived = value; }
+  unsigned int getNumRaysToReceive() const { return numRaysToReceive; }
 
 private:
   bool doneTestRunning;
   bool allWorkDone;
-  std::size_t numRaysSent;
-  std::size_t numRaysReceived;
+  bool rayTransferDone;
+  unsigned int numRaysToReceive;
+  unsigned int numRaysReceived;
   pthread_mutex_t doneTestLock;
   pthread_cond_t doneTestCondition;
 };

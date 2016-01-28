@@ -75,7 +75,8 @@
 #include "gvt/render/unit/ImageTileWork.h"
 #include "gvt/render/unit/DomainTileWork.h"
 #include "gvt/render/unit/PixelWork.h"
-#include "gvt/render/unit/RayWork.h"
+#include "gvt/render/unit/RayTallyWork.h"
+#include "gvt/render/unit/RayTransferWork.h"
 #include "gvt/render/unit/DoneTestWork.h"
 #include "gvt/render/unit/PixelGatherWork.h"
 #include "gvt/render/unit/TileLoadBalancer.h"
@@ -97,7 +98,7 @@ using namespace gvt::render::data::primitives;
 using namespace gvt::render::unit;
 
 MpiRenderer::MpiRenderer(int *argc, char ***argv)
-    : Application(argc, argv), camera(NULL), image(NULL), dbOption(NULL), tileLoadBalancer(NULL), numRaysSent(0), numRaysReceived(0) {
+    : Application(argc, argv), camera(NULL), image(NULL), dbOption(NULL), tileLoadBalancer(NULL) {
 
   renderContext = gvt::render::RenderContext::instance();
 
@@ -462,7 +463,8 @@ void MpiRenderer::render() {
     // setupRender();
 
     DomainTileWork::Register();
-    RayWork::Register();
+    RayTallyWork::Register();
+    RayTransferWork::Register();
     DoneTestWork::Register();
     PixelGatherWork::Register();
 

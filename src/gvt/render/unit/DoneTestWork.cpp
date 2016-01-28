@@ -63,12 +63,6 @@ Work *DoneTestWork::Deserialize(size_t size, unsigned char *serialized) {
   return work;
 }
 
-bool DoneTestWork::allFlagsSet(std::vector<int> &buf) {
-  int count = 0;
-  for (int i = 0; i < buf.size(); ++i) count += buf[i];
-  return (count == buf.size());
-}
-
 // #define FIND_THE_BUG
 
 bool DoneTestWork::Action() {
@@ -84,31 +78,30 @@ bool DoneTestWork::Action() {
     MPI_Allreduce(&running, &readyForTest, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
   } while(readyForTest != numRanks);
 
-  {
-    tbb::mutex* remoteRayQMutex= renderer->getIncomingRayQueueMutex();
-    tbb::mutex::scoped_lock remoteRayQLock(*remoteRayQMutex);
+  // {
+  //   tbb::mutex* remoteRayQMutex= renderer->getIncomingRayQueueMutex();
+  //   tbb::mutex::scoped_lock remoteRayQLock(*remoteRayQMutex);
   
-    // do the done test
-    unsigned int statusTx[4] = {renderer->isRayQueueEmpty(),
-                                renderer->isIncomingRayQueueEmpty(),
-                                renderer->getNumRaysSent(),
-                                renderer->getNumRaysReceived()};
-    unsigned int statusRx[4] = {0, 0, 0, 0};
-    MPI_Allreduce(statusTx, statusRx, 4, MPI_UNSIGNED, MPI_SUM, MPI_COMM_WORLD);
-
-    bool done = (statusRx[0] == numRanks &&
-                 statusRx[1] == numRanks &&
-                 statusRx[2] == statusRx[3]);
+  // do the done test
+  // unsigned int statusTx[4] = {renderer->isRayQueueEmpty(),
+  //                             renderer->isIncomingRayQueueEmpty(),
+  //                             renderer->getNumRaysSent(),
+  //                             renderer->getNumRaysReceived()};
+  // unsigned int statusRx[4] = {0, 0, 0, 0};
+  int empty = renderer->isRayQueueEmpty(); 
+  int numEmptyQs = 0; 
+  MPI_Allreduce(&empty, &numEmptyQs, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+  // bool done = (statusRx[0] == numRanks &&
+  //              statusRx[1] == numRanks &&
+  //              statusRx[2] == statusRx[3]);
 #ifdef FIND_THE_BUG
-    printf("DoneTestWork::Action: Rank %d: MQ %d IQ %d Sent %d Received %d\n",
-            renderer->GetRank(), statusRx[0],
-            statusRx[1], statusRx[2], statusRx[3]);
+  printf("DoneTestWork::Action: Rank %d: MQ %d IQ %d Sent %d Received %d\n",
+          renderer->GetRank(), statusRx[0],
+          statusRx[1], statusRx[2], statusRx[3]);
 #endif
 
-    if (done) {
-      renderer->setAllWorkDone();
-    }
-    renderer->clearDoneTestRunning();
-  }
+  if (numEmptyQs == numRanks) renderer->setAllWorkDone(true);
+  renderer->setDoneTestRunning(false);
+  
   return false;
 }

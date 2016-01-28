@@ -58,80 +58,121 @@ void RayWork::intialize() {
 }
 
 void RayWork::Serialize(size_t &size, unsigned char *&serialized) {
+  size = 0;
+  serialized = NULL;
+  // // assume raySize > 0
+  // size_t raySize = static_cast<size_t>(numRays * outgoingRays[0].packedSize());
+  // size = 2 * sizeof(int) + raySize;
+  // serialized = static_cast<unsigned char *>(malloc(size));
 
-  // assume raySize > 0
-  size_t raySize = static_cast<size_t>(numRays * outgoingRays[0].packedSize());
-  size = 2 * sizeof(int) + raySize;
-  serialized = static_cast<unsigned char *>(malloc(size));
+  // unsigned char *buf = serialized;
 
-  unsigned char *buf = serialized;
+  // *reinterpret_cast<int *>(buf) = domainId;
+  // buf += sizeof(int);
+  // *reinterpret_cast<int *>(buf) = numRays;
+  // buf += sizeof(int);
 
-  *reinterpret_cast<int *>(buf) = domainId;
-  buf += sizeof(int);
-  *reinterpret_cast<int *>(buf) = numRays;
-  buf += sizeof(int);
-
-  for (size_t i = 0; i < outgoingRays.size(); ++i) {
-    outgoingRays[i].serialize(buf);
-  }
+  // for (size_t i = 0; i < outgoingRays.size(); ++i) {
+  //   outgoingRays[i].serialize(buf);
+  // }
 }
 
 Work *RayWork::Deserialize(size_t size, unsigned char *serialized) {
-
-  unsigned char *buf = serialized;
-
-  RayWork *rayWork = new RayWork;
-
-  rayWork->domainId = *reinterpret_cast<int *>(buf);
-  buf += sizeof(int);
-  int numRays = *reinterpret_cast<int *>(buf);
-  buf += sizeof(int);
-  rayWork->numRays = numRays;
-
-  // TODO (hpark): need some static function in Ray.h
-  //               to evaluate the ray size
-  // if not available, do some hand calculation and hard code it here
-  Ray dummyRay;
-  size_t raysize = dummyRay.packedSize() * numRays;
-  if (size != (2 * sizeof(int) + (raysize))) {
-    std::cerr << "Test deserializer ctor with received size (" << size << ") != expected size (" << raysize << ")\n";
+  if (size != 0) {
+    std::cerr << "DoneTestWork deserializer call with size != 0 rank " << Application::GetApplication()->GetRank()
+              << "\n";
     exit(1);
   }
+  RayWork *work = new RayWork;
+  return work;
+  // unsigned char *buf = serialized;
 
-  rayWork->incomingRays.resize(numRays);
+  // RayWork *rayWork = new RayWork;
 
-  for(size_t i = 0; i < numRays; ++i) {
-    rayWork->incomingRays[i] = Ray(buf);
-  }
+  // rayWork->domainId = *reinterpret_cast<int *>(buf);
+  // buf += sizeof(int);
+  // int numRays = *reinterpret_cast<int *>(buf);
+  // buf += sizeof(int);
+  // rayWork->numRays = numRays;
 
-  return rayWork;
+  // // TODO (hpark): need some static function in Ray.h
+  // //               to evaluate the ray size
+  // // if not available, do some hand calculation and hard code it here
+  // Ray dummyRay;
+  // size_t raysize = dummyRay.packedSize() * numRays;
+  // if (size != (2 * sizeof(int) + (raysize))) {
+  //   std::cerr << "Test deserializer ctor with received size (" << size << ") != expected size (" << raysize << ")\n";
+  //   exit(1);
+  // }
+
+  // rayWork->incomingRays.resize(numRays);
+
+  // for(size_t i = 0; i < numRays; ++i) {
+  //   rayWork->incomingRays[i] = Ray(buf);
+  // }
+
+  // return rayWork;
 }
 
-void RayWork::setRays(int domainId, gvt::render::actor::RayVector &rays) {
-  this->domainId = domainId;
-  this->numRays = rays.size();
-  // TODO (hpark): can we somehow remove this unnecessary copy of rays?
-  this->outgoingRays = rays;
+// void RayWork::setRays(int domainId, gvt::render::actor::RayVector &rays) {
+//   this->domainId = domainId;
+//   this->numRays = rays.size();
+//   // TODO (hpark): can we somehow remove this unnecessary copy of rays?
+//   this->outgoingRays = rays;
+// }
+
+void RayWork::setupAction() {
+  renderer = static_cast<MpiRenderer *>(Application::GetApplication());
+  rayQ = renderer->getRayQueue();
+  numRanks = renderer->GetSize();
+  myRank = renderer->GetRank();
+}
+
+void RayWork::evaluateRayToSend(std::vector<unsigned int>& rayCounts) {
+  for (auto &q : *rayQ) {
+    int instance = q.first;
+    RayVector& rays = q.second; 
+    int ownerRank = renderer->getInstanceOwner(instance);
+    if (ownerRank != myRank) {
+      rayCounts[ownerRank] += rays.size();
+    }
+  }
 }
 
 bool RayWork::Action() {
-  MpiRenderer *renderer = static_cast<MpiRenderer *>(Application::GetApplication());
-  std::map<int, RayVector> *remoteRayQ = renderer->getIncomingRayQueue(); 
-  tbb::mutex *remoteRayQMutex = renderer->getIncomingRayQueueMutex(); 
-  {
-    tbb::mutex::scoped_lock remoteRayQLock(*remoteRayQMutex);
+  setupAction();
 
-    if (remoteRayQ->find(domainId) != remoteRayQ->end()) {
-      (*remoteRayQ)[domainId].insert((*remoteRayQ)[domainId].end(), incomingRays.begin(), incomingRays.end()); 
-    } else {
-      (*remoteRayQ)[domainId] = incomingRays;
-    }
+  // count the number of rays to send
+  std::vector<unsigned int> rayCounts = std::vector<unsigned int>(numRanks, 0);
+  evaluateRaysToSend(rayCounts);
 
-#ifdef FIND_THE_BUG
-    int myRank = renderer->GetRank();
-    printf("RayWork::Action: Rank %d: domain %d: %lu\n", myRank, domainId, (*remoteRayQ)[domainId].size());
-#endif
-  }
+  unsigned int numRaysToReceive = 0;
+  MPI_Allreduce(&rayCounts[myRank], &numRaysToReceive, 1, MPI_UNSIGNED, MPI_SUM, MPI_COMM_WORLD);
+
+
+  MPI_Allgather((const void *)&me, 1, MPI_INT, (void *)buf, 1, MPI_INT, MPI_COMM_WORLD);
+
+
+
+
+
+//   MpiRenderer *renderer = static_cast<MpiRenderer *>(Application::GetApplication());
+//   std::map<int, RayVector> *remoteRayQ = renderer->getIncomingRayQueue(); 
+//   tbb::mutex *remoteRayQMutex = renderer->getIncomingRayQueueMutex(); 
+//   {
+//     tbb::mutex::scoped_lock remoteRayQLock(*remoteRayQMutex);
+
+//     if (remoteRayQ->find(domainId) != remoteRayQ->end()) {
+//       (*remoteRayQ)[domainId].insert((*remoteRayQ)[domainId].end(), incomingRays.begin(), incomingRays.end()); 
+//     } else {
+//       (*remoteRayQ)[domainId] = incomingRays;
+//     }
+
+// #ifdef FIND_THE_BUG
+//     int myRank = renderer->GetRank();
+//     printf("RayWork::Action: Rank %d: domain %d: %lu\n", myRank, domainId, (*remoteRayQ)[domainId].size());
+// #endif
+//   }
 
   return false;
 }

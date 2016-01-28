@@ -62,7 +62,6 @@ public:
   virtual bool Action();
 
 private:
-  bool allFlagsSet(std::vector<int> &buf);
   MpiRenderer *renderer;
 };
 }
