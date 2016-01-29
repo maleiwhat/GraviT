@@ -52,7 +52,10 @@ WORK_CLASS(RayTransferWork)
 
 void RayTransferWork::Serialize(size_t &size, unsigned char *&serialized) {
   // assume raySize > 0
-  size_t raySize = static_cast<size_t>(numRays * outgoingRays[0].packedSize());
+  int raySize = 0;
+  for (int i = 0; i < numRays; ++i) {
+    raySize += outgoingRays[i].packedSize();
+  }
   size = 2 * sizeof(int) + raySize;
   serialized = static_cast<unsigned char *>(malloc(size));
 
@@ -65,6 +68,7 @@ void RayTransferWork::Serialize(size_t &size, unsigned char *&serialized) {
 
   for (size_t i = 0; i < outgoingRays.size(); ++i) {
     outgoingRays[i].serialize(buf);
+    // buf += outgoingRays[i].pack(buf);
   }
 }
 
@@ -79,15 +83,15 @@ Work *RayTransferWork::Deserialize(size_t size, unsigned char *serialized) {
   buf += sizeof(int);
   work->numRays = numRays;
 
-  // TODO (hpark): need some static function in Ray.h
-  //               to evaluate the ray size
-  // if not available, do some hand calculation and hard code it here
-  Ray dummyRay;
-  size_t raysize = dummyRay.packedSize() * numRays;
-  if (size != (2 * sizeof(int) + (raysize))) {
-    std::cerr << "Test deserializer ctor with received size (" << size << ") != expected size (" << raysize << ")\n";
-    exit(1);
-  }
+  // // TODO (hpark): need some static function in Ray.h
+  // //               to evaluate the ray size
+  // // if not available, do some hand calculation and hard code it here
+  // Ray dummyRay;
+  // size_t raysize = dummyRay.packedSize() * numRays;
+  // if (size != (2 * sizeof(int) + (raysize))) {
+  //   std::cerr << "Test deserializer ctor with received size (" << size << ") != expected size (" << raysize << ")\n";
+  //   exit(1);
+  // }
 
   work->incomingRays.resize(numRays);
 
@@ -106,8 +110,11 @@ void RayTransferWork::setRays(unsigned int instanceId, gvt::render::actor::RayVe
 
 bool RayTransferWork::Action() {
 
+
   MpiRenderer *renderer = static_cast<MpiRenderer *>(Application::GetApplication());
   std::map<int, RayVector> *inRayQ = renderer->getIncomingRayQueue(); 
+
+  printf("Rank %d: RayTransferWork::Action start\n", renderer->GetRank());
 
   // TODO (hpark): for now this lock is unnecessary but for multiple threads in use, we need this in this future.
   // tbb::mutex *remoteRayQMutex = renderer->getIncomingRayQueueMutex(); 
@@ -123,9 +130,14 @@ bool RayTransferWork::Action() {
   int numRaysReceived = renderer->incrementNumRaysReceived(numRays);
 
 #ifdef FIND_THE_BUG
-  printf("Rank %d: num rays received so far: %d num rays to receive: %d\n", renderer->GetRank(),
+  printf("Rank %d: RayTransferWork: num rays received so far: %d num rays to receive: %d\n", renderer->GetRank(),
          numRaysReceived, renderer->getNumRaysToReceive());
 #endif
+  if (numRaysReceived > renderer->getNumRaysToReceive()) {
+    printf("error: RayTransferWork: Rank %d: num of rays received exceeded expected count\n", renderer->GetRank());
+    exit(1);
+  }
+
   if (numRaysReceived == renderer->getNumRaysToReceive()) {
     renderer->setRayTransferDone(true);
   }

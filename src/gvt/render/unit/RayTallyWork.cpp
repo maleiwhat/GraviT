@@ -72,11 +72,16 @@ bool RayTallyWork::Action() {
   int numRanks = renderer->GetSize();
   int myRank = renderer->GetRank();
 
-  int readyForTest = 0;
+  printf("RayTallyWork::Action: Rank %d: waiting for all localRayCountDone flags to set\n", myRank);
+
+  int readyForTest;
   do {
+    readyForTest = 0;
     int done = renderer->isLocalRayCountDone();
     MPI_Allreduce(&done, &readyForTest, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
   } while(readyForTest != numRanks);
+
+  printf("RayTallyWork::Action: Rank %d: all localRayCountDone flags set to true\n", myRank);
 
   std::vector<unsigned int>* rayCounts = renderer->getRayCounts();
   std::vector<unsigned int> numRaysToReceive = std::vector<unsigned int>(numRanks, 0);
@@ -89,7 +94,12 @@ bool RayTallyWork::Action() {
 
   renderer->setNumRaysToReceive(numRaysToReceive[myRank]);
 
-  if (numRaysToReceive[myRank] == 0) renderer->setRayTransferDone(true);
+  if (numRaysToReceive[myRank] == 0) {
+    printf("Rank %d: RayTallyWork: setting ray transfer done to true!!!\n", myRank);
+    renderer->setRayTransferDone(true);
+  }
+
+  renderer->setRayTallyDone(true);
   
   return false;
 }

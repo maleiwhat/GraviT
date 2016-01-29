@@ -55,7 +55,7 @@ public:
 protected:
   virtual void setupAction();
   virtual void traceRays(gvt::render::actor::RayVector &rays);
-  virtual void filterRaysLocally(gvt::render::actor::RayVector &rays);
+  // virtual void filterRaysLocally(gvt::render::actor::RayVector &rays);
 
 private:
   void transferRays();

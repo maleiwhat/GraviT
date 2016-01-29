@@ -117,18 +117,18 @@ bool DomainTileWork::Action() {
   return false;
 }
 
-void DomainTileWork::filterRaysLocally(RayVector &rays) {
-  auto nullNode = gvt::core::DBNodeH(); // temporary workaround until
-                                        // shuffleRays is fully replaced
-  std::map<int, RayVector> &queue = *rayQueue;
-  shuffleRays(rays, nullNode);
-  // for (auto e : queue) {
-  //   if (renderer->getInstanceOwner(e.first) != myRank) {
-  //     GVT_DEBUG(DBG_ALWAYS, " rank[" << myRank << "] FILTERRAYS: removing queue " << e.first);
-  //     queue[e.first].clear();
-  //   }
-  // }
-}
+// void DomainTileWork::filterRaysLocally(RayVector &rays) {
+//   auto nullNode = gvt::core::DBNodeH(); // temporary workaround until
+//                                         // shuffleRays is fully replaced
+//   // std::map<int, RayVector> &queue = *rayQueue;
+//   shuffleRays(rays, nullNode);
+//   // for (auto e : queue) {
+//   //   if (renderer->getInstanceOwner(e.first) != myRank) {
+//   //     GVT_DEBUG(DBG_ALWAYS, " rank[" << myRank << "] FILTERRAYS: removing queue " << e.first);
+//   //     queue[e.first].clear();
+//   //   }
+//   // }
+// }
 
 void DomainTileWork::traceRays(RayVector &rays) {
 
@@ -317,36 +317,47 @@ void DomainTileWork::traceRays(RayVector &rays) {
 
       // evaluate expected amount of rays to receive
       renderer->setLocalRayCountDone(false);
+      renderer->setRayTallyDone(false);
       renderer->initRayCounts(renderer->GetSize());
+      renderer->setRayTransferDone(false);
+      renderer->setNumRaysReceived(0);
 
       if (myRank == 0) {
+        printf("Rank %d: countRays.Broadcast before\n", myRank);
         RayTallyWork countRays;
         countRays.Broadcast(true, false);
+        printf("Rank %d: countRays.Broadcast after\n", myRank);
       }
 
       for (auto &q : *rayQueue) {
         int instance = q.first;
         RayVector& rays = q.second; 
         int ownerRank = renderer->getInstanceOwner(instance);
-        if (ownerRank != myRank) {
+        if (ownerRank != myRank && rays.size() > 0) {
           renderer->incrementRayCount(ownerRank, rays.size());
         }
       }
 
-// #ifdef FIND_THE_BUG
-//       printf("Rank %d: hey you can now go ahead counting the rays\n", myRank);
-//       std::vector<unsigned int>* rcounts = renderer->getRayCounts();
-//       for (int i=0; i<rcounts->size(); ++i)
-//         printf("Rank %d: targetRank %d count %d\n", myRank, i, rcounts->at(i));
-// #endif
-
       renderer->setLocalRayCountDone(true);
 
+#ifdef FIND_THE_BUG
+      printf("Rank %d: hey you can now go ahead aggregate ray counts\n", myRank);
+      std::vector<unsigned int>* rcounts = renderer->getRayCounts();
+      for (int i=0; i<rcounts->size(); ++i)
+        printf("Rank %d: [targetRank %d] [count %d]\n", myRank, i, rcounts->at(i));
+#endif
+
+      // TODO (hpark): find a way to get rid of this synchronization
+      while (!renderer->isRayTallyDone())
+        ;
+
+      printf("Rank %d: RayTallyDone!!!\n", myRank);
+
       // transfer rays
-      renderer->setRayTransferDone(false);
-      renderer->setNumRaysReceived(0);
       transferRays();
-  
+
+      printf("Rank %d: wating for rayTransferDone Flag to be cleared\n", myRank);
+ 
       // TODO (hpark): find a way to get rid of this synchronization
       while (!renderer->isRayTransferDone())
         ;
@@ -354,8 +365,10 @@ void DomainTileWork::traceRays(RayVector &rays) {
       printf("Rank %d: ray transfer done\n", myRank);
 #endif
 
+
       // copy all incoming rays into the main ray queue
       // TODO (hpark): parallelize this
+      int inputRayCount = 0;
       for (auto &q : *incomingRayQ) {
         int instanceId = q.first;
         RayVector &inputRays = q.second;
@@ -364,16 +377,33 @@ void DomainTileWork::traceRays(RayVector &rays) {
         } else {
           (*rayQueue)[instanceId] = inputRays;
         }
+        inputRayCount += inputRays.size();
       }
+
+#ifdef FIND_THE_BUG
+      if (inputRayCount != renderer->getNumRaysToReceive()) {
+        printf("error: Rank %d: inputRayCount %d does not match expected %d\n", myRank, inputRayCount, renderer->getNumRaysToReceive());
+        exit(1);
+      } else {
+        printf("Rank %d: copied %d rays into ray queue\n", myRank, inputRayCount);
+      }
+#endif
 
       // clear input buffer for next iteration
       incomingRayQ->clear();
+
+#ifdef FIND_THE_BUG
+      if (!incomingRayQ->empty()) {
+        printf("Rank %d: incomingRayQ not empty\n", myRank);
+        exit(1);
+      }
+#endif
     }
   } // while (!all_done) {
 
   if (myRank == 0) {
     PixelGatherWork compositePixels;
-    compositePixels.Broadcast(true, true);
+    compositePixels.Broadcast(true, false);
   }
 }
 
@@ -388,6 +418,7 @@ void DomainTileWork::transferRays() {
       RayTransferWork transferRays;
       transferRays.setRays(instance, rays);
       transferRays.Send(ownerRank);
+      printf("Rank %d: ray.send(Rank %d): ray count: %lu \n", myRank, ownerRank, rays.size());
     }
   }
 }

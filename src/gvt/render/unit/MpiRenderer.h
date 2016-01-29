@@ -225,6 +225,8 @@ public:
   bool isDoneTestRunning() const { return doneTestRunning; }
   void setLocalRayCountDone(bool flag) { localRayCountDone = flag; }
   bool isLocalRayCountDone() const { return localRayCountDone; }
+  void setRayTallyDone(bool flag) { rayTallyDone = flag; }
+  bool isRayTallyDone() const { return rayTallyDone; }
   void setAllWorkDone(bool flag) { allWorkDone = flag; }
   void setRayTransferDone(bool flag) { rayTransferDone = flag; }
   bool isAllWorkDone() const { return allWorkDone; }
@@ -241,6 +243,7 @@ private:
   std::vector<unsigned int> rayCounts;
   bool doneTestRunning;
   bool localRayCountDone;
+  bool rayTallyDone;
   bool allWorkDone;
   bool rayTransferDone;
   unsigned int numRaysToReceive;

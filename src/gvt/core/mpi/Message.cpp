@@ -11,7 +11,7 @@
 
 using namespace gvt::core::mpi;
 
-#define COUNTING 1
+// #define COUNTING 1
 #ifdef COUNTING
 static pthread_mutex_t ctor_lock = PTHREAD_MUTEX_INITIALIZER;
 static int mknt = 0;
@@ -56,6 +56,7 @@ void *MessageManager::messageThread(void *p) {
   while (!theApplication->IsDoneSet()) {
     if (pending_message->IsReady()) {
       pending_message->Receive();
+      printf("Rank %d: messageThread: received a message\n", theApplication->GetRank());
 
       // Handle collective operations in the MPI thread
 
@@ -69,8 +70,10 @@ void *MessageManager::messageThread(void *p) {
         if (kill_me) {
           theApplication->Kill();
         }
-      } else
+      } else {
+        printf("Rank %d: Enqueuing incoming message\n", theApplication->GetRank());
         theApplication->GetIncomingMessageQueue()->Enqueue(pending_message);
+      }
 
       pending_message = new Message();
     }
@@ -80,6 +83,7 @@ void *MessageManager::messageThread(void *p) {
       if (m) {
         // Send it on
         m->Send();
+        printf("Rank %d: messageThread: sent a message\n", theApplication->GetRank());
 
         // If this is a collective, execute its work here in the message thread
         if (m->header.collective) {
@@ -98,8 +102,10 @@ void *MessageManager::messageThread(void *p) {
           }
         } else
           delete m;
-      } else
+      } else {
+        printf("Rank %d: NULL message to send out???\n", theApplication->GetRank());
         break;
+      }
     }
   }
 
