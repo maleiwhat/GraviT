@@ -38,9 +38,12 @@
 #include "gvt/render/unit/DomainTileWork.h"
 #include "gvt/render/unit/PixelGatherWork.h"
 #include "gvt/render/unit/RayTallyWork.h"
+#include "gvt/render/unit/RayCountWork.h"
 #include "gvt/render/unit/RayTransferWork.h"
 #include "gvt/render/unit/DoneTestWork.h"
+#include "gvt/render/unit/TraceDoneWork.h"
 #include "gvt/render/unit/MpiRenderer.h"
+#include "gvt/render/data/scene/Image.h"
 
 #ifdef GVT_RENDER_ADAPTER_EMBREE
 #include <gvt/render/adapter/embree/Wrapper.h>
@@ -60,13 +63,17 @@
 
 #include <boost/timer/timer.hpp>
 #include <tbb/mutex.h>
+#include <pthread.h>
 
 using namespace gvt::core::mpi;
 using namespace gvt::render::unit;
 using namespace gvt::render::actor;
+using namespace gvt::render::data::scene;
 
 #define DEBUG_DOMAIN_TILE_WORK
-#define FIND_THE_BUG
+// #define DEBUG_RAY_TRANSFER
+// #define DEBUG_DUMP_QSTATE
+// #define DEBUG_IMAGE_WRITE
 
 WORK_CLASS(DomainTileWork)
 
@@ -94,6 +101,7 @@ Work *DomainTileWork::Deserialize(size_t size, unsigned char *serialized) {
 void DomainTileWork::setupAction() {
   TileWork::setupAction();
   myRank = Application::GetApplication()->GetRank();
+  numRanks = Application::GetApplication()->GetSize();
   incomingRayQ = renderer->getIncomingRayQueue();
   // incomingRayQueueMutex = renderer->getIncomingRayQueueMutex();
   // doneTestLock = renderer->getDoneTestLock();
@@ -116,19 +124,6 @@ bool DomainTileWork::Action() {
 
   return false;
 }
-
-// void DomainTileWork::filterRaysLocally(RayVector &rays) {
-//   auto nullNode = gvt::core::DBNodeH(); // temporary workaround until
-//                                         // shuffleRays is fully replaced
-//   // std::map<int, RayVector> &queue = *rayQueue;
-//   shuffleRays(rays, nullNode);
-//   // for (auto e : queue) {
-//   //   if (renderer->getInstanceOwner(e.first) != myRank) {
-//   //     GVT_DEBUG(DBG_ALWAYS, " rank[" << myRank << "] FILTERRAYS: removing queue " << e.first);
-//   //     queue[e.first].clear();
-//   //   }
-//   // }
-// }
 
 void DomainTileWork::traceRays(RayVector &rays) {
 
@@ -170,6 +165,13 @@ void DomainTileWork::traceRays(RayVector &rays) {
   int instTarget = -1;
   size_t instTargetCount = 0;
   gvt::render::Adapter *adapter = 0;
+
+  std::vector<int> numRaysToSend(numRanks);
+
+#ifdef DEBUG_DUMP_QSTATE
+  int iteration = 0;
+#endif
+
   while (!all_done) {
 
     if (!queue.empty()) {
@@ -294,131 +296,190 @@ void DomainTileWork::traceRays(RayVector &rays) {
     // done with current domain, send off rays to their proper processors.
     GVT_DEBUG(DBG_ALWAYS, "Rank [ " << myRank << "]  calling SendRays");
 
-#ifdef FIND_THE_BUG
-    printf("Rank %d: trace done! prepare done test!\n", myRank);
-#endif
-
-    // test if all work is done
-    renderer->setDoneTestRunning(true);
-    if (myRank == 0) {
-      DoneTestWork test;
-      test.Broadcast(true, false);
+#ifdef DEBUG_DUMP_QSTATE
+  if (myRank == 0) {
+    printf("============Rank %d before sending rays (%d)============\n", myRank, iteration);
+    for (auto &q : *rayQueue) {
+      printf("[before] Rank %d: instance %d: %lu\n", myRank, q.first, q.second.size());
+      for (int i=0; i<q.second.size(); ++i) {
+        std::cout<<"[before] Rank "<<myRank<<": iteration "<<iteration<<": inst "<< q.first << ": idx "<< i << ": { " <<q.second[i]<<" }"<<std::endl;
+      }
     }
-    // TODO (hpark): find a way to get rid of this synchronization
-    while (renderer->isDoneTestRunning())
-      ;
-    all_done = renderer->isAllWorkDone();
-
-#ifdef FIND_THE_BUG
-    printf("Rank %d: done test done! all_done=%d\n", myRank, all_done);
+  }
 #endif
 
-    if (!all_done) {
+    bool myProcessDone = rayQueue->empty();
+    sendDone(myProcessDone);
 
-      // evaluate expected amount of rays to receive
-      renderer->setLocalRayCountDone(false);
-      renderer->setRayTallyDone(false);
-      renderer->initRayCounts(renderer->GetSize());
-      renderer->setRayTransferDone(false);
-      renderer->setNumRaysReceived(0);
+    all_done = (renderer->allOthersDone && myProcessDone);
 
-      if (myRank == 0) {
-        printf("Rank %d: countRays.Broadcast before\n", myRank);
-        RayTallyWork countRays;
-        countRays.Broadcast(true, false);
-        printf("Rank %d: countRays.Broadcast after\n", myRank);
+    transferRays(all_done, numRaysToSend);
+
+#ifdef DEBUG_DUMP_QSTATE
+  if (myRank == 0) {
+    printf("============Rank %d after sending rays (%d)============\n", myRank, iteration);
+    for (auto &q : *rayQueue) {
+      printf("[after] Rank %d: instance %d: %lu\n", myRank, q.first, q.second.size());
+      for (int i=0; i<q.second.size(); ++i) {
+        std::cout<<"[after] Rank "<<myRank<<": iteration "<<iteration<<": inst "<< q.first << ": idx "<< i << ": { " <<q.second[i]<<" }"<<std::endl;
       }
-
-      for (auto &q : *rayQueue) {
-        int instance = q.first;
-        RayVector& rays = q.second; 
-        int ownerRank = renderer->getInstanceOwner(instance);
-        if (ownerRank != myRank && rays.size() > 0) {
-          renderer->incrementRayCount(ownerRank, rays.size());
-        }
-      }
-
-      renderer->setLocalRayCountDone(true);
-
-#ifdef FIND_THE_BUG
-      printf("Rank %d: hey you can now go ahead aggregate ray counts\n", myRank);
-      std::vector<unsigned int>* rcounts = renderer->getRayCounts();
-      for (int i=0; i<rcounts->size(); ++i)
-        printf("Rank %d: [targetRank %d] [count %d]\n", myRank, i, rcounts->at(i));
-#endif
-
-      // TODO (hpark): find a way to get rid of this synchronization
-      while (!renderer->isRayTallyDone())
-        ;
-
-      printf("Rank %d: RayTallyDone!!!\n", myRank);
-
-      // transfer rays
-      transferRays();
-
-      printf("Rank %d: wating for rayTransferDone Flag to be cleared\n", myRank);
- 
-      // TODO (hpark): find a way to get rid of this synchronization
-      while (!renderer->isRayTransferDone())
-        ;
-#ifdef FIND_THE_BUG
-      printf("Rank %d: ray transfer done\n", myRank);
-#endif
-
-
-      // copy all incoming rays into the main ray queue
-      // TODO (hpark): parallelize this
-      int inputRayCount = 0;
-      for (auto &q : *incomingRayQ) {
-        int instanceId = q.first;
-        RayVector &inputRays = q.second;
-        if (rayQueue->find(instanceId) != rayQueue->end()) {
-          (*rayQueue)[instanceId].insert((*rayQueue)[instanceId].end(), inputRays.begin(), inputRays.end()); 
-        } else {
-          (*rayQueue)[instanceId] = inputRays;
-        }
-        inputRayCount += inputRays.size();
-      }
-
-#ifdef FIND_THE_BUG
-      if (inputRayCount != renderer->getNumRaysToReceive()) {
-        printf("error: Rank %d: inputRayCount %d does not match expected %d\n", myRank, inputRayCount, renderer->getNumRaysToReceive());
-        exit(1);
-      } else {
-        printf("Rank %d: copied %d rays into ray queue\n", myRank, inputRayCount);
-      }
-#endif
-
-      // clear input buffer for next iteration
-      incomingRayQ->clear();
-
-#ifdef FIND_THE_BUG
-      if (!incomingRayQ->empty()) {
-        printf("Rank %d: incomingRayQ not empty\n", myRank);
-        exit(1);
-      }
-#endif
     }
+  }
+    ++iteration;
+#endif
+
   } // while (!all_done) {
 
+#ifndef DEBUG_IMAGE_WRITE
   if (myRank == 0) {
     PixelGatherWork compositePixels;
-    compositePixels.Broadcast(true, false);
+    compositePixels.Broadcast(true, true);
+  }
+#else
+  int width = renderer->getImageWidth();
+  int height = renderer->getImageHeight();
+  Image *image = renderer->getImage();
+  std::vector<GVT_COLOR_ACCUM> *framebuffer = renderer->getFramebuffer();
+  size_t size = width * height;
+  for (size_t i = 0; i < size; i++) image->Add(i, (*framebuffer)[i]);
+  if (myRank == 0) {
+    image->Write(false);
+    Quit quit;
+    quit.Broadcast(true, true);
+  }
+#endif
+}
+
+void DomainTileWork::sendDone(bool myProcessDone) {
+
+  TraceDoneWork work;
+  work.set(myRank, myProcessDone);
+
+  for (int i = 0; i < numRanks; ++i) {
+    if (i != myRank) {
+      work.Send(i);
+#ifdef DEBUG_RAY_TRANSFER
+      printf("Rank %d: done.send(to Rank %d) myProcessDone: %d\n", myRank, i, myProcessDone);
+#endif
+    }
+  }
+
+  pthread_mutex_lock(&renderer->doneLock);
+  while (renderer->numDoneSenders != numRanks - 1) {
+    pthread_cond_wait(&renderer->doneCondition, &renderer->doneLock);
+  }
+  renderer->numDones = 0;
+  renderer->numDoneSenders = 0;
+  pthread_mutex_unlock(&renderer->doneLock);
+
+  pthread_mutex_lock(&renderer->enableDoneActionLock);
+  renderer->enableDoneAction = true;
+  pthread_cond_signal(&renderer->enableDoneActionCondition);
+  pthread_mutex_unlock(&renderer->enableDoneActionLock);
+
+#ifdef DEBUG_RAY_TRANSFER
+  printf("Rank %d: passed done check\n", myRank);
+#endif
+}
+
+void DomainTileWork::transferRays(bool allProcessesDone, std::vector<int>& numRaysToSend) {
+
+  if (!allProcessesDone) {
+    sendRayCounts(numRaysToSend);
+    sendRays();
   }
 }
 
-void DomainTileWork::transferRays() {
-  // TODO (hpark): sort rays according to destination rank and
-  //               send them all together (i.e. coalescing)
+void DomainTileWork::sendRayCounts(std::vector<int>& numRaysToSend) {
+
+  for (int i = 0; i < numRanks; ++i)
+    numRaysToSend[i] = 0;
+
   for (auto &q : *rayQueue) {
-    int instance = q.first;
-    RayVector& rays = q.second; 
-    int ownerRank = renderer->getInstanceOwner(instance);
-    if (ownerRank != myRank && rays.size() > 0) {
-      RayTransferWork transferRays;
-      transferRays.setRays(instance, rays);
-      transferRays.Send(ownerRank);
-      printf("Rank %d: ray.send(Rank %d): ray count: %lu \n", myRank, ownerRank, rays.size());
+    int ownerRank = renderer->getInstanceOwner(q.first);
+    if (ownerRank != myRank)
+      numRaysToSend[ownerRank] += q.second.size();
+  }
+
+  for (int i = 0; i < numRanks; ++i) {
+    if (i != myRank) {
+      RayCountWork work;
+      work.set(numRaysToSend[i]);
+      work.Send(i);
+#ifdef DEBUG_RAY_TRANSFER
+      printf("Rank %d: rayCount.send(to Rank %d) numRaysToSend: %d\n", myRank, i, numRaysToSend[i]);
+#endif
     }
   }
+
+  pthread_mutex_lock(&renderer->tallyLock);
+  while (!renderer->rayTallyDone) {
+    pthread_cond_wait(&renderer->tallyCondition, &renderer->tallyLock);
+  }
+  pthread_mutex_unlock(&renderer->tallyLock);
+
+#ifdef DEBUG_RAY_TRANSFER
+  printf("Rank %d: passed tally check\n", myRank);
+#endif
+}
+
+void DomainTileWork::sendRays() {
+
+  for (auto &q : *rayQueue) {
+
+    int instance = q.first;
+    RayVector& rays = q.second; 
+
+    int ownerRank = renderer->getInstanceOwner(instance);
+
+    if (ownerRank != myRank && rays.size() > 0) {
+      RayTransferWork work;
+      // TODO (hpark): copying of rays may not be needed here.
+      work.setRays(instance, rays);
+      work.Send(ownerRank);
+#ifdef DEBUG_RAY_TRANSFER
+      printf("Rank %d: ray.send(to Rank %d): ray count: %lu \n", myRank, ownerRank, rays.size());
+#endif
+    }
+  }
+
+  pthread_mutex_lock(&renderer->transferLock);
+  while (!renderer->rayTransferDone) {
+    pthread_cond_wait(&renderer->transferCondition, &renderer->transferLock);
+  }
+
+  renderer->numRaysReceived = 0;
+  renderer->rayTransferDone = false;
+
+  pthread_mutex_lock(&renderer->tallyLock);
+  renderer->numRaysToReceive = 0;
+  renderer->numTallySenders = 0;
+  renderer->rayTallyDone = false;
+  pthread_mutex_unlock(&renderer->tallyLock);
+
+  pthread_mutex_lock(&renderer->enableTallyActionLock);
+  renderer->enableTallyAction = true;
+  pthread_cond_signal(&renderer->enableTallyActionCondition);
+  pthread_mutex_unlock(&renderer->enableTallyActionLock);
+
+  for (auto &q : *incomingRayQ) {
+    int instanceId = q.first;
+    RayVector &inputRays = q.second;
+    if (rayQueue->find(instanceId) != rayQueue->end()) {
+      (*rayQueue)[instanceId].insert((*rayQueue)[instanceId].end(), inputRays.begin(), inputRays.end()); 
+    } else {
+      (*rayQueue)[instanceId] = inputRays;
+    }
+  }
+  incomingRayQ->clear();
+  pthread_mutex_unlock(&renderer->transferLock);
+
+#ifdef DEBUG_RAY_TRANSFER
+  printf("Rank %d: passed ray transfer\n", myRank);
+#endif
+
+  pthread_mutex_lock(&renderer->enableTransferActionLock);
+  renderer->enableTransferAction = true;
+  pthread_cond_signal(&renderer->enableTransferActionCondition);
+  pthread_mutex_unlock(&renderer->enableTransferActionLock);
 }

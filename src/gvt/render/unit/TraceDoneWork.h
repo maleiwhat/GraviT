@@ -32,18 +32,14 @@
    */
 
 //
-// RayTransferWork.h
+// TraceDoneWork.h
 //
 
-#ifndef GVT_RENDER_UNIT_RAY_TRANSFER_WORK_H
-#define GVT_RENDER_UNIT_RAY_TRANSFER_WORK_H
+#ifndef GVT_RENDER_UNIT_TRACE_DONE_WORK_H
+#define GVT_RENDER_UNIT_TRACE_DONE_WORK_H
 
 #include "gvt/core/mpi/Work.h"
 #include "gvt/core/mpi/Application.h"
-#include "gvt/render/actor/Ray.h"
-
-#include <tbb/mutex.h>
-#include <map>
 
 using namespace std;
 using namespace gvt::core::mpi;
@@ -52,21 +48,17 @@ namespace gvt {
 namespace render {
 namespace unit {
 
-class MpiRenderer;
-
-class RayTransferWork : public Work {
-  WORK_CLASS_HEADER(RayTransferWork)
+class TraceDoneWork : public Work {
+  WORK_CLASS_HEADER(TraceDoneWork)
 public:
-  virtual ~RayTransferWork() {}
+  virtual ~TraceDoneWork() {}
   virtual void Serialize(size_t &size, unsigned char *&serialized);
   static Work *Deserialize(size_t size, unsigned char *serialized);
   virtual bool Action();
-  void setRays(int instanceId, gvt::render::actor::RayVector &rays);
+  void set(int senderRank, int done) { this->senderRank = senderRank; this->done = done;}
 private:
-  int instanceId;
-  int numRays;
-  gvt::render::actor::RayVector outgoingRays;
-  gvt::render::actor::RayVector incomingRays;
+  int senderRank;
+  int done;
 };
 }
 }

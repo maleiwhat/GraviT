@@ -54,7 +54,6 @@ WORK_CLASS(PixelGatherWork)
 void PixelGatherWork::Serialize(size_t &size, unsigned char *&serialized) {
   size = 0;
   serialized = NULL;
-  ;
 }
 
 Work *PixelGatherWork::Deserialize(size_t size, unsigned char *serialized) {

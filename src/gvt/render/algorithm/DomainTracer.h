@@ -62,6 +62,8 @@
 
 #define RAY_BUF_SIZE 10485760 // 10 MB per neighbor
 
+// #define DEBUG_RAY_TRANSFER
+
 using namespace gvt::core::mpi;
 namespace gvt {
 namespace render {
@@ -201,6 +203,10 @@ public:
 
     gvt::render::Adapter *adapter = 0;
 
+#ifdef DEBUG_RAY_TRANSFER
+    int iteration = 0;
+#endif
+
     while (!all_done) {
 
       if (!queue.empty()) {
@@ -333,11 +339,34 @@ public:
       }
 #endif
 
+#ifdef DEBUG_RAY_TRANSFER 
+  if (mpi.rank == 1) {
+      printf("============Rank %lu before sending rays (%d)============\n", mpi.rank, iteration);
+      for (auto &q : queue) {
+        printf("[before] Rank %lu: instance %d: %lu\n", mpi.rank, q.first, q.second.size());
+        for (int i=0; i<q.second.size(); ++i) {
+          std::cout<<"[before] Rank "<<mpi.rank<<": iteration "<<iteration<<": inst "<< q.first << ": idx "<< i << ": { " <<q.second[i]<<" }"<<std::endl;
+        }
+      }
+  }
+#endif
+
       // done with current domain, send off rays to their proper processors.
       GVT_DEBUG(DBG_ALWAYS, "Rank [ " << mpi.rank << "]  calling SendRays");
       SendRays();
       // are we done?
-
+#ifdef DEBUG_RAY_TRANSFER
+  if (mpi.rank == 1) {
+      printf("============Rank %lu after sending rays (%d)============\n", mpi.rank, iteration);
+      for (auto &q : queue) {
+        printf("[after] Rank %lu: instance %d: %lu\n", mpi.rank, q.first, q.second.size());
+        for (int i=0; i<q.second.size(); ++i) {
+          std::cout<<"[after] Rank "<<mpi.rank<<": iteration "<<iteration<<": inst "<< q.first << ": idx "<< i << ": { " <<q.second[i]<<" }"<<std::endl;
+        }
+      }
+  }
+      ++iteration;
+#endif
       // root proc takes empty flag from all procs
       int not_done = (int)(!queue.empty());
       int *empties = (mpi.rank == 0) ? new int[mpi.world_size] : NULL;

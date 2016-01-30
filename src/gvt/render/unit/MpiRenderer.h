@@ -240,16 +240,51 @@ public:
   std::vector<unsigned int> *getRayCounts() { return &rayCounts; }
 
 private:
+  friend class DomainTileWork;
+  friend class TraceDoneWork;
+  friend class RayCountWork;
+  friend class RayTransferWork;
+
+  int numDones; // how many processes are done tracing rays
+  int numDoneSenders; // how many processes have finished evaluating the doneness
+  bool allOthersDone;
+  pthread_mutex_t doneLock;
+  pthread_cond_t doneCondition;
+
+  bool enableDoneAction;
+  pthread_mutex_t enableDoneActionLock;
+  pthread_cond_t enableDoneActionCondition;
+  
+  int numRaysToReceive;
+  int numTallySenders;
+  bool rayTallyDone;
+  pthread_mutex_t tallyLock;
+  pthread_cond_t tallyCondition;
+
+  bool enableTallyAction;
+  pthread_mutex_t enableTallyActionLock;
+  pthread_cond_t enableTallyActionCondition;
+
+  int numRaysReceived;
+  bool rayTransferDone;
+  pthread_mutex_t transferLock;
+  pthread_cond_t transferCondition;
+
+  bool enableTransferAction;
+  pthread_mutex_t enableTransferActionLock;
+  pthread_cond_t enableTransferActionCondition;
+
   std::vector<unsigned int> rayCounts;
   bool doneTestRunning;
   bool localRayCountDone;
-  bool rayTallyDone;
+  // bool rayTallyDone;
   bool allWorkDone;
-  bool rayTransferDone;
-  unsigned int numRaysToReceive;
-  unsigned int numRaysReceived;
+  // bool rayTransferDone;
+  // unsigned int numRaysToReceive;
+  // unsigned int numRaysReceived;
   pthread_mutex_t doneTestLock;
   pthread_cond_t doneTestCondition;
+
 };
 }
 }

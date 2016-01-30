@@ -259,8 +259,10 @@ set(GVT_RENDER_HDRS ${GVT_RENDER_HDRS}
     src/gvt/render/unit/GeometryWork.h
 	src/gvt/render/unit/PixelWork.h
 	src/gvt/render/unit/RayTallyWork.h
+	src/gvt/render/unit/RayCountWork.h
 	src/gvt/render/unit/RayTransferWork.h
 	src/gvt/render/unit/DoneTestWork.h
+	src/gvt/render/unit/TraceDoneWork.h
 	src/gvt/render/unit/RequestWork.h
 	src/gvt/render/unit/TileWork.h
 	src/gvt/render/unit/ImageTileWork.h
@@ -294,8 +296,10 @@ set(GVT_RENDER_SRCS ${GVT_RENDER_SRCS}
 	src/gvt/render/unit/GeometryWork.cpp
 	src/gvt/render/unit/PixelWork.cpp
 	src/gvt/render/unit/RayTallyWork.cpp
+	src/gvt/render/unit/RayCountWork.cpp
 	src/gvt/render/unit/RayTransferWork.cpp
 	src/gvt/render/unit/DoneTestWork.cpp
+	src/gvt/render/unit/TraceDoneWork.cpp
 	src/gvt/render/unit/RequestWork.cpp
 	src/gvt/render/unit/TileWork.cpp
 	src/gvt/render/unit/ImageTileWork.cpp

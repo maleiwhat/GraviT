@@ -76,8 +76,10 @@
 #include "gvt/render/unit/DomainTileWork.h"
 #include "gvt/render/unit/PixelWork.h"
 #include "gvt/render/unit/RayTallyWork.h"
+#include "gvt/render/unit/RayCountWork.h"
 #include "gvt/render/unit/RayTransferWork.h"
 #include "gvt/render/unit/DoneTestWork.h"
+#include "gvt/render/unit/TraceDoneWork.h"
 #include "gvt/render/unit/PixelGatherWork.h"
 #include "gvt/render/unit/TileLoadBalancer.h"
 
@@ -86,6 +88,7 @@
 
 #define DEBUG_MPI_RENDERER
 // #define SEPARATE_SERVER_WORKERS
+// #define SYNCHRONOUS_MPI
 
 using namespace std;
 using namespace gvt::render;
@@ -406,12 +409,40 @@ void MpiRenderer::setupRender() {
   colorBufMutex = new tbb::mutex[imageWidth];
 
   int schedType = root["Schedule"]["type"].value().toInteger();
+  
   if (schedType == scheduler::Domain) {
     initInstanceRankMap();
     doneTestRunning = false;
     allWorkDone = false;
-    pthread_mutex_init(&doneTestLock, NULL);
-    pthread_cond_init(&doneTestCondition, NULL);
+
+    numDones = 0;
+    numDoneSenders = 0;
+    allOthersDone = false;
+    pthread_mutex_init(&doneLock, NULL);
+    pthread_cond_init(&doneCondition, NULL);
+
+    enableDoneAction = true;
+    pthread_mutex_init(&enableDoneActionLock, NULL);
+    pthread_cond_init(&enableDoneActionCondition, NULL);
+
+    numRaysToReceive = 0;
+    numTallySenders = 0;
+    rayTallyDone = false;
+    pthread_mutex_init(&tallyLock, NULL);
+    pthread_cond_init(&tallyCondition, NULL);
+
+    enableTallyAction = true;
+    pthread_mutex_init(&enableTallyActionLock, NULL);
+    pthread_cond_init(&enableTallyActionCondition, NULL);
+
+    numRaysReceived = 0;
+    rayTransferDone = false;
+    pthread_mutex_init(&transferLock, NULL);
+    pthread_cond_init(&transferCondition, NULL);
+
+    enableTransferAction = true;
+    pthread_mutex_init(&enableTransferActionLock, NULL);
+    pthread_cond_init(&enableTransferActionCondition, NULL);
   }
 }
 
@@ -423,11 +454,14 @@ void MpiRenderer::freeRender() {
 
 void MpiRenderer::render() {
 
+#ifndef SYNCHRONOUS_MPI
   setupRender();
   int schedType = root["Schedule"]["type"].value().toInteger();
   // TODO (hpark):
   // collapse the following two if-else blocks into a single block
   if (schedType == scheduler::Image) {
+
+    std::cout << "[async mpi] starting image scheduler" << std::endl;
 
     RequestWork::Register();
     TileWork::Register();
@@ -459,14 +493,18 @@ void MpiRenderer::render() {
     freeRender();
 
   } else {
-
+    
+    std::cout << "[async mpi] starting domain scheduler" << std::endl;
     // setupRender();
 
     DomainTileWork::Register();
-    RayTallyWork::Register();
+    // RayTallyWork::Register();
+    TraceDoneWork::Register();
+    RayCountWork::Register();
     RayTransferWork::Register();
-    DoneTestWork::Register();
+    // DoneTestWork::Register();
     PixelGatherWork::Register();
+    Quit::Register();
 
     Start();
 
@@ -478,6 +516,23 @@ void MpiRenderer::render() {
     Wait();
     freeRender();
   }
+
+#else
+  setupRender();
+  camera->AllocateCameraRays();
+  camera->generateRays();
+  image = new Image(imageWidth, imageHeight, "image");
+  std::cout << "starting domain scheduler" << std::endl;
+  gvt::render::algorithm::Tracer<DomainScheduler>(camera->rays, *image)();
+  image->Write();
+  freeRender();
+  Quit::Register();
+  Start();
+  if (GetRank() == 0) {
+    Quit quit;
+    quit.Broadcast(true, true);
+  }
+#endif
 }
 
 void MpiRenderer::initServer() {

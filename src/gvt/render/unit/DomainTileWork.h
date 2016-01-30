@@ -58,8 +58,13 @@ protected:
   // virtual void filterRaysLocally(gvt::render::actor::RayVector &rays);
 
 private:
-  void transferRays();
+  void sendDone(bool iamdone);
+  void transferRays(bool allProcessesDone, std::vector<int>& numRaysToSend);
+  void sendRayCounts(std::vector<int>& numRaysToSend);
+  void sendRays();
+
   int myRank;
+  int numRanks;
   std::map<int, gvt::render::actor::RayVector> *incomingRayQ;
   // tbb::mutex *incomingRayQueueMutex;
   // pthread_mutex_t *doneTestLock;

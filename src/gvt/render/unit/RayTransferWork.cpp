@@ -40,13 +40,16 @@
 #include "gvt/core/mpi/Work.h"
 #include "gvt/render/actor/Ray.h"
 
+#include <pthread.h>
+
 using namespace std;
 using namespace gvt::core::mpi;
 using namespace gvt::render::unit;
 using namespace gvt::render::actor;
 
 // #define DEBUG_RAY_WORK
-#define FIND_THE_BUG
+// #define DEBUG_RAY_TRANSFER
+// #define DEBUG_RAY_COPY
 
 WORK_CLASS(RayTransferWork)
 
@@ -67,8 +70,14 @@ void RayTransferWork::Serialize(size_t &size, unsigned char *&serialized) {
   buf += sizeof(int);
 
   for (size_t i = 0; i < outgoingRays.size(); ++i) {
-    outgoingRays[i].serialize(buf);
-    // buf += outgoingRays[i].pack(buf);
+    // outgoingRays[i].serialize(buf);
+    buf += outgoingRays[i].pack(buf);
+#ifdef DEBUG_RAY_COPY
+  MpiRenderer *renderer = static_cast<MpiRenderer *>(Application::GetApplication());
+  if (renderer->GetRank() == 0) {
+    std::cout<<"serialize: outgoingRays["<<i<<"]{"<<outgoingRays[i]<<"} buf "<<(void*)buf<<std::endl;
+  }
+#endif
   }
 }
 
@@ -83,63 +92,90 @@ Work *RayTransferWork::Deserialize(size_t size, unsigned char *serialized) {
   buf += sizeof(int);
   work->numRays = numRays;
 
-  // // TODO (hpark): need some static function in Ray.h
-  // //               to evaluate the ray size
-  // // if not available, do some hand calculation and hard code it here
-  // Ray dummyRay;
-  // size_t raysize = dummyRay.packedSize() * numRays;
-  // if (size != (2 * sizeof(int) + (raysize))) {
-  //   std::cerr << "Test deserializer ctor with received size (" << size << ") != expected size (" << raysize << ")\n";
-  //   exit(1);
-  // }
-
   work->incomingRays.resize(numRays);
 
   for(size_t i = 0; i < numRays; ++i) {
-    work->incomingRays[i] = Ray(buf);
+    Ray ray(buf);
+    work->incomingRays[i] = ray;
+    buf += ray.packedSize();
+#ifdef DEBUG_RAY_COPY
+  MpiRenderer *renderer = static_cast<MpiRenderer *>(Application::GetApplication());
+  if (renderer->GetRank() == 1) {
+    std::cout<<"deserialize: incomingRays["<<i<<"]{"<<work->incomingRays[i]<<"} buf "<<(void*)buf<<std::endl;
+  }
+#endif
+
   }
 
   return work;
 }
 
-void RayTransferWork::setRays(unsigned int instanceId, gvt::render::actor::RayVector &rays) {
+void RayTransferWork::setRays(int instanceId, gvt::render::actor::RayVector &rays) {
   this->instanceId = instanceId;
   this->numRays = rays.size();
   this->outgoingRays = rays;
+
+#ifdef DEBUG_RAY_COPY
+  MpiRenderer *renderer = static_cast<MpiRenderer *>(Application::GetApplication());
+  if (renderer->GetRank() == 0) {
+    std::cout<<"setRays: rays[0]{"<<rays[0]<<"}"<<std::endl;
+    std::cout<<"setRays: rays[1]{"<<rays[1]<<"}"<<std::endl;
+    std::cout<<"setRays: outgoingRays[0]{"<<outgoingRays[0]<<"}"<<std::endl;
+    std::cout<<"setRays: outgoingRays[1]{"<<outgoingRays[1]<<"}"<<std::endl;
+  }
+#endif
+  // outgoingRays.resize(rays.size());
+  // for(int i = 0; i < rays.size(); ++i) {
+  //   outgoingRays[i] = rays[i];
+  // }
 }
 
 bool RayTransferWork::Action() {
 
-
   MpiRenderer *renderer = static_cast<MpiRenderer *>(Application::GetApplication());
+
+  pthread_mutex_lock(&renderer->enableTransferActionLock);
+  while (!renderer->enableTransferAction) {
+    pthread_cond_wait(&renderer->enableTransferActionCondition, &renderer->enableTransferActionLock);
+  }
+  pthread_mutex_unlock(&renderer->enableTransferActionLock);
+
+  pthread_mutex_lock(&renderer->transferLock);
+
   std::map<int, RayVector> *inRayQ = renderer->getIncomingRayQueue(); 
 
+#ifdef DEBUG_RAY_TRANSFER
   printf("Rank %d: RayTransferWork::Action start\n", renderer->GetRank());
-
-  // TODO (hpark): for now this lock is unnecessary but for multiple threads in use, we need this in this future.
-  // tbb::mutex *remoteRayQMutex = renderer->getIncomingRayQueueMutex(); 
-  // {
-  //   tbb::mutex::scoped_lock remoteRayQLock(*remoteRayQMutex);
+#endif
 
   if (inRayQ->find(instanceId) != inRayQ->end()) {
     (*inRayQ)[instanceId].insert((*inRayQ)[instanceId].end(), incomingRays.begin(), incomingRays.end()); 
   } else {
     (*inRayQ)[instanceId] = incomingRays;
   }
+ 
+  renderer->numRaysReceived += this->numRays;
 
-  int numRaysReceived = renderer->incrementNumRaysReceived(numRays);
-
-#ifdef FIND_THE_BUG
-  printf("Rank %d: RayTransferWork: num rays received so far: %d num rays to receive: %d\n", renderer->GetRank(),
-         numRaysReceived, renderer->getNumRaysToReceive());
+#ifdef DEBUG_RAY_TRANSFER
+  printf("Rank %d: RayTransferWork: numRaysReceived %d: numRays %d: numRaysToReceive: %d\n", renderer->GetRank(), renderer->numRaysReceived, this->numRays, renderer->numRaysToReceive);
 #endif
-  if (numRaysReceived > renderer->getNumRaysToReceive()) {
-    printf("error: RayTransferWork: Rank %d: num of rays received exceeded expected count\n", renderer->GetRank());
-    exit(1);
+
+  if (renderer->numRaysReceived == renderer->numRaysToReceive) {
+
+#ifdef DEBUG_RAY_TRANSFER
+    printf("Rank %d: RayTransferWork: signaling transferCondition!!!\n", renderer->GetRank());
+#endif
+    
+    renderer->rayTransferDone = true;
+
+    pthread_mutex_lock(&renderer->enableTransferActionLock);
+    renderer->enableTransferAction = false;
+    pthread_mutex_unlock(&renderer->enableTransferActionLock);
+
+    pthread_cond_signal(&renderer->transferCondition);
   }
 
-  if (numRaysReceived == renderer->getNumRaysToReceive()) {
-    renderer->setRayTransferDone(true);
-  }
+  pthread_mutex_unlock(&renderer->transferLock);
+
   return false;
 }
