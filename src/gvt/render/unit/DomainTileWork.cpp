@@ -71,7 +71,7 @@ using namespace gvt::render::actor;
 using namespace gvt::render::data::scene;
 
 #define DEBUG_DOMAIN_TILE_WORK
-// #define DEBUG_RAY_TRANSFER
+#define DEBUG_RAY_TRANSFER
 // #define DEBUG_DUMP_QSTATE
 // #define DEBUG_IMAGE_WRITE
 
@@ -433,20 +433,28 @@ void DomainTileWork::sendRays() {
     int ownerRank = renderer->getInstanceOwner(instance);
 
     if (ownerRank != myRank && rays.size() > 0) {
+#ifdef DEBUG_RAY_TRANSFER
+      printf("Rank %d: DomainTileWork::sendRays: ray.send(to Rank %d): ray count: %lu \n", myRank, ownerRank, rays.size());
+#endif
       RayTransferWork work;
       // TODO (hpark): copying of rays may not be needed here.
       work.setRays(instance, rays);
       work.Send(ownerRank);
-#ifdef DEBUG_RAY_TRANSFER
-      printf("Rank %d: ray.send(to Rank %d): ray count: %lu \n", myRank, ownerRank, rays.size());
-#endif
     }
   }
+
+#ifdef DEBUG_RAY_TRANSFER
+      printf("Rank %d: DomainTileWork::sendRays: blocked on transferCondition\n", myRank);
+#endif
 
   pthread_mutex_lock(&renderer->transferLock);
   while (!renderer->rayTransferDone) {
     pthread_cond_wait(&renderer->transferCondition, &renderer->transferLock);
   }
+
+#ifdef DEBUG_RAY_TRANSFER
+      printf("Rank %d: DomainTileWork::sendRays: transferCondition unblocked\n", myRank);
+#endif
 
   renderer->numRaysReceived = 0;
   renderer->rayTransferDone = false;

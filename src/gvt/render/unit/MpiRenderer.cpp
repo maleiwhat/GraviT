@@ -88,6 +88,9 @@
 
 #define DEBUG_MPI_RENDERER
 // #define SEPARATE_SERVER_WORKERS
+
+// TODO (hpark): if SYNCHRONOUS_MPI is enabled, the image is generated correctly
+// but the program never gets terminated (use CTRL-C just fornow).
 // #define SYNCHRONOUS_MPI
 
 using namespace std;
@@ -493,18 +496,14 @@ void MpiRenderer::render() {
     freeRender();
 
   } else {
-    
+
     std::cout << "[async mpi] starting domain scheduler" << std::endl;
-    // setupRender();
 
     DomainTileWork::Register();
-    // RayTallyWork::Register();
     TraceDoneWork::Register();
     RayCountWork::Register();
     RayTransferWork::Register();
-    // DoneTestWork::Register();
     PixelGatherWork::Register();
-    Quit::Register();
 
     Start();
 
@@ -526,12 +525,12 @@ void MpiRenderer::render() {
   gvt::render::algorithm::Tracer<DomainScheduler>(camera->rays, *image)();
   image->Write();
   freeRender();
-  Quit::Register();
-  Start();
-  if (GetRank() == 0) {
-    Quit quit;
-    quit.Broadcast(true, true);
-  }
+  // Quit::Register();
+  // Start();
+  // if (GetRank() == 0) {
+  //   Quit quit;
+  //   quit.Broadcast(true, true);
+  // }
 #endif
 }
 

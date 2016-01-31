@@ -48,7 +48,7 @@ using namespace gvt::render::unit;
 using namespace gvt::render::actor;
 
 // #define DEBUG_RAY_WORK
-// #define DEBUG_RAY_TRANSFER
+#define DEBUG_RAY_TRANSFER
 // #define DEBUG_RAY_COPY
 
 WORK_CLASS(RayTransferWork)
@@ -134,6 +134,10 @@ bool RayTransferWork::Action() {
 
   MpiRenderer *renderer = static_cast<MpiRenderer *>(Application::GetApplication());
 
+#ifdef DEBUG_RAY_TRANSFER
+  printf("Rank %d: RayTransferWork::Action about to start (blocked on enableTransferActionCondition)\n", renderer->GetRank());
+#endif
+
   pthread_mutex_lock(&renderer->enableTransferActionLock);
   while (!renderer->enableTransferAction) {
     pthread_cond_wait(&renderer->enableTransferActionCondition, &renderer->enableTransferActionLock);
@@ -145,7 +149,7 @@ bool RayTransferWork::Action() {
   std::map<int, RayVector> *inRayQ = renderer->getIncomingRayQueue(); 
 
 #ifdef DEBUG_RAY_TRANSFER
-  printf("Rank %d: RayTransferWork::Action start\n", renderer->GetRank());
+  printf("Rank %d: RayTransferWork::Action start (enableTransferActionCondition unblocked)\n", renderer->GetRank());
 #endif
 
   if (inRayQ->find(instanceId) != inRayQ->end()) {

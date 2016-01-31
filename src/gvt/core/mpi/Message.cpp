@@ -11,7 +11,8 @@
 
 using namespace gvt::core::mpi;
 
-// #define COUNTING 1
+#define DEBUG_MSG_THREAD
+#define COUNTING 1
 #ifdef COUNTING
 static pthread_mutex_t ctor_lock = PTHREAD_MUTEX_INITIALIZER;
 static int mknt = 0;
@@ -52,11 +53,16 @@ void *MessageManager::messageThread(void *p) {
   pthread_cond_signal(&theMessageManager->cond);
   pthread_mutex_unlock(&theMessageManager->lock);
 
+  Message *m = NULL;
+
   Message *pending_message = new Message();
   while (!theApplication->IsDoneSet()) {
     if (pending_message->IsReady()) {
       pending_message->Receive();
 
+#ifdef DEBUG_MSG_THREAD
+        printf("Rank %d: MessageManager::messageThread: mesage received\n", theApplication->GetRank());
+#endif
       // Handle collective operations in the MPI thread
 
       if (pending_message->header.collective) {
@@ -76,34 +82,57 @@ void *MessageManager::messageThread(void *p) {
       pending_message = new Message();
     }
 
-    while (theApplication->GetOutgoingMessageQueue()->IsReady()) {
-      Message *m = theApplication->GetOutgoingMessageQueue()->Dequeue();
-      if (m) {
-        // Send it on
-        m->Send();
-
-        // If this is a collective, execute its work here in the message thread
-        if (m->header.collective) {
-          Work *w = theApplication->Deserialize(m);
-          bool kill_me = w->Action();
-
-          if (m->blocking) {
-            pthread_mutex_lock(&m->lock);
-            pthread_cond_signal(&m->cond);
-            pthread_mutex_unlock(&m->lock);
-          } else
-            delete m;
-
-          if (kill_me) {
-            theApplication->Kill();
-          }
-        } else
+    // while (theApplication->GetOutgoingMessageQueue()->IsReady()) {
+    if (theApplication->GetOutgoingMessageQueue()->IsReady()) {
+      if (m) { // wait until previous message
+        if (m->IsIsendDone()) {
           delete m;
+          m = NULL;
+        }
       } else {
-        break;
+        // Message *m = theApplication->GetOutgoingMessageQueue()->Dequeue();
+        m = theApplication->GetOutgoingMessageQueue()->Dequeue();
+        if (m) {
+
+#ifdef DEBUG_MSG_THREAD
+          printf("Rank %d: MessageManager::messageThread: message to send\n", theApplication->GetRank());
+#endif
+          // Send it on
+          m->Send();
+
+#ifdef DEBUG_MSG_THREAD
+          printf("Rank %d: MessageManager::messageThread: message sent\n", theApplication->GetRank());
+#endif
+          // If this is a collective, execute its work here in the message thread
+          if (m->header.collective) {
+            Work *w = theApplication->Deserialize(m);
+            bool kill_me = w->Action();
+
+            if (m->blocking) {
+              pthread_mutex_lock(&m->lock);
+              pthread_cond_signal(&m->cond);
+              pthread_mutex_unlock(&m->lock);
+            } else
+              delete m;
+  
+            if (kill_me) {
+              theApplication->Kill();
+            }
+          }
+          // } else
+          //   delete m;
+        } else {
+          printf("Error: Rank %d: NULL message detected for send\n", theApplication->GetRank());
+          exit(1);
+          break;
+        }
       }
     }
   }
+
+#ifdef DEBUG_MSG_THREAD
+  printf("Rank %d: MessageManager::messageThread: theApplication->IsDoneSet(): %d\n", theApplication->GetRank(), theApplication->IsDoneSet());
+#endif
 
   if (pending_message) delete pending_message;
 
@@ -262,12 +291,32 @@ void Message::Wait() {
 }
 
 bool Message::IsReady() {
+// #ifdef DEBUG_MSG_THREAD
+//   printf("Rank %d: Message::IsReady\n", Application::GetApplication()->GetRank());
+// #endif
   int read_ready;
   MPI_Test(&request, &read_ready, &status);
+#ifdef DEBUG_MSG_THREAD
+  if (read_ready != 0)
+    printf("Rank %d: Message::IsReady: incoming message available: read_ready %d status.MPI_SOURCE: %d\n", Application::GetApplication()->GetRank(), read_ready, status.MPI_SOURCE);
+#endif
   return read_ready != 0;
 }
 
-void Message::Enqueue() { Application::GetApplication()->GetOutgoingMessageQueue()->Enqueue(this); }
+bool Message::IsIsendDone() {
+  int write_header_done;
+  int write_body_done;
+  MPI_Test(&isend_header_request, &write_header_done, &isend_header_status);
+  MPI_Test(&isend_body_request, &write_body_done, &isend_body_status);
+  return (write_header_done != 0 && write_body_done != 0);
+}
+
+void Message::Enqueue() { 
+  Application::GetApplication()->GetOutgoingMessageQueue()->Enqueue(this);
+#ifdef DEBUG_MSG_THREAD
+  printf("Rank %d: enqueued message to outgoingMessageQueue\n", Application::GetApplication()->GetRank());
+#endif
+}
 
 void Message::Receive() {
 #ifdef LOGGING
@@ -280,7 +329,13 @@ void Message::Receive() {
 
   if (header.size) {
     serialized = (unsigned char *)malloc(header.size);
+#ifdef DEBUG_MSG_THREAD
+    printf("Rank %d: Message::Receive: MPI_Recv starts (body) header.size: %lu\n", Application::GetApplication()->GetRank(), header.size);
+#endif
     MPI_Recv(serialized, header.size, MPI_UNSIGNED_CHAR, header.source, Message::BODY_TAG, MPI_COMM_WORLD, &status);
+#ifdef DEBUG_MSG_THREAD
+    printf("Rank %d: Message::Receive: MPI_Recv ends (body) header.size: %lu\n", Application::GetApplication()->GetRank(), header.size);
+#endif
   }
 
   if (header.broadcast_root != -1) Send();
@@ -314,9 +369,22 @@ void Message::Send() {
     }
 
   } else {
-    MPI_Send((unsigned char *)&header, sizeof(header), MPI_UNSIGNED_CHAR, header.destination, Message::HEADER_TAG,
-             MPI_COMM_WORLD);
+#ifdef DEBUG_MSG_THREAD
+    printf("Rank %d: Message::Send: MPI_Send (header)\n", Application::GetApplication()->GetRank());
+#endif
+    // MPI_Send((unsigned char *)&header, sizeof(header), MPI_UNSIGNED_CHAR, header.destination, Message::HEADER_TAG,
+    //          MPI_COMM_WORLD);
+    MPI_Isend((unsigned char *)&header, sizeof(header), MPI_UNSIGNED_CHAR, header.destination, Message::HEADER_TAG,
+             MPI_COMM_WORLD, &isend_header_request);
     if (header.size)
-      MPI_Send(serialized, header.size, MPI_UNSIGNED_CHAR, header.destination, Message::BODY_TAG, MPI_COMM_WORLD);
+#ifdef DEBUG_MSG_THREAD
+    printf("Rank %d: Message::Send: MPI_Send (body) starts header.size: %lu\n", Application::GetApplication()->GetRank(), header.size);
+#endif
+      // MPI_Send(serialized, header.size, MPI_UNSIGNED_CHAR, header.destination, Message::BODY_TAG, MPI_COMM_WORLD);
+      MPI_Isend(serialized, header.size, MPI_UNSIGNED_CHAR, header.destination, Message::BODY_TAG, MPI_COMM_WORLD, &isend_body_request);
+#ifdef DEBUG_MSG_THREAD
+    printf("Rank %d: Message::Send: MPI_Send (body) ends header.size: %lu\n", Application::GetApplication()->GetRank(), header.size);
+#endif
+
   }
 }

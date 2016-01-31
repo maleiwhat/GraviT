@@ -48,7 +48,7 @@ using namespace gvt::render::unit;
 using namespace gvt::render::actor;
 
 // #define DEBUG_RAY_WORK
-// #define DEBUG_RAY_TRANSFER
+#define DEBUG_RAY_TRANSFER
 
 WORK_CLASS(RayCountWork)
 

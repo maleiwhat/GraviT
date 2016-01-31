@@ -88,6 +88,7 @@ public:
   ~Message();
 
   bool IsReady();
+  bool IsIsendDone();
 
   void Enqueue();
 
@@ -125,6 +126,10 @@ protected:
   unsigned char *serialized;
   MPI_Status status;
   MPI_Request request;
+  MPI_Status isend_header_status;
+  MPI_Request isend_header_request;
+  MPI_Status isend_body_status;
+  MPI_Request isend_body_request;
 };
 
 } // ns mpi
