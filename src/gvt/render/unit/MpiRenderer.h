@@ -271,10 +271,10 @@ private:
   pthread_mutex_t workRestartReadyLock;
   pthread_cond_t workRestartReadyCond;
 
-  // friend class PixelGatherWork;
-  // bool imageReady;
-  // pthread_mutex_t imageReadyLock;
-  // pthread_cond_t imageReadyCond;
+  friend class PixelGatherWork;
+  bool imageReady;
+  pthread_mutex_t imageReadyLock;
+  pthread_cond_t imageReadyCond;
 
   // // unused (to be deleted)
   // ray counting

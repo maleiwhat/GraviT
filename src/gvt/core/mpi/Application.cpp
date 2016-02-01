@@ -78,7 +78,7 @@ Application::Application(int *a, char ***b) {
   theOutgoingQueue = new MessageQ("outgoing");
 
   Quit::Register();
-  pthread_mutex_unlock(&lock);
+  // GDA pthread_mutex_unlock(&lock);
 #ifdef DEBUG_APP_LOCK
   printf("Rank %d: Application::Application unlock\n", GetRank());
 #endif
@@ -91,6 +91,8 @@ Application::Application(int *a, char ***b) {
 
 Application::~Application() {
   Wait();
+  // GDA
+  pthread_mutex_unlock(&lock);
   delete theIncomingQueue;
   delete theOutgoingQueue;
 }
@@ -123,13 +125,13 @@ void Application::Kill() {
 #ifdef DEBUG_APP
   printf("Rank %d: Application::Kill: start\n", Application::GetApplication()->GetRank());
 #endif
-  pthread_mutex_lock(&lock);
+  // GDA pthread_mutex_lock(&lock);
 #ifdef DEBUG_APP_LOCK
   printf("Rank %d: Application::Kill lock\n", Application::GetApplication()->GetRank());
 #endif
 #ifdef DEBUG_APP
   printf("Rank %d: Application::Kill: lock acquired.\n",
-         Application::GetApplication()->GetRank());
+         Application::GetApplication()->GetRank())
 #endif
 
   application_done = true;
@@ -193,30 +195,15 @@ void *Application::workThread(void *p) {
 
   Message *m;
   while (theApplication->Running() && (m = theApplication->GetIncomingMessageQueue()->Dequeue()) != NULL) {
-    // std::cout<<"Rank "<<Application::GetApplication()->GetRank()<<": before theApplication->Deserialize\n";
     Work *w = theApplication->Deserialize(m);
-    // std::cout<<"Rank "<<Application::GetApplication()->GetRank()<<": after theApplication->Deserialize\n";
     delete m;
 
-#ifdef DEBUG_APP
-    std::cout<<"Rank "<<Application::GetApplication()->GetRank()<<": before w->Action\n";
-#endif
     if (w->Action()) {
-#ifdef DEBUG_APP
-      printf("Rank %d: Application::workThread: calling Kill()\n", Application::GetApplication()->GetRank());
-#endif
       theApplication->Kill();
     }
-#ifdef DEBUG_APP
-    std::cout<<"Rank "<<Application::GetApplication()->GetRank()<<": after w->Action\n";
-#endif
 
     delete w;
   }
-
-#ifdef DEBUG_APP
-  printf("Rank %d: pthread_exit(NULL)\n", Application::GetApplication()->GetRank());
-#endif
 
   pthread_exit(NULL);
 }

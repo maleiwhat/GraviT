@@ -436,10 +436,10 @@ void MpiRenderer::setupRender() {
     pthread_mutex_init(&workRestartReadyLock, NULL);
     pthread_cond_init(&workRestartReadyCond, NULL);
 
-    // // image write
-    // imageReady = false; 
-    // pthread_mutex_init(&imageReadyLock, NULL);
-    // pthread_cond_init(&imageReadyCond, NULL);
+    // image write
+    imageReady = false; 
+    pthread_mutex_init(&imageReadyLock, NULL);
+    pthread_cond_init(&imageReadyCond, NULL);
 
     // doneTestRunning = false;
     // allWorkDone = false;
@@ -546,14 +546,16 @@ void MpiRenderer::render() {
     work.setTileSize(0, 0, imageWidth, imageHeight);
     work.Action();
 
-    // // TODO(hpark): somehow returning true PixelGatherWork::Action()
-    // // causes processes to hang
-    // // (blocked on Application::lock in Application::Kill)
-    // pthread_mutex_lock(&imageReadyLock);
-    // while(!imageReady)
-    //   pthread_cond_wait(&imageReadyCond, &imageReadyLock);
-    // imageReady = false;
-    // pthread_mutex_unlock(&imageReadyLock);
+    printf("Rank %d: blocked on imageReadyLock.\n", GetRank());
+
+    pthread_mutex_lock(&imageReadyLock);
+    printf("Rank %d: MpiRenderer. acquired imageReadyLock.\n", GetRank());
+    while(!this->imageReady) {
+      pthread_cond_wait(&imageReadyCond, &imageReadyLock);
+    }
+    printf("Rank %d: MpiRenderer. imageReadyCond unblocked.\n", GetRank());
+    imageReady = false;
+    pthread_mutex_unlock(&imageReadyLock);
 
     // if (GetRank() == 0) {
     //   printf("Rank %d: writing result to file\n", GetRank());
@@ -564,8 +566,13 @@ void MpiRenderer::render() {
     //   // }
     //   QuitApplication();
     // }
+    printf("Rank %d: about to kill the process.\n", GetRank());
+    Kill();
+    // // Quit quit;
+    // // quit.Action();
+    // printf("Rank %d: just killed the process.\n", GetRank());
 
-    Wait();
+    // Wait();
 
     freeRender();
   }

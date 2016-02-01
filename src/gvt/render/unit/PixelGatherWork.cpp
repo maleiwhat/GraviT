@@ -127,17 +127,16 @@ bool PixelGatherWork::Action() {
   }
   delete[] bufs;
 
+  printf("Rank %d: PixelGatherWork blocked on imageReadyLock.\n", renderer->GetRank());
+  pthread_mutex_lock(&renderer->imageReadyLock);
+  renderer->imageReady = true;
+  printf("Rank %d: PixelGatherWork signaling imageReadyCond.\n", renderer->GetRank());
+  pthread_cond_signal(&renderer->imageReadyCond);
+  pthread_mutex_unlock(&renderer->imageReadyLock);
+
+  return false;
 // #ifdef DEBUG_PIXEL_GATHER_WORK
 //   printf("Rank %d: PixelGatherWork::Action, returning with true\n", renderer->GetRank());
 // #endif
-
-//   // TODO(hpark): somehow returning true causes a processes to hang
-//   // (blocked on Application::lock in Application::Kill)
-//   pthread_mutex_lock(&renderer->imageReadyLock);
-//   renderer->imageReady = true;
-//   pthread_cond_signal(&renderer->imageReadyCond);
-//   pthread_mutex_unlock(&renderer->imageReadyLock);
-
-  // return false;
-  return true;
+  // return true;
 }

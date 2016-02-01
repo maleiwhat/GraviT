@@ -7,6 +7,8 @@
 #include <gvt/core/mpi/MessageQ.h>
 #include <gvt/core/mpi/Work.h>
 
+#define DEBUG_QUIT
+
 namespace gvt {
 namespace core {
 namespace mpi {
@@ -73,16 +75,27 @@ class Quit : public Work {
 
 public:
   static Work *Deserialize(size_t size, unsigned char *serialized) {
+#ifdef DEBUG_QUIT
+    printf("Rank %d: Quit::Deserialize.\n", Application::GetApplication()->GetRank());
+#endif
     Quit *bcast = new Quit;
     return (Work *)bcast;
   }
 
   void Serialize(size_t &size, unsigned char *&serialized) {
+#ifdef DEBUG_QUIT
+    printf("Rank %d: Quit::Serialize.\n", Application::GetApplication()->GetRank());
+#endif
     size = 0;
     serialized = NULL;
   }
 
-  bool Action() { return true; }
+  bool Action() {
+#ifdef DEBUG_QUIT
+    printf("Rank %d: Quit::Action. quitting the app.\n", Application::GetApplication()->GetRank());
+#endif
+    return true;
+  }
 };
 
 } // ns mpi
