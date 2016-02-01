@@ -109,6 +109,9 @@ bool TraceDoneWork::Action() {
 
   if (done) {
     renderer->allOthersDone = true;
+#ifdef DEBUG_RAY_TRANSFER
+    printf("Rank %d: TraceDoneWork: all other processes are done with their work !!!", renderer->GetRank());
+#endif
   }
 
 #ifdef DEBUG_RAY_TRANSFER
@@ -127,7 +130,6 @@ bool TraceDoneWork::Action() {
 
     pthread_cond_signal(&renderer->doneCondition);
   }
-
   pthread_mutex_unlock(&renderer->doneLock);
 
   return false;

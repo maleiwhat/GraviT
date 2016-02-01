@@ -217,73 +217,113 @@ private:
   int imageWidth;
   int imageHeight;
 
-public:
-  // synchronization (domain and hybrid only)
-  pthread_mutex_t *getDoneTestLock() { return &doneTestLock; }
-  pthread_cond_t *getDoneTestCondition() { return &doneTestCondition; }
-  void setDoneTestRunning(bool flag) { doneTestRunning = flag; }
-  bool isDoneTestRunning() const { return doneTestRunning; }
-  void setLocalRayCountDone(bool flag) { localRayCountDone = flag; }
-  bool isLocalRayCountDone() const { return localRayCountDone; }
-  void setRayTallyDone(bool flag) { rayTallyDone = flag; }
-  bool isRayTallyDone() const { return rayTallyDone; }
-  void setAllWorkDone(bool flag) { allWorkDone = flag; }
-  void setRayTransferDone(bool flag) { rayTransferDone = flag; }
-  bool isAllWorkDone() const { return allWorkDone; }
-  bool isRayTransferDone() const { return rayTransferDone; }
-  unsigned int incrementNumRaysReceived(std::size_t value) { numRaysReceived += value; return numRaysReceived; }
-  void setNumRaysToReceive(unsigned int value) { numRaysToReceive = value; }
-  void setNumRaysReceived(unsigned int value) { numRaysReceived = value; }
-  unsigned int getNumRaysToReceive() const { return numRaysToReceive; }
-  void initRayCounts(unsigned int numRanks) { rayCounts = std::vector<unsigned int>(numRanks, 0); }
-  void incrementRayCount(unsigned int rank, unsigned int value) { rayCounts[rank] += value; }
-  std::vector<unsigned int> *getRayCounts() { return &rayCounts; }
+// // unused (to be deleted)
+// public:
+//   // synchronization (domain and hybrid only)
+//   pthread_mutex_t *getDoneTestLock() { return &doneTestLock; }
+//   pthread_cond_t *getDoneTestCondition() { return &doneTestCondition; }
+//   void setDoneTestRunning(bool flag) { doneTestRunning = flag; }
+//   bool isDoneTestRunning() const { return doneTestRunning; }
+//   void setLocalRayCountDone(bool flag) { localRayCountDone = flag; }
+//   bool isLocalRayCountDone() const { return localRayCountDone; }
+//   void setRayTallyDone(bool flag) { rayTallyDone = flag; }
+//   bool isRayTallyDone() const { return rayTallyDone; }
+//   void setAllWorkDone(bool flag) { allWorkDone = flag; }
+//   void setRayTransferDone(bool flag) { rayTransferDone = flag; }
+//   bool isAllWorkDone() const { return allWorkDone; }
+//   bool isRayTransferDone() const { return rayTransferDone; }
+//   unsigned int incrementNumRaysReceived(std::size_t value) { numRaysReceived += value; return numRaysReceived; }
+//   void setNumRaysToReceive(unsigned int value) { numRaysToReceive = value; }
+//   void setNumRaysReceived(unsigned int value) { numRaysReceived = value; }
+//   unsigned int getNumRaysToReceive() const { return numRaysToReceive; }
+//   void initRayCounts(unsigned int numRanks) { rayCounts = std::vector<unsigned int>(numRanks, 0); }
+//   void incrementRayCount(unsigned int rank, unsigned int value) { rayCounts[rank] += value; }
+//   std::vector<unsigned int> *getRayCounts() { return &rayCounts; }
 
 private:
-  friend class DomainTileWork;
   friend class TraceDoneWork;
   friend class RayCountWork;
   friend class RayTransferWork;
+  friend class PixelGatherWork;
 
-  int numDones; // how many processes are done tracing rays
-  int numDoneSenders; // how many processes have finished evaluating the doneness
-  bool allOthersDone;
-  pthread_mutex_t doneLock;
-  pthread_cond_t doneCondition;
+  friend class DomainTileWork;
 
-  bool enableDoneAction;
-  pthread_mutex_t enableDoneActionLock;
-  pthread_cond_t enableDoneActionCondition;
+  // ray transfer
+  friend class RayTxWork;
+  pthread_mutex_t rayBufferLock;
+  std::map<int, gvt::render::actor::RayVector> rayBuffer;
+
+  // ray transfer done
+  friend class RayTxDoneWork;
+  int numRayTxDoneSenders;
+  pthread_mutex_t rayTxDoneLock;
+  bool rayCommitReady;
+  pthread_mutex_t rayCommitReadyLock;
+  pthread_cond_t rayCommitReadyCond;
+
+  // ray commit done
+  friend class RayCommitDoneWork;
+  int numRayCommitDoneSenders;
+  int numRayQEmptyFlags;
+  bool allOtherProcessesDone;
+  pthread_mutex_t rayCommitDoneLock;
+  bool workRestartReady;
+  pthread_mutex_t workRestartReadyLock;
+  pthread_cond_t workRestartReadyCond;
+
+  // friend class PixelGatherWork;
+  // bool imageReady;
+  // pthread_mutex_t imageReadyLock;
+  // pthread_cond_t imageReadyCond;
+
+  // // unused (to be deleted)
+  // ray counting
+  // int numRaysToReceive;
+  // int numRayCountSenders;
+  // bool rayCountDone;
+  // pthread_mutex_t rayCountLock;
+
+  // // unused (to be deleted)
+  // int numDones; // how many processes are done tracing rays
+  // int numDoneSenders; // how many processes have finished evaluating the doneness
+  // bool allOthersDone;
+  // pthread_mutex_t doneLock;
+  // pthread_cond_t doneCondition;
+
+  // // unused (to be deleted)
+  // bool enableDoneAction;
+  // pthread_mutex_t enableDoneActionLock;
+  // pthread_cond_t enableDoneActionCondition;
   
-  int numRaysToReceive;
-  int numTallySenders;
-  bool rayTallyDone;
-  pthread_mutex_t tallyLock;
-  pthread_cond_t tallyCondition;
+  // // unused (to be deleted)
+  // bool enableTallyAction;
+  // pthread_mutex_t enableTallyActionLock;
+  // pthread_cond_t enableTallyActionCondition;
 
-  bool enableTallyAction;
-  pthread_mutex_t enableTallyActionLock;
-  pthread_cond_t enableTallyActionCondition;
-
-  int numRaysReceived;
-  bool rayTransferDone;
-  pthread_mutex_t transferLock;
-  pthread_cond_t transferCondition;
-
-  bool enableTransferAction;
-  pthread_mutex_t enableTransferActionLock;
-  pthread_cond_t enableTransferActionCondition;
-
-  std::vector<unsigned int> rayCounts;
-  bool doneTestRunning;
-  bool localRayCountDone;
-  // bool rayTallyDone;
-  bool allWorkDone;
+  // // unused (to be deleted)
+  // int numRaysReceived;
   // bool rayTransferDone;
-  // unsigned int numRaysToReceive;
-  // unsigned int numRaysReceived;
-  pthread_mutex_t doneTestLock;
-  pthread_cond_t doneTestCondition;
+  // pthread_mutex_t transferLock;
+  // pthread_cond_t transferCondition;
+
+  // // unused (to be deleted)
+  // bool enableTransferAction;
+  // pthread_mutex_t enableTransferActionLock;
+  // pthread_cond_t enableTransferActionCondition;
+
+
+  // // unused (to be deleted)
+  // bool imageReady;
+  // std::vector<unsigned int> rayCounts;
+  // bool doneTestRunning;
+  // bool localRayCountDone;
+  // // bool rayTallyDone;
+  // bool allWorkDone;
+  // // bool rayTransferDone;
+  // // unsigned int numRaysToReceive;
+  // // unsigned int numRaysReceived;
+  // pthread_mutex_t doneTestLock;
+  // pthread_cond_t doneTestCondition;
 
 };
 }

@@ -42,6 +42,7 @@
 #include <vector>
 #include <future>
 #include <thread>
+#include <pthread.h>
 #include <iostream>
 
 #define DEBUG_PIXEL_GATHER_WORK
@@ -107,8 +108,7 @@ bool PixelGatherWork::Action() {
         // for (size_t i = 1; i < mpi.world_size; ++i) {
         for (size_t i = 1; i < numRanks; ++i) {
           for (int j = limit.first * 3; j < limit.second * 3; j += 3) {
-            int p = i * rgb_buf_size + j;
-            // assumes black background, so adding is fine (r==g==b== 0)
+            int p = i * rgb_buf_size + j; // assumes black background, so adding is fine (r==g==b== 0)
             rgb[j + 0] += bufs[p + 0];
             rgb[j + 1] += bufs[p + 1];
             rgb[j + 2] += bufs[p + 2];
@@ -120,10 +120,24 @@ bool PixelGatherWork::Action() {
     for (std::future<void> &f : futures) {
       f.wait();
     }
-
+#ifdef DEBUG_PIXEL_GATHER_WORK
+    printf("Rank %d: writing result to file\n", renderer->GetRank());
+#endif
     image->Write(false);
   }
   delete[] bufs;
 
+// #ifdef DEBUG_PIXEL_GATHER_WORK
+//   printf("Rank %d: PixelGatherWork::Action, returning with true\n", renderer->GetRank());
+// #endif
+
+//   // TODO(hpark): somehow returning true causes a processes to hang
+//   // (blocked on Application::lock in Application::Kill)
+//   pthread_mutex_lock(&renderer->imageReadyLock);
+//   renderer->imageReady = true;
+//   pthread_cond_signal(&renderer->imageReadyCond);
+//   pthread_mutex_unlock(&renderer->imageReadyLock);
+
+  // return false;
   return true;
 }

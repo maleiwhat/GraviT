@@ -78,51 +78,53 @@ bool RayCountWork::Action() {
 
   MpiRenderer *renderer = static_cast<MpiRenderer *>(Application::GetApplication());
 
-#ifdef DEBUG_RAY_TRANSFER
-  printf("Rank %d: RayCountWork: blocked on enableTallyActionCondition\n", renderer->GetRank());
-#endif
+// #ifdef DEBUG_RAY_TRANSFER
+//   printf("Rank %d: RayCountWork: blocked on enableTallyActionCondition\n", renderer->GetRank());
+// #endif
 
-  pthread_mutex_lock(&renderer->enableTallyActionLock);
-  while (!renderer->enableTallyAction) {
-    pthread_cond_wait(&renderer->enableTallyActionCondition, &renderer->enableTallyActionLock);
-  }
-  pthread_mutex_unlock(&renderer->enableTallyActionLock);
+//   pthread_mutex_lock(&renderer->enableTallyActionLock);
+//   while (!renderer->enableTallyAction) {
+//     pthread_cond_wait(&renderer->enableTallyActionCondition, &renderer->enableTallyActionLock);
+//   }
+//   pthread_mutex_unlock(&renderer->enableTallyActionLock);
 
-#ifdef DEBUG_RAY_TRANSFER
-  printf("Rank %d: RayCountWork enableTallyActionCondition unblocked\n", renderer->GetRank());
-#endif
+// #ifdef DEBUG_RAY_TRANSFER
+//   printf("Rank %d: RayCountWork enableTallyActionCondition unblocked\n", renderer->GetRank());
+// #endif
 
   pthread_mutex_lock(&renderer->tallyLock);
 
   ++(renderer->numTallySenders);
   renderer->numRaysToReceive += this->numRays;
 
-  bool done = (renderer->numTallySenders == renderer->GetSize() - 1);
+  GVT_ASSERT(renderer->numTallySenders < renderer->GetSize(),
+             "Error: RayCountWork::Action: (# tally senders) cannnot exceed (total # processes - 1)");
 
 #ifdef DEBUG_RAY_TRANSFER
-  printf("Rank %d: RayCountWork: numTallySenders %d: numRays %d: numRaysToReceive %d\n", renderer->GetRank(), renderer->numTallySenders, this->numRays, renderer->numRaysToReceive);
+  printf("Rank %d: RayCountWork: numTallySenders %d: numRays %d: numRaysToReceive %d\n",
+         renderer->GetRank(), renderer->numTallySenders, this->numRays, renderer->numRaysToReceive);
 #endif
 
-  if (done) {
+//   if (done) {
 
-#ifdef DEBUG_RAY_TRANSFER
-    printf("Rank %d: RayCountWork: signaling tallyCondition!!!\n", renderer->GetRank());
-#endif
-    renderer->rayTallyDone = true;
+// #ifdef DEBUG_RAY_TRANSFER
+//     printf("Rank %d: RayCountWork: signaling tallyCondition!!!\n", renderer->GetRank());
+// #endif
+//     renderer->rayTallyDone = true;
 
-    pthread_mutex_lock(&renderer->enableTallyActionLock);
-    renderer->enableTallyAction = false;
-    pthread_mutex_unlock(&renderer->enableTallyActionLock);
+//     pthread_mutex_lock(&renderer->enableTallyActionLock);
+//     renderer->enableTallyAction = false;
+//     pthread_mutex_unlock(&renderer->enableTallyActionLock);
 
-    pthread_cond_signal(&renderer->tallyCondition);
+//     pthread_cond_signal(&renderer->tallyCondition);
 
-    if (renderer->numRaysToReceive == 0) {
-      pthread_mutex_lock(&renderer->transferLock);
-      renderer->rayTransferDone = true;
-      pthread_cond_signal(&renderer->transferCondition);
-      pthread_mutex_unlock(&renderer->transferLock);
-    }
-  }
+//     if (renderer->numRaysToReceive == 0) {
+//       pthread_mutex_lock(&renderer->transferLock);
+//       renderer->rayTransferDone = true;
+//       pthread_cond_signal(&renderer->transferCondition);
+//       pthread_mutex_unlock(&renderer->transferLock);
+//     }
+//   }
 
   pthread_mutex_unlock(&renderer->tallyLock);
 

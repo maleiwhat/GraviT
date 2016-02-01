@@ -32,44 +32,32 @@
    */
 
 //
-// DomainTileWork.h
+// RayCommitDoneWork.h
 //
 
-#ifndef GVT_RENDER_UNIT_DOMAIN_TILE_WORK_H
-#define GVT_RENDER_UNIT_DOMAIN_TILE_WORK_H
+#ifndef GVT_RENDER_UNIT_RAY_COMMIT_DONE_WORK_H
+#define GVT_RENDER_UNIT_RAY_COMMIT_DONE_WORK_H
 
-#include "gvt/render/unit/TileWork.h"
-#include <pthread.h>
+#include "gvt/core/mpi/Work.h"
+#include "gvt/core/mpi/Application.h"
+
+using namespace std;
+using namespace gvt::core::mpi;
 
 namespace gvt {
 namespace render {
 namespace unit {
 
-class DomainTileWork : public TileWork {
-  WORK_CLASS_HEADER(DomainTileWork)
+class RayCommitDoneWork : public Work {
+  WORK_CLASS_HEADER(RayCommitDoneWork)
 public:
-  virtual ~DomainTileWork() {}
-  static Work *Deserialize(std::size_t size, unsigned char *serialized);
+  virtual ~RayCommitDoneWork() {}
+  virtual void Serialize(size_t &size, unsigned char *&serialized);
+  static Work *Deserialize(size_t size, unsigned char *serialized);
   virtual bool Action();
-
-protected:
-  virtual void setupAction();
-  virtual void traceRays(gvt::render::actor::RayVector &rays);
-  // virtual void filterRaysLocally(gvt::render::actor::RayVector &rays);
-
+  void set(int isRayQueueEmpty) { this->isRayQueueEmpty = isRayQueueEmpty; }
 private:
-  bool transferRays();
-  void sendRays();
-  void sendRayTxDone();
-  void commitRays();
-  void sendRayCommitDone();
-
-  int myRank;
-  int numRanks;
-  std::map<int, gvt::render::actor::RayVector> *rayBuffer;
-  // tbb::mutex *incomingRayQueueMutex;
-  // pthread_mutex_t *doneTestLock;
-  // pthread_cond_t *doneTestCondition;
+  int isRayQueueEmpty;
 };
 }
 }

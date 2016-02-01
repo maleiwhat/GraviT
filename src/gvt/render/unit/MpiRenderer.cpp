@@ -76,10 +76,11 @@
 #include "gvt/render/unit/DomainTileWork.h"
 #include "gvt/render/unit/PixelWork.h"
 #include "gvt/render/unit/RayTallyWork.h"
-#include "gvt/render/unit/RayCountWork.h"
-#include "gvt/render/unit/RayTransferWork.h"
+// #include "gvt/render/unit/RayCountWork.h"
+#include "gvt/render/unit/RayTxWork.h"
 #include "gvt/render/unit/DoneTestWork.h"
-#include "gvt/render/unit/TraceDoneWork.h"
+#include "gvt/render/unit/RayTxDoneWork.h"
+#include "gvt/render/unit/RayCommitDoneWork.h"
 #include "gvt/render/unit/PixelGatherWork.h"
 #include "gvt/render/unit/TileLoadBalancer.h"
 
@@ -415,41 +416,74 @@ void MpiRenderer::setupRender() {
   
   if (schedType == scheduler::Domain) {
     initInstanceRankMap();
-    doneTestRunning = false;
-    allWorkDone = false;
 
-    numDones = 0;
-    numDoneSenders = 0;
-    allOthersDone = false;
-    pthread_mutex_init(&doneLock, NULL);
-    pthread_cond_init(&doneCondition, NULL);
+    // ray buffer
+    pthread_mutex_init(&rayBufferLock, NULL);
+  
+    // ray transfer done
+    numRayTxDoneSenders = 0;
+    pthread_mutex_init(&rayTxDoneLock, NULL);
+    rayCommitReady = false;
+    pthread_mutex_init(&rayCommitReadyLock, NULL);
+    pthread_cond_init(&rayCommitReadyCond, NULL);
+  
+    // ray commit done
+    numRayCommitDoneSenders = 0;
+    numRayQEmptyFlags = 0;
+    allOtherProcessesDone = false;
+    pthread_mutex_init(&rayCommitDoneLock, NULL);
+    workRestartReady = false;
+    pthread_mutex_init(&workRestartReadyLock, NULL);
+    pthread_cond_init(&workRestartReadyCond, NULL);
 
-    enableDoneAction = true;
-    pthread_mutex_init(&enableDoneActionLock, NULL);
-    pthread_cond_init(&enableDoneActionCondition, NULL);
+    // // image write
+    // imageReady = false; 
+    // pthread_mutex_init(&imageReadyLock, NULL);
+    // pthread_cond_init(&imageReadyCond, NULL);
 
-    numRaysToReceive = 0;
-    numTallySenders = 0;
-    rayTallyDone = false;
-    pthread_mutex_init(&tallyLock, NULL);
-    pthread_cond_init(&tallyCondition, NULL);
+    // doneTestRunning = false;
+    // allWorkDone = false;
 
-    enableTallyAction = true;
-    pthread_mutex_init(&enableTallyActionLock, NULL);
-    pthread_cond_init(&enableTallyActionCondition, NULL);
+    // numDones = 0;
+    // numDoneSenders = 0;
+    // allOthersDone = false;
+    // pthread_mutex_init(&doneLock, NULL);
+    // pthread_cond_init(&doneCondition, NULL);
 
-    numRaysReceived = 0;
-    rayTransferDone = false;
-    pthread_mutex_init(&transferLock, NULL);
-    pthread_cond_init(&transferCondition, NULL);
+    // // enableDoneAction = true;
+    // enableDoneAction = false;
+    // pthread_mutex_init(&enableDoneActionLock, NULL);
+    // pthread_cond_init(&enableDoneActionCondition, NULL);
 
-    enableTransferAction = true;
-    pthread_mutex_init(&enableTransferActionLock, NULL);
-    pthread_cond_init(&enableTransferActionCondition, NULL);
+    // numRaysToReceive = 0;
+    // numTallySenders = 0;
+    // rayTallyDone = false;
+    // pthread_mutex_init(&tallyLock, NULL);
+    // pthread_cond_init(&tallyCondition, NULL);
+
+    // // enableTallyAction = true;
+    // enableTallyAction = false;
+    // pthread_mutex_init(&enableTallyActionLock, NULL);
+    // pthread_cond_init(&enableTallyActionCondition, NULL);
+
+    // numRaysReceived = 0;
+    // rayTransferDone = false;
+    // pthread_mutex_init(&transferLock, NULL);
+    // pthread_cond_init(&transferCondition, NULL);
+
+    // // enableTransferAction = true;
+    // enableTransferAction = false;
+    // pthread_mutex_init(&enableTransferActionLock, NULL);
+    // pthread_cond_init(&enableTransferActionCondition, NULL);
+
+    // imageReady = false;
   }
 }
 
 void MpiRenderer::freeRender() {
+// #ifdef DEBUG_MPI_RENDERER
+  printf("Rank %d: MpiRenderer::freeRender. cleaning up.\n", GetRank());
+// #endif
   delete acceleration;
   delete[] rayQueueMutex;
   delete[] colorBufMutex;
@@ -500,9 +534,9 @@ void MpiRenderer::render() {
     std::cout << "[async mpi] starting domain scheduler" << std::endl;
 
     DomainTileWork::Register();
-    TraceDoneWork::Register();
-    RayCountWork::Register();
-    RayTransferWork::Register();
+    RayTxWork::Register();
+    RayTxDoneWork::Register();
+    RayCommitDoneWork::Register();
     PixelGatherWork::Register();
 
     Start();
@@ -512,7 +546,27 @@ void MpiRenderer::render() {
     work.setTileSize(0, 0, imageWidth, imageHeight);
     work.Action();
 
+    // // TODO(hpark): somehow returning true PixelGatherWork::Action()
+    // // causes processes to hang
+    // // (blocked on Application::lock in Application::Kill)
+    // pthread_mutex_lock(&imageReadyLock);
+    // while(!imageReady)
+    //   pthread_cond_wait(&imageReadyCond, &imageReadyLock);
+    // imageReady = false;
+    // pthread_mutex_unlock(&imageReadyLock);
+
+    // if (GetRank() == 0) {
+    //   printf("Rank %d: writing result to file\n", GetRank());
+    //   image->Write();
+    //   // for (int i=0; i<GetSize(); ++i) {
+    //   //   Quit work;
+    //   //   work.Send(i);
+    //   // }
+    //   QuitApplication();
+    // }
+
     Wait();
+
     freeRender();
   }
 

@@ -11,8 +11,10 @@
 
 using namespace gvt::core::mpi;
 
-#define DEBUG_MSG_THREAD
-#define COUNTING 1
+// #define DEBUG_MSG_THREAD
+
+// #define LOGGING
+// #define COUNTING 1
 #ifdef COUNTING
 static pthread_mutex_t ctor_lock = PTHREAD_MUTEX_INITIALIZER;
 static int mknt = 0;
@@ -84,12 +86,18 @@ void *MessageManager::messageThread(void *p) {
 
     // while (theApplication->GetOutgoingMessageQueue()->IsReady()) {
     if (theApplication->GetOutgoingMessageQueue()->IsReady()) {
+
+      bool serve = true;
       if (m) { // wait until previous message
         if (m->IsIsendDone()) {
           delete m;
           m = NULL;
+        } else {
+          serve = false;
         }
-      } else {
+      }
+
+      if (serve) {
         // Message *m = theApplication->GetOutgoingMessageQueue()->Dequeue();
         m = theApplication->GetOutgoingMessageQueue()->Dequeue();
         if (m) {
@@ -116,14 +124,19 @@ void *MessageManager::messageThread(void *p) {
               delete m;
   
             if (kill_me) {
+#ifdef DEBUG_MSG_THREAD
+              printf("Rank %d: MessageManager::messageThread kill_me=true theApplication->Kill()\n", theApplication->GetRank());
+#endif
               theApplication->Kill();
             }
           }
           // } else
           //   delete m;
         } else {
-          printf("Error: Rank %d: NULL message detected for send\n", theApplication->GetRank());
-          exit(1);
+#ifdef DEBUG_MSG_THREAD
+          printf("Rank %d: NULL message detected for send\n", theApplication->GetRank());
+          // exit(1);
+#endif
           break;
         }
       }
@@ -131,7 +144,7 @@ void *MessageManager::messageThread(void *p) {
   }
 
 #ifdef DEBUG_MSG_THREAD
-  printf("Rank %d: MessageManager::messageThread: theApplication->IsDoneSet(): %d\n", theApplication->GetRank(), theApplication->IsDoneSet());
+  printf("Rank %d: MessageManager::messageThread: just got out of forever message loop. theApplication->IsDoneSet(): %d\n", theApplication->GetRank(), theApplication->IsDoneSet());
 #endif
 
   if (pending_message) delete pending_message;
@@ -141,12 +154,25 @@ void *MessageManager::messageThread(void *p) {
 
   Message *message;
   while ((message = theApplication->GetOutgoingMessageQueue()->Dequeue()) != NULL) {
+#ifdef DEBUG_MSG_THREAD
+    printf("Rank %d: MessageManager::messageThread: flushing outgoing message queue\n", theApplication->GetRank());
+#endif
     message->Send();
     delete message;
   }
 
+#ifdef DEBUG_MSG_THREAD
+  printf("Rank %d: MessageManager::messageThread: flushed outgoing message queue\n", theApplication->GetRank());
+#endif
+
   MPI_Barrier(MPI_COMM_WORLD);
+
+#ifdef DEBUG_MSG_THREAD
+  printf("Rank %d: MessageManager::messageThread: passed barrier. calling mpi finalize\n", theApplication->GetRank());
+#endif
+  
   MPI_Finalize();
+
 
 #ifdef COUNTING
   sleep(theMessageManager->mpi_rank);
@@ -295,8 +321,9 @@ bool Message::IsReady() {
 //   printf("Rank %d: Message::IsReady\n", Application::GetApplication()->GetRank());
 // #endif
   int read_ready;
-  MPI_Test(&request, &read_ready, &status);
+  int err = MPI_Test(&request, &read_ready, &status);
 #ifdef DEBUG_MSG_THREAD
+  // printf("MPI_Test(err): %d\n", err);
   if (read_ready != 0)
     printf("Rank %d: Message::IsReady: incoming message available: read_ready %d status.MPI_SOURCE: %d\n", Application::GetApplication()->GetRank(), read_ready, status.MPI_SOURCE);
 #endif
@@ -304,11 +331,17 @@ bool Message::IsReady() {
 }
 
 bool Message::IsIsendDone() {
+  if (header.broadcast_root != -1)
+    return true;
   int write_header_done;
   int write_body_done;
   MPI_Test(&isend_header_request, &write_header_done, &isend_header_status);
-  MPI_Test(&isend_body_request, &write_body_done, &isend_body_status);
-  return (write_header_done != 0 && write_body_done != 0);
+  bool done = (write_header_done != 0);
+  if (header.size) {
+    MPI_Test(&isend_body_request, &write_body_done, &isend_body_status);
+    done = (write_header_done != 0 && write_body_done != 0);
+  }
+  return done;
 }
 
 void Message::Enqueue() { 
@@ -374,17 +407,27 @@ void Message::Send() {
 #endif
     // MPI_Send((unsigned char *)&header, sizeof(header), MPI_UNSIGNED_CHAR, header.destination, Message::HEADER_TAG,
     //          MPI_COMM_WORLD);
-    MPI_Isend((unsigned char *)&header, sizeof(header), MPI_UNSIGNED_CHAR, header.destination, Message::HEADER_TAG,
+   int err1 = MPI_Isend((unsigned char *)&header, sizeof(header), MPI_UNSIGNED_CHAR, header.destination, Message::HEADER_TAG,
              MPI_COMM_WORLD, &isend_header_request);
-    if (header.size)
 #ifdef DEBUG_MSG_THREAD
-    printf("Rank %d: Message::Send: MPI_Send (body) starts header.size: %lu\n", Application::GetApplication()->GetRank(), header.size);
+   if (err1 != MPI_SUCCESS) {
+     printf("MPI_Error MPI_Isend (header): Rank %d: err1 %d\n", Application::GetApplication()->GetRank(), err1);
+     exit(1);
+   }
+#endif
+    if (header.size) {
+#ifdef DEBUG_MSG_THREAD
+    printf("Rank %d: Message::Send: MPI_Isend (body) starts header.size: %lu\n", Application::GetApplication()->GetRank(), header.size);
 #endif
       // MPI_Send(serialized, header.size, MPI_UNSIGNED_CHAR, header.destination, Message::BODY_TAG, MPI_COMM_WORLD);
-      MPI_Isend(serialized, header.size, MPI_UNSIGNED_CHAR, header.destination, Message::BODY_TAG, MPI_COMM_WORLD, &isend_body_request);
+      int err2 = MPI_Isend(serialized, header.size, MPI_UNSIGNED_CHAR, header.destination, Message::BODY_TAG, MPI_COMM_WORLD, &isend_body_request);
 #ifdef DEBUG_MSG_THREAD
-    printf("Rank %d: Message::Send: MPI_Send (body) ends header.size: %lu\n", Application::GetApplication()->GetRank(), header.size);
+      if (err2 != MPI_SUCCESS) {
+        printf("MPI_Error MPI_Isend (body): Rank %d: err2 %d\n", Application::GetApplication()->GetRank(), err2);
+        exit(1);
+      }
+      printf("Rank %d: Message::Send: MPI_Isend (body) ends header.size: %lu\n", Application::GetApplication()->GetRank(), header.size);
 #endif
-
+    }
   }
 }

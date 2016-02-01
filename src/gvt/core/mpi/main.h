@@ -23,7 +23,6 @@ public:
   void Serialize(size_t &size, unsigned char *&serialized) {
     size = 0;
     serialized = NULL;
-    ;
   }
 
   bool Action();
