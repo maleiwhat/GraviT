@@ -533,8 +533,8 @@ void MpiRenderer::render() {
     freeRender();
 
   } else {
-
-    printf("[async mpi] Rank %d: starting domain scheduler\n", rank);
+    if (rank == 0)
+      printf("[async mpi] starting domain scheduler using %d processes\n", GetSize());
 
     DomainTileWork::Register();
     RayTxWork::Register();
@@ -576,7 +576,8 @@ void MpiRenderer::render() {
 
 #else
   int rank = GetRank();
-  printf("[sync mpi] Rank %d: starting domain scheduler without the mpi layer\n", rank);
+  if (rank == 0)
+    printf("[sync mpi] starting domain scheduler without the mpi layer using %d processes\n", GetSize());
   setupRender();
   camera->AllocateCameraRays();
   camera->generateRays();
