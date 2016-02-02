@@ -70,7 +70,7 @@ using namespace gvt::render::actor;
 using namespace gvt::render::data::scene;
 
 // #define DEBUG_DOMAIN_TILE_WORK
-#define DEBUG_RAY_TRANSFER
+// #define DEBUG_RAY_TRANSFER
 // #define DEBUG_DUMP_QSTATE
 // #define DEBUG_IMAGE_WRITE
 

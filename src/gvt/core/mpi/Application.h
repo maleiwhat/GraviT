@@ -7,7 +7,7 @@
 #include <gvt/core/mpi/MessageQ.h>
 #include <gvt/core/mpi/Work.h>
 
-#define DEBUG_QUIT
+// #define DEBUG_QUIT
 
 namespace gvt {
 namespace core {

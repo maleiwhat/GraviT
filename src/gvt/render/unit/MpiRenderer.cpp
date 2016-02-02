@@ -87,11 +87,10 @@
 #include <iostream>
 #include <mpi.h>
 
-#define DEBUG_MPI_RENDERER
+// #define DEBUG_MPI_RENDERER
+// #define DEBUG_MPI_RENDERER_LOCK
 // #define SEPARATE_SERVER_WORKERS
 
-// TODO (hpark): if SYNCHRONOUS_MPI is enabled, the image is generated correctly
-// but the program never gets terminated (use CTRL-C just fornow).
 // #define SYNCHRONOUS_MPI
 
 using namespace std;
@@ -378,7 +377,9 @@ void MpiRenderer::initInstanceRankMap() {
 
   gvt::core::Vector<gvt::core::DBNodeH> dataNodes = root["Data"].getChildren();
 
-  std::cout << "instance node size: " << instanceNodes.size() << "data node size: " << dataNodes.size() << "\n";
+#ifdef DEBUG_MPI_RENDERER
+  std::cout << "instance node size: " << instanceNodes.size() << "\ndata node size: " << dataNodes.size() << "\n";
+#endif
 
   // create a map of instances to mpi rank
   for (size_t i = 0; i < instanceNodes.size(); ++i) {
@@ -393,9 +394,11 @@ void MpiRenderer::initInstanceRankMap() {
     // NOTE: mpi-data(domain) assignment strategy
     int ownerRank = static_cast<int>(dataIdx) % GetSize();
     GVT_DEBUG(DBG_ALWAYS, "[" << GetRank() << "] domain scheduler: instId: " << i << ", dataIdx: " << dataIdx
-                              << ", target mpi node: " << ownerRank << ", world size: " << GetSize());
+                           << ", target mpi node: " << ownerRank << ", world size: " << GetSize());
+#ifdef DEBUG_MPI_RENDERER
     std::cout << "[" << GetRank() << "] domain scheduler: instId: " << i << ", dataIdx: " << dataIdx
               << ", target mpi node: " << ownerRank << ", world size: " << GetSize() << "\n";
+#endif
     GVT_ASSERT(dataIdx != (size_t)-1, "domain scheduler: could not find data node");
     instanceRankMap[instanceNodes[i].UUID()] = ownerRank;
   }
@@ -481,9 +484,9 @@ void MpiRenderer::setupRender() {
 }
 
 void MpiRenderer::freeRender() {
-// #ifdef DEBUG_MPI_RENDERER
+#ifdef DEBUG_MPI_RENDERER
   printf("Rank %d: MpiRenderer::freeRender. cleaning up.\n", GetRank());
-// #endif
+#endif
   delete acceleration;
   delete[] rayQueueMutex;
   delete[] colorBufMutex;
@@ -494,6 +497,8 @@ void MpiRenderer::render() {
 #ifndef SYNCHRONOUS_MPI
   setupRender();
   int schedType = root["Schedule"]["type"].value().toInteger();
+  int rank = GetRank();
+
   // TODO (hpark):
   // collapse the following two if-else blocks into a single block
   if (schedType == scheduler::Image) {
@@ -510,8 +515,6 @@ void MpiRenderer::render() {
 #ifdef DEBUG_MPI_RENDERER
     printf("Rank %d: world size: %d\n", GetRank(), GetSize());
 #endif
-
-    int rank = GetRank();
 
     if (rank == rank::Server) {
       initServer();
@@ -531,7 +534,7 @@ void MpiRenderer::render() {
 
   } else {
 
-    std::cout << "[async mpi] starting domain scheduler" << std::endl;
+    printf("[async mpi] Rank %d: starting domain scheduler\n", rank);
 
     DomainTileWork::Register();
     RayTxWork::Register();
@@ -546,38 +549,34 @@ void MpiRenderer::render() {
     work.setTileSize(0, 0, imageWidth, imageHeight);
     work.Action();
 
-    printf("Rank %d: blocked on imageReadyLock.\n", GetRank());
+#ifdef DEBUG_MPI_RENDERER_LOCK
+    printf("Rank %d: blocked on imageReadyLock.\n", rank);
+#endif
 
     pthread_mutex_lock(&imageReadyLock);
-    printf("Rank %d: MpiRenderer. acquired imageReadyLock.\n", GetRank());
+#ifdef DEBUG_MPI_RENDERER_LOCK
+    printf("Rank %d: MpiRenderer. acquired imageReadyLock.\n", rank);
+#endif
     while(!this->imageReady) {
       pthread_cond_wait(&imageReadyCond, &imageReadyLock);
     }
-    printf("Rank %d: MpiRenderer. imageReadyCond unblocked.\n", GetRank());
+#ifdef DEBUG_MPI_RENDERER_LOCK
+    printf("Rank %d: MpiRenderer. imageReadyCond unblocked.\n", rank);
+#endif
     imageReady = false;
     pthread_mutex_unlock(&imageReadyLock);
 
-    // if (GetRank() == 0) {
-    //   printf("Rank %d: writing result to file\n", GetRank());
-    //   image->Write();
-    //   // for (int i=0; i<GetSize(); ++i) {
-    //   //   Quit work;
-    //   //   work.Send(i);
-    //   // }
-    //   QuitApplication();
-    // }
-    printf("Rank %d: about to kill the process.\n", GetRank());
+#ifdef DEBUG_MPI_RENDERER
+    printf("Rank %d: about to kill the process.\n", rank);
+#endif
     Kill();
-    // // Quit quit;
-    // // quit.Action();
-    // printf("Rank %d: just killed the process.\n", GetRank());
-
-    // Wait();
 
     freeRender();
   }
 
 #else
+  int rank = GetRank();
+  printf("[sync mpi] Rank %d: starting domain scheduler without the mpi layer\n", rank);
   setupRender();
   camera->AllocateCameraRays();
   camera->generateRays();
@@ -586,12 +585,12 @@ void MpiRenderer::render() {
   gvt::render::algorithm::Tracer<DomainScheduler>(camera->rays, *image)();
   image->Write();
   freeRender();
-  // Quit::Register();
-  // Start();
-  // if (GetRank() == 0) {
-  //   Quit quit;
-  //   quit.Broadcast(true, true);
-  // }
+  Quit::Register();
+  Start();
+  if (rank == 0) {
+    Quit quit;
+    quit.Broadcast(true, true);
+  }
 #endif
 }
 

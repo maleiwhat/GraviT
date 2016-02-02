@@ -47,7 +47,7 @@
 #include "gvt/render/unit/DomainTileWork.h"
 
 // #define DEBUG_APP
-#define DEBUG_APP_LOCK
+// #define DEBUG_APP_LOCK
 
 using namespace gvt::core::mpi;
 using namespace gvt::render::unit;

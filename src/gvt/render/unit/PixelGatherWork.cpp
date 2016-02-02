@@ -45,7 +45,8 @@
 #include <pthread.h>
 #include <iostream>
 
-#define DEBUG_PIXEL_GATHER_WORK
+// #define DEBUG_PIXEL_GATHER_WORK
+// #define DEBUG_PIXEL_GATHER_WORK_LOCK
 
 using namespace gvt::render::unit;
 using namespace gvt::render::data::scene;
@@ -120,23 +121,21 @@ bool PixelGatherWork::Action() {
     for (std::future<void> &f : futures) {
       f.wait();
     }
-#ifdef DEBUG_PIXEL_GATHER_WORK
-    printf("Rank %d: writing result to file\n", renderer->GetRank());
-#endif
+    printf("[async mpi] Rank %d: writing result to file\n", renderer->GetRank());
     image->Write(false);
   }
   delete[] bufs;
 
+#ifdef DEBUG_PIXEL_GATHER_WORK_LOCK
   printf("Rank %d: PixelGatherWork blocked on imageReadyLock.\n", renderer->GetRank());
+#endif
   pthread_mutex_lock(&renderer->imageReadyLock);
   renderer->imageReady = true;
+#ifdef DEBUG_PIXEL_GATHER_WORK_LOCK
   printf("Rank %d: PixelGatherWork signaling imageReadyCond.\n", renderer->GetRank());
+#endif
   pthread_cond_signal(&renderer->imageReadyCond);
   pthread_mutex_unlock(&renderer->imageReadyLock);
 
   return false;
-// #ifdef DEBUG_PIXEL_GATHER_WORK
-//   printf("Rank %d: PixelGatherWork::Action, returning with true\n", renderer->GetRank());
-// #endif
-  // return true;
 }
