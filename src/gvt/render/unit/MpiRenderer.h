@@ -99,6 +99,8 @@ struct DatabaseOption {
   int schedulerType = gvt::render::scheduler::Domain;
   int adapterType = gvt::render::adapter::Embree;
   // std::vector<std::string> meshFilenames; // TODO
+  int filmWidth = 1280;
+  int filmHeight = 720;
 };
 
 struct TestDatabaseOption : public DatabaseOption {

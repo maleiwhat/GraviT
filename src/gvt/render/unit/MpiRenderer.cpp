@@ -138,6 +138,10 @@ void MpiRenderer::parseCommandLine(int argc, char **argv) {
       option->instanceCountY = atoi(argv[3]);
       option->instanceCountZ = atoi(argv[4]);
     }
+    if (argc > 6) {
+      option->filmWidth = atoi(argv[5]);
+      option->filmHeight = atoi(argv[6]);
+    }
   }
 }
 
@@ -206,8 +210,8 @@ void MpiRenderer::createDatabase() {
   float fov = (45.0 * M_PI / 180.0);
   // const unsigned int width = 1920;
   // const unsigned int height = 1080;
-  const unsigned int width = 640;
-  const unsigned int height = 480;
+  const unsigned int width = option->filmWidth;
+  const unsigned int height = option->filmHeight;
   Uuid cameraNodeId = createCameraNode(eye, focus, upVector, fov, width, height);
 
   // create film node
