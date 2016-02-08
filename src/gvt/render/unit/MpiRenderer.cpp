@@ -91,7 +91,7 @@
 // #define DEBUG_MPI_RENDERER_LOCK
 // #define SEPARATE_SERVER_WORKERS
 
-// #define SYNCHRONOUS_MPI
+#define ASYNC_MPI 1
 
 using namespace std;
 using namespace gvt::render;
@@ -498,7 +498,7 @@ void MpiRenderer::freeRender() {
 
 void MpiRenderer::render() {
 
-#ifndef SYNCHRONOUS_MPI
+#if ASYNC_MPI
   setupRender();
   int schedType = root["Schedule"]["type"].value().toInteger();
   int rank = GetRank();

@@ -167,6 +167,7 @@ public:
     boost::timer::cpu_timer t_sched;
     t_sched.start();
     boost::timer::cpu_timer t_trace;
+    boost::timer::cpu_timer t_raytx;
     GVT_DEBUG(DBG_ALWAYS, "domain scheduler: starting, num rays: " << rays.size());
     gvt::core::DBNodeH root = gvt::render::RenderContext::instance()->getRootNode();
 
@@ -353,8 +354,10 @@ public:
 
       // done with current domain, send off rays to their proper processors.
       GVT_DEBUG(DBG_ALWAYS, "Rank [ " << mpi.rank << "]  calling SendRays");
-      SendRays();
-      // are we done?
+      {
+        t_raytx.resume();
+        SendRays();
+        // are we done?
 #ifdef DEBUG_RAY_TRANSFER
   if (mpi.rank == 1) {
       printf("============Rank %lu after sending rays (%d)============\n", mpi.rank, iteration);
@@ -367,22 +370,24 @@ public:
   }
       ++iteration;
 #endif
-      // root proc takes empty flag from all procs
-      int not_done = (int)(!queue.empty());
-      int *empties = (mpi.rank == 0) ? new int[mpi.world_size] : NULL;
-      MPI_Gather(&not_done, 1, MPI_INT, empties, 1, MPI_INT, 0, MPI_COMM_WORLD);
-      if (mpi.rank == 0) {
-        not_done = 0;
-        for (size_t i = 0; i < mpi.world_size; ++i) not_done += empties[i];
-        for (size_t i = 0; i < mpi.world_size; ++i) empties[i] = not_done;
-      }
+        // root proc takes empty flag from all procs
+        int not_done = (int)(!queue.empty());
+        int *empties = (mpi.rank == 0) ? new int[mpi.world_size] : NULL;
+        MPI_Gather(&not_done, 1, MPI_INT, empties, 1, MPI_INT, 0, MPI_COMM_WORLD);
+        if (mpi.rank == 0) {
+          not_done = 0;
+          for (size_t i = 0; i < mpi.world_size; ++i) not_done += empties[i];
+          for (size_t i = 0; i < mpi.world_size; ++i) empties[i] = not_done;
+        }
 
-      MPI_Scatter(empties, 1, MPI_INT, &not_done, 1, MPI_INT, 0, MPI_COMM_WORLD);
-      GVT_DEBUG_CODE(DBG_ALWAYS, if (DEBUG_RANK) cerr << mpi.rank << ": " << not_done << " procs still have rays"
+        MPI_Scatter(empties, 1, MPI_INT, &not_done, 1, MPI_INT, 0, MPI_COMM_WORLD);
+        GVT_DEBUG_CODE(DBG_ALWAYS, if (DEBUG_RANK) cerr << mpi.rank << ": " << not_done << " procs still have rays"
                                                       << " (my q:" << queue.size() << ")");
-      all_done = (not_done == 0);
+        all_done = (not_done == 0);
 
-      delete[] empties;
+        delete[] empties;
+        t_raytx.stop();
+      }
     }
 
 // add colors to the framebuffer
@@ -393,6 +398,9 @@ public:
 #ifdef GVT_USE_MPE
     MPE_Log_event(framebufferend, 0, NULL);
 #endif
+    std::cout << "Rank " << mpi.rank << ": sync domain scheduler: trace time: " << t_trace.format();
+    std::cout << "Rank " << mpi.rank << ": sync domain scheduler: sched time: " << t_sched.format();
+    std::cout << "Rank " << mpi.rank << ": sync domain scheduler: raytx time: " << t_raytx.format();
   }
 
   // FIXME: update FindNeighbors to use mpiInstanceMap

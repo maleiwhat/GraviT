@@ -135,6 +135,7 @@ void DomainTileWork::traceRays(RayVector &rays) {
   boost::timer::cpu_timer t_sched;
   t_sched.start();
   boost::timer::cpu_timer t_trace;
+  boost::timer::cpu_timer t_raytx;
   GVT_DEBUG(DBG_ALWAYS, "domain scheduler: starting, num rays: " << rays.size());
   int adapterType = root["Schedule"]["adapter"].value().toInteger();
   long domain_counter = 0;
@@ -307,7 +308,11 @@ void DomainTileWork::traceRays(RayVector &rays) {
   }
 #endif
 
-    all_done = transferRays();
+    {
+      t_raytx.resume();
+      all_done = transferRays();
+      t_raytx.stop();
+    }
 
 
 #ifdef DEBUG_DUMP_QSTATE
@@ -343,6 +348,9 @@ void DomainTileWork::traceRays(RayVector &rays) {
     quit.Broadcast(true, true);
   }
 #endif
+  std::cout << "Rank " << myRank << ": [async] domain scheduler: trace time: " << t_trace.format();
+  std::cout << "Rank " << myRank << ": [async] domain scheduler: sched time: " << t_sched.format();
+  std::cout << "Rank " << myRank << ": [async] domain scheduler: raytx time: " << t_raytx.format();
 }
 
 bool DomainTileWork::transferRays() {
