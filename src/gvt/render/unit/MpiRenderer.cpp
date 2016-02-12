@@ -420,8 +420,14 @@ void MpiRenderer::setupRender() {
   colorBufMutex = new tbb::mutex[imageWidth];
 
   int schedType = root["Schedule"]["type"].value().toInteger();
-  
-  if (schedType == scheduler::Domain) {
+   
+  if (schedType == scheduler::Image)  {
+    if (GetRank() == rank::Server) {
+      serverReady = false; 
+      pthread_mutex_init(&serverReadyLock, NULL);
+      pthread_cond_init(&serverReadyCond, NULL);
+    }
+  } else if (schedType == scheduler::Domain) {
     initInstanceRankMap();
 
     // ray buffer
@@ -447,43 +453,6 @@ void MpiRenderer::setupRender() {
     imageReady = false; 
     pthread_mutex_init(&imageReadyLock, NULL);
     pthread_cond_init(&imageReadyCond, NULL);
-
-    // doneTestRunning = false;
-    // allWorkDone = false;
-
-    // numDones = 0;
-    // numDoneSenders = 0;
-    // allOthersDone = false;
-    // pthread_mutex_init(&doneLock, NULL);
-    // pthread_cond_init(&doneCondition, NULL);
-
-    // // enableDoneAction = true;
-    // enableDoneAction = false;
-    // pthread_mutex_init(&enableDoneActionLock, NULL);
-    // pthread_cond_init(&enableDoneActionCondition, NULL);
-
-    // numRaysToReceive = 0;
-    // numTallySenders = 0;
-    // rayTallyDone = false;
-    // pthread_mutex_init(&tallyLock, NULL);
-    // pthread_cond_init(&tallyCondition, NULL);
-
-    // // enableTallyAction = true;
-    // enableTallyAction = false;
-    // pthread_mutex_init(&enableTallyActionLock, NULL);
-    // pthread_cond_init(&enableTallyActionCondition, NULL);
-
-    // numRaysReceived = 0;
-    // rayTransferDone = false;
-    // pthread_mutex_init(&transferLock, NULL);
-    // pthread_cond_init(&transferCondition, NULL);
-
-    // // enableTransferAction = true;
-    // enableTransferAction = false;
-    // pthread_mutex_init(&enableTransferActionLock, NULL);
-    // pthread_cond_init(&enableTransferActionCondition, NULL);
-
-    // imageReady = false;
   }
 }
 
@@ -507,7 +476,8 @@ void MpiRenderer::render() {
   // collapse the following two if-else blocks into a single block
   if (schedType == scheduler::Image) {
 
-    std::cout << "[async mpi] starting image scheduler" << std::endl;
+    if (rank == 0)
+      printf("[async mpi] starting image scheduler using %d processes\n", GetSize());
 
     RequestWork::Register();
     TileWork::Register();
@@ -516,24 +486,15 @@ void MpiRenderer::render() {
 
     Start();
 
-#ifdef DEBUG_MPI_RENDERER
-    printf("Rank %d: world size: %d\n", GetRank(), GetSize());
-#endif
-
     if (rank == rank::Server) {
       initServer();
-    } else {
-      initDisplay();
     }
 
-    MPI_Barrier(MPI_COMM_WORLD);
-
-    if (rank != rank::Server && rank != rank::Display) { // workers
-      initWorker();
-    }
+    RequestWork request;
+    request.setSourceRank(GetRank());
+    request.Send(rank::Server);
 
     Wait();
-
     freeRender();
 
   } else {
@@ -553,32 +514,19 @@ void MpiRenderer::render() {
     work.setTileSize(0, 0, imageWidth, imageHeight);
     work.Action();
 
-#ifdef DEBUG_MPI_RENDERER_LOCK
-    printf("Rank %d: blocked on imageReadyLock.\n", rank);
-#endif
-
     pthread_mutex_lock(&imageReadyLock);
-#ifdef DEBUG_MPI_RENDERER_LOCK
-    printf("Rank %d: MpiRenderer. acquired imageReadyLock.\n", rank);
-#endif
     while(!this->imageReady) {
       pthread_cond_wait(&imageReadyCond, &imageReadyLock);
     }
-#ifdef DEBUG_MPI_RENDERER_LOCK
-    printf("Rank %d: MpiRenderer. imageReadyCond unblocked.\n", rank);
-#endif
     imageReady = false;
     pthread_mutex_unlock(&imageReadyLock);
 
-#ifdef DEBUG_MPI_RENDERER
-    printf("Rank %d: about to kill the process.\n", rank);
-#endif
     Kill();
 
     freeRender();
   }
 
-#else
+#else // !ASYNC_MPI
   int rank = GetRank();
   if (rank == 0)
     printf("[sync mpi] starting domain scheduler without the mpi layer using %d processes\n", GetSize());
@@ -604,22 +552,17 @@ void MpiRenderer::initServer() {
   // try coarser/finer granularity later
   int schedType = root["Schedule"]["type"].value().toInteger();
   int numRanks = GetSize();
-  int numWorkers = numRanks - rank::FirstWorker;
-  int granularity = numWorkers;
+  int numWorkers = numRanks;
+  int granularity = numRanks;
 
   tileLoadBalancer = new TileLoadBalancer(schedType, imageWidth, imageHeight, granularity, numWorkers);
-}
-
-void MpiRenderer::initDisplay() {
   image = new Image(imageWidth, imageHeight, "image");
   pendingPixelCount = imageWidth * imageHeight;
-}
 
-void MpiRenderer::initWorker() {
-  // framebuffer.resize(imageWidth * imageHeight);
-  RequestWork request;
-  request.setSourceRank(GetRank());
-  request.Send(rank::Server);
+  pthread_mutex_lock(&serverReadyLock);
+  serverReady = true;
+  pthread_cond_signal(&serverReadyCond);
+  pthread_mutex_unlock(&serverReadyLock);
 }
 
 void MpiRenderer::aggregatePixel(int pixelId, const GVT_COLOR_ACCUM &addend) {

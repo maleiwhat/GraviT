@@ -44,7 +44,7 @@
 #include <algorithm>
 #include <cstdlib>
 
-#define DEBUG_LOAD_BALANCER
+// #define DEBUG_LOAD_BALANCER
 
 #ifdef DEBUG_LOAD_BALANCER
 #include <iostream>

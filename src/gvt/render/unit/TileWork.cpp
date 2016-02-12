@@ -90,7 +90,7 @@ using namespace gvt::render;
 using namespace gvt::render::actor;
 using namespace gvt::render::data::primitives;
 
-#define DEBUG_TILE_WORK
+// #define DEBUG_TILE_WORK
 // #define RENDER_MOSAIC_WITHOUT_TRACING
 
 #ifdef RENDER_MOSAIC_WITHOUT_TRACING
@@ -165,7 +165,7 @@ bool TileWork::Action() {
   traceRays(rays);
 
   sendRequest(gvt::render::unit::rank::Server);
-  sendPixels(gvt::render::unit::rank::Display);
+  sendPixels(gvt::render::unit::rank::Server);
 
   return false;
 }

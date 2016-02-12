@@ -47,7 +47,7 @@
 using namespace gvt::core::mpi;
 using namespace gvt::render::unit;
 
-#define DEBUG_TILE_DISTRIBUTION
+// #define DEBUG_TILE_DISTRIBUTION
 
 WORK_CLASS(RequestWork)
 
@@ -75,8 +75,14 @@ bool RequestWork::Action() {
   printf("Rank %d: received RequestWork from rank %d\n", Application::GetApplication()->GetRank(), getSourceRank());
 #endif
 
-  MpiRenderer *renderer = static_cast<MpiRenderer *>(Application::GetApplication());
+  MpiRenderer* renderer = static_cast<MpiRenderer *>(Application::GetApplication());
 
+  pthread_mutex_lock(&renderer->serverReadyLock);
+  while (!renderer->serverReady) {
+    pthread_cond_wait(&renderer->serverReadyCond, &renderer->serverReadyLock);
+  }
+  pthread_mutex_unlock(&renderer->serverReadyLock);
+  
   TileLoadBalancer *loadBalancer = renderer->getTileLoadBalancer();
 
   TileWork *tile = loadBalancer->next();
@@ -84,7 +90,7 @@ bool RequestWork::Action() {
   if (tile != NULL) {
     if (tile->isValid()) {
       tile->Send(getSourceRank());
-
+      
 #ifdef DEBUG_TILE_DISTRIBUTION
       printf("Rank %d: sending tile (%d %d %d %d) to Rank %d\n", Application::GetApplication()->GetRank(),
              tile->getStartX(), tile->getStartY(), tile->getWidth(), tile->getHeight(), getSourceRank());
