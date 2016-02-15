@@ -315,7 +315,7 @@ struct embreeParallelTrace {
       shadow_ray.t_max = t_max;
 
       // FIXME: remove dependency on mesh->shadeFace
-      gvt::render::data::Color c = mesh->shadeFace(primID, shadow_ray, normal, light);
+      gvt::render::data::Color c = mesh->shadeFace(primID, r, normal, light);
       // gvt::render::data::Color c = adapter->getMesh()->mat->shade(shadow_ray,
       // normal, lights[lindex]);
       shadow_ray.color = GVT_COLOR_ACCUM(1.0f, c[0], c[1], c[2], 1.0f);
@@ -556,7 +556,7 @@ struct embreeParallelTrace {
 
                 int ndepth = r.depth - 1;
 
-                float p = 1.f - fastrand() / RAND_MAX; //(float(rand()) / RAND_MAX);
+                float p = 1.f - (float)fastrand() / RAND_MAX; //(float(rand()) / RAND_MAX);
                 // replace current ray with generated secondary ray
                 if (ndepth > 0 && r.w > p) {
                   r.domains.clear();
