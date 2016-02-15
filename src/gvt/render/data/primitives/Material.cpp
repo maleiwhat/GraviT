@@ -57,11 +57,15 @@ Lambert::~Lambert() {}
 
 Vector4f Lambert::shade(const Ray &ray, const Vector4f &N, const Light *lightSource) {
 
-  Point4f V = ray.direction;
-  V = V.normalize();
-  float NdotL = std::max(0.f, std::abs(N * V));
-  Color lightSourceContrib = lightSource->contribution(ray);
-  Color diffuse = prod(lightSourceContrib, kd * NdotL) * ray.w;
+  Vector4f hitPoint = (Vector4f)ray.origin + ray.direction*ray.t;
+  Vector4f L = (Vector4f)lightSource->position - hitPoint;
+  L = L.normalize();
+  float NdotL = std::max(0.f, (N * L));
+
+  Vector4f lightSourceContrib = lightSource->contribution(ray);
+
+  Color diffuse = prod((lightSourceContrib * NdotL), kd) * ray.w;
+
   return diffuse;
 }
 
@@ -76,7 +80,7 @@ Phong::Phong(const Phong &orig) : Material(orig), kd(orig.kd), ks(orig.ks), alph
 Phong::~Phong() {}
 
 Vector4f Phong::shade(const Ray &ray, const Vector4f &N, const Light *lightSource) {
-  Vector4f hitPoint = (Vector4f)ray.origin + (ray.direction * ray.t);
+  Vector4f hitPoint = (Vector4f)ray.origin + ray.direction*ray.t;
   Vector4f L = (Vector4f)lightSource->position - hitPoint;
 
   L = L.normalize();
@@ -106,7 +110,8 @@ BlinnPhong::BlinnPhong(const BlinnPhong &orig) : Material(orig), kd(orig.kd), ks
 BlinnPhong::~BlinnPhong() {}
 
 Vector4f BlinnPhong::shade(const Ray &ray, const Vector4f &N, const Light *lightSource) {
-  Vector4f hitPoint = (Vector4f)ray.origin + (ray.direction * ray.t);
+
+  Vector4f hitPoint = (Vector4f)ray.origin + ray.direction*ray.t;
   Vector4f L = (Vector4f)lightSource->position - hitPoint;
   L = L.normalize();
   float NdotL = std::max(0.f, (N * L));
@@ -114,7 +119,8 @@ Vector4f BlinnPhong::shade(const Ray &ray, const Vector4f &N, const Light *light
   Vector4f H = (L - ray.direction).normalize();
 
   float NdotH = (H * N);
-  float power = NdotH * std::pow(NdotH, alpha);
+  NdotH = std::max(0.f,NdotH);
+  float power = std::pow(NdotH, alpha);
 
   Vector4f lightSourceContrib = lightSource->contribution(ray);
 
