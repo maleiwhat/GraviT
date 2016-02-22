@@ -132,6 +132,9 @@ void MpiRenderer::parseCommandLine(int argc, char **argv) {
       option->schedulerType = gvt::render::scheduler::Image;
     } else if (*argv[1] == 'd') {
       option->schedulerType = gvt::render::scheduler::Domain;
+    } else if (*argv[1] == 'D') {
+      option->schedulerType = gvt::render::scheduler::Domain;
+      option->asyncMpi = false;
     }
     if (argc > 4) {
       option->instanceCountX = atoi(argv[2]);
@@ -467,7 +470,9 @@ void MpiRenderer::freeRender() {
 
 void MpiRenderer::render() {
 
-#if ASYNC_MPI
+// #if ASYNC_MPI
+TestDatabaseOption *option = static_cast<TestDatabaseOption *>(dbOption);
+if (option->asyncMpi) {
   setupRender();
   int schedType = root["Schedule"]["type"].value().toInteger();
   int rank = GetRank();
@@ -526,7 +531,8 @@ void MpiRenderer::render() {
     freeRender();
   }
 
-#else // !ASYNC_MPI
+} else {
+// #else // !ASYNC_MPI
   int rank = GetRank();
   if (rank == 0)
     printf("[sync mpi] starting domain scheduler without the mpi layer using %d processes\n", GetSize());
@@ -544,7 +550,8 @@ void MpiRenderer::render() {
     Quit quit;
     quit.Broadcast(true, true);
   }
-#endif
+}
+//#endif
 }
 
 void MpiRenderer::initServer() {

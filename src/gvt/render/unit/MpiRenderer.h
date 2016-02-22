@@ -101,6 +101,7 @@ struct DatabaseOption {
   // std::vector<std::string> meshFilenames; // TODO
   int filmWidth = 1280;
   int filmHeight = 720;
+  bool asyncMpi = true;
 };
 
 struct TestDatabaseOption : public DatabaseOption {
