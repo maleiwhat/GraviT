@@ -150,6 +150,7 @@ public:
   void render();
 
 private:
+  void run();
   void initServer();
   void setupRender();
   void freeRender();

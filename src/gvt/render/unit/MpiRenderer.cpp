@@ -475,6 +475,21 @@ void MpiRenderer::freeRender() {
 }
 
 void MpiRenderer::render() {
+  TestDatabaseOption *option = static_cast<TestDatabaseOption *>(dbOption);
+  int numFrames = option->numFrames;
+  if (numFrames > 1) {
+    printf("error: unable to run more than 1 frame for now.\n") ;
+    exit(1);
+  }
+  for (int i=0; i<numFrames; ++i) { // for profiling
+    if (GetRank() == 0) {
+      printf("frame %d\n", i);
+    }
+    run();
+  }
+}
+
+void MpiRenderer::run() {
 
   TestDatabaseOption *option = static_cast<TestDatabaseOption *>(dbOption);
 
@@ -487,7 +502,6 @@ void MpiRenderer::render() {
     // int schedType = root["Schedule"]["type"].value().toInteger();
     // int rank = GetRank();
 
-    int numFrames = option->numFrames;
 
     // TODO (hpark):
     // collapse the following two if-else blocks into a single block
@@ -512,6 +526,7 @@ void MpiRenderer::render() {
       request.Send(rank::Server);
 
       Wait();
+      Kill();
       freeRender();
 
     } else {
@@ -530,16 +545,14 @@ void MpiRenderer::render() {
       DomainTileWork work;
       work.setTileSize(0, 0, imageWidth, imageHeight);
 
-      for (int i=0; i<numFrames; ++i) {
-        work.Action();
+      work.Action();
 
-        pthread_mutex_lock(&imageReadyLock);
-        while(!this->imageReady) {
-          pthread_cond_wait(&imageReadyCond, &imageReadyLock);
-        }
-        imageReady = false;
-        pthread_mutex_unlock(&imageReadyLock);
+      pthread_mutex_lock(&imageReadyLock);
+      while(!this->imageReady) {
+        pthread_cond_wait(&imageReadyCond, &imageReadyLock);
       }
+      imageReady = false;
+      pthread_mutex_unlock(&imageReadyLock);
 
       Kill();
 
