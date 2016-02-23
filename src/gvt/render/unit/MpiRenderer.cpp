@@ -84,6 +84,9 @@
 #include "gvt/render/unit/PixelGatherWork.h"
 #include "gvt/render/unit/TileLoadBalancer.h"
 
+#include "gvt/render/algorithm/ImageTracer.h"
+#include "gvt/render/algorithm/DomainTracer.h"
+
 #include <iostream>
 #include <mpi.h>
 
@@ -125,26 +128,29 @@ void MpiRenderer::parseCommandLine(int argc, char **argv) {
 
   // TODO (hpark): generalize this
   this->dbOption = new TestDatabaseOption;
+  TestDatabaseOption *option = static_cast<TestDatabaseOption *>(dbOption);
 
   if (argc > 1) {
-    TestDatabaseOption *option = static_cast<TestDatabaseOption *>(dbOption);
-    if (*argv[1] == 'i') {
+    if (*argv[1] == 'i' || *argv[1] == 'I') {
       option->schedulerType = gvt::render::scheduler::Image;
-    } else if (*argv[1] == 'd') {
+    } else if (*argv[1] == 'd' || *argv[1] == 'D') {
       option->schedulerType = gvt::render::scheduler::Domain;
-    } else if (*argv[1] == 'D') {
-      option->schedulerType = gvt::render::scheduler::Domain;
+    }
+    if (*argv[1] == 'I' || *argv[1] == 'D') {
       option->asyncMpi = false;
     }
-    if (argc > 4) {
-      option->instanceCountX = atoi(argv[2]);
-      option->instanceCountY = atoi(argv[3]);
-      option->instanceCountZ = atoi(argv[4]);
-    }
-    if (argc > 6) {
-      option->filmWidth = atoi(argv[5]);
-      option->filmHeight = atoi(argv[6]);
-    }
+  }
+  if (argc > 4) {
+    option->instanceCountX = atoi(argv[2]);
+    option->instanceCountY = atoi(argv[3]);
+    option->instanceCountZ = atoi(argv[4]);
+  }
+  if (argc > 6) {
+    option->filmWidth = atoi(argv[5]);
+    option->filmHeight = atoi(argv[6]);
+  }
+  if (argc > 7) {
+    option->numFrames = atoi(argv[7]);
   }
 }
 
@@ -470,88 +476,104 @@ void MpiRenderer::freeRender() {
 
 void MpiRenderer::render() {
 
-// #if ASYNC_MPI
-TestDatabaseOption *option = static_cast<TestDatabaseOption *>(dbOption);
-if (option->asyncMpi) {
+  TestDatabaseOption *option = static_cast<TestDatabaseOption *>(dbOption);
+
   setupRender();
   int schedType = root["Schedule"]["type"].value().toInteger();
   int rank = GetRank();
 
-  // TODO (hpark):
-  // collapse the following two if-else blocks into a single block
-  if (schedType == scheduler::Image) {
+  if (option->asyncMpi) {
+    // setupRender();
+    // int schedType = root["Schedule"]["type"].value().toInteger();
+    // int rank = GetRank();
 
-    if (rank == 0)
-      printf("[async mpi] starting image scheduler using %d processes\n", GetSize());
+    int numFrames = option->numFrames;
 
-    RequestWork::Register();
-    TileWork::Register();
-    ImageTileWork::Register();
-    PixelWork::Register();
+    // TODO (hpark):
+    // collapse the following two if-else blocks into a single block
+    if (schedType == scheduler::Image) {
 
-    Start();
+      if (rank == 0)
+        printf("[async mpi] starting image scheduler using %d processes\n", GetSize());
 
-    if (rank == rank::Server) {
-      initServer();
+      RequestWork::Register();
+      TileWork::Register();
+      ImageTileWork::Register();
+      PixelWork::Register();
+
+      Start();
+
+      if (rank == rank::Server) {
+        initServer();
+      }
+
+      RequestWork request;
+      request.setSourceRank(GetRank());
+      request.Send(rank::Server);
+
+      Wait();
+      freeRender();
+
+    } else {
+      if (rank == 0)
+        printf("[async mpi] starting domain scheduler using %d processes\n", GetSize());
+
+      DomainTileWork::Register();
+      RayTxWork::Register();
+      RayTxDoneWork::Register();
+      RayCommitDoneWork::Register();
+      PixelGatherWork::Register();
+
+      Start();
+
+      image = new Image(imageWidth, imageHeight, "image");
+      DomainTileWork work;
+      work.setTileSize(0, 0, imageWidth, imageHeight);
+
+      for (int i=0; i<numFrames; ++i) {
+        work.Action();
+
+        pthread_mutex_lock(&imageReadyLock);
+        while(!this->imageReady) {
+          pthread_cond_wait(&imageReadyCond, &imageReadyLock);
+        }
+        imageReady = false;
+        pthread_mutex_unlock(&imageReadyLock);
+      }
+
+      Kill();
+
+      freeRender();
     }
 
-    RequestWork request;
-    request.setSourceRank(GetRank());
-    request.Send(rank::Server);
+  } else { // without mpi layer
 
-    Wait();
-    freeRender();
-
-  } else {
-    if (rank == 0)
-      printf("[async mpi] starting domain scheduler using %d processes\n", GetSize());
-
-    DomainTileWork::Register();
-    RayTxWork::Register();
-    RayTxDoneWork::Register();
-    RayCommitDoneWork::Register();
-    PixelGatherWork::Register();
-
-    Start();
-
+    // int rank = GetRank();
+    // setupRender();
+    camera->AllocateCameraRays();
+    camera->generateRays();
     image = new Image(imageWidth, imageHeight, "image");
-    DomainTileWork work;
-    work.setTileSize(0, 0, imageWidth, imageHeight);
-    work.Action();
 
-    pthread_mutex_lock(&imageReadyLock);
-    while(!this->imageReady) {
-      pthread_cond_wait(&imageReadyCond, &imageReadyLock);
+    if (schedType == scheduler::Image) {
+      if (rank == 0)
+        printf("[sync mpi] starting image scheduler without the mpi layer using %d processes\n", GetSize());
+      gvt::render::algorithm::Tracer<ImageScheduler>(camera->rays, *image)();
+    } else {
+      if (rank == 0)
+        printf("[sync mpi] starting domain scheduler without the mpi layer using %d processes\n", GetSize());
+      gvt::render::algorithm::Tracer<DomainScheduler>(camera->rays, *image)();
     }
-    imageReady = false;
-    pthread_mutex_unlock(&imageReadyLock);
 
-    Kill();
-
+    image->Write();
     freeRender();
-  }
 
-} else {
-// #else // !ASYNC_MPI
-  int rank = GetRank();
-  if (rank == 0)
-    printf("[sync mpi] starting domain scheduler without the mpi layer using %d processes\n", GetSize());
-  setupRender();
-  camera->AllocateCameraRays();
-  camera->generateRays();
-  image = new Image(imageWidth, imageHeight, "image");
-  std::cout << "starting domain scheduler" << std::endl;
-  gvt::render::algorithm::Tracer<DomainScheduler>(camera->rays, *image)();
-  image->Write();
-  freeRender();
-  Quit::Register();
-  Start();
-  if (rank == 0) {
-    Quit quit;
-    quit.Broadcast(true, true);
+    Quit::Register();
+    Start();
+    if (rank == 0) {
+      Quit quit;
+      quit.Broadcast(true, true);
+    }
   }
-}
-//#endif
 }
 
 void MpiRenderer::initServer() {

@@ -102,6 +102,7 @@ struct DatabaseOption {
   int filmWidth = 1280;
   int filmHeight = 720;
   bool asyncMpi = true;
+  int numFrames = 1;
 };
 
 struct TestDatabaseOption : public DatabaseOption {
