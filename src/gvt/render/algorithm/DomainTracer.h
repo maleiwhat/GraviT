@@ -446,6 +446,7 @@ public:
       if (n >= 0 && (n % plane) < (i % plane) && (n % row) > (i % row)) n_doms.insert(n);
       // bottom: up, right
       n = i - plane + 1;
+      
       if (n >= 0 && (n % row) > (i % row)) n_doms.insert(n);
       n = i - plane + row;
       if (n >= 0 && (n % plane) > (i % plane)) n_doms.insert(n);
@@ -509,6 +510,7 @@ public:
 
         outbound[n_ptr] += q->second.size(); // outbound[n_ptr] has number of rays going
         for (size_t r = 0; r < q->second.size(); ++r) {
+          std::cout<<(q->second)[r].packedSize()<<std::endl;
           buf_size += (q->second)[r].packedSize(); // rays can have diff packed sizes
         }
         outbound[n_ptr + 1] += buf_size;    // size of buffer needed to hold rays

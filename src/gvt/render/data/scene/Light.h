@@ -56,6 +56,7 @@ public:
     gvt::render::data::primitives::Box3D bb(position, position);
     return bb;
   }
+  int lightId;
 };
 /// general lighting factor added to each successful ray intersection
 class AmbientLight : public Light {

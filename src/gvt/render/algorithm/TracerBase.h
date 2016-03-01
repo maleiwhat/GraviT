@@ -149,7 +149,7 @@ public:
    * to find out what instance they will hit next
    */
   virtual void shuffleRays(gvt::render::actor::RayVector &rays, gvt::core::DBNodeH instNode) {
-
+    return;
     GVT_DEBUG(DBG_ALWAYS, "[" << mpi.rank << "] Shuffle: start");
     GVT_DEBUG(DBG_ALWAYS, "[" << mpi.rank << "] Shuffle: rays: " << rays.size());
 

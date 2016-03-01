@@ -59,7 +59,7 @@ Lambert::~Lambert() {}
 glm::vec3 Lambert::shade(const Ray &ray, const glm::vec3 &N, const Light *lightSource) {
   glm::vec3 hitPoint = ray.origin + ray.direction * ray.t;
   glm::vec3 L = lightSource->position - hitPoint;
-  float NdotL = std::max(0.f, std::abs(glm::dot(N, L)));
+  float NdotL = std::max(0.f, glm::dot(N, L));
   Color lightSourceContrib = lightSource->contribution(ray);
   Color diffuse = (lightSourceContrib * kd) * (NdotL * ray.w);
   return diffuse;

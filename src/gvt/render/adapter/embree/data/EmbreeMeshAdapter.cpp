@@ -34,6 +34,7 @@
 #include <gvt/core/Math.h>
 
 #include <gvt/render/actor/Ray.h>
+#include <gvt/render/actor/ShadowRay.h>
 // #include <gvt/render/adapter/embree/data/Transforms.h>
 #include <gvt/render/data/DerivedTypes.h>
 #include <gvt/render/data/primitives/Mesh.h>
@@ -310,13 +311,12 @@ struct embreeParallelTrace {
       const glm::vec3 dir = light->position - origin;
       const float t_max = dir.length();
 
+     
       // note: ray copy constructor is too heavy, so going to build it manually
-      shadowRays.push_back(Ray(r.origin + r.direction * t_shadow, dir, r.w, Ray::SHADOW, r.depth));
+      shadowRays.push_back(ShadowRay(light->lightId, r.origin + r.direction * t_shadow, dir));
 
       Ray &shadow_ray = shadowRays.back();
-      shadow_ray.t = r.t;
       shadow_ray.id = r.id;
-      shadow_ray.t_max = t_max;
 
       // FIXME: remove dependency on mesh->shadeFace
       gvt::render::data::Color c = mesh->shadeFace(primID, r, normal, light);
@@ -493,7 +493,7 @@ struct embreeParallelTrace {
                 // ray has hit something
 
                 // shadow ray hit something, so it should be dropped
-                if (r.type == gvt::render::actor::Ray::SHADOW) {
+                if (r.type == gvt::render::actor::Ray::SHADOW || r.type == gvt::render::actor::Ray::SHADOW_POINT) {
                   continue;
                 }
 
@@ -554,7 +554,7 @@ struct embreeParallelTrace {
                   t = (t > 1) ? 1.f / t : t;
                   r.w = r.w * t;
                 }
-                generateShadowRays(r, normal, ray4.primID[pi], mesh);
+                //generateShadowRays(r, normal, ray4.primID[pi], mesh);
 
                 int ndepth = r.depth - 1;
 
@@ -638,7 +638,7 @@ void EmbreeMeshAdapter::trace(gvt::render::actor::RayVector &rayList, gvt::rende
   this->end = _end;
 
   std::atomic<size_t> sharedIdx(begin); // shared index into rayList
-  const size_t numThreads = std::thread::hardware_concurrency();
+  const size_t numThreads = 1;
   const size_t workSize = std::max((size_t)8, (size_t)((end - begin) / (numThreads * 8))); // size of 'chunk'
                                                                                            // of rays to work
                                                                                            // on
@@ -667,14 +667,21 @@ void EmbreeMeshAdapter::trace(gvt::render::actor::RayVector &rayList, gvt::rende
   auto lightNodes = root["Lights"].getChildren();
   std::vector<gvt::render::data::scene::Light *> lights;
   lights.reserve(2);
+  int lightIndex = 0;
   for (auto lightNode : lightNodes) {
     auto color = lightNode["color"].value().tovec3();
 
     if (lightNode.name() == std::string("PointLight")) {
       auto pos = lightNode["position"].value().tovec3();
-      lights.push_back(new gvt::render::data::scene::PointLight(pos, color));
+      auto light = new gvt::render::data::scene::PointLight(pos, color);
+      light->lightId = lightIndex;
+      lightIndex++;
+      lights.push_back(light);
     } else if (lightNode.name() == std::string("AmbientLight")) {
-      lights.push_back(new gvt::render::data::scene::AmbientLight(color));
+      auto light = new gvt::render::data::scene::AmbientLight(color);
+      light->lightId = lightIndex;
+      lightIndex++;
+      lights.push_back(light);
     }
   }
 

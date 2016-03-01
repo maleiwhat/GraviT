@@ -82,6 +82,7 @@ public:
   enum RayType {
     PRIMARY,
     SHADOW,
+    SHADOW_POINT,
     SECONDARY
   };
 
@@ -104,10 +105,10 @@ public:
   void setDirection(float *dir);
 
   /// returns size in bytes for the ray information to be sent via MPI
-  int packedSize();
+  virtual int packedSize();
 
   /// packs the ray information onto the given buffer and returns the number of bytes packed
-  int pack(unsigned char *buffer);
+  virtual int pack(unsigned char *buffer);
 
   friend std::ostream &operator<<(std::ostream &stream, Ray const &ray) {
     stream << ray.origin << "-->" << ray.direction << " [" << ray.type << "]";

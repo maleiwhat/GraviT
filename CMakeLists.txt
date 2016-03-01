@@ -193,6 +193,7 @@ set(GVT_CORE_SRCS ${GVT_CORE_SRCS}
 
 set(GVT_RENDER_HDRS ${GVT_RENDER_HDRS}
 	src/gvt/render/actor/Ray.h
+	src/gvt/render/actor/ShadowRay.h
 	src/gvt/render/algorithm/DomainTracer.h
 	src/gvt/render/algorithm/HybridTracer.h
 	src/gvt/render/algorithm/ImageTracer.h
@@ -236,6 +237,7 @@ set(GVT_RENDER_HDRS ${GVT_RENDER_HDRS}
 
 set(GVT_RENDER_SRCS ${GVT_RENDER_SRCS}
 	src/gvt/render/actor/Ray.cpp
+	src/gvt/render/actor/ShadowRay.cpp
 	src/gvt/render/RenderContext.cpp
 	src/gvt/render/data/domain/AbstractDomain.cpp
 	src/gvt/render/data/domain/Cell.cpp
