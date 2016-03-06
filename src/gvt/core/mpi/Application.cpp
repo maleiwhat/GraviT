@@ -48,6 +48,7 @@
 
 // #define DEBUG_APP
 // #define DEBUG_APP_LOCK
+#define DEBUG_DISABLE_WORKTHREAD 0
 
 using namespace gvt::core::mpi;
 using namespace gvt::render::unit;
@@ -194,6 +195,7 @@ void *Application::workThread(void *p) {
 #endif
 
   Message *m;
+#if !DEBUG_DISABLE_WORKTHREAD
   while (theApplication->Running() && (m = theApplication->GetIncomingMessageQueue()->Dequeue()) != NULL) {
     Work *w = theApplication->Deserialize(m);
     delete m;
@@ -206,5 +208,6 @@ void *Application::workThread(void *p) {
   }
 
   pthread_exit(NULL);
+#endif
 }
 #endif /* GVT_CORE_MPI_APPLICATION_H */

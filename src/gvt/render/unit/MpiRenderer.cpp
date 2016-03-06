@@ -89,12 +89,13 @@
 
 #include <iostream>
 #include <mpi.h>
+#include <boost/timer/timer.hpp>
 
 // #define DEBUG_MPI_RENDERER
 // #define DEBUG_MPI_RENDERER_LOCK
 // #define SEPARATE_SERVER_WORKERS
-
-#define ASYNC_MPI 1
+#define MPI_ON 1
+#define DEBUG_DUMMY_PTHREAD 0
 
 using namespace std;
 using namespace gvt::render;
@@ -105,6 +106,18 @@ using namespace gvt::render::data::scene;
 using namespace gvt::render::schedule;
 using namespace gvt::render::data::primitives;
 using namespace gvt::render::unit;
+
+static boost::timer::cpu_timer t_run;
+
+#if DEBUG_DUMMY_PTHREAD
+pthread_t dummy_thread_tid;
+void* dummyThread(void*) {
+  float a=0.f;
+  while(true) {
+    a = a + .000001;
+  }
+}
+#endif
 
 MpiRenderer::MpiRenderer(int *argc, char ***argv)
     : Application(argc, argv), camera(NULL), image(NULL), dbOption(NULL), tileLoadBalancer(NULL) {
@@ -128,7 +141,7 @@ void MpiRenderer::parseCommandLine(int argc, char **argv) {
 
   // TODO (hpark): generalize this
   this->dbOption = new TestDatabaseOption;
-  TestDatabaseOption *option = static_cast<TestDatabaseOption *>(dbOption);
+  TestDtabaseOption *option = static_cast<TestDatabaseOption *>(dbOption);
 
   if (argc > 1) {
     if (*argv[1] == 'i' || *argv[1] == 'I') {
@@ -240,6 +253,7 @@ void MpiRenderer::createDatabase() {
 #endif
 
   adapterType = gvt::render::adapter::Embree;
+  // adapterType = gvt::render::adapter::Manta;
   Uuid scheduleNodeId = createScheduleNode(option->schedulerType, option->adapterType);
 }
 
@@ -481,12 +495,15 @@ void MpiRenderer::render() {
     printf("error: unable to run more than 1 frame for now.\n") ;
     exit(1);
   }
+  t_run.start();
   for (int i=0; i<numFrames; ++i) { // for profiling
     if (GetRank() == 0) {
       printf("frame %d\n", i);
     }
     run();
   }
+  t_run.stop();
+  std::cout << "Rank " << GetRank() << ": run time: " << t_run.format();
 }
 
 void MpiRenderer::run() {
@@ -505,7 +522,7 @@ void MpiRenderer::run() {
 
     // TODO (hpark):
     // collapse the following two if-else blocks into a single block
-    if (schedType == scheduler::Image) {
+    if (schedType == scheduler::Image) { // image scheduler with mpi layer
 
       if (rank == 0)
         printf("[async mpi] starting image scheduler using %d processes\n", GetSize());
@@ -529,10 +546,11 @@ void MpiRenderer::run() {
       Kill();
       freeRender();
 
-    } else {
+    } else { // domain scheduler with mpi layer
       if (rank == 0)
         printf("[async mpi] starting domain scheduler using %d processes\n", GetSize());
 
+#if MPI_ON
       DomainTileWork::Register();
       RayTxWork::Register();
       RayTxDoneWork::Register();
@@ -540,6 +558,16 @@ void MpiRenderer::run() {
       PixelGatherWork::Register();
 
       Start();
+#endif
+
+#if DEBUG_DUMMY_PTHREAD
+      if (pthread_create(&dummy_thread_tid, NULL, dummyThread, NULL)) {
+        std::cerr << "Failed to spawn dummy thread\n";
+        exit(1);
+      } else {
+        std::cout << "created dummy thread\n";
+      }
+#endif
 
       image = new Image(imageWidth, imageHeight, "image");
       DomainTileWork work;
@@ -547,6 +575,7 @@ void MpiRenderer::run() {
 
       work.Action();
 
+#if MPI_ON
       pthread_mutex_lock(&imageReadyLock);
       while(!this->imageReady) {
         pthread_cond_wait(&imageReadyCond, &imageReadyLock);
@@ -555,7 +584,7 @@ void MpiRenderer::run() {
       pthread_mutex_unlock(&imageReadyLock);
 
       Kill();
-
+#endif
       freeRender();
     }
 

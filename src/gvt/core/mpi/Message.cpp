@@ -9,6 +9,9 @@
 #include <fstream>
 #include <strstream>
 
+#define DEBUG_DISABLE_MSGTHREAD 0
+#define DEBUG_DISABLE_ISREADY 0
+
 using namespace gvt::core::mpi;
 
 // #define DEBUG_MSG_THREAD
@@ -57,6 +60,15 @@ void *MessageManager::messageThread(void *p) {
 
   Message *m = NULL;
 
+#if DEBUG_DISABLE_MSGTHREAD
+  Message *pending_message = new Message();
+  while (!theApplication->IsDoneSet()) {
+    if (pending_message->IsReady()) {
+    }
+    // if (theApplication->GetOutgoingMessageQueue()->IsReady()) {
+    // }
+  }
+#else
   Message *pending_message = new Message();
   while (!theApplication->IsDoneSet()) {
     if (pending_message->IsReady()) {
@@ -142,6 +154,7 @@ void *MessageManager::messageThread(void *p) {
       }
     }
   }
+#endif // DEBUG_DISABLE_MSGTHREAD
 
 #ifdef DEBUG_MSG_THREAD
   printf("Rank %d: MessageManager::messageThread: just got out of forever message loop. theApplication->IsDoneSet(): %d\n", theApplication->GetRank(), theApplication->IsDoneSet());
@@ -317,6 +330,9 @@ void Message::Wait() {
 }
 
 bool Message::IsReady() {
+#if DEBUG_DISABLE_ISREADY
+  return false;
+#else
 // #ifdef DEBUG_MSG_THREAD
 //   printf("Rank %d: Message::IsReady\n", Application::GetApplication()->GetRank());
 // #endif
@@ -328,6 +344,7 @@ bool Message::IsReady() {
     printf("Rank %d: Message::IsReady: incoming message available: read_ready %d status.MPI_SOURCE: %d\n", Application::GetApplication()->GetRank(), read_ready, status.MPI_SOURCE);
 #endif
   return read_ready != 0;
+#endif
 }
 
 bool Message::IsIsendDone() {
