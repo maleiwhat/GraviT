@@ -213,7 +213,7 @@ public:
                           } else {
                             tbb::mutex::scoped_lock fbloc(colorBuf_mutex[r.id % width]);
                             for (int i = 0; i < 3; i++) colorBuf[r.id].rgba[i] += r.color.rgba[i];
-                            colorBuf[r.id].rgba[3] = r.w;
+                            colorBuf[r.id].rgba[3] = 1;
                             colorBuf[r.id].clamp();
                           }
                         }

@@ -129,7 +129,7 @@ public:
       mutable float t_max;
       int type;
     };
-    unsigned char data[21 * 4];
+    unsigned char data[25 * 4];
   };
 
 protected:

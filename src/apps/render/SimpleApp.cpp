@@ -63,6 +63,7 @@
 #include <gvt/render/data/Primitives.h>
 #include <gvt/render/data/scene/Image.h>
 #include <gvt/render/data/scene/gvtCamera.h>
+#include <gvt/render/data/domain/reader/ObjReader.h>
 
 #include <boost/range/algorithm.hpp>
 
@@ -116,96 +117,7 @@ int main(int argc, char **argv) {
   // TODO: maybe rename to 'Data' - as it can store different types of data [mesh, volume, lines]
   gvt::core::DBNodeH dataNodes = cntxt->createNodeFromType("Data", "Data", root.UUID());
 
-  gvt::core::DBNodeH coneMeshNode = cntxt->createNodeFromType("Mesh", "conemesh", dataNodes.UUID());
-  {
-    Mesh *mesh = new Mesh(new Lambert(glm::vec3(0.5, 0.5, 0.5)));
-    int numPoints = 7;
-    glm::vec3 points[7];
-    points[0] = glm::vec3(0.5, 0.0, 0.0);
-    points[1] = glm::vec3(-0.5, 0.5, 0.0);
-    points[2] = glm::vec3(-0.5, 0.25, 0.433013);
-    points[3] = glm::vec3(-0.5, -0.25, 0.43013);
-    points[4] = glm::vec3(-0.5, -0.5, 0.0);
-    points[5] = glm::vec3(-0.5, -0.25, -0.433013);
-    points[6] = glm::vec3(-0.5, 0.25, -0.433013);
-
-    for (int i = 0; i < numPoints; i++) {
-      mesh->addVertex(points[i]);
-    }
-    mesh->addFace(1, 2, 3);
-    mesh->addFace(1, 3, 4);
-    mesh->addFace(1, 4, 5);
-    mesh->addFace(1, 5, 6);
-    mesh->addFace(1, 6, 7);
-    mesh->addFace(1, 7, 2);
-    mesh->generateNormals();
-
-    // calculate bbox
-    glm::vec3 lower = points[0], upper = points[0];
-    for (int i = 1; i < numPoints; i++) {
-      for (int j = 0; j < 3; j++) {
-        lower[j] = (lower[j] < points[i][j]) ? lower[j] : points[i][j];
-        upper[j] = (upper[j] > points[i][j]) ? upper[j] : points[i][j];
-      }
-    }
-    Box3D *meshbbox = new gvt::render::data::primitives::Box3D(lower, upper);
-
-    // add cone mesh to the database
-    gvt::core::Variant meshvariant(mesh);
-    std::cout << "meshvariant " << meshvariant << std::endl;
-    coneMeshNode["file"] = string("/fake/path/to/cone");
-    coneMeshNode["bbox"] = (unsigned long long)meshbbox;
-    coneMeshNode["ptr"] = (unsigned long long)mesh;
-  }
-
-  gvt::core::DBNodeH cubeMeshNode = cntxt->createNodeFromType("Mesh", "cubemesh", dataNodes.UUID());
-  {
-    Mesh *mesh = new Mesh(new Lambert(glm::vec3(0.5, 0.5, 0.5)));
-    int numPoints = 8;
-    glm::vec3 points[8];
-    points[0] = glm::vec3(-0.5, -0.5, 0.5);
-    points[1] = glm::vec3(0.5, -0.5, 0.5);
-    points[2] = glm::vec3(0.5, 0.5, 0.5);
-    points[3] = glm::vec3(-0.5, 0.5, 0.5);
-    points[4] = glm::vec3(-0.5, -0.5, -0.5);
-    points[5] = glm::vec3(0.5, -0.5, -0.5);
-    points[6] = glm::vec3(0.5, 0.5, -0.5);
-    points[7] = glm::vec3(-0.5, 0.5, -0.5);
-
-    for (int i = 0; i < numPoints; i++) {
-      mesh->addVertex(points[i]);
-    }
-    // faces are 1 indexed
-    mesh->addFace(1, 2, 3);
-    mesh->addFace(1, 3, 4);
-    mesh->addFace(2, 6, 7);
-    mesh->addFace(2, 7, 3);
-    mesh->addFace(6, 5, 8);
-    mesh->addFace(6, 8, 7);
-    mesh->addFace(5, 1, 4);
-    mesh->addFace(5, 4, 8);
-    mesh->addFace(1, 5, 6);
-    mesh->addFace(1, 6, 2);
-    mesh->addFace(4, 3, 7);
-    mesh->addFace(4, 7, 8);
-    mesh->generateNormals();
-
-    // calculate bbox
-    glm::vec3 lower = points[0], upper = points[0];
-    for (int i = 1; i < numPoints; i++) {
-      for (int j = 0; j < 3; j++) {
-        lower[j] = (lower[j] < points[i][j]) ? lower[j] : points[i][j];
-        upper[j] = (upper[j] > points[i][j]) ? upper[j] : points[i][j];
-      }
-    }
-    Box3D *meshbbox = new gvt::render::data::primitives::Box3D(lower, upper);
-
-    // add cube mesh to the database
-    cubeMeshNode["file"] = string("/fake/path/to/cube");
-    cubeMeshNode["bbox"] = (unsigned long long)meshbbox;
-    cubeMeshNode["ptr"] = (unsigned long long)mesh;
-  }
-
+  
   gvt::core::DBNodeH instNodes = cntxt->createNodeFromType("Instances", "Instances", root.UUID());
 
   // create a NxM grid of alternating cones / cubes, offset using i and j
@@ -214,9 +126,29 @@ int main(int argc, char **argv) {
   int jj[2] = { -2, 3 }; // j range
   for (int i = ii[0]; i < ii[1]; i++) {
     for (int j = jj[0]; j < jj[1]; j++) {
+
       gvt::core::DBNodeH instnode = cntxt->createNodeFromType("Instance", "inst", instNodes.UUID());
       // gvt::core::DBNodeH meshNode = (instId % 2) ? coneMeshNode : cubeMeshNode;
-      gvt::core::DBNodeH meshNode = (instId % 2) ? cubeMeshNode : coneMeshNode;
+  
+      gvt::core::DBNodeH bunnyMeshNode = cntxt->createNodeFromType("Mesh", "bunny", dataNodes.UUID());
+      {
+        // path assumes binary is run as bin/gvtFileApp
+        gvt::render::data::domain::reader::ObjReader objReader("../data/geom/bunny.obj");
+        // right now mesh must be converted to gvt format
+        Mesh *mesh = objReader.getMesh();
+        mesh->generateNormals();
+
+        mesh->computeBoundingBox();
+        Box3D *meshbbox = mesh->getBoundingBox();
+
+        // add bunny mesh to the database
+        bunnyMeshNode["file"] = string("../data/geom/bunny.obj");
+        bunnyMeshNode["bbox"] = (unsigned long long)meshbbox;
+        bunnyMeshNode["ptr"] = (unsigned long long)mesh;
+      }
+
+
+      gvt::core::DBNodeH meshNode = bunnyMeshNode;
       Box3D *mbox = (Box3D *)meshNode["bbox"].value().toULongLong();
 
       instnode["id"] = instId++;
@@ -226,9 +158,9 @@ int main(int argc, char **argv) {
       auto minv = new glm::mat4(1.f);
       auto normi = new glm::mat3(1.f);
       //*m *glm::mat4::createTranslation(0.0, i * 0.5, j * 0.5);
-      *m = glm::translate(*m, glm::vec3(0.0, i * 0.5, j * 0.5));
+      *m = glm::translate(*m, glm::vec3(i * 0.5, -1, j * 0.5));
       //*m = *m * glm::mat4::createScale(0.4, 0.4, 0.4);
-      *m = glm::scale(*m, glm::vec3(0.4, 0.4, 0.4));
+      *m = glm::scale(*m, glm::vec3(2.4, 2.4, 2.4));
 
       instnode["mat"] = (unsigned long long)m;
       *minv = glm::inverse(*m);
@@ -249,10 +181,10 @@ int main(int argc, char **argv) {
   lightNode["position"] = glm::vec3(1.0, 0.0, 0.0);
   lightNode["color"] = glm::vec3(1.0, 1.0, 1.0);
 
-  // second light just for fun
-  // gvt::core::DBNodeH lN2 = cntxt->createNodeFromType("PointLight", "conelight", lightNodes.UUID());
-  // lN2["position"] = glm::vec3(2.0, 2.0, 2.0, 0.0);
-  // lN2["color"] = glm::vec3(0.0, 0.0, 0.0, 0.0);
+  //second light just for fun
+  gvt::core::DBNodeH lN2 = cntxt->createNodeFromType("PointLight", "conelight", lightNodes.UUID());
+  lN2["position"] = glm::vec3(2.0, 10.0, 2.0);
+  lN2["color"] = glm::vec3(1.0, 1.0, 1.0);
 
   gvt::core::DBNodeH camNode = cntxt->createNodeFromType("Camera", "conecam", root.UUID());
   camNode["eyePoint"] = glm::vec3(4.0, 0.0, 0.0);
@@ -311,7 +243,7 @@ int main(int argc, char **argv) {
   case gvt::render::scheduler::Image: {
     std::cout << "starting image scheduler" << std::endl;
     gvt::render::algorithm::Tracer<ImageScheduler> tracer(mycamera.rays, myimage);
-    for (int z = 0; z < 10; z++) {
+    for (int z = 0; z < 1; z++) {
       mycamera.AllocateCameraRays();
       mycamera.generateRays();
       myimage.clear();
@@ -327,7 +259,7 @@ int main(int argc, char **argv) {
     // gvt::render::algorithm::Tracer<DomainScheduler>(mycamera.rays, myimage)();
     //std::cout << "starting image scheduler" << std::endl;
     gvt::render::algorithm::Tracer<DomainScheduler> tracer(mycamera.rays, myimage);
-    for (int z = 0; z < 10; z++) {
+    for (int z = 0; z < 1; z++) {
       mycamera.AllocateCameraRays();
       mycamera.generateRays();
       myimage.clear();

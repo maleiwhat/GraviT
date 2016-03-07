@@ -179,7 +179,7 @@ void gvtCameraBase::AllocateCameraRays() {
 #ifdef GVT_USE_DEBUG
   boost::timer::auto_cpu_timer t("gvtCameraBase::AllocateCameraRays: time: %w\n");
 #endif
-  depth = 0;
+  depth = 10;
   size_t nrays = filmsize[0] * filmsize[1] * samples *samples;
   rays.clear();
   rays.resize(nrays);
