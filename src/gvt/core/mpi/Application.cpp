@@ -46,10 +46,6 @@
 #include "gvt/render/unit/ImageTileWork.h"
 #include "gvt/render/unit/DomainTileWork.h"
 
-// #define DEBUG_APP
-// #define DEBUG_APP_LOCK
-#define DEBUG_DISABLE_WORKTHREAD 0
-
 using namespace gvt::core::mpi;
 using namespace gvt::render::unit;
 
@@ -72,22 +68,13 @@ Application::Application(int *a, char ***b) {
   pthread_cond_init(&cond, NULL);
 
   pthread_mutex_lock(&lock);
-#ifdef DEBUG_APP_LOCK
-  printf("Rank %d: Application::Application lock\n", GetRank());
-#endif
   theIncomingQueue = new MessageQ("incoming");
   theOutgoingQueue = new MessageQ("outgoing");
 
   Quit::Register();
   // GDA pthread_mutex_unlock(&lock);
-#ifdef DEBUG_APP_LOCK
-  printf("Rank %d: Application::Application unlock\n", GetRank());
-#endif
 
   // theApplication = this;
-#ifdef DEBUG_APP
-  printf("Rank %d: Application::Application: done\n", Application::GetApplication()->GetRank());
-#endif
 }
 
 Application::~Application() {
@@ -112,72 +99,29 @@ void Application::Start() {
   }
 
   // Wait for ping from worker thread
-#ifdef DEBUG_APP_LOCK
-  printf("Rank %d: Application::Start. blocked on cond\n", Application::GetApplication()->GetRank());
-#endif
   pthread_cond_wait(&cond, &lock);
   // pthread_mutex_unlock(&lock);
-#ifdef DEBUG_APP_LOCK
-  printf("Rank %d: Application::Start. cond unblocked\n", Application::GetApplication()->GetRank());
-#endif
 }
 
 void Application::Kill() {
-#ifdef DEBUG_APP
-  printf("Rank %d: Application::Kill: start\n", Application::GetApplication()->GetRank());
-#endif
   // GDA pthread_mutex_lock(&lock);
-#ifdef DEBUG_APP_LOCK
-  printf("Rank %d: Application::Kill lock\n", Application::GetApplication()->GetRank());
-#endif
-#ifdef DEBUG_APP
-  printf("Rank %d: Application::Kill: lock acquired.\n",
-         Application::GetApplication()->GetRank())
-#endif
 
   application_done = true;
 
   theIncomingQueue->Kill();
   theOutgoingQueue->Kill();
 
-#ifdef DEBUG_APP
-  printf("Rank %d: Application::Kill: application_done = true. killed in/out queues\n",
-         Application::GetApplication()->GetRank());
-#endif
-
   pthread_cond_broadcast(&cond);
   pthread_mutex_unlock(&lock);
-#ifdef DEBUG_APP_LOCK
-  printf("Rank %d: Application::Kill unlock\n", Application::GetApplication()->GetRank());
-#endif
-
-#ifdef DEBUG_APP
-  printf("Rank %d: Application::Kill: cond_broadcast(&cond), mutex_unlock(&lock) done\n",
-         Application::GetApplication()->GetRank());
-#endif
 
   pthread_join(work_thread_tid, NULL);
-
-#ifdef DEBUG_APP
-  printf("Rank %d: Application::Kill: end\n", Application::GetApplication()->GetRank());
-#endif
 }
 
 void Application::Wait() {
   while (!application_done) {
-#ifdef DEBUG_APP_LOCK
-  printf("Rank %d: Application::Wait waiting for applciation_done =true. blocked on cond\n",
-         Application::GetApplication()->GetRank());
-#endif
     pthread_cond_wait(&cond, &lock);
   }
-#ifdef DEBUG_APP_LOCK
-  printf("Rank %d: Application::Wait cond unblocked\n", Application::GetApplication()->GetRank());
-#endif
   pthread_mutex_unlock(&lock);
-#ifdef DEBUG_APP_LOCK
-  printf("Rank %d: Application::Wait unlock\n", Application::GetApplication()->GetRank());
-#endif
   GetMessageManager()->Wait();
 }
 
@@ -185,17 +129,10 @@ void *Application::workThread(void *p) {
   Application *theApplication = (Application *)p;
 
   pthread_mutex_lock(&theApplication->lock);
-#ifdef DEBUG_APP_LOCK
-  printf("Rank %d: Application::workThread lock\n", Application::GetApplication()->GetRank());
-#endif
   pthread_cond_signal(&theApplication->cond);
   pthread_mutex_unlock(&theApplication->lock);
-#ifdef DEBUG_APP_LOCK
-  printf("Rank %d: Application::workThread unlock\n", Application::GetApplication()->GetRank());
-#endif
 
   Message *m;
-#if !DEBUG_DISABLE_WORKTHREAD
   while (theApplication->Running() && (m = theApplication->GetIncomingMessageQueue()->Dequeue()) != NULL) {
     Work *w = theApplication->Deserialize(m);
     delete m;
@@ -208,6 +145,5 @@ void *Application::workThread(void *p) {
   }
 
   pthread_exit(NULL);
-#endif
 }
 #endif /* GVT_CORE_MPI_APPLICATION_H */

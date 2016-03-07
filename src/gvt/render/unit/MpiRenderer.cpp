@@ -92,8 +92,6 @@
 #include <boost/timer/timer.hpp>
 
 // #define DEBUG_MPI_RENDERER
-// #define DEBUG_MPI_RENDERER_LOCK
-// #define SEPARATE_SERVER_WORKERS
 
 using namespace std;
 using namespace gvt::render;
@@ -502,10 +500,6 @@ void MpiRenderer::run() {
   int rank = GetRank();
 
   if (option->asyncMpi) {
-    // setupRender();
-    // int schedType = root["Schedule"]["type"].value().toInteger();
-    // int rank = GetRank();
-
     // TODO (hpark):
     // collapse the following two if-else blocks into a single block
     if (schedType == scheduler::Image) { // image scheduler with mpi layer
