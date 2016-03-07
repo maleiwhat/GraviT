@@ -253,6 +253,7 @@ private:
   pthread_cond_t workRestartReadyCond;
 
   friend class PixelGatherWork;
+  friend class PixelWork;
   bool imageReady;
   pthread_mutex_t imageReadyLock;
   pthread_cond_t imageReadyCond;

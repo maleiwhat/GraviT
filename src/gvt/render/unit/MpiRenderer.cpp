@@ -94,8 +94,6 @@
 // #define DEBUG_MPI_RENDERER
 // #define DEBUG_MPI_RENDERER_LOCK
 // #define SEPARATE_SERVER_WORKERS
-#define MPI_ON 1
-#define DEBUG_DUMMY_PTHREAD 0
 
 using namespace std;
 using namespace gvt::render;
@@ -108,16 +106,6 @@ using namespace gvt::render::data::primitives;
 using namespace gvt::render::unit;
 
 static boost::timer::cpu_timer t_run;
-
-#if DEBUG_DUMMY_PTHREAD
-pthread_t dummy_thread_tid;
-void* dummyThread(void*) {
-  float a=0.f;
-  while(true) {
-    a = a + .000001;
-  }
-}
-#endif
 
 MpiRenderer::MpiRenderer(int *argc, char ***argv)
     : Application(argc, argv), camera(NULL), image(NULL), dbOption(NULL), tileLoadBalancer(NULL) {
@@ -141,7 +129,7 @@ void MpiRenderer::parseCommandLine(int argc, char **argv) {
 
   // TODO (hpark): generalize this
   this->dbOption = new TestDatabaseOption;
-  TestDtabaseOption *option = static_cast<TestDatabaseOption *>(dbOption);
+  TestDatabaseOption *option = static_cast<TestDatabaseOption *>(dbOption);
 
   if (argc > 1) {
     if (*argv[1] == 'i' || *argv[1] == 'I') {
@@ -471,12 +459,11 @@ void MpiRenderer::setupRender() {
     workRestartReady = false;
     pthread_mutex_init(&workRestartReadyLock, NULL);
     pthread_cond_init(&workRestartReadyCond, NULL);
-
-    // image write
-    imageReady = false; 
-    pthread_mutex_init(&imageReadyLock, NULL);
-    pthread_cond_init(&imageReadyCond, NULL);
   }
+  // image write
+  imageReady = false; 
+  pthread_mutex_init(&imageReadyLock, NULL);
+  pthread_cond_init(&imageReadyCond, NULL);
 }
 
 void MpiRenderer::freeRender() {
@@ -519,7 +506,6 @@ void MpiRenderer::run() {
     // int schedType = root["Schedule"]["type"].value().toInteger();
     // int rank = GetRank();
 
-
     // TODO (hpark):
     // collapse the following two if-else blocks into a single block
     if (schedType == scheduler::Image) { // image scheduler with mpi layer
@@ -543,14 +529,11 @@ void MpiRenderer::run() {
       request.Send(rank::Server);
 
       Wait();
-      Kill();
-      freeRender();
 
     } else { // domain scheduler with mpi layer
       if (rank == 0)
         printf("[async mpi] starting domain scheduler using %d processes\n", GetSize());
 
-#if MPI_ON
       DomainTileWork::Register();
       RayTxWork::Register();
       RayTxDoneWork::Register();
@@ -558,16 +541,6 @@ void MpiRenderer::run() {
       PixelGatherWork::Register();
 
       Start();
-#endif
-
-#if DEBUG_DUMMY_PTHREAD
-      if (pthread_create(&dummy_thread_tid, NULL, dummyThread, NULL)) {
-        std::cerr << "Failed to spawn dummy thread\n";
-        exit(1);
-      } else {
-        std::cout << "created dummy thread\n";
-      }
-#endif
 
       image = new Image(imageWidth, imageHeight, "image");
       DomainTileWork work;
@@ -575,18 +548,17 @@ void MpiRenderer::run() {
 
       work.Action();
 
-#if MPI_ON
       pthread_mutex_lock(&imageReadyLock);
       while(!this->imageReady) {
         pthread_cond_wait(&imageReadyCond, &imageReadyLock);
       }
       imageReady = false;
       pthread_mutex_unlock(&imageReadyLock);
-
+      
       Kill();
-#endif
-      freeRender();
     }
+
+    freeRender();
 
   } else { // without mpi layer
 
