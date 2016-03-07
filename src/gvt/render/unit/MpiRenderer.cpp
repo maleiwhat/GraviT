@@ -91,6 +91,9 @@
 #include <mpi.h>
 #include <boost/timer/timer.hpp>
 
+#include <tbb/task_scheduler_init.h>
+#include <thread>
+
 // #define DEBUG_MPI_RENDERER
 
 using namespace std;
@@ -418,6 +421,9 @@ void MpiRenderer::initInstanceRankMap() {
 }
 
 void MpiRenderer::setupRender() {
+
+  tbb::task_scheduler_init init(std::thread::hardware_concurrency());
+
   root = renderContext->getRootNode();
   instanceNodes = root["Instances"].getChildren();
   GVT_DEBUG(DBG_ALWAYS, "num instances: " << instanceNodes.size());
