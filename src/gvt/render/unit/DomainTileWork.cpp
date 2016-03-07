@@ -435,8 +435,7 @@ void DomainTileWork::sendRays() {
       count += rays.size();
 #endif
       RayTxWork work;
-      // TODO (hpark): copying of rays may not be needed here.
-      work.setRays(instance, rays);
+      work.setRays(instance, &rays);
       work.Send(ownerRank);
     }
   }

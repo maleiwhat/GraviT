@@ -61,11 +61,11 @@ public:
   virtual void Serialize(size_t &size, unsigned char *&serialized);
   static Work *Deserialize(size_t size, unsigned char *serialized);
   virtual bool Action();
-  void setRays(int instanceId, gvt::render::actor::RayVector &rays);
+  void setRays(int instanceId, gvt::render::actor::RayVector *rays);
 private:
   int instanceId;
   int numRays;
-  gvt::render::actor::RayVector rayBuffer;
+  gvt::render::actor::RayVector *rays;
 };
 }
 }

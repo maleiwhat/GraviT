@@ -54,10 +54,11 @@ using namespace gvt::render::actor;
 WORK_CLASS(RayTxWork)
 
 void RayTxWork::Serialize(size_t &size, unsigned char *&serialized) {
+  RayVector& rayV = *rays;
   // assume raySize > 0
   int raySize = 0;
   for (int i = 0; i < numRays; ++i) {
-    raySize += rayBuffer[i].packedSize();
+    raySize += rayV[i].packedSize();
   }
   size = 2 * sizeof(int) + raySize;
   serialized = static_cast<unsigned char *>(malloc(size));
@@ -69,15 +70,14 @@ void RayTxWork::Serialize(size_t &size, unsigned char *&serialized) {
   *reinterpret_cast<int *>(buf) = numRays;
   buf += sizeof(int);
 
-  for (size_t i = 0; i < rayBuffer.size(); ++i) {
-    // rayBuffer[i].serialize(buf);
-    buf += rayBuffer[i].pack(buf);
+  for (size_t i = 0; i < rayV.size(); ++i) {
+    buf += rayV[i].pack(buf);
 #ifdef DEBUG_RAY_COPY
   MpiRenderer *renderer = static_cast<MpiRenderer *>(Application::GetApplication());
   if (renderer->GetRank() == 0) {
     std::cout<<"Rank "<<renderer->GetRank()<<": RayTxWork::serialize: size "<<size
              <<": instanceId "<<instanceId<<": numRays "<<numRays
-             <<": outgoingRays["<<i<<"]{"<<rayBuffer[i]<<"} buf "<<(void*)buf<<std::endl;
+             <<": outgoingRays["<<i<<"]{"<<rayV[i]<<"} buf "<<(void*)buf<<std::endl;
   }
 #endif
   }
@@ -89,36 +89,49 @@ Work *RayTxWork::Deserialize(size_t size, unsigned char *serialized) {
 
   RayTxWork *work = new RayTxWork;
 
-  work->instanceId = *reinterpret_cast<int *>(buf);
+  int instanceId = *reinterpret_cast<int *>(buf);
+  work->instanceId = instanceId;
   buf += sizeof(int);
   int numRays = *reinterpret_cast<int *>(buf);
   buf += sizeof(int);
   work->numRays = numRays;
 
-  work->rayBuffer.resize(numRays);
+  MpiRenderer *renderer = static_cast<MpiRenderer *>(Application::GetApplication());
 
-  for(size_t i = 0; i < numRays; ++i) {
+  pthread_mutex_lock(&renderer->rayBufferLock);
+  std::map<int, RayVector>* rayQ = &renderer->rayBuffer;
+
+  std::size_t offset = 0;
+  if (rayQ->find(instanceId) != rayQ->end()) {
+    offset = (*rayQ)[instanceId].size();
+    (*rayQ)[instanceId].resize(offset + numRays);
+  } else {
+    (*rayQ)[instanceId] = RayVector(numRays);
+  }
+  RayVector& rayV = (*rayQ)[instanceId];
+
+  for(size_t i = offset; i < offset + numRays; ++i) {
     Ray ray(buf);
-    work->rayBuffer[i] = ray;
+    rayV[i] = ray;
     buf += ray.packedSize();
 #ifdef DEBUG_RAY_COPY
     MpiRenderer *renderer = static_cast<MpiRenderer *>(Application::GetApplication());
     if (renderer->GetRank() == 1) {
       std::cout<<"Rank "<<renderer->GetRank()<<": RayTxWork::deserialize: size "
                <<size<<": instanceId "<<work->instanceId<<": numRays "<<numRays
-               <<": rayBuffer["<<i<<"]{"<<work->rayBuffer[i]<<"} buf "<<(void*)buf<<std::endl;
+               <<": renderer->rayBuffer["<<i<<"]{"<<rayV[i]<<"} buf "<<(void*)buf<<std::endl;
     }
 #endif
-
   }
+  pthread_mutex_unlock(&renderer->rayBufferLock);
 
   return work;
 }
 
-void RayTxWork::setRays(int instanceId, gvt::render::actor::RayVector &rays) {
+void RayTxWork::setRays(int instanceId, gvt::render::actor::RayVector *rays) {
   this->instanceId = instanceId;
-  this->numRays = rays.size();
-  this->rayBuffer = rays;
+  this->numRays = rays->size();
+  this->rays = rays;
 
 #ifdef DEBUG_RAY_TRANSFER
   printf("Rank %d: RayTxWork::setRays: instanceId %d: numRays %d\n",
@@ -129,77 +142,33 @@ void RayTxWork::setRays(int instanceId, gvt::render::actor::RayVector &rays) {
   MpiRenderer *renderer = static_cast<MpiRenderer *>(Application::GetApplication());
   printf("Rank %d: RayTxWork::setRays: instanceId %d: numRays %d\n", renderer->GetRank(), instanceId, numRays);
   if (renderer->GetRank() == 0) {
-    std::cout<<"setRays: rays[0]{"<<rays[0]<<"}"<<std::endl;
-    std::cout<<"setRays: rays[1]{"<<rays[1]<<"}"<<std::endl;
-    std::cout<<"setRays: outgoingRays[0]{"<<rayBuffer[0]<<"}"<<std::endl;
-    std::cout<<"setRays: outgoingRays[1]{"<<rayBuffer[1]<<"}"<<std::endl;
+    std::cout<<"setRays: rays[0]{"<<(*rays)[0]<<"}"<<std::endl;
+    std::cout<<"setRays: rays[1]{"<<(*rays)[1]<<"}"<<std::endl;
+    std::cout<<"setRays: outgoingRays[0]{"<<(*rays)[0]<<"}"<<std::endl;
+    std::cout<<"setRays: outgoingRays[1]{"<<(*rays)[1]<<"}"<<std::endl;
   }
 #endif
-  // rayBuffer.resize(rays.size());
-  // for(int i = 0; i < rays.size(); ++i) {
-  //   rayBuffer[i] = rays[i];
-  // }
 }
 
 bool RayTxWork::Action() {
 
-  MpiRenderer *renderer = static_cast<MpiRenderer *>(Application::GetApplication());
+  // MpiRenderer *renderer = static_cast<MpiRenderer *>(Application::GetApplication());
 
-// #ifdef DEBUG_RAY_TRANSFER
-//   printf("Rank %d: RayTxWork::Action about to start (blocked on enableTransferActionCondition)\n", renderer->GetRank());
-// #endif
+  // pthread_mutex_lock(&renderer->rayBufferLock);
 
-//   pthread_mutex_lock(&renderer->enableTransferActionLock);
-//   while (!renderer->enableTransferAction) {
-//     pthread_cond_wait(&renderer->enableTransferActionCondition, &renderer->enableTransferActionLock);
-//   }
-//   pthread_mutex_unlock(&renderer->enableTransferActionLock);
+  // std::map<int, RayVector> *destination = &renderer->rayBuffer;
 
-  pthread_mutex_lock(&renderer->rayBufferLock);
-
-  std::map<int, RayVector> *destination = &renderer->rayBuffer;
-
-// #ifdef DEBUG_RAY_TRANSFER
-//   printf("Rank %d: RayTxWork::Action start (enableTransferActionCondition unblocked)\n", renderer->GetRank());
-// #endif
-
-  if (destination->find(instanceId) != destination->end()) {
-    (*destination)[instanceId].insert((*destination)[instanceId].end(), rayBuffer.begin(), rayBuffer.end()); 
-  } else {
-    (*destination)[instanceId] = rayBuffer;
-  }
- 
-  // renderer->numRaysReceived += this->numRays;
-
-// #ifdef DEBUG_RAY_TRANSFER
-//   printf("Rank %d: RayTxWork: numRaysReceived %d: numRays %d: numRaysToReceive: %d\n",
-//          renderer->GetRank(), renderer->numRaysReceived, this->numRays, renderer->numRaysToReceive);
-// #endif
-#ifdef DEBUG_RAY_TRANSFER
-  printf("Rank %d: RayTxWork::Action: instance %d numRays %d\n", renderer->GetRank(), instanceId, numRays);
-#endif
-
-  // if (renderer->numRaysReceived > renderer->numRaysToReceive) {
-  //   printf("Error: Rank %d: # rays received %d exceeds expected # rays %d\n", renderer->GetRank(), renderer->numRaysReceived, renderer->numRaysToReceive);
-  //   exit(1);
+  // if (destination->find(instanceId) != destination->end()) {
+  //   (*destination)[instanceId].insert((*destination)[instanceId].end(), rayBuffer.begin(), rayBuffer.end()); 
+  // } else {
+  //   (*destination)[instanceId] = rayBuffer;
   // }
-
-//   if (renderer->numRaysReceived == renderer->numRaysToReceive) {
-
+ 
 // #ifdef DEBUG_RAY_TRANSFER
-//     printf("Rank %d: RayTxWork: signaling transferCondition!!!\n", renderer->GetRank());
+//   printf("Rank %d: RayTxWork::Action: instance %d numRays %d\n", renderer->GetRank(), instanceId, numRays);
 // #endif
-    
-//     renderer->rayTransferDone = true;
 
-//     pthread_mutex_lock(&renderer->enableTransferActionLock);
-//     renderer->enableTransferAction = false;
-//     pthread_mutex_unlock(&renderer->enableTransferActionLock);
-
-//     pthread_cond_signal(&renderer->transferCondition);
-//   }
-
-  pthread_mutex_unlock(&renderer->rayBufferLock);
+  // pthread_mutex_unlock(&renderer->rayBufferLock);
 
   return false;
 }
