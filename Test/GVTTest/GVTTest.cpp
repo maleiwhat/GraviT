@@ -103,7 +103,6 @@ void findbounds(float *array, int numelements, Point4f *lower, Point4f *upper) {
 
 int main(int argc, char **argv) {
 
-  tbb::task_scheduler_init init(std::thread::hardware_concurrency());
   // default values
   int width = 1920;
   int height = 1080;
@@ -136,6 +135,7 @@ int main(int argc, char **argv) {
   string scheduletype("image");
   string adapter("embree");
   // initialize gravit context database structure
+  timeCurrent(&startTime);
   gvt::render::RenderContext *cntxt = gvt::render::RenderContext::instance();
   if (cntxt == NULL) {
     std::cout << "Something went wrong initializing the context" << std::endl;
@@ -149,6 +149,8 @@ int main(int argc, char **argv) {
   gvt::core::DBNodeH camNode = cntxt->createNodeFromType("Camera", "conecam", root.UUID());
   gvt::core::DBNodeH filmNode = cntxt->createNodeFromType("Film", "conefilm", root.UUID());
   gvt::core::DBNodeH schedNode = cntxt->createNodeFromType("Schedule", "Enzosched", root.UUID());
+  timeCurrent(&endTime);
+  modeltime += timeDifferenceMS(&startTime,&endTime);
 
   // parse the command line
   if ((argc < 2)) 
@@ -414,6 +416,7 @@ int main(int argc, char **argv) {
       }
     }
   }
+  tbb::task_scheduler_init init(std::thread::hardware_concurrency());
 #if 1
   MPI_Init(&argc, &argv);
   MPI_Pcontrol(0);
