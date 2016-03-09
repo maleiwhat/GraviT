@@ -62,6 +62,13 @@ public:
   }
 
   void Add(int pixel, ColorAccumulator &ca) {
+
+    if(ca.rgba[3] == 0)
+    {
+      // this pixel has not being initiated.
+      return;
+    }
+
     int index = 3 * pixel;
     rgb[index + 0] = (unsigned char)(ca.rgba[0] / ca.rgba[3] * 255.f);
     rgb[index + 1] = (unsigned char)(ca.rgba[1] / ca.rgba[3] * 255.f);
