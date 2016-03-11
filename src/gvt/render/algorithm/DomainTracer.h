@@ -539,6 +539,7 @@ public:
 
     MPI_Waitall(2 * mpi.world_size, reqs, stat);
     GVT_DEBUG(DBG_ALWAYS, "[" << mpi.rank << "]:GOT HEADS UP " << std::endl);
+#if 0
 #ifdef GVT_DEBUG
     std::cerr << mpi.rank << ": sent neighbor info" << std::endl;
     std::cerr << mpi.rank << ": inbound ";
@@ -548,6 +549,7 @@ public:
 
       std::cerr << "(" << outbound[2 * i] << "," << outbound[2 * i + 1] << ") ";
     std::cerr << std::endl;
+#endif
 #endif
 
     // set up send and recv buffers
