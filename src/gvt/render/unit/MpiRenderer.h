@@ -103,6 +103,7 @@ struct DatabaseOption {
   int filmHeight = 720;
   bool asyncMpi = true;
   int numFrames = 1;
+  bool ply = true;
 };
 
 struct TestDatabaseOption : public DatabaseOption {
@@ -155,6 +156,8 @@ private:
   void setupRender();
   void freeRender();
   void initInstanceRankMap();
+  void makeObjDatabase();
+  void makePlyDatabase();
 
 public:
   // database, context, and domain mapping

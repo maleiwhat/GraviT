@@ -93,6 +93,10 @@
 
 #include <tbb/task_scheduler_init.h>
 #include <thread>
+ 
+#include <math.h>
+#include <stdio.h>
+#include <ply.h>
 
 // #define DEBUG_MPI_RENDERER
 
@@ -107,6 +111,38 @@ using namespace gvt::render::data::primitives;
 using namespace gvt::render::unit;
 
 static boost::timer::cpu_timer t_run;
+
+typedef struct Vertex {
+  float x, y, z;
+  float nx, ny, nz;
+  void *other_props; /* other properties */
+} Vertex;
+
+typedef struct Face {
+  unsigned char nverts; /* number of vertex indices in list */
+  int *verts;           /* vertex index list */
+  void *other_props;    /* other properties */
+} Face;
+
+PlyProperty vert_props[] = {
+  /* list of property information for a vertex */
+  { "x", Float32, Float32, offsetof(Vertex, x), 0, 0, 0, 0 },
+  { "y", Float32, Float32, offsetof(Vertex, y), 0, 0, 0, 0 },
+  { "z", Float32, Float32, offsetof(Vertex, z), 0, 0, 0, 0 },
+  { "nx", Float32, Float32, offsetof(Vertex, nx), 0, 0, 0, 0 },
+  { "ny", Float32, Float32, offsetof(Vertex, ny), 0, 0, 0, 0 },
+  { "nz", Float32, Float32, offsetof(Vertex, nz), 0, 0, 0, 0 },
+};
+
+PlyProperty face_props[] = {
+  /* list of property information for a face */
+  { "vertex_indices", Int32, Int32, offsetof(Face, verts), 1, Uint8, Uint8, offsetof(Face, nverts) },
+};
+static Vertex **vlist;
+static Face **flist;
+
+#define MIN(a, b) ((a < b) ? (a) : (b))
+#define MAX(a, b) ((a > b) ? (a) : (b))
 
 MpiRenderer::MpiRenderer(int *argc, char ***argv)
     : Application(argc, argv), camera(NULL), image(NULL), dbOption(NULL), tileLoadBalancer(NULL) {
@@ -152,11 +188,218 @@ void MpiRenderer::parseCommandLine(int argc, char **argv) {
     option->filmHeight = atoi(argv[6]);
   }
   if (argc > 7) {
-    option->numFrames = atoi(argv[7]);
+    if (*argv[7] == 'o') { // obj
+      option->ply = false;
+    }
+    // option->numFrames = atoi(argv[7]);
   }
 }
 
 void MpiRenderer::createDatabase() {
+  TestDatabaseOption *option = static_cast<TestDatabaseOption *>(dbOption);
+  if (option->ply) {
+    makePlyDatabase();
+  } else {
+    makeObjDatabase();
+  }
+}
+
+void MpiRenderer::makePlyDatabase() {
+  TestDatabaseOption *option = static_cast<TestDatabaseOption *>(dbOption);
+  // mess I use to open and read the ply file with the c utils I found.
+  PlyFile *in_ply;
+  Vertex *vert;
+  Face *face;
+  int elem_count, nfaces, nverts;
+  int i, j, k;
+  float xmin, ymin, zmin, xmax, ymax, zmax;
+  char *elem_name;
+  ;
+  FILE *myfile;
+  char txt[16];
+  std::string temp;
+  std::string filename, filepath, rootdir;
+  // rootdir = "/Users/jbarbosa/r/EnzoPlyData/";
+  rootdir = "/work/01197/semeraro/maverick/DAVEDATA/EnzoPlyData/";
+  // filename = "/work/01197/semeraro/maverick/DAVEDATA/EnzoPlyData/block0.ply";
+  // myfile = fopen(filename.c_str(),"r");
+  // MPI_Init(&argc, &argv);
+  // MPI_Pcontrol(0);
+  // int rank = -1;
+  // MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+  // gvt::render::RenderContext *renderContext = gvt::render::RenderContext::instance();
+  // if (renderContext == NULL) {
+  //   std::cout << "Something went wrong initializing the context" << std::endl;
+  //   exit(0);
+  // }
+  gvt::core::DBNodeH root = renderContext->getRootNode();
+  gvt::core::DBNodeH dataNodes = renderContext->createNodeFromType("Data", "Data", root.UUID());
+  gvt::core::DBNodeH instNodes = renderContext->createNodeFromType("Instances", "Instances", root.UUID());
+
+  // // create data node
+  // Uuid dataNodeId = createNode("Data", "Data");
+  // Uuid instancesNodeId = createNode("Instances", "Instances");
+
+  // Enzo isosurface...
+  const int numPlyFiles = 8;
+  for (k = 0; k < numPlyFiles; k++) {
+    sprintf(txt, "%d", k);
+    filename = "block";
+    filename += txt;
+    gvt::core::DBNodeH plyMeshNode = renderContext->createNodeFromType("Mesh", filename.c_str(), dataNodes.UUID());
+    // read in some ply data and get ready to load it into the mesh
+    // filepath = rootdir + "block" + std::string(txt) + ".ply";
+    filepath = rootdir + filename + ".ply";
+    myfile = fopen(filepath.c_str(), "r");
+    in_ply = read_ply(myfile);
+    for (i = 0; i < in_ply->num_elem_types; i++) {
+      elem_name = setup_element_read_ply(in_ply, i, &elem_count);
+      temp = elem_name;
+      if (temp == "vertex") {
+        vlist = (Vertex **)malloc(sizeof(Vertex *) * elem_count);
+        nverts = elem_count;
+        setup_property_ply(in_ply, &vert_props[0]);
+        setup_property_ply(in_ply, &vert_props[1]);
+        setup_property_ply(in_ply, &vert_props[2]);
+        for (j = 0; j < elem_count; j++) {
+          vlist[j] = (Vertex *)malloc(sizeof(Vertex));
+          get_element_ply(in_ply, (void *)vlist[j]);
+        }
+      } else if (temp == "face") {
+        flist = (Face **)malloc(sizeof(Face *) * elem_count);
+        nfaces = elem_count;
+        setup_property_ply(in_ply, &face_props[0]);
+        for (j = 0; j < elem_count; j++) {
+          flist[j] = (Face *)malloc(sizeof(Face));
+          get_element_ply(in_ply, (void *)flist[j]);
+        }
+      }
+    }
+    close_ply(in_ply);
+    // smoosh data into the mesh object
+    {
+      Mesh *mesh = new Mesh(new Lambert(Vector4f(1.0, 1.0, 1.0, 1.0)));
+      vert = vlist[0];
+      xmin = vert->x;
+      ymin = vert->y;
+      zmin = vert->z;
+      xmax = vert->x;
+      ymax = vert->y;
+      zmax = vert->z;
+
+      for (i = 0; i < nverts; i++) {
+        vert = vlist[i];
+        xmin = MIN(vert->x, xmin);
+        ymin = MIN(vert->y, ymin);
+        zmin = MIN(vert->z, zmin);
+        xmax = MAX(vert->x, xmax);
+        ymax = MAX(vert->y, ymax);
+        zmax = MAX(vert->z, zmax);
+        mesh->addVertex(Point4f(vert->x, vert->y, vert->z, 1.0));
+      }
+      Point4f lower(xmin, ymin, zmin);
+      Point4f upper(xmax, ymax, zmax);
+      Box3D *meshbbox = new gvt::render::data::primitives::Box3D(lower, upper);
+      // add faces to mesh
+      for (i = 0; i < nfaces; i++) {
+        face = flist[i];
+        mesh->addFace(face->verts[0] + 1, face->verts[1] + 1, face->verts[2] + 1);
+      }
+      mesh->generateNormals();
+      // add Enzo mesh to the database
+      // plyMeshNode["file"] = string("/work/01197/semeraro/maverick/DAVEDATA/EnzoPlyDATA/Block0.ply");
+      plyMeshNode["file"] = string(filepath);
+      plyMeshNode["bbox"] = (unsigned long long)meshbbox;
+      plyMeshNode["ptr"] = (unsigned long long)mesh;
+    }
+    // add instance
+    gvt::core::DBNodeH instnode = renderContext->createNodeFromType("Instance", "inst", instNodes.UUID());
+    gvt::core::DBNodeH meshNode = plyMeshNode;
+    Box3D *mbox = (Box3D *)meshNode["bbox"].value().toULongLong();
+    instnode["id"] = k;
+    instnode["meshRef"] = meshNode.UUID();
+    auto m = new gvt::core::math::AffineTransformMatrix<float>(true);
+    auto minv = new gvt::core::math::AffineTransformMatrix<float>(true);
+    auto normi = new gvt::core::math::Matrix3f();
+    instnode["mat"] = (unsigned long long)m;
+    *minv = m->inverse();
+    instnode["matInv"] = (unsigned long long)minv;
+    *normi = m->upper33().inverse().transpose();
+    instnode["normi"] = (unsigned long long)normi;
+    auto il = (*m) * mbox->bounds[0];
+    auto ih = (*m) * mbox->bounds[1];
+    Box3D *ibox = new gvt::render::data::primitives::Box3D(il, ih);
+    instnode["bbox"] = (unsigned long long)ibox;
+    instnode["centroid"] = ibox->centroid();
+  }
+
+  // add lights, camera, and film to the database
+  gvt::core::DBNodeH lightNodes = renderContext->createNodeFromType("Lights", "Lights", root.UUID());
+  gvt::core::DBNodeH lightNode = renderContext->createNodeFromType("PointLight", "conelight", lightNodes.UUID());
+  lightNode["position"] = Vector4f(512.0, 512.0, 2048.0, 0.0);
+  lightNode["color"] = Vector4f(1.0, 1.0, 1.0, 0.0);
+
+  // camera
+  Point4f eye(512.0, 512.0, 4096.0, 1.0);
+  Point4f focus(512.0, 512.0, 0.0, 1.0);
+  Vector4f upVector(0.0, 1.0, 0.0, 0.0);
+  float fov = (float)(25.0 * M_PI / 180.0);
+  Uuid cameraNodeId = createCameraNode(eye, focus, upVector, fov, option->filmWidth, option->filmHeight);
+
+  // gvt::core::DBNodeH camNode = renderContext->createNodeFromType("Camera", "conecam", root.UUID());
+  // camNode["eyePoint"] = Point4f(512.0, 512.0, 4096.0, 1.0);
+  // camNode["focus"] = Point4f(512.0, 512.0, 0.0, 1.0);
+  // camNode["upVector"] = Vector4f(0.0, 1.0, 0.0, 0.0);
+  // camNode["fov"] = (float)(25.0 * M_PI / 180.0);
+  // film
+  Uuid filmNodeId = createFilmNode(option->filmWidth, option->filmHeight, "");
+
+  // gvt::core::DBNodeH filmNode = renderContext->createNodeFromType("Film", "conefilm", root.UUID());
+  // filmNode["width"] = option->filmWidth;
+  // filmNode["height"] = option->filmHeight;
+  // filmNode["width"] = 2000;
+  // filmNode["height"] = 2000;
+
+//   gvt::core::DBNodeH schedNode = renderContext->createNodeFromType("Schedule", "Enzosched", root.UUID());
+//   schedNode["type"] = gvt::render::scheduler::Image;
+// // schedNode["type"] = gvt::render::scheduler::Domain;
+
+// #ifdef GVT_RENDER_ADAPTER_EMBREE
+//   int adapterType = gvt::render::adapter::Embree;
+// #elif GVT_RENDER_ADAPTER_MANTA
+//   int adapterType = gvt::render::adapter::Manta;
+// #elif GVT_RENDER_ADAPTER_OPTIX
+//   int adapterType = gvt::render::adapter::Optix;
+// #elif
+//   GVT_DEBUG(DBG_ALWAYS, "ERROR: missing valid adapter");
+// #endif
+
+  // schedNode["adapter"] = gvt::render::adapter::Embree;
+
+  Uuid scheduleNodeId = createScheduleNode(option->schedulerType, option->adapterType);
+
+  // end db setup
+
+  // use db to create structs needed by system
+
+  // setup gvtCamera from database entries
+  // gvtPerspectiveCamera mycamera;
+  // Point4f cameraposition = camNode["eyePoint"].value().toPoint4f();
+  // Point4f focus = camNode["focus"].value().toPoint4f();
+  // float fov = camNode["fov"].value().toFloat();
+  // Vector4f up = camNode["upVector"].value().toVector4f();
+  // mycamera.lookAt(cameraposition, focus, up);
+  // mycamera.setFOV(fov);
+  // mycamera.setFilmsize(filmNode["width"].value().toInteger(), filmNode["height"].value().toInteger());
+
+// #ifdef GVT_USE_MPE
+//   MPE_Log_event(readend, 0, NULL);
+// #endif
+  // setup image from database sizes
+}
+
+void MpiRenderer::makeObjDatabase() {
   // create data node
   Uuid dataNodeId = createNode("Data", "Data");
 

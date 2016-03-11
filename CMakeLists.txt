@@ -510,10 +510,10 @@ if (GVT_MPI_RENDERER_APP)
     endif(DEFINED ENV{MPEHOME})
   endif (GVT_MPE)
 	find_package(MPI REQUIRED)
-	include_directories(${MPI_INCLUDE_PATH} src/apps/render)
+	include_directories(${MPI_INCLUDE_PATH} src/apps/render ${PLYPATH})
 	set(GVT_MPI_RENDERER_LIBS ${GVT_MPI_RENDERER_LIBS} ${MPI_LIBRARIES})
-	set(GVT_MPI_RENDERER_SRCS ${GVT_MPI_RENDERER_SRCS}
-      src/apps/render/MpiRendererApp.cpp)
+	set(GVT_MPI_RENDERER_SRCS ${GVT_MPI_RENDERER_SRCS} src/apps/render/MpiRendererApp.cpp ${PLYPATH}/ply.c)
+
 	add_executable(gvtMpiRenderer ${GVT_MPI_RENDERER_SRCS})
 	target_link_libraries(gvtMpiRenderer gvtCore gvtRender ${GVT_MPI_RENDERER_LIBS} )
 endif(GVT_MPI_RENDERER_APP)
