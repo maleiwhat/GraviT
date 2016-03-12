@@ -164,8 +164,13 @@ int main(int argc, char **argv) {
   // lightNode["height"] = float(0.05);
 
   gvt::core::DBNodeH lightNode = cntxt->createNodeFromType("PointLight", "light", lightNodes.UUID());
-  lightNode["position"] = glm::vec3(0.0, 0.1, 0.5);
+  lightNode["position"] = glm::vec3(-0.2, 0.2, 0.5);
   lightNode["color"] = glm::vec3(1.0, 1.0, 1.0);
+
+  // set the background color
+
+  gvt::core::DBNodeH tracerNode = cntxt->createNodeFromType("Tracer", "tracer", root.UUID());
+  tracerNode["background"]  =glm::vec3(0.3,0.3,0.3);
 
   // set the camera
   gvt::core::DBNodeH camNode = cntxt->createNodeFromType("Camera", "cam", root.UUID());
@@ -173,9 +178,11 @@ int main(int argc, char **argv) {
   camNode["focus"] = glm::vec3(0.0, 0.1, -0.3);
   camNode["upVector"] = glm::vec3(0.0, 1.0, 0.0);
   camNode["fov"] = (float)(45.0 * M_PI / 180.0);
-  camNode["rayMaxDepth"] = (int)10;
-  camNode["raySamples"] = (int)3;
-  camNode["jitterWindowSize"]= (float) 0;
+  camNode["rayMaxDepth"] = (int)3;
+  camNode["raySamples"] = (int)1;
+  camNode["jitterWindowSize"]= (float) 0.1;
+
+  
 
   // set image width/height
   gvt::core::DBNodeH filmNode = cntxt->createNodeFromType("Film", "film", root.UUID());
@@ -233,6 +240,7 @@ int main(int argc, char **argv) {
 
   int rayMaxDepth =camNode["rayMaxDepth"].value().toInteger();
   int raySamples = camNode["raySamples"].value().toInteger();
+
   float jitterWindowSize = camNode["jitterWindowSize"].value().toFloat();
 
   mycamera.setMaxDepth(rayMaxDepth);
@@ -244,7 +252,8 @@ int main(int argc, char **argv) {
   mycamera.setFilmsize(filmNode["width"].value().toInteger(), filmNode["height"].value().toInteger());
 
   // setup image from database sizes
-  Image myimage(mycamera.getFilmSizeWidth(), mycamera.getFilmSizeHeight(), "bunny");
+  glm::vec3 backgroundColor = filmNode["background"].value().tovec3();
+  Image myimage(mycamera.getFilmSizeWidth(), mycamera.getFilmSizeHeight(), "bunny",backgroundColor);
 
   mycamera.AllocateCameraRays();
   mycamera.generateRays();

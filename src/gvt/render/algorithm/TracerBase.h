@@ -204,6 +204,15 @@ public:
                         std::map<int, gvt::render::actor::RayVector> local_queue;
 
                         for (gvt::render::actor::Ray &r : raysit) {
+
+                          if(r.type == gvt::render::actor::Ray::OCCLUDED)
+                          {
+                              tbb::mutex::scoped_lock fbloc(colorBuf_mutex[r.id % width]);
+                              for (int i = 0; i < 3; i++) colorBuf[r.id].rgba[i] = 0;
+                              colorBuf[r.id].rgba[3] = 1.0;
+                              continue;
+                          }
+
                           float t = FLT_MAX;
                           int next = acc.intersect(r, domID, t);
 
@@ -211,10 +220,28 @@ public:
                             r.origin = r.origin + r.direction * (t - gvt::render::actor::Ray::RAY_EPSILON);
                             local_queue[next].push_back(r);
                           } else if (domID != -1) {
-                            tbb::mutex::scoped_lock fbloc(colorBuf_mutex[r.id % width]);
-                            for (int i = 0; i < 3; i++) colorBuf[r.id].rgba[i] += r.color.rgba[i];
+                            if(r.type == gvt::render::actor::Ray::PRIMARY)
+                            {
+                              // if a primary hits nothing and does not intersect any other domain 
+                              // then use background
+                              // if it is a secondary ray, then this must mean a previous intersection must have
+                              // generated a shadow ray
+                              tbb::mutex::scoped_lock fbloc(colorBuf_mutex[r.id % width]);
+                              for (int i = 0; i < 3; i++) colorBuf[r.id].rgba[i] = -1;
+                              colorBuf[r.id].rgba[3] = 1.0;
+                            }
+                            else
+                            {
+                              tbb::mutex::scoped_lock fbloc(colorBuf_mutex[r.id % width]);
+                              for (int i = 0; i < 3; i++) colorBuf[r.id].rgba[i] += r.color.rgba[i];
+                              colorBuf[r.id].rgba[3] = 1.0;
+                              colorBuf[r.id].clamp();
+                            }
+                          }
+                          else { // this ray does not hit anything in the entire scene
+                            for (int i = 0; i < 3; i++) colorBuf[r.id].rgba[i] = -1;
                             colorBuf[r.id].rgba[3] = 1.0;
-                            colorBuf[r.id].clamp();
+
                           }
                         }
                         for (auto &q : local_queue) {
@@ -247,19 +274,23 @@ public:
 
     localComposite();
     // for (size_t i = 0; i < size; i++) image.Add(i, colorBuf[i]);
-
     if (!mpi) return;
 
     size_t size = width * height;
     unsigned char *rgb = image.GetBuffer();
 
-    int rgb_buf_size = 3 * size;
+    int rgb_buf_size =image.GetBufferSize();
 
     unsigned char *bufs = mpi.root() ? new unsigned char[mpi.world_size * rgb_buf_size] : NULL;
+
+    int backGroundBitSizeStart = image.backGroundBitSizeStart;
 
     // MPI_Barrier(MPI_COMM_WORLD);
     MPI_Gather(rgb, rgb_buf_size, MPI_UNSIGNED_CHAR, bufs, rgb_buf_size, MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);
     if (mpi.root()) {
+
+      unsigned char * backGroundBuff = new unsigned char[size];
+
       const size_t chunksize = MAX(2, size / (std::thread::hardware_concurrency() * 4));
       static tbb::simple_partitioner ap;
       tbb::parallel_for(tbb::blocked_range<size_t>(0, size, chunksize), [&](tbb::blocked_range<size_t> chunk) {
@@ -268,9 +299,31 @@ public:
           for (size_t i = 1; i < mpi.world_size; ++i) {
             int p = i * rgb_buf_size + j;
             // assumes black background, so adding is fine (r==g==b== 0)
-            rgb[j + 0] += bufs[p + 0];
-            rgb[j + 1] += bufs[p + 1];
-            rgb[j + 2] += bufs[p + 2];
+
+            // check the background stuff
+            int pixelIndex = j/3;
+
+            
+            if(!image.GetBackGroundPixel(pixelIndex, bufs, i * rgb_buf_size ))
+            {
+              //std::cout<<(unsigned int)aa<<std::endl;
+              // if i am currently a background pixel, restart from 0, reset the background pixel for my current buffer
+              if(image.GetBackGroundPixel(pixelIndex))
+              {
+                rgb[j + 0] = bufs[p + 0];
+                rgb[j + 1] = bufs[p + 1];
+                rgb[j + 2] = bufs[p + 2];
+
+                image.SetBufferBackground(pixelIndex,false);
+              }
+              else
+              {
+                rgb[j + 0] += bufs[p + 0];
+                rgb[j + 1] += bufs[p + 1];
+                rgb[j + 2] += bufs[p + 2];
+              }
+            }
+
           }
         }
       });

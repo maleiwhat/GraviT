@@ -109,6 +109,8 @@ protected:
   unsigned geomId;
 
   size_t begin, end;
+
+  int startingDepth;
 };
 }
 }

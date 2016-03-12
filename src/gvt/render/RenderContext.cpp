@@ -48,7 +48,10 @@ DBNodeH RenderContext::createNodeFromType(String type, String name, Uuid parent)
   DBNodeH n = gvt::core::CoreContext::createNode(type, name, parent);
 
   // TODO - make these for GraviT
-  if (type == String("Camera")) {
+  if (type == String("Tracer")) {
+    n += gvt::core::CoreContext::createNode("maxDepth");
+  }
+  else if (type == String("Camera")) {
     n += gvt::core::CoreContext::createNode("focus");
     n += gvt::core::CoreContext::createNode("eyePoint");
     n += gvt::core::CoreContext::createNode("upVector");
@@ -57,9 +60,11 @@ DBNodeH RenderContext::createNodeFromType(String type, String name, Uuid parent)
     n += gvt::core::CoreContext::createNode("rayMaxDepth");
     n += gvt::core::CoreContext::createNode("raySamples");
     n += gvt::core::CoreContext::createNode("jitterWindowSize");
+    n += gvt::core::CoreContext::createNode("castShadows");
   } else if (type == String("Film")) {
     n += gvt::core::CoreContext::createNode("width");
     n += gvt::core::CoreContext::createNode("height");
+    n += gvt::core::CoreContext::createNode("background", glm::vec3());
   } else if (type == String("View")) // TODO: remove view db entries
   {
     n += gvt::core::CoreContext::createNode("width");

@@ -82,14 +82,15 @@ public:
   enum RayType {
     PRIMARY,
     SHADOW,
-    SECONDARY
+    SECONDARY,
+    OCCLUDED
   };
 
   const static float RAY_EPSILON;
   // clang-format on
 
   Ray(glm::vec3 origin = glm::vec3(0, 0, 0), glm::vec3 direction = glm::vec3(0, 0, 0), float contribution = 1.f,
-      RayType type = PRIMARY, int depth = 10);
+      RayType type = PRIMARY, int depth = 0);
   Ray(Ray &ray, glm::mat4 &m);
   Ray(const Ray &orig);
   Ray(Ray &&ray);
@@ -128,7 +129,7 @@ public:
       mutable float t_max;
       int type;
     };
-    unsigned char data[21 * 4];
+    unsigned char data[25 * 4];
   };
 
 protected:

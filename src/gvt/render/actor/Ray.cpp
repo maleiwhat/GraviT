@@ -48,24 +48,24 @@ Ray::Ray(glm::vec3 origin, glm::vec3 direction, float contribution, RayType type
 }
 
 Ray::Ray(Ray &ray, glm::mat4 &m) {
-  std::memcpy(data, ray.data, 21 * 4);
+  std::memcpy(data, ray.data, 25 * 4);
   origin = glm::vec3(m * glm::vec4(ray.origin, 1.f));
   setDirection(glm::vec3(glm::normalize(m * glm::vec4(ray.direction, 0.f))));
 }
 
-Ray::Ray(const Ray &ray) { std::memcpy(data, ray.data, 21 * 4); }
+Ray::Ray(const Ray &ray) { std::memcpy(data, ray.data, 25 * 4); }
 
-Ray::Ray(Ray &&ray) { std::memmove(data, ray.data, 21 * 4); }
+Ray::Ray(Ray &&ray) { std::memmove(data, ray.data, 25 * 4); }
 
 Ray::~Ray() {}
 
-Ray::Ray(const unsigned char *buf) { std::memcpy(data, buf, 21 * 4); }
+Ray::Ray(const unsigned char *buf) { std::memcpy(data, buf, 25 * 4); }
 
-int Ray::packedSize() { return 21 * 4; }
+int Ray::packedSize() { return 25 * 4; }
 
 int Ray::pack(unsigned char *buffer) {
   unsigned char *buf = buffer;
-  std::memcpy(buf, data, 21 * 4);
+  std::memcpy(buf, data, 25 * 4);
   return packedSize();
 }
 

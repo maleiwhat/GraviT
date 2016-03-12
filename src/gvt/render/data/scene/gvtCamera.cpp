@@ -51,7 +51,7 @@ gvtCameraBase::gvtCameraBase() {
   INVRAND_MAX = 1.0 / (float)RAND_MAX;
   jitterWindowSize = 0.000;
   samples = 1;
-  depth = 1;
+  depth = 0;
 }
 gvtCameraBase::gvtCameraBase(const gvtCameraBase &cam) {
   eye_point = cam.eye_point;
@@ -187,7 +187,6 @@ void gvtCameraBase::AllocateCameraRays() {
   size_t nrays = filmsize[0] * filmsize[1] * samples * samples;
   rays.clear();
   rays.resize(nrays);
-  // return rays;
 }
 gvtCameraBase::~gvtCameraBase() {}
 
@@ -250,7 +249,7 @@ void gvtPerspectiveCamera::generateRays() {
               y *= vert;
               // calculate ray direction in camera space;
               // camera_space_ray_direction = camera_normal_basis_vector + x * camera_horiz_basis_vector +
-
+              
               glm::vec3 camera_space_ray_direction;
               camera_space_ray_direction[0] = cam2wrld[0][0] * x + cam2wrld[0][1] * y + z[0];
               camera_space_ray_direction[1] = cam2wrld[1][0] * x + cam2wrld[1][1] * y + z[1];
