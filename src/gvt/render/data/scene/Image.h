@@ -31,7 +31,7 @@
 #include <gvt/render/data/scene/ColorAccumulator.h>
 
 #include <string>
-#include <gvt/core/math.h>
+#include <gvt/core/Math.h>
 
 namespace gvt {
 namespace render {
