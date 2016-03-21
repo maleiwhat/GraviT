@@ -307,13 +307,15 @@ int main(int argc, char **argv) {
   camNode["focus"] = glm::vec3(0.0, 0.0, 0.0);
   camNode["upVector"] = glm::vec3(0.0, 1.0, 0.0);
   camNode["fov"] = (float)(45.0 * M_PI / 180.0);
-  camNode["rayMaxDepth"] = (int)1;
-  camNode["raySamples"] = (int)1;
-  camNode["jitterWindowSize"] = (float)0.5;
+  camNode["rayMaxDepth"] = (int)10;
+  camNode["raySamples"] = (int)3;
+  camNode["jitterWindowSize"]= (float) 0.5;
+
 
   gvt::core::DBNodeH filmNode = cntxt->createNodeFromType("Film", "conefilm", root.UUID());
   filmNode["width"] = 512;
   filmNode["height"] = 512;
+  filmNode["background"] = glm::vec3(0.8,0.1,0.1);
 
   if (cmd.isSet("lpos")) {
     std::vector<float> pos = cmd.getValue<float>("lpos");
@@ -385,7 +387,8 @@ int main(int argc, char **argv) {
   MPE_Log_event(readend, 0, NULL);
 #endif
   // setup image from database sizes
-  Image myimage(mycamera.getFilmSizeWidth(), mycamera.getFilmSizeHeight(), "simple");
+  glm::vec3 backgroundColor = filmNode["background"].value().tovec3(); 
+  Image myimage(mycamera.getFilmSizeWidth(), mycamera.getFilmSizeHeight(), "simple", backgroundColor);
 
   mycamera.AllocateCameraRays();
   mycamera.generateRays();
@@ -395,8 +398,8 @@ int main(int argc, char **argv) {
   case gvt::render::scheduler::Image: {
     std::cout << "starting image scheduler" << std::endl;
     std::cout << "ligthpos " << lightNode["position"].value().tovec3() << std::endl;
-    gvt::render::algorithm::Tracer<ImageScheduler> tracer(mycamera.rays, myimage);
-    for (int z = 0; z < 10; z++) {
+    gvt::render::algorithm::Tracer<ImageScheduler> tracer(mycamera.rays, myimage,rayMaxDepth);
+    for (int z = 0; z < 1; z++) {
       mycamera.AllocateCameraRays();
       mycamera.generateRays();
       myimage.clear();
@@ -410,9 +413,8 @@ int main(int argc, char **argv) {
     MPE_Log_event(renderstart, 0, NULL);
 #endif
     // gvt::render::algorithm::Tracer<DomainScheduler>(mycamera.rays, myimage)();
-    std::cout << "starting image scheduler" << std::endl;
-    gvt::render::algorithm::Tracer<DomainScheduler> tracer(mycamera.rays, myimage);
-    for (int z = 0; z < 10; z++) {
+    gvt::render::algorithm::Tracer<DomainScheduler> tracer(mycamera.rays, myimage,rayMaxDepth);
+    for (int z = 0; z < 1; z++) {
       mycamera.AllocateCameraRays();
       mycamera.generateRays();
       myimage.clear();

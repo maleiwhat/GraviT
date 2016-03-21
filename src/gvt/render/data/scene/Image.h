@@ -30,6 +30,7 @@
 
 #include <glm/glm.hpp>
 #include <gvt/render/data/scene/ColorAccumulator.h>
+#include <gvt/core/Math.h>
 
 #include <string>
 
@@ -47,46 +48,140 @@ public:
     PPM
   };
   // clang-format on
+  int GetBufferSize() {return bufferSize;}
 
-  Image(int w, int h, std::string fn = "gvt_image", ImageFormat f = PPM)
-      : width(w), height(h), filename(fn), format(f) {
-    int size = 3 * width * height;
+  void SetBufferBackground(int pixel, bool isBackground)
+  {
+    int offset = (pixel) / 8;
+    int maskBit = (pixel % 8);
+    if(isBackground)
+    { 
+      //calculate mask bit
+      unsigned char mask = 0x1<<maskBit;
+      rgb[backGroundBitSizeStart +offset ] |= mask; 
+    }
+    else
+    {
+      unsigned char mask = 0x1<<maskBit;
+      mask = ~mask;
+      rgb[backGroundBitSizeStart +offset ] &= mask; 
+    }
+  }
+
+  bool GetBackGroundPixel(int pixel, unsigned char * buffer = nullptr, int offset = 0)
+  {
+    if(buffer == nullptr) buffer = rgb;
+
+    int buffoffset = (pixel) / 8;
+    int maskBit = (pixel % 8);
+    unsigned char mask = 0x1<<maskBit;
+
+    unsigned char val = (unsigned char ) (buffer[backGroundBitSizeStart + buffoffset + offset] & mask);
+
+    return  val > 0? true: false;
+  }
+
+  Image(int w, int h, std::string fn = "gvt_image", glm::vec3 backgroundColor = glm::vec3(0,0,0), ImageFormat f = PPM)
+      : width(w), height(h), filename(fn), format(f), backgroundColor(backgroundColor) {
+
+    int imageSize = 3 * width * height;
+    int backGroundBitSize = (width * height + 8 -1)/8;
+
+    //int backGroundBitSize = width * height;
+    int size =  imageSize + backGroundBitSize;
+    bufferSize = size;
     rgb = new unsigned char[size];
-    for (int i = 0; i < size; ++i) rgb[i] = 0;
+
+    for (int i = 0; i < imageSize; i+=3) 
+    {
+      rgb[i + 0] = (unsigned char)(backgroundColor[0] * 256.f);
+      rgb[i + 1] = (unsigned char)(backgroundColor[1] * 256.f);
+      rgb[i + 2] = (unsigned char)(backgroundColor[2] * 256.f);
+    };
+
+    // intially set all as background
+    for(int i = imageSize;i<size;i++) rgb[i] = (unsigned char) 0xFF;
+
+    backGroundBitSizeStart = imageSize;
   }
 
   void Add(int pixel, float *buf) {
     int index = 3 * pixel;
+
+    bool isCurrentlyBackground = GetBackGroundPixel(pixel);
+
     rgb[index + 0] = (unsigned char)(buf[0] * 256.f);
     rgb[index + 1] = (unsigned char)(buf[1] * 256.f);
     rgb[index + 2] = (unsigned char)(buf[2] * 256.f);
+    
+    if(isCurrentlyBackground)
+    {
+      SetBufferBackground(pixel, false);
+    }
   }
 
   void Add(int pixel, glm::vec3 &ca) {
-    int index = 3 * pixel;
-    rgb[index + 0] = (unsigned char)(ca[0] * 255.f);
-    rgb[index + 1] = (unsigned char)(ca[1] * 255.f);
-    rgb[index + 2] = (unsigned char)(ca[2] * 255.f);
-    if (rgb[index + 0] > 255.f) rgb[index + 0] = 255;
-    if (rgb[index + 1] > 255.f) rgb[index + 1] = 255;
-    if (rgb[index + 2] > 255.f) rgb[index + 2] = 255;
+    if(ca[0] == -1) {return;}  // ignore un-intialized color accumulators
+    
+    else
+    {
+      int index = 3 * pixel;
+      bool isCurrentlyBackground = GetBackGroundPixel(pixel);
+      rgb[index + 0] = (unsigned char)(ca[0] * 255.f);
+      rgb[index + 1] = (unsigned char)(ca[1] * 255.f);
+      rgb[index + 2] = (unsigned char)(ca[2] * 255.f);
+      
+      if(isCurrentlyBackground)
+      {
+        SetBufferBackground(pixel, false);
+      }
+    }
   }
 
   void Add(int pixel, glm::vec3 &ca, float w) {
     int index = 3 * pixel;
-    rgb[index + 0] = ((unsigned char)(ca[0] * 255.f) * w);
-    rgb[index + 1] = ((unsigned char)(ca[1] * 255.f) * w);
-    rgb[index + 2] = ((unsigned char)(ca[2] * 255.f) * w);
+
+    if(ca[0] == -1) {return;}  // ignore un-intialized color accumulators
+    
+    else
+    {
+      int index = 3 * pixel;
+      bool isCurrentlyBackground = GetBackGroundPixel(pixel);
+      rgb[index + 0] = (unsigned char)(ca[0] * 255.f * w);
+      rgb[index + 1] = (unsigned char)(ca[1] * 255.f * w);
+      rgb[index + 2] = (unsigned char)(ca[2] * 255.f * w);
+      
+      if(isCurrentlyBackground)
+      {
+        SetBufferBackground(pixel, false);
+      }
+    }
+
   }
 
   unsigned char *GetBuffer() { return rgb; }
 
   void Write();
-  void clear() { std::memset(rgb, 0, sizeof(char) * 3 * width * height); }
+
+  void clear() 
+  { 
+    for (int i = 0; i < backGroundBitSizeStart; i+=3) 
+    {
+      rgb[i + 0] = (unsigned char)(backgroundColor[0] * 256.f);
+      rgb[i + 1] = (unsigned char)(backgroundColor[1] * 256.f);
+      rgb[i + 2] = (unsigned char)(backgroundColor[2] * 256.f);
+    };
+
+    // intially set all as background
+    for(int i = backGroundBitSizeStart;i<bufferSize;i++) rgb[i] = (unsigned char) 0xFF;
+  }
 
   ~Image() { delete[] rgb; }
 
 private:
+  int backGroundBitSizeStart;
+  int bufferSize;
+  glm::vec3 backgroundColor;
   int width, height;
   std::string filename;
   ImageFormat format;

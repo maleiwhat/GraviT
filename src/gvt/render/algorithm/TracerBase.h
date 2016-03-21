@@ -63,6 +63,8 @@
 #include <tbb/partitioner.h>
 #include <tbb/tick_count.h>
 
+#define UN_INITIALIZED_BUFFER_VALUE -1
+
 namespace gvt {
 namespace render {
 namespace algorithm {
@@ -112,17 +114,17 @@ public:
   int height = rootnode["Film"]["height"].value().toInteger();
 
   float sample_ratio = 1.f;
+  int maxRayDepth;
 
   tbb::mutex *queue_mutex;                            // array of mutexes - one per instance
   std::map<int, gvt::render::actor::RayVector> queue; ///< Node rays working
   tbb::mutex *colorBuf_mutex;                         ///< buffer for color accumulation
   glm::vec3 *colorBuf;
 
-  AbstractTrace(gvt::render::actor::RayVector &rays, gvt::render::data::scene::Image &image)
-      : rays(rays), image(image) {
+  AbstractTrace(gvt::render::actor::RayVector &rays, gvt::render::data::scene::Image &image, int maxRayDepth)
+      : rays(rays), image(image), maxRayDepth(maxRayDepth) {
     GVT_DEBUG(DBG_ALWAYS, "initializing abstract trace: num rays: " << rays.size());
     colorBuf = new glm::vec3[width * height];
-
     // TODO: alim: this queue is on the number of domains in the dataset
     // if this is on the number of domains, then it will be equivalent to the
     // number
@@ -166,7 +168,14 @@ public:
     GVT_DEBUG(DBG_ALWAYS, "abstract trace: constructor end");
   }
 
-  void clearBuffer() { std::memset(colorBuf, 0, sizeof(glm::vec3) * width * height); }
+  void clearBuffer() 
+  { 
+    glm::vec3 unItializedBuffer = glm::vec3(UN_INITIALIZED_BUFFER_VALUE,UN_INITIALIZED_BUFFER_VALUE,UN_INITIALIZED_BUFFER_VALUE);
+    for(int i = 0;i < width * height;i++)
+    {
+      colorBuf[i] = unItializedBuffer;
+    }
+   }
 
   // clang-format off
   virtual ~AbstractTrace() {};
@@ -191,6 +200,9 @@ public:
 
     const size_t chunksize = MAX(2, rays.size() / (std::thread::hardware_concurrency() * 4));
     static gvt::render::data::accel::BVH &acc = *dynamic_cast<gvt::render::data::accel::BVH *>(acceleration);
+
+    glm::vec3 occludedBackground  = glm::vec3(0,0.0,0);
+
     static tbb::simple_partitioner ap;
     tbb::parallel_for(tbb::blocked_range<gvt::render::actor::RayVector::iterator>(rays.begin(), rays.end(), chunksize),
                       [&](tbb::blocked_range<gvt::render::actor::RayVector::iterator> raysit) {
@@ -198,13 +210,31 @@ public:
                             acc.intersect<GVT_SIMD_WIDTH>(raysit.begin(), raysit.end(), domID);
                         std::map<int, gvt::render::actor::RayVector> local_queue;
                         for (size_t i = 0; i < hits.size(); i++) {
+
                           gvt::render::actor::Ray &r = *(raysit.begin() + i);
+                            
+                          if(r.type == gvt::render::actor::Ray::OCCLUDED)
+                          {
+                              tbb::mutex::scoped_lock fbloc(colorBuf_mutex[r.id % width]);
+
+                              colorBuf[r.id] = occludedBackground;
+                              continue;
+                          }
+
                           if (hits[i].next != -1) {
                             r.origin = r.origin + r.direction * (hits[i].t * 0.95f);
                             local_queue[hits[i].next].push_back(r);
                           } else if (r.type == gvt::render::actor::Ray::SHADOW && glm::length(r.color) > 0) {
                             tbb::mutex::scoped_lock fbloc(colorBuf_mutex[r.id % width]);
-                            colorBuf[r.id] += r.color;
+
+                            if (colorBuf[r.id][0] == UN_INITIALIZED_BUFFER_VALUE)
+                            {
+                              colorBuf[r.id] = r.color;
+                            }
+                            else
+                            {
+                              colorBuf[r.id] += r.color;
+                            }                            
                           }
                         }
                         for (auto &q : local_queue) {
@@ -243,7 +273,7 @@ public:
     size_t size = width * height;
     unsigned char *rgb = image.GetBuffer();
 
-    int rgb_buf_size = 3 * size;
+    int rgb_buf_size = image.GetBufferSize();
 
     unsigned char *bufs = mpi.root() ? new unsigned char[mpi.world_size * rgb_buf_size] : NULL;
 
@@ -255,12 +285,32 @@ public:
       tbb::parallel_for(tbb::blocked_range<size_t>(0, size, chunksize), [&](tbb::blocked_range<size_t> chunk) {
 
         for (int j = chunk.begin() * 3; j < chunk.end() * 3; j += 3) {
+          int pixelIndex = j/3;
+          bool mainBufferIsBackgroundPixel = image.GetBackGroundPixel(pixelIndex);
+
           for (size_t i = 1; i < mpi.world_size; ++i) {
             int p = i * rgb_buf_size + j;
-            // assumes black background, so adding is fine (r==g==b== 0)
-            rgb[j + 0] += bufs[p + 0];
-            rgb[j + 1] += bufs[p + 1];
-            rgb[j + 2] += bufs[p + 2];
+            
+            if(!image.GetBackGroundPixel(pixelIndex, bufs, i * rgb_buf_size ))
+            {
+              //std::cout<<(unsigned int)aa<<std::endl;
+              // if i am currently a background pixel, restart from 0, reset the background pixel for my current buffer
+              if(mainBufferIsBackgroundPixel)
+              {
+                rgb[j + 0] = bufs[p + 0];
+                rgb[j + 1] = bufs[p + 1];
+                rgb[j + 2] = bufs[p + 2];
+
+                image.SetBufferBackground(pixelIndex,false);
+                mainBufferIsBackgroundPixel = false;
+              }
+              else
+              {
+                rgb[j + 0] += bufs[p + 0];
+                rgb[j + 1] += bufs[p + 1];
+                rgb[j + 2] += bufs[p + 2];
+              }
+            }
           }
         }
       });
@@ -283,7 +333,7 @@ public:
  */
 template <class BSCHEDULER> class Tracer : public AbstractTrace {
 public:
-  Tracer(gvt::render::actor::RayVector &rays, gvt::render::data::scene::Image &image) : AbstractTrace(rays, image) {}
+  Tracer(gvt::render::actor::RayVector &rays, gvt::render::data::scene::Image &image, int maxRayDepth) : AbstractTrace(rays, image, maxRayDepth) {}
 
   virtual ~Tracer() {}
 };
@@ -304,7 +354,7 @@ public:
 template <template <typename> class BSCHEDULER, class ISCHEDULER>
 class Tracer<BSCHEDULER<ISCHEDULER> > : public AbstractTrace {
 public:
-  Tracer(gvt::render::actor::RayVector &rays, gvt::render::data::scene::Image &image) : AbstractTrace(rays, image) {}
+  Tracer(gvt::render::actor::RayVector &rays, gvt::render::data::scene::Image &image, int maxRayDepth) : AbstractTrace(rays, image, maxRayDepth) {}
 
   virtual ~Tracer() {}
 };

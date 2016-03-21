@@ -265,6 +265,9 @@ int main(int argc, char **argv) {
   camNode["focus"] = glm::vec3(512.0, 512.0, 0.0);
   camNode["upVector"] = glm::vec3(0.0, 1.0, 0.0);
   camNode["fov"] = (float)(25.0 * M_PI / 180.0);
+  camNode["rayMaxDepth"] = (int)1;
+  camNode["raySamples"] = (int)1;
+  camNode["jitterWindowSize"]= (float) 0;
   // film
   gvt::core::DBNodeH filmNode = cntxt->createNodeFromType("Film", "conefilm", root.UUID());
   filmNode["width"] = 1900;
@@ -313,6 +316,14 @@ int main(int argc, char **argv) {
   glm::vec3 focus = camNode["focus"].value().tovec3();
   float fov = camNode["fov"].value().toFloat();
   glm::vec3 up = camNode["upVector"].value().tovec3();
+
+  int rayMaxDepth = camNode["rayMaxDepth"].value().toInteger();
+  int raySamples = camNode["raySamples"].value().toInteger();
+  float jitterWindowSize = camNode["jitterWindowSize"].value().toFloat();
+
+  mycamera.setMaxDepth(rayMaxDepth);
+  mycamera.setSamples(raySamples);
+  mycamera.setJitterWindowSize(jitterWindowSize);
   mycamera.lookAt(cameraposition, focus, up);
   mycamera.setFOV(fov);
   mycamera.setFilmsize(filmNode["width"].value().toInteger(), filmNode["height"].value().toInteger());
@@ -330,7 +341,7 @@ int main(int argc, char **argv) {
   switch (schedType) {
   case gvt::render::scheduler::Image: {
     std::cout << "starting image scheduler" << std::endl;
-    gvt::render::algorithm::Tracer<ImageScheduler> tracer(mycamera.rays, myimage);
+    gvt::render::algorithm::Tracer<ImageScheduler> tracer(mycamera.rays, myimage, rayMaxDepth);
     for (int z = 0; z < 100; z++) {
       mycamera.AllocateCameraRays();
       mycamera.generateRays();
@@ -346,7 +357,7 @@ int main(int argc, char **argv) {
 #endif
     // gvt::render::algorithm::Tracer<DomainScheduler>(mycamera.rays, myimage)();
     std::cout << "starting image scheduler" << std::endl;
-    gvt::render::algorithm::Tracer<DomainScheduler> tracer(mycamera.rays, myimage);
+    gvt::render::algorithm::Tracer<DomainScheduler> tracer(mycamera.rays, myimage,rayMaxDepth);
     for (int z = 0; z < 100; z++) {
       mycamera.AllocateCameraRays();
       mycamera.generateRays();

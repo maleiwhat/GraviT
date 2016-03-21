@@ -231,6 +231,8 @@ struct embreeParallelTrace {
 
   const size_t begin, end;
 
+  int startingDepth;
+
   gvt::render::data::primitives::Mesh *mesh;
   /**
    * Construct a embreeParallelTrace struct with information needed for the
@@ -241,9 +243,9 @@ struct embreeParallelTrace {
                       gvt::render::actor::RayVector &rayList, gvt::render::actor::RayVector &moved_rays,
                       const size_t workSize, glm::mat4 *m, glm::mat4 *minv, glm::mat3 *normi,
                       std::vector<gvt::render::data::scene::Light *> &lights, gvt::render::data::primitives::Mesh *mesh,
-                      std::atomic<size_t> &counter, const size_t begin, const size_t end)
+                      std::atomic<size_t> &counter, const size_t begin, const size_t end, int startingDepth)
       : adapter(adapter), rayList(rayList), moved_rays(moved_rays), workSize(workSize), m(m), minv(minv), normi(normi),
-        lights(lights), counter(counter), begin(begin), end(end), mesh(mesh) {}
+        lights(lights), counter(counter), begin(begin), end(end), mesh(mesh) ,startingDepth(startingDepth){}
   /**
    * Convert a set of rays from a vector into a GVT_EMBREE_PACKET_TYPE ray packet.
    *
@@ -361,6 +363,12 @@ struct embreeParallelTrace {
         if (valid[pi] && ray4.geomID[pi] == (int)RTC_INVALID_GEOMETRY_ID) {
           // ray is valid, but did not hit anything, so add to dispatch queue
           localDispatch.push_back(shadowRays[idx + pi]);
+        }
+        // ray is occluded at primary ray, set the buffer to black
+        else if(shadowRays[idx + pi].depth == startingDepth){
+          // this is a pimary ray, should set the image pixel to black
+          shadowRays[idx + pi].type = gvt::render::actor::Ray::OCCLUDED;
+          localDispatch.push_back(shadowRays[idx + pi]);          
         }
       }
     }
@@ -508,6 +516,11 @@ struct embreeParallelTrace {
 
               // shadow ray hit something, so it should be dropped
               if (r.type == gvt::render::actor::Ray::SHADOW) {
+                if(r.depth == startingDepth)
+                {
+                  r.type = gvt::render::actor::Ray::OCCLUDED;
+                  localDispatch.push_back(r);
+                }
                 continue;
               }
 
@@ -643,7 +656,7 @@ struct embreeParallelTrace {
 
 void EmbreeMeshAdapter::trace(gvt::render::actor::RayVector &rayList, gvt::render::actor::RayVector &moved_rays,
                               glm::mat4 *m, glm::mat4 *minv, glm::mat3 *normi,
-                              std::vector<gvt::render::data::scene::Light *> &lights, size_t _begin, size_t _end) {
+                              std::vector<gvt::render::data::scene::Light *> &lights, int maxRayDepth, size_t _begin, size_t _end) {
 #ifdef GVT_USE_DEBUG
   boost::timer::auto_cpu_timer t_functor("EmbreeMeshAdapter: trace time: %w\n");
 #endif
@@ -657,13 +670,14 @@ void EmbreeMeshAdapter::trace(gvt::render::actor::RayVector &rayList, gvt::rende
   const size_t workSize = std::max((size_t)4, (size_t)((end - begin) / (numThreads * 2))); // size of 'chunk'
                                                                                            // of rays to work
                                                                                            // on
+  int startingDepth = maxRayDepth;
 
   static tbb::auto_partitioner ap;
   tbb::parallel_for(tbb::blocked_range<size_t>(begin, (end - begin), workSize),
                     [&](tbb::blocked_range<size_t> chunk) {
                       // for (size_t i = chunk.begin(); i < chunk.end(); i++) image.Add(i, colorBuf[i]);
                       embreeParallelTrace(this, rayList, moved_rays, chunk.end() - chunk.begin(), m, minv, normi,
-                                          lights, mesh, counter, chunk.begin(), chunk.end())();
+                                          lights, mesh, counter, chunk.begin(), chunk.end(), startingDepth)();
                     },
                     ap);
 

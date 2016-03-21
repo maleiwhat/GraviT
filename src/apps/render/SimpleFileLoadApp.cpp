@@ -80,11 +80,6 @@ int main(int argc, char **argv) {
 
   cmd.addconflict("image", "domain");
   cmd.parse(argc, argv);
-  if (!cmd.isSet("threads")) {
-    tbb::task_scheduler_init init(std::thread::hardware_concurrency());
-  } else {
-    tbb::task_scheduler_init init(cmd.get<int>("threads"));
-  }
 
   MPI_Init(&argc, &argv);
   MPI_Pcontrol(0);
@@ -181,6 +176,7 @@ int main(int argc, char **argv) {
   gvt::core::DBNodeH filmNode = cntxt->createNodeFromType("Film", "film", root.UUID());
   filmNode["width"] = 512;
   filmNode["height"] = 512;
+  filmNode["background"] = glm::vec3(0.7, 0.1, 0.1);
 
   if (cmd.isSet("eye")) {
     std::vector<float> eye = cmd.getValue<float>("eye");
@@ -244,7 +240,8 @@ int main(int argc, char **argv) {
   mycamera.setFilmsize(filmNode["width"].value().toInteger(), filmNode["height"].value().toInteger());
 
   // setup image from database sizes
-  Image myimage(mycamera.getFilmSizeWidth(), mycamera.getFilmSizeHeight(), "bunny");
+  glm::vec3 backgroundColor =  filmNode["background"].value().tovec3();
+  Image myimage(mycamera.getFilmSizeWidth(), mycamera.getFilmSizeHeight(), "bunny", backgroundColor);
 
   mycamera.AllocateCameraRays();
   mycamera.generateRays();
@@ -253,14 +250,14 @@ int main(int argc, char **argv) {
   switch (schedType) {
   case gvt::render::scheduler::Image: {
     std::cout << "starting image scheduler" << std::endl;
-    gvt::render::algorithm::Tracer<ImageScheduler> tracer(mycamera.rays, myimage);
+    gvt::render::algorithm::Tracer<ImageScheduler> tracer(mycamera.rays, myimage, rayMaxDepth);
     tracer.sample_ratio = 1.0 / float(raySamples * raySamples);
     tracer();
     break;
   }
   case gvt::render::scheduler::Domain: {
     std::cout << "starting domain scheduler" << std::endl;
-    gvt::render::algorithm::Tracer<DomainScheduler> tracer(mycamera.rays, myimage);
+    gvt::render::algorithm::Tracer<DomainScheduler> tracer(mycamera.rays, myimage, rayMaxDepth);
     tracer.sample_ratio = 1.0 / float(raySamples * raySamples);
     tracer();
     break;

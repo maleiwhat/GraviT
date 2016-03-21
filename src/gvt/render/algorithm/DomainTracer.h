@@ -101,7 +101,7 @@ public:
   int marchinstart, marchinend;
 #endif
 
-  Tracer(gvt::render::actor::RayVector &rays, gvt::render::data::scene::Image &image) : AbstractTrace(rays, image) {
+  Tracer(gvt::render::actor::RayVector &rays, gvt::render::data::scene::Image &image, int maxRayDepth) : AbstractTrace(rays, image, maxRayDepth) {
 #ifdef GVT_USE_MPE
     // MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPE_Log_get_state_eventIDs(&tracestart, &traceend);
@@ -316,7 +316,7 @@ public:
             boost::timer::auto_cpu_timer t("Tracing rays in adapter: %w\n");
 #endif
             adapter->trace(this->queue[instTarget], moved_rays, instM[instTarget], instMinv[instTarget],
-                           instMinvN[instTarget], lights);
+                           instMinvN[instTarget], lights, maxRayDepth);
 
             this->queue[instTarget].clear();
 

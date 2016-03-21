@@ -83,7 +83,8 @@ public:
   enum RayType {
     PRIMARY,
     SHADOW,
-    SECONDARY
+    SECONDARY,
+    OCCLUDED
   };
 
   const static float RAY_EPSILON;
@@ -92,7 +93,7 @@ public:
   }
   inline Ray(glm::vec3 _origin, glm::vec3 _direction, float contribution = 1.f, RayType type = PRIMARY, int depth = 10)
       : origin(_origin), t_min(gvt::render::actor::Ray::RAY_EPSILON), direction(glm::normalize(_direction)),
-        t_max(FLT_MAX), t(FLT_MAX), id(-1), w(contribution), type(type) {}
+        t_max(FLT_MAX), t(FLT_MAX), id(-1), w(contribution), type(type), depth(depth) {}
 
   inline Ray(const Ray &r) { std::memcpy(data, r.data, packedSize()); }
 

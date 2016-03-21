@@ -83,7 +83,7 @@ public:
   // caches meshes that are converted into the adapter's format
   std::map<gvt::render::data::primitives::Mesh *, gvt::render::Adapter *> adapterCache;
 
-  Tracer(gvt::render::actor::RayVector &rays, gvt::render::data::scene::Image &image) : AbstractTrace(rays, image) {
+  Tracer(gvt::render::actor::RayVector &rays, gvt::render::data::scene::Image &image, int maxRayDepth) : AbstractTrace(rays, image, maxRayDepth) {
     int ray_portion = rays.size() / mpi.world_size;
     rays_start = mpi.rank * ray_portion;
     rays_end = (mpi.rank + 1) == mpi.world_size ? rays.size()
@@ -210,7 +210,7 @@ public:
           boost::timer::auto_cpu_timer t("Tracing rays in adapter: %w\n");
 #endif
           adapter->trace(this->queue[instTarget], moved_rays, instM[instTarget], instMinv[instTarget],
-                         instMinvN[instTarget], lights);
+                         instMinvN[instTarget], lights, maxRayDepth);
 
           this->queue[instTarget].clear();
 
