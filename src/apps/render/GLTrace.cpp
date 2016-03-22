@@ -763,10 +763,18 @@ void Render() {
   glm::vec3 focus = camNode["focus"].value().tovec3();
   glm::vec3 up = camNode["upVector"].value().tovec3();
 
+  int rayMaxDepth = camNode["rayMaxDepth"].value().toInteger();
+  int raySamples = camNode["raySamples"].value().toInteger();
+  float jitterWindowSize = camNode["jitterWindowSize"].value().toFloat();
+
   float fov = camNode["fov"].value().toFloat();
   mycamera.lookAt(cameraposition, focus, up);
   mycamera.setFOV(fov);
   mycamera.setFilmsize(filmNode["width"].value().toInteger(), filmNode["height"].value().toInteger());
+
+  mycamera.setMaxDepth(rayMaxDepth);
+  mycamera.setSamples(raySamples);
+  mycamera.setJitterWindowSize(jitterWindowSize);
 
   int schedType = rootNode["Schedule"]["type"].value().toInteger();
 
@@ -781,11 +789,11 @@ void Render() {
 
     switch (schedType) {
     case gvt::render::scheduler::Image:
-      tracer = new gvt::render::algorithm::Tracer<ImageScheduler>(mycamera.rays, *imageptr);
+      tracer = new gvt::render::algorithm::Tracer<ImageScheduler>(mycamera.rays, *imageptr, rayMaxDepth);
       break;
     case gvt::render::scheduler::Domain:
       std::cout << "starting domain scheduler" << std::endl;
-      tracer = new gvt::render::algorithm::Tracer<DomainScheduler>(mycamera.rays, *imageptr);
+      tracer = new gvt::render::algorithm::Tracer<DomainScheduler>(mycamera.rays, *imageptr, rayMaxDepth);
       break;
     default:
       std::cout << "unknown schedule type provided: " << schedType << std::endl;
@@ -895,6 +903,9 @@ void ConfigSceneFromFile(std::string filename) {
     Box3D *ibox = new gvt::render::data::primitives::Box3D(il, ih);
     instnode["bbox"] = (unsigned long long)ibox;
     instnode["centroid"] = ibox->centroid();
+
+      mesh->generateNormals();
+
   }
 
   // add lights, camera, and film to the database
@@ -1347,13 +1358,13 @@ int main(int argc, char *argv[]) {
 
   cmd.parse(argc, argv);
 
-  // if (!cmd.isSet("threads")) {
-  //   tbb::task_scheduler_init init(std::thread::hardware_concurrency());
-  // } else {
-  //   tbb::task_scheduler_init init(cmd.get<int>("threads"));
-  // }
+   if (!cmd.isSet("threads")) {
+     tbb::task_scheduler_init init(std::thread::hardware_concurrency());
+   } else {
+     tbb::task_scheduler_init init(cmd.get<int>("threads"));
+   }
 
-  tbb::task_scheduler_init init(1);
+  //tbb::task_scheduler_init init(1);
 
   mpi_rank = -1;
   MPI_Init(&argc, &argv);
@@ -1440,6 +1451,19 @@ int main(int argc, char *argv[]) {
   imageptr = new Image(width, height, "spoot");
   imagebuffer = imageptr->GetBuffer();
 
+
+  camNode["rayMaxDepth"] = (int)1;
+  camNode["raySamples"] = (int)1;
+  camNode["jitterWindowSize"] = (float)0;
+
+  int rayMaxDepth = camNode["rayMaxDepth"].value().toInteger();
+  int raySamples = camNode["raySamples"].value().toInteger();
+  float jitterWindowSize = camNode["jitterWindowSize"].value().toFloat();
+
+  mycamera.setMaxDepth(rayMaxDepth);
+  mycamera.setSamples(raySamples);
+  mycamera.setJitterWindowSize(jitterWindowSize);
+
   mycamera.setFilmsize(root["Film"]["width"].value().toInteger(), root["Film"]["height"].value().toInteger());
 
   mycamera.AllocateCameraRays();
@@ -1447,11 +1471,11 @@ int main(int argc, char *argv[]) {
   int schedType = root["Schedule"]["type"].value().toInteger();
   switch (schedType) {
   case gvt::render::scheduler::Image:
-    tracer = new gvt::render::algorithm::Tracer<ImageScheduler>(mycamera.rays, *imageptr);
+    tracer = new gvt::render::algorithm::Tracer<ImageScheduler>(mycamera.rays, *imageptr, rayMaxDepth);
     break;
   case gvt::render::scheduler::Domain:
     std::cout << "starting domain scheduler" << std::endl;
-    tracer = new gvt::render::algorithm::Tracer<DomainScheduler>(mycamera.rays, *imageptr);
+    tracer = new gvt::render::algorithm::Tracer<DomainScheduler>(mycamera.rays, *imageptr, rayMaxDepth);
     break;
   default:
     std::cout << "unknown schedule type provided: " << schedType << std::endl;
