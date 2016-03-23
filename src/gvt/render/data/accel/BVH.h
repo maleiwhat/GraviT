@@ -137,21 +137,29 @@ public:
         }
 
         if (cur->numInstances > 0) { // leaf node
-          int start = cur->instanceSetIdx;
-          int end = start + cur->numInstances;
-          for (int i = start; i < end; ++i) {
-            if (from == instanceSetID[i]) continue;
-            const primitives::Box3D &ibbox = *instanceSetBB[i];
-            int hit[simd_width];
-            if (rp.intersect(ibbox, hit, true)) {
-              for (int o = 0; o < simd_width; ++o) {
-                if (hit[o] == 1 && rp.mask[o] == 1) {
-                  ret[offset + o].next = instanceSetID[i];
-                  ret[offset + o].t = rp.t[o];
-                }
+          if (from != cur->id) {
+            int start = cur->instanceSetIdx;
+            int end = start + cur->numInstances;
+            for (int o = 0; o < simd_width; ++o) {
+              if (hit[o] == 1 && rp.mask[o] == 1) {
+                ret[offset + o].next = cur->id; // instanceSetID[i];
+                ret[offset + o].t = rp.t[o];
               }
             }
           }
+          // for (int i = start; i < end; ++i) {
+          //   if (from == instanceSetID[i]) continue;
+          //   const primitives::Box3D &ibbox = *instanceSetBB[i];
+          //   int hit[simd_width];
+          //   if (rp.intersect(ibbox, hit, true)) {
+          //     for (int o = 0; o < simd_width; ++o) {
+          //       if (hit[o] == 1 && rp.mask[o] == 1) {
+          //         ret[offset + o].next = instanceSetID[i];
+          //         ret[offset + o].t = rp.t[o];
+          //       }
+          //     }
+          //   }
+          // }
 
           cur = *(--stackptr);
 
@@ -165,14 +173,14 @@ public:
     return ret;
   }
 
-private:
   struct Node {
-    Node() : leftChild(NULL), rightChild(NULL), numInstances(0) {}
+    Node() : leftChild(NULL), rightChild(NULL), numInstances(0), id(0) {}
     Node *leftChild;  /// null for leaf nodes
     Node *rightChild; /// null for leaf nodes
     gvt::render::data::primitives::Box3D bbox;
     int instanceSetIdx; /// base, valid when numInstances>0
     int numInstances;   /// 0 means an internal node
+    int id = 0;
   };
 
   struct CentroidLessThan {
@@ -187,6 +195,12 @@ private:
     int splitAxis;
   };
 
+  size_t ids;
+  std::vector<gvt::render::data::primitives::Box3D *> instanceSetBB;
+  std::vector<int> instanceSetID;
+  std::vector<Node *> nodes;
+  Node *root;
+
 private:
   Node *build(gvt::core::Vector<gvt::core::DBNodeH> &sortedDomainSet, int start, int end, int level);
 
@@ -195,13 +209,6 @@ private:
   /// traverse ray through BVH. Called by intersect().
   void trace(const glm::vec3 &origin, const glm::vec3 &inv, const Node *node, /*ClosestHit &hit,*/
              gvt::render::actor::isecDomList &isect, int level);
-
-  std::vector<gvt::render::data::primitives::Box3D *> instanceSetBB;
-  std::vector<int> instanceSetID;
-
-private:
-  std::vector<Node *> nodes;
-  Node *root;
 };
 }
 }

@@ -101,6 +101,13 @@ public:
                                                       const gvt::render::data::scene::Light *lsource,
                                                       const glm::vec3 areaLightPosition);
 
+  virtual size_t packetsize() const {
+    return sizeof(mat) + sizeof(glm::vec3) * vertices.size() +
+           sizeof(glm::vec3) * (normals.size() + mapuv.size() + face_normals.size()) + sizeof(Face) * faces.size() +
+           sizeof(FaceToNormals) * faces_to_normals.size() + faces_to_materials.size() * sizeof(Material) +
+           sizeof(boundingBox) + sizeof(bool);
+  }
+
 public:
   gvt::render::data::primitives::Material *mat;
   std::vector<glm::vec3> vertices;

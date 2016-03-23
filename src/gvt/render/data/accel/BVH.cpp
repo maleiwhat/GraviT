@@ -25,12 +25,15 @@
 // BVH.cpp
 //
 
+#include <gvt/render/data/Primitives.h>
 #include <gvt/render/data/accel/BVH.h>
+#include <gvt/render/data/primitives/Mesh.h>
 
 #include <algorithm>
 #include <cassert>
 #include <iostream>
 #include <limits>
+#include <set>
 
 #include <boost/range/algorithm.hpp>
 
@@ -42,6 +45,9 @@ using namespace gvt::render::data::primitives;
 
 // #define DEBUG_ACCEL
 
+const size_t TOTAL_MEMORY = 4;                                                 // GB
+const float INV_TOTAL_MEMORY = 1.f / float(TOTAL_MEMORY * 1024 * 1024 * 1024); // GB
+
 BVH::BVH(gvt::core::Vector<gvt::core::DBNodeH> &instanceSet) : AbstractAccel(instanceSet), root(NULL) {
   gvt::core::Vector<gvt::core::DBNodeH> sortedInstanceSet;
   root = build(sortedInstanceSet, 0, instanceSet.size(), 0);
@@ -50,12 +56,14 @@ BVH::BVH(gvt::core::Vector<gvt::core::DBNodeH> &instanceSet) : AbstractAccel(ins
   assert(this->instanceSet.size() == sortedInstanceSet.size());
 #endif
 
-  // this->instanceSet.swap(sortedInstanceSet);
   std::swap(this->instanceSet, sortedInstanceSet);
+  ids = 0;
 
-  // std::vector<gvt::render::data::primitives::Box3D*> instanceSetBB;
-  // std::vector<int> instanceSetID;
-
+  for (auto &node : nodes) {
+    // if (node->numInstances) {
+    node->id = ids++;
+    // }
+  }
   for (auto &node : this->instanceSet) {
     instanceSetBB.push_back((Box3D *)node["bbox"].value().toULongLong());
     instanceSetID.push_back(node["id"].value().toInteger());
@@ -86,18 +94,27 @@ BVH::Node *BVH::build(gvt::core::Vector<gvt::core::DBNodeH> &sortedInstanceSet, 
 
   // TODO: better way to manange memory allocation?
   nodes.push_back(node);
-
-  // evaluate bounds
   Box3D bbox;
+  // evaluate bounds
+  size_t total_space = 0;
+  std::set<unsigned long long> _visited;
   for (int i = start; i < end; ++i) {
     Box3D *tmpbb = (Box3D *)instanceSet[i]["bbox"].value().toULongLong();
+    unsigned long long ptr = instanceSet[i]["meshRef"].deRef()["ptr"].value().toULongLong();
+
+    if (_visited.find(ptr) != _visited.end()) {
+      gvt::render::data::primitives::Mesh *tmpmesh = (gvt::render::data::primitives::Mesh *)ptr;
+      total_space += tmpmesh->packetsize();
+    }
+
     bbox.merge(*tmpbb);
   }
 
-  int instanceCount = end - start;
+  total_space = total_space * INV_TOTAL_MEMORY;
 
+  int instanceCount = end - start;
   // base case
-  if (instanceCount <= LEAF_SIZE) {
+  if (instanceCount <= LEAF_SIZE || total_space < TOTAL_MEMORY) {
 #ifdef DEBUG_ACCEL
     std::cout << "creating leaf node.."
               << "[LVL:" << level << "][offset: " << sortedInstanceSet.size() << "][#domains:" << instanceCount

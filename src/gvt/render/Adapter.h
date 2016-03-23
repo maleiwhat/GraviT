@@ -31,6 +31,7 @@
 #include <gvt/render/data/scene/ColorAccumulator.h>
 #include <gvt/render/data/scene/Light.h>
 
+#include <map>
 #include <mutex>
 #include <thread>
 
@@ -43,13 +44,24 @@ protected:
   /**
    * Data node (ex: Mesh, Volume)
    */
-  gvt::render::data::primitives::Mesh *mesh;
+  // gvt::core::DBNodeH node;
+  // std::vector<gvt::core::DBNodeH> &_instances;
+  std::map<int, gvt::render::data::primitives::Mesh *> &meshRef;
+  std::map<int, glm::mat4 *> &instM;
+  std::map<int, glm::mat4 *> &instMinv;
+  std::map<int, glm::mat3 *> &instMinvN;
+  std::vector<gvt::render::data::scene::Light *> &lights;
+  std::vector<size_t> instances;
 
 public:
   /**
    * Construct an adapter with a given data node
    */
-  Adapter(gvt::render::data::primitives::Mesh *mesh) : mesh(mesh) {}
+  Adapter(std::map<int, gvt::render::data::primitives::Mesh *> &meshRef, std::map<int, glm::mat4 *> &instM,
+          std::map<int, glm::mat4 *> &instMinv, std::map<int, glm::mat3 *> &instMinvN,
+          std::vector<gvt::render::data::scene::Light *> &lights, std::vector<size_t> instances)
+      : meshRef(meshRef), instM(instM), instMinv(instMinv), instMinvN(instMinvN), lights(lights), instances(instances) {
+  }
 
   /**
    * Destroy the adapter
@@ -63,9 +75,10 @@ public:
    * \param moved_rays outgoing rays [rays that did not hit anything]
    * \param instNode instance db node containing dataRef and transforms
    */
-  virtual void trace(gvt::render::actor::RayVector &rayList, gvt::render::actor::RayVector &moved_rays, glm::mat4 *m,
-                     glm::mat4 *minv, glm::mat3 *, std::vector<gvt::render::data::scene::Light *> &lights,
-                     size_t begin = 0, size_t end = 0) = 0;
+  // virtual void trace(gvt::render::actor::RayVector &rayList, gvt::render::actor::RayVector &moved_rays,
+  //                    gvt::core::DBNodeH instNode, size_t begin = 0, size_t end = 0){};
+  virtual void trace(gvt::render::actor::RayVector &rayList, gvt::render::actor::RayVector &moved_rays,
+                     /*gvt::core::DBNodeH instNode,*/ size_t _begin = 0, size_t _end = 0){};
 
   std::mutex _inqueue;
   std::mutex _outqueue;

@@ -30,6 +30,7 @@
 #include <embree2/rtcore.h>
 #include <embree2/rtcore_ray.h>
 
+#include <set>
 #include <string>
 
 namespace gvt {
@@ -49,8 +50,10 @@ public:
    *
    * Initializes Embree the first time it is called.
    */
-  EmbreeMeshAdapter(gvt::render::data::primitives::Mesh *mesh);
-
+  // EmbreeMeshAdapter(gvt::render::data::primitives::Mesh *mesh);
+  EmbreeMeshAdapter(std::map<int, gvt::render::data::primitives::Mesh *> &meshRef, std::map<int, glm::mat4 *> &instM,
+                    std::map<int, glm::mat4 *> &instMinv, std::map<int, glm::mat3 *> &instMinvN,
+                    std::vector<gvt::render::data::scene::Light *> &lights, std::vector<size_t> instances);
   /**
    * Release Embree copy of the mesh.
    */
@@ -59,12 +62,12 @@ public:
   /**
    * Return the Embree scene handle;
    */
-  RTCScene getScene() const { return scene; }
+  RTCScene getScene() const { return global_scene; }
 
   /**
    * Return the geometry id.
    */
-  unsigned getGeomId() const { return geomId; }
+  // unsigned getGeomId() const { return geomId; }
 
   /**
    * Return the packet size
@@ -81,17 +84,17 @@ public:
    * \param moved_rays outgoing rays [rays that did not hit anything]
    * \param instNode instance db node containing dataRef and transforms
    */
-  virtual void trace(gvt::render::actor::RayVector &rayList, gvt::render::actor::RayVector &moved_rays, glm::mat4 *m,
-                     glm::mat4 *minv, glm::mat3 *normi, std::vector<gvt::render::data::scene::Light *> &lights,
-                     size_t begin = 0, size_t end = 0);
+  virtual void trace(gvt::render::actor::RayVector &rayList, gvt::render::actor::RayVector &moved_rays,
+                     /*gvt::core::DBNodeH instNode,*/ size_t _begin = 0, size_t _end = 0);
 
-protected:
+public:
   /**
    * Static bool to initialize Embree (calling rtcInit) before use.
    *
    * // TODO: this will need to move in the future when we have different types of Embree adapters (ex: mesh + volume)
    */
-  static bool init;
+  // static bool init;
+  RTCDevice device;
 
   /**
    * Currently selected packet size flag.
@@ -101,14 +104,50 @@ protected:
   /**
    * Handle to Embree scene.
    */
-  RTCScene scene;
+  RTCScene global_scene;
 
   /**
    * Handle to the Embree triangle mesh.
    */
-  unsigned geomId;
+  // unsigned geomId;
 
   size_t begin, end;
+
+  // std::vector<unsigned> _geomIDs;
+  // std::vector<unsigned> _instIDs;
+  std::vector<RTCScene> _scene;
+
+  std::set<gvt::render::data::primitives::Mesh *> _mesh;
+  std::map<unsigned, gvt::render::data::primitives::Mesh *> _inst2mesh;
+  std::map<unsigned, glm::mat3 *> _inst2mat;
+  std::map<gvt::render::data::primitives::Mesh *, RTCScene> mesh2scene;
+  std::map<RTCScene, unsigned> scene2geomid;
+  //
+  // protected:
+  //   /**
+  //    * Static bool to initialize Embree (calling rtcInit) before use.
+  //    *
+  //    * // TODO: this will need to move in the future when we have different types of Embree adapters (ex: mesh +
+  //    volume)
+  //    */
+  //   static bool init;
+  //
+  //   /**
+  //    * Currently selected packet size flag.
+  //    */
+  //   RTCAlgorithmFlags packetSize;
+  //
+  //   /**
+  //    * Handle to Embree scene.
+  //    */
+  //   RTCScene scene;
+  //
+  //   /**
+  //    * Handle to the Embree triangle mesh.
+  //    */
+  //   unsigned geomId;
+  //
+  //   size_t begin, end;
 };
 }
 }

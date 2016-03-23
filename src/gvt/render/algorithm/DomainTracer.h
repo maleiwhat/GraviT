@@ -90,7 +90,7 @@ public:
   size_t rays_start, rays_end;
 
   // caches meshes that are converted into the adapter's format
-  std::map<gvt::render::data::primitives::Mesh *, gvt::render::Adapter *> adapterCache;
+  std::map<size_t, gvt::render::Adapter *> adapterCache;
   std::map<int, size_t> mpiInstanceMap;
 #ifdef GVT_USE_MPE
   int tracestart, traceend;
@@ -263,46 +263,61 @@ public:
           gvt::render::Adapter *adapter = 0;
           // gvt::core::DBNodeH meshNode = instancenodes[instTarget]["meshRef"].deRef();
 
-          gvt::render::data::primitives::Mesh *mesh = meshRef[instTarget];
+          // gvt::render::data::primitives::Mesh *mesh = meshRef[instTarget];
 
           // TODO: Make cache generic needs to accept any kind of adpater
 
           // 'getAdapterFromCache' functionality
-          auto it = adapterCache.find(mesh);
+          auto it = adapterCache.find(instTarget);
           if (it != adapterCache.end()) {
             adapter = it->second;
           } else {
             adapter = 0;
           }
+
           if (!adapter) {
             GVT_DEBUG(DBG_ALWAYS, "image scheduler: creating new adapter");
+
+            // gvt::core::DBNodeH meshNode = instancenodes[instTarget]["meshRef"].deRef();
+            static gvt::render::data::accel::BVH &acc = *dynamic_cast<gvt::render::data::accel::BVH *>(acceleration);
+
+            const size_t start = acc.nodes[instTarget]->instanceSetIdx;
+            const size_t end = start + acc.nodes[instTarget]->numInstances;
+
+            std::vector<size_t> instances;
+            instances.assign(acc.instanceSetID.begin() + start, acc.instanceSetID.begin() + end);
+
             switch (adapterType) {
 #ifdef GVT_RENDER_ADAPTER_EMBREE
             case gvt::render::adapter::Embree:
-              adapter = new gvt::render::adapter::embree::data::EmbreeMeshAdapter(mesh);
+              adapter = new gvt::render::adapter::embree::data::EmbreeMeshAdapter(meshRef, instM, instMinv, instMinvN,
+                                                                                  lights, instances);
               break;
 #endif
 #ifdef GVT_RENDER_ADAPTER_MANTA
             case gvt::render::adapter::Manta:
-              adapter = new gvt::render::adapter::manta::data::MantaMeshAdapter(mesh);
+              adapter = new gvt::render::adapter::manta::data::MantaMeshAdapter(meshRef, instM, instMinv, instMinvN,
+                                                                                lights, instances);
               break;
 #endif
 #ifdef GVT_RENDER_ADAPTER_OPTIX
             case gvt::render::adapter::Optix:
-              adapter = new gvt::render::adapter::optix::data::OptixMeshAdapter(mesh);
+              adapter = new gvt::render::adapter::optix::data::OptixMeshAdapter(meshRef, instM, instMinv, instMinvN,
+                                                                                lights, instances);
               break;
 #endif
 
 #if defined(GVT_RENDER_ADAPTER_OPTIX) && defined(GVT_RENDER_ADAPTER_EMBREE)
             case gvt::render::adapter::Heterogeneous:
-              adapter = new gvt::render::adapter::heterogeneous::data::HeterogeneousMeshAdapter(mesh);
+              adapter = new gvt::render::adapter::heterogeneous::data::HeterogeneousMeshAdapter(
+                  meshRef, instM.instMinv, instMinvN, lights, instances);
               break;
 #endif
             default:
               GVT_DEBUG(DBG_SEVERE, "image scheduler: unknown adapter type: " << adapterType);
             }
 
-            adapterCache[mesh] = adapter;
+            adapterCache[instTarget] = adapter;
           }
           t_adapter.stop();
           GVT_ASSERT(adapter != nullptr, "image scheduler: adapter not set");
@@ -315,8 +330,7 @@ public:
 #ifdef GVT_USE_DEBUG
             boost::timer::auto_cpu_timer t("Tracing rays in adapter: %w\n");
 #endif
-            adapter->trace(this->queue[instTarget], moved_rays, instM[instTarget], instMinv[instTarget],
-                           instMinvN[instTarget], lights);
+            adapter->trace(this->queue[instTarget], moved_rays);
 
             this->queue[instTarget].clear();
 

@@ -174,7 +174,7 @@ int main(int argc, char **argv) {
 
     // add cone mesh to the database
     gvt::core::Variant meshvariant(mesh);
-    std::cout << "meshvariant " << meshvariant << std::endl;
+    // std::cout << "meshvariant " << meshvariant << std::endl;
     coneMeshNode["file"] = string("/fake/path/to/cone");
     coneMeshNode["bbox"] = (unsigned long long)meshbbox;
     coneMeshNode["ptr"] = (unsigned long long)mesh;
