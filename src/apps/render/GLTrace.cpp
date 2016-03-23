@@ -763,10 +763,18 @@ void Render() {
   glm::vec3 focus = camNode["focus"].value().tovec3();
   glm::vec3 up = camNode["upVector"].value().tovec3();
 
+  int rayMaxDepth = camNode["rayMaxDepth"].value().toInteger();
+  int raySamples = camNode["raySamples"].value().toInteger();
+  float jitterWindowSize = camNode["jitterWindowSize"].value().toFloat();
+
   float fov = camNode["fov"].value().toFloat();
   mycamera.lookAt(cameraposition, focus, up);
   mycamera.setFOV(fov);
   mycamera.setFilmsize(filmNode["width"].value().toInteger(), filmNode["height"].value().toInteger());
+
+  mycamera.setMaxDepth(rayMaxDepth);
+  mycamera.setSamples(raySamples);
+  mycamera.setJitterWindowSize(jitterWindowSize);
 
   int schedType = rootNode["Schedule"]["type"].value().toInteger();
 
@@ -781,11 +789,11 @@ void Render() {
 
     switch (schedType) {
     case gvt::render::scheduler::Image:
-      tracer = new gvt::render::algorithm::Tracer<ImageScheduler>(mycamera.rays, *imageptr);
+      tracer = new gvt::render::algorithm::Tracer<ImageScheduler>(mycamera.rays, *imageptr, rayMaxDepth);
       break;
     case gvt::render::scheduler::Domain:
       std::cout << "starting domain scheduler" << std::endl;
-      tracer = new gvt::render::algorithm::Tracer<DomainScheduler>(mycamera.rays, *imageptr);
+      tracer = new gvt::render::algorithm::Tracer<DomainScheduler>(mycamera.rays, *imageptr, rayMaxDepth);
       break;
     default:
       std::cout << "unknown schedule type provided: " << schedType << std::endl;
@@ -1446,7 +1454,7 @@ int main(int argc, char *argv[]) {
 
   camNode["rayMaxDepth"] = (int)1;
   camNode["raySamples"] = (int)1;
-  camNode["jitterWindowSize"] = (float)0.5;
+  camNode["jitterWindowSize"] = (float)0;
 
   int rayMaxDepth = camNode["rayMaxDepth"].value().toInteger();
   int raySamples = camNode["raySamples"].value().toInteger();
@@ -1463,11 +1471,11 @@ int main(int argc, char *argv[]) {
   int schedType = root["Schedule"]["type"].value().toInteger();
   switch (schedType) {
   case gvt::render::scheduler::Image:
-    tracer = new gvt::render::algorithm::Tracer<ImageScheduler>(mycamera.rays, *imageptr);
+    tracer = new gvt::render::algorithm::Tracer<ImageScheduler>(mycamera.rays, *imageptr, rayMaxDepth);
     break;
   case gvt::render::scheduler::Domain:
     std::cout << "starting domain scheduler" << std::endl;
-    tracer = new gvt::render::algorithm::Tracer<DomainScheduler>(mycamera.rays, *imageptr);
+    tracer = new gvt::render::algorithm::Tracer<DomainScheduler>(mycamera.rays, *imageptr, rayMaxDepth);
     break;
   default:
     std::cout << "unknown schedule type provided: " << schedType << std::endl;

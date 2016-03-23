@@ -81,6 +81,12 @@ int main(int argc, char **argv) {
   cmd.addconflict("image", "domain");
   cmd.parse(argc, argv);
 
+  if (!cmd.isSet("threads")) {
+    tbb::task_scheduler_init init(std::thread::hardware_concurrency());
+  } else {
+    tbb::task_scheduler_init init(cmd.get<int>("threads"));
+  }
+
   MPI_Init(&argc, &argv);
   MPI_Pcontrol(0);
   int rank = -1;
