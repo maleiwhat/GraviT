@@ -177,12 +177,8 @@ EmbreeMeshAdapter::EmbreeMeshAdapter(std::map<int, gvt::render::data::primitives
 
       unsigned instID = rtcNewInstance(global_scene, scene);
       glm::mat4 *m = instM[inst];
-      //(gvt::core::math::AffineTransformMatrix<float> *)node["mat"].value().toULongLong();
-      // glm::mat3x4 mm(*m);
-
-      std::cout << *m << std::endl;
-
-      float *n = glm::value_ptr(*m);
+      glm::mat4 tt = glm::transpose(*m);
+      float *n = glm::value_ptr(tt);
 
       // clang-format off
           float mm[] = {
@@ -190,8 +186,9 @@ EmbreeMeshAdapter::EmbreeMeshAdapter(std::map<int, gvt::render::data::primitives
             n[1], n[5], n[9],
             n[2], n[6], n[10],
             n[3], n[7], n[11]
-
           };
+          for(int kkk = 0; kkk < 12; kkk++) std::cout << mm[kkk] << ";";
+          std::cout << std::endl;
       // clang-format on
       rtcSetTransform(global_scene, instID, RTC_MATRIX_COLUMN_MAJOR, mm);
       rtcUpdate(global_scene, instID);
@@ -207,7 +204,8 @@ EmbreeMeshAdapter::EmbreeMeshAdapter(std::map<int, gvt::render::data::primitives
       glm::mat4 *m = instM[inst];
       // (gvt::core::math::AffineTransformMatrix<float> *)node["mat"].value().toULongLong();
 
-      float *n = glm::value_ptr(*m);
+      glm::mat4 tt = glm::transpose(*m);
+      float *n = glm::value_ptr(tt);
 
       // clang-format off
           float mm[] = {
@@ -217,13 +215,14 @@ EmbreeMeshAdapter::EmbreeMeshAdapter(std::map<int, gvt::render::data::primitives
             n[3], n[7], n[11]
           };
 
-          std::cout << *m << std::endl;
-
+      for(int kkk = 0; kkk < 12; kkk++) std::cout << mm[kkk] << ";";
+      std::cout << std::endl;
       rtcSetTransform(global_scene, instID, RTC_MATRIX_COLUMN_MAJOR, mm);
       rtcUpdate(global_scene, instID);
       _inst2mesh[instID] = mesh;
       _inst2mat[instID] = instMinvN[inst];
     }
+
   }
 
   // TODO: note: embree doesn't save normals in its mesh structure, have to
@@ -352,8 +351,8 @@ struct embreeParallelTrace {
     for (int i = 0; i < localPacketSize; i++) {
       if (valid[i]) {
         const Ray &r = rays[startIdx + i];
-        const auto origin = r.origin; // transform ray to local space
-        const auto direction = r.direction;
+        // const auto origin = r.origin; // transform ray to local space
+        // const auto direction = r.direction;
 
         //      const auto &origin = r.origin; // transform ray to local space
         //      const auto &direction = r.direction;
@@ -417,6 +416,8 @@ struct embreeParallelTrace {
       shadow_ray.id = r.id;
       shadow_ray.t_max = t_max;
       shadow_ray.color = c;
+
+      std::cout << c << std::endl;
     }
   }
 
@@ -503,56 +504,15 @@ struct embreeParallelTrace {
     GVT_DEBUG(DBG_ALWAYS, "EmbreeMeshAdapter: started thread");
 
     GVT_DEBUG(DBG_ALWAYS, "EmbreeMeshAdapter: getting mesh [hack for now]");
-    // TODO: don't use gvt mesh. need to figure out way to do per-vertex-normals
-    // and shading calculations
-    // auto mesh = (Mesh *)instNode["meshRef"].deRef()["ptr"].value().toULongLong();
-
     RTCScene scene = adapter->getScene();
     localDispatch.reserve((end - begin) * 2);
-
-    // there is an upper bound on the nubmer of shadow rays generated per embree
-    // packet
-    // its embree_packetSize * lights.size()
     shadowRays.reserve(GVT_EMBREE_PACKET_SIZE * lights.size());
-
     GVT_DEBUG(DBG_ALWAYS, "EmbreeMeshAdapter: starting while loop");
-
     TLRand randEngine;
     randEngine.SetSeed(begin);
-    // std::random_device rd;
-
-    // //
-    // // Engines
-    // //
-    // std::mt19937 e2(rd());
-    // //std::knuth_b e2(rd());
-    // //std::default_random_engine e2(rd()) ;
-
-    // //
-    // // Distribtuions
-    // //
-    // std::uniform_real_distribution<> dist(0, 1);
-
-    // // atomically get the next chunk range
-    // size_t workStart = sharedIdx.fetch_add(workSize);
-    //
-    // // have to double check that we got the last valid chunk range
-    // if (workStart > end) {
-    //   break;
-    // }
-    //
-    // // calculate the end work range
-    // size_t workEnd = workStart + workSize;
-    // if (workEnd > end) {
-    //   workEnd = end;
-    // }
-
     GVT_EMBREE_PACKET_TYPE ray4 = {};
     RTCORE_ALIGN(16) int valid[GVT_EMBREE_PACKET_SIZE] = { 0 };
 
-    // GVT_DEBUG(DBG_ALWAYS, "EmbreeMeshAdapter: working on rays [" << workStart << ", " << workEnd << "]");
-
-    std::cout << "EmbreeMeshAdapter: working on rays [" << begin << ", " << end << "]" << std::endl;
 
     for (size_t localIdx = begin; localIdx < end; localIdx += GVT_EMBREE_PACKET_SIZE) {
       // this is the local packet size. this might be less than the main
@@ -580,15 +540,16 @@ struct embreeParallelTrace {
         resetValid = false;
 
         for (size_t pi = 0; pi < localPacketSize; pi++) {
+
           if (valid[pi]) {
             // counter++; // tracks rays processed [atomic]
             auto &r = rayList[localIdx + pi];
 
-            // std::cout << "->" << ray4.instID[pi] << " : " << ray4.geomID[pi] << " : " << ray4.primID[pi] <<
-            // std::endl;
+            //  std::cout << "->" << ray4.instID[pi] << " : " << ray4.geomID[pi] << " : " << ray4.primID[pi] <<
+            //  std::endl;
 
 
-
+// std::cout << "." << std::endl;
             if (ray4.geomID[pi] != (int)RTC_INVALID_GEOMETRY_ID) {
               // ray has hit something
               Mesh *mesh = (*adapter)._inst2mesh[ray4.instID[pi]];
@@ -603,7 +564,7 @@ struct embreeParallelTrace {
               float t = ray4.tfar[pi];
               r.t = t;
 
-
+              std::cout << "." << std::endl;
 
               // FIXME: embree does not take vertex normal information, the
               // examples have the application calculate the normal using
@@ -752,7 +713,7 @@ void EmbreeMeshAdapter::trace(gvt::render::actor::RayVector &rayList, gvt::rende
                     [&](tbb::blocked_range<size_t> chunk) {
 
                       embreeParallelTrace(this, rayList, moved_rays, chunk.end() - chunk.begin(), lights, counter,
-                                          chunk.begin(), chunk.begin())();
+                                          chunk.begin(), chunk.end())();
                     },
                     ap);
 
