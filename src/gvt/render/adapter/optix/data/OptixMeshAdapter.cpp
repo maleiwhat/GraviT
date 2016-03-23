@@ -683,6 +683,8 @@ struct OptixParallelTrace {
 
 	const size_t begin, end;
 
+	int startingDepth;
+
 	/**
 	 * Construct a OptixParallelTrace struct with information needed for the
 	 * thread
@@ -695,11 +697,11 @@ struct OptixParallelTrace {
 			 glm::mat4 *m, glm::mat4 *minv,
 			glm::mat3 *normi,
 			//std::vector<gvt::render::data::scene::Light *> &lights,
-			std::atomic<size_t> &counter, const size_t begin, const size_t end,
+			std::atomic<size_t> &counter, const size_t begin, const size_t end, int startingDepth,
 			gvt::render::data::cuda_primitives::Ray* disp_Buff,
 			gvt::render::data::cuda_primitives::Ray* cudaRaysBuff) :
 			adapter(adapter), rayList(rayList), moved_rays(moved_rays),  m(m), minv(minv), normi(normi),
-			packetSize(adapter->getPacketSize()), begin(begin), end(end), disp_Buff(
+			packetSize(adapter->getPacketSize()), begin(begin), end(end), startingDepth(startingDepth), disp_Buff(
 					disp_Buff), cudaRaysBuff(cudaRaysBuff) {
 	}
 
@@ -741,7 +743,7 @@ struct OptixParallelTrace {
 		rtpQueryExecute(query, RTP_QUERY_HINT_ASYNC);
 		//rtpQueryFinish(query);
 
-		cudaProcessShadows(&cudaGvtCtx);
+		cudaProcessShadows(&cudaGvtCtx,startingDepth);
 
 	}
 
@@ -848,7 +850,7 @@ struct OptixParallelTrace {
 
 				traceRays(cudaGvtCtx);
 
-				shade(&cudaGvtCtx);
+				shade(&cudaGvtCtx, startingDepth);
 
 				gpuErrchk(cudaStreamSynchronize(cudaGvtCtx.stream)); //get shadow ray count
 
@@ -883,7 +885,7 @@ struct OptixParallelTrace {
 void OptixMeshAdapter::trace(gvt::render::actor::RayVector &rayList,
 		gvt::render::actor::RayVector &moved_rays, glm::mat4 *m,
         glm::mat4 *minv, glm::mat3 *normi, std::vector<gvt::render::data::scene::Light *> &lights,
-        size_t _begin, size_t _end) {
+        int maxRayDepth, size_t _begin, size_t _end) {
 #ifdef GVT_USE_DEBUG
 	boost::timer::auto_cpu_timer t_functor("OptixMeshAdapter: trace time: %w\n");
 #endif
@@ -915,6 +917,8 @@ void OptixMeshAdapter::trace(gvt::render::actor::RayVector &rayList,
 	tbb::task_group _tasks;
 	bool parallel = true;
 
+	int startingDepth = maxRayDepth;
+
 	_tasks.run(
 			[&]() {
 				gvt::render::actor::RayVector::iterator localRayList = rayList.begin()+ _begin;
@@ -922,7 +926,7 @@ void OptixMeshAdapter::trace(gvt::render::actor::RayVector &rayList,
 				size_t end=(parallel && localWork >= 2* packetSize) ? (localWork/2) : localWork;
 
 				OptixParallelTrace(this, localRayList, moved_rays,  m,
-						minv, normi, counter, begin, end, disp_Buff[0], cudaRaysBuff[0])();
+						minv, normi, counter, begin, end, startingDepth, disp_Buff[0], cudaRaysBuff[0])();
 
 			});
 
@@ -935,7 +939,7 @@ void OptixMeshAdapter::trace(gvt::render::actor::RayVector &rayList,
 					size_t end=localWork;
 
 					OptixParallelTrace(this, localRayList, moved_rays, m,
-							minv, normi, counter, begin, end, disp_Buff[1], cudaRaysBuff[1])();
+							minv, normi, counter, begin, end, startingDepth,  disp_Buff[1], cudaRaysBuff[1])();
 
 				});
 	}

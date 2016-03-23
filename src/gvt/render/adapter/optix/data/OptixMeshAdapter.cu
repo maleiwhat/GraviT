@@ -142,7 +142,7 @@ void cudaPrepOptixRays(OptixRay* optixrays, bool* valid,
 
 }
 
-__global__ void cudaKernelFilterShadow( CudaGvtContext* cudaGvtCtx) {
+__global__ void cudaKernelFilterShadow( CudaGvtContext* cudaGvtCtx, const int startingDepth) {
 
 	int tID = getGlobalIdx_2D_2D();
 	if (tID >= cudaGvtCtx->shadowRayCount) return;
@@ -152,14 +152,20 @@ __global__ void cudaKernelFilterShadow( CudaGvtContext* cudaGvtCtx) {
 	    	  int a = atomicAdd((int *)&(cudaGvtCtx->dispatchCount), 1);
 	    	  cudaGvtCtx->dispatch[a] = cudaGvtCtx->shadowRays[tID];
 	        }
+    else if (cudaGvtCtx->shadowRays[tID].depth == startingDepth)
+    {
+      cudaGvtCtx->shadowRays[tID].type = gvt::render::data::cuda_primitives::Ray::OCCLUDED;
+      int a = atomicAdd((int *)&(cudaGvtCtx->dispatchCount), 1);
+      cudaGvtCtx->dispatch[a] = cudaGvtCtx->shadowRays[tID];       
+    }
 }
 
-void cudaProcessShadows(CudaGvtContext* cudaGvtCtx) {
+void cudaProcessShadows(CudaGvtContext* cudaGvtCtx, const int startingDepth) {
 
 		dim3 blockDIM = dim3(16, 16);
 		dim3 gridDIM = dim3((cudaGvtCtx->shadowRayCount / (blockDIM.x * blockDIM.y)) + 1, 1);
 
-		cudaKernelFilterShadow<<<gridDIM,blockDIM , 0, cudaGvtCtx->stream>>>(cudaGvtCtx->toGPU());
+		cudaKernelFilterShadow<<<gridDIM,blockDIM , 0, cudaGvtCtx->stream>>>(cudaGvtCtx->toGPU(), startingDepth);
 		gpuErrchk(cudaGetLastError());
 
 		cudaGvtCtx->toHost();
@@ -215,7 +221,7 @@ __device__ void generateShadowRays(const Ray &r, const float4 &normal,
 
 
 
-__global__ void kernel(gvt::render::data::cuda_primitives::CudaGvtContext* cudaGvtCtx) {
+__global__ void kernel(gvt::render::data::cuda_primitives::CudaGvtContext* cudaGvtCtx,  const int startingDepth) {
 
 	int tID = getGlobalIdx_2D_2D();
 
@@ -228,6 +234,12 @@ __global__ void kernel(gvt::render::data::cuda_primitives::CudaGvtContext* cudaG
         // ray has hit something
         // shadow ray hit something, so it should be dropped
         if (r.type == Ray::SHADOW) {
+          if(r.depth == startingDepth)
+          {
+            r.type = gvt::render::data::cuda_primitives::Ray::OCCLUDED;
+            int a = atomicAdd((int *)&(cudaGvtCtx->dispatchCount), 1);
+            cudaGvtCtx->dispatch[a] = r;
+          }
         	return;
         }
 
@@ -327,14 +339,14 @@ __global__ void kernel(gvt::render::data::cuda_primitives::CudaGvtContext* cudaG
 }
 
 void shade(
-		gvt::render::data::cuda_primitives::CudaGvtContext* cudaGvtCtx) {
+		gvt::render::data::cuda_primitives::CudaGvtContext* cudaGvtCtx, const int startingDepth) {
 
 	int N= cudaGvtCtx->rayCount;
 
 	dim3 blockDIM = dim3(16, 16);
 	dim3 gridDIM = dim3((N / (blockDIM.x * blockDIM.y)) + 1, 1);
 
-	kernel<<<gridDIM,blockDIM , 0, cudaGvtCtx->stream >>>(cudaGvtCtx->toGPU());
+	kernel<<<gridDIM,blockDIM , 0, cudaGvtCtx->stream >>>(cudaGvtCtx->toGPU(), startingDepth);
 	  gpuErrchk(cudaGetLastError());
 
 	cudaGvtCtx->toHost();

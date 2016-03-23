@@ -80,7 +80,8 @@ public:
 	typedef enum  {
 	    PRIMARY,
 	    SHADOW,
-	    SECONDARY
+	    SECONDARY,
+      OCCLUDED
 	  } RayType;
 
 
