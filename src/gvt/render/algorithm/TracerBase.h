@@ -203,7 +203,7 @@ public:
                       [&](tbb::blocked_range<gvt::render::actor::RayVector::iterator> raysit) {
                         if (acc.nodes.size() == 1) {
                           for (auto &r : raysit)
-                            if (r.type == gvt::render::actor::Ray::SHADOW && glm::length(r.color) > 0) {
+                            if (r.type == gvt::render::actor::Ray::SHADOW) {
                               tbb::mutex::scoped_lock fbloc(colorBuf_mutex[r.id]);
                               colorBuf[r.id] += r.color;
                             }
