@@ -54,14 +54,15 @@ protected:
   std::vector<size_t> instances;
 
 public:
+  bool unique;
   /**
    * Construct an adapter with a given data node
    */
   Adapter(std::map<int, gvt::render::data::primitives::Mesh *> &meshRef, std::map<int, glm::mat4 *> &instM,
           std::map<int, glm::mat4 *> &instMinv, std::map<int, glm::mat3 *> &instMinvN,
-          std::vector<gvt::render::data::scene::Light *> &lights, std::vector<size_t> instances)
-      : meshRef(meshRef), instM(instM), instMinv(instMinv), instMinvN(instMinvN), lights(lights), instances(instances) {
-  }
+          std::vector<gvt::render::data::scene::Light *> &lights, std::vector<size_t> instances, bool unique = false)
+      : meshRef(meshRef), instM(instM), instMinv(instMinv), instMinvN(instMinvN), lights(lights), instances(instances),
+        unique(unique) {}
 
   /**
    * Destroy the adapter

@@ -53,7 +53,8 @@ public:
   // EmbreeMeshAdapter(gvt::render::data::primitives::Mesh *mesh);
   EmbreeMeshAdapter(std::map<int, gvt::render::data::primitives::Mesh *> &meshRef, std::map<int, glm::mat4 *> &instM,
                     std::map<int, glm::mat4 *> &instMinv, std::map<int, glm::mat3 *> &instMinvN,
-                    std::vector<gvt::render::data::scene::Light *> &lights, std::vector<size_t> instances);
+                    std::vector<gvt::render::data::scene::Light *> &lights, std::vector<size_t> instances,
+                    bool unique = false);
   /**
    * Release Embree copy of the mesh.
    */

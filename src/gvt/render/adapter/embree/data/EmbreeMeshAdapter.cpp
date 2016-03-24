@@ -130,8 +130,8 @@ EmbreeMeshAdapter::EmbreeMeshAdapter(std::map<int, gvt::render::data::primitives
                                      std::map<int, glm::mat4 *> &instM, std::map<int, glm::mat4 *> &instMinv,
                                      std::map<int, glm::mat3 *> &instMinvN,
                                      std::vector<gvt::render::data::scene::Light *> &lights,
-                                     std::vector<size_t> instances)
-    : Adapter(meshRef, instM, instMinv, instMinvN, lights, instances) {
+                                     std::vector<size_t> instances, bool unique)
+    : Adapter(meshRef, instM, instMinv, instMinvN, lights, instances, unique) {
 
   device = rtcNewDevice(NULL);
   error_handler(rtcDeviceGetError(device));
@@ -621,10 +621,10 @@ struct embreeParallelTrace {
                 valid[pi] = 0;
               }
             } else {
+              valid[pi] = 0;
+              if (!(*adapter).unique && r.type != gvt::render::actor::Ray::PRIMARY) localDispatch.push_back(r);
               // ray is valid, but did not hit anything, so add to dispatch
               // queue and disable it
-              localDispatch.push_back(r);
-              valid[pi] = 0;
             }
           }
         }
