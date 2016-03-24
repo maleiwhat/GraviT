@@ -137,7 +137,7 @@ public:
         }
 
         if (cur->numInstances > 0) { // leaf node
-          if (from != cur->id) {
+          if (from != cur->id && rp.intersect(bb, hit, true)) {
             int start = cur->instanceSetIdx;
             int end = start + cur->numInstances;
             for (int o = 0; o < simd_width; ++o) {

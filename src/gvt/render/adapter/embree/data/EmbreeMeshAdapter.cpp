@@ -146,13 +146,11 @@ EmbreeMeshAdapter::EmbreeMeshAdapter(std::map<int, gvt::render::data::primitives
     Mesh *mesh = meshRef[inst];
     GVT_ASSERT(mesh, "EmbreeMeshAdapter: mesh pointer in the database is null");
 
-    std::cout << "Adding instance" << inst << std::endl;
-
     if (std::find(_mesh.begin(), _mesh.end(), mesh) == _mesh.end()) {
       mesh->generateNormals();
       int numVerts = mesh->vertices.size();
       int numTris = mesh->faces.size();
-      RTCScene scene = rtcDeviceNewScene(device, RTC_SCENE_STATIC, packetSize);
+      RTCScene scene = rtcDeviceNewScene(device, RTC_SCENE_STATIC, GVT_EMBREE_ALGORITHM);
       unsigned geomId = rtcNewTriangleMesh(scene, RTC_GEOMETRY_STATIC, numTris, numVerts);
 
       embVertex *vertices = (embVertex *)rtcMapBuffer(scene, geomId, RTC_VERTEX_BUFFER);
@@ -180,16 +178,7 @@ EmbreeMeshAdapter::EmbreeMeshAdapter(std::map<int, gvt::render::data::primitives
       glm::mat4 tt = glm::transpose(*m);
       float *n = glm::value_ptr(tt);
 
-      // clang-format off
-          float mm[] = {
-            n[0], n[4], n[8],
-            n[1], n[5], n[9],
-            n[2], n[6], n[10],
-            n[3], n[7], n[11]
-          };
-          for(int kkk = 0; kkk < 12; kkk++) std::cout << mm[kkk] << ";";
-          std::cout << std::endl;
-      // clang-format on
+      float mm[] = { n[0], n[4], n[8], n[1], n[5], n[9], n[2], n[6], n[10], n[3], n[7], n[11] };
       rtcSetTransform(global_scene, instID, RTC_MATRIX_COLUMN_MAJOR, mm);
       rtcUpdate(global_scene, instID);
       _scene.push_back(scene);
@@ -203,26 +192,17 @@ EmbreeMeshAdapter::EmbreeMeshAdapter(std::map<int, gvt::render::data::primitives
       unsigned instID = rtcNewInstance(global_scene, mesh2scene[mesh]);
       glm::mat4 *m = instM[inst];
       // (gvt::core::math::AffineTransformMatrix<float> *)node["mat"].value().toULongLong();
-
       glm::mat4 tt = glm::transpose(*m);
       float *n = glm::value_ptr(tt);
 
-      // clang-format off
-          float mm[] = {
-            n[0], n[4], n[8],
-            n[1], n[5], n[9],
-            n[2], n[6], n[10],
-            n[3], n[7], n[11]
-          };
+      float mm[] = { n[0], n[4], n[8], n[1], n[5], n[9], n[2], n[6], n[10], n[3], n[7], n[11] };
 
-      for(int kkk = 0; kkk < 12; kkk++) std::cout << mm[kkk] << ";";
-      std::cout << std::endl;
       rtcSetTransform(global_scene, instID, RTC_MATRIX_COLUMN_MAJOR, mm);
+
       rtcUpdate(global_scene, instID);
       _inst2mesh[instID] = mesh;
       _inst2mat[instID] = instMinvN[inst];
     }
-
   }
 
   // TODO: note: embree doesn't save normals in its mesh structure, have to
@@ -416,8 +396,6 @@ struct embreeParallelTrace {
       shadow_ray.id = r.id;
       shadow_ray.t_max = t_max;
       shadow_ray.color = c;
-
-      std::cout << c << std::endl;
     }
   }
 
@@ -513,7 +491,6 @@ struct embreeParallelTrace {
     GVT_EMBREE_PACKET_TYPE ray4 = {};
     RTCORE_ALIGN(16) int valid[GVT_EMBREE_PACKET_SIZE] = { 0 };
 
-
     for (size_t localIdx = begin; localIdx < end; localIdx += GVT_EMBREE_PACKET_SIZE) {
       // this is the local packet size. this might be less than the main
       // packetSize due to uneven amount of rays
@@ -548,8 +525,7 @@ struct embreeParallelTrace {
             //  std::cout << "->" << ray4.instID[pi] << " : " << ray4.geomID[pi] << " : " << ray4.primID[pi] <<
             //  std::endl;
 
-
-// std::cout << "." << std::endl;
+            // std::cout << "." << std::endl;
             if (ray4.geomID[pi] != (int)RTC_INVALID_GEOMETRY_ID) {
               // ray has hit something
               Mesh *mesh = (*adapter)._inst2mesh[ray4.instID[pi]];
@@ -563,8 +539,6 @@ struct embreeParallelTrace {
 
               float t = ray4.tfar[pi];
               r.t = t;
-
-              std::cout << "." << std::endl;
 
               // FIXME: embree does not take vertex normal information, the
               // examples have the application calculate the normal using
