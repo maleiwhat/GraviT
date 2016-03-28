@@ -107,8 +107,8 @@ __global__ void cudaKernelPrepOptixRays(OptixRay* optixrays, bool* valid,
        Ray &r = rays[ i];
 
       r.origin.w=1;
-      float4 origin = (*(cudaGvtCtx->minv)) * r.origin; // transform ray to local space
-      float4 direction = (*(cudaGvtCtx->minv)) * r.direction;
+      float4 origin = r.origin;
+      float4 direction = r.direction;
 
       OptixRay optix_ray;
       optix_ray.origin[0] = origin.x;
@@ -168,7 +168,7 @@ void cudaProcessShadows(CudaGvtContext* cudaGvtCtx) {
 
 
 __device__ void generateShadowRays(const Ray &r, const float4 &normal,
-                                   int primID, CudaGvtContext* cudaGvtCtx) {
+                                   int primID,int instID, CudaGvtContext* cudaGvtCtx) {
 
   for (int l = 0; l < cudaGvtCtx->nLights; l++) {
 
@@ -198,7 +198,7 @@ __device__ void generateShadowRays(const Ray &r, const float4 &normal,
     shadow_ray.id = r.id;
     shadow_ray.t_max = t_max;
 
-    Color c = cudaGvtCtx->mesh.mat->shade(/*primID,*/ shadow_ray, normal, light);
+    Color c = cudaGvtCtx->mesh[instID].mat->shade(/*primID,*/ shadow_ray, normal, light);
 
 
     shadow_ray.color.x = c.x;
@@ -225,6 +225,8 @@ __global__ void kernel(gvt::render::data::cuda_primitives::CudaGvtContext* cudaG
       Ray &r = cudaGvtCtx->rays[tID];
       if (cudaGvtCtx->traceHits[tID].triangle_id >= 0) {
 
+    	  int instID = cudaGvtCtx->traceHits[tID].instId;
+
         // ray has hit something
         // shadow ray hit something, so it should be dropped
         if (r.type == Ray::SHADOW) {
@@ -241,18 +243,18 @@ __global__ void kernel(gvt::render::data::cuda_primitives::CudaGvtContext* cudaG
           const float u = cudaGvtCtx->traceHits[tID].u;
           const float v = cudaGvtCtx->traceHits[tID].v;
           const int3 &normals =
-        		  cudaGvtCtx->mesh.faces_to_normals[triangle_id]; // FIXME: need to
+        		  cudaGvtCtx->mesh[instID].faces_to_normals[triangle_id]; // FIXME: need to
                                                    // figure out
                                                    // to store
           // `faces_to_normals`
           // list
-          const float4 &a =   cudaGvtCtx->mesh.normals[normals.x];
-          const float4 &b =   cudaGvtCtx->mesh.normals[normals.y];
-          const float4 &c =   cudaGvtCtx->mesh.normals[normals.z];
+          const float4 &a =   cudaGvtCtx->mesh[instID].normals[normals.x];
+          const float4 &b =   cudaGvtCtx->mesh[instID].normals[normals.y];
+          const float4 &c =   cudaGvtCtx->mesh[instID].normals[normals.z];
           manualNormal = a * u + b * v + c * (1.0f - u - v);
 
           manualNormal =make_float4(
-              (*(cudaGvtCtx->normi)) * make_float3(manualNormal.x,
+              cudaGvtCtx->normi[instID] * make_float3(manualNormal.x,
             		  manualNormal.y,manualNormal.z));
 
           manualNormal=normalize(manualNormal);
@@ -285,7 +287,7 @@ __global__ void kernel(gvt::render::data::cuda_primitives::CudaGvtContext* cudaG
         }
 
        generateShadowRays(r, normal, cudaGvtCtx->
-        		traceHits[tID].triangle_id, cudaGvtCtx);
+        		traceHits[tID].triangle_id, instID, cudaGvtCtx);
 
         int ndepth = r.depth - 1;
         float p = 1.f - cudaRand();
@@ -301,7 +303,7 @@ __global__ void kernel(gvt::render::data::cuda_primitives::CudaGvtContext* cudaG
           r.origin = r.origin + r.direction * t_secondary;
           r.origin.w=1.0f;
 
-         float4 dir = normalize(cudaGvtCtx->mesh.mat->material.
+         float4 dir = normalize(cudaGvtCtx->mesh[instID].mat->material.
                   		  CosWeightedRandomHemisphereDirection2(normal));
 
           r.setDirection(dir);
@@ -315,9 +317,11 @@ __global__ void kernel(gvt::render::data::cuda_primitives::CudaGvtContext* cudaG
         	cudaGvtCtx->valid[tID] = false;
         }
       } else {
-        // ray is valid, but did not hit anything, so add to dispatch
-    	  int a = atomicAdd((int *)&(cudaGvtCtx->dispatchCount), 1);
-    	  cudaGvtCtx->dispatch[a] = r;
+			// ray is valid, but did not hit anything, so add to dispatch
+			if (!(cudaGvtCtx->unique) || r.type == Ray::SHADOW) {
+				int a = atomicAdd((int *) &(cudaGvtCtx->dispatchCount), 1);
+				cudaGvtCtx->dispatch[a] = r;
+			}
 
     	cudaGvtCtx->valid[tID] = false;
 

@@ -33,6 +33,21 @@
 
 #include "curand_kernel.h"
 
+//------------------------------------------------------------------------------
+#define CHK_PRIME( code )                                                      \
+{                                                                              \
+  RTPresult res__ = code;                                                      \
+  if( res__ != RTP_SUCCESS )                                                   \
+  {                                                                            \
+  const char* err_string;                                                      \
+  rtpContextGetLastErrorString( context, &err_string );                        \
+  std::cerr << "Error on line " << __LINE__ << ": '"                           \
+  << err_string                                                                \
+  << "' (" << res__ << ")" << std::endl;                                       \
+  exit(1);                                                                     \
+  }                                                                            \
+}
+
 #define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
 inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=true)
 {
@@ -95,15 +110,16 @@ struct CudaGvtContext {
 	volatile int shadowRayCount;
 	volatile int dispatchCount;
 	bool validRayLeft;
+	bool unique;
 
 	 //per domain, allocated once per Adapter instance
 	 //copied in adapter construct, updated per trace
-	 Mesh mesh;
+	 Mesh* mesh;
 
 	 //per instance, allocated once per runtime
 	 //copied per trace
 	 Matrix3f* normi;
-	 Matrix4f* minv;
+	 //Matrix4f* minv;
 
 
 	 cudaStream_t stream;

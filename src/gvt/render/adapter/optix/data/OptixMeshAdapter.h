@@ -32,6 +32,8 @@
 #include <cuda_runtime.h>
 #include <optix_prime/optix_primepp.h>
 
+#include <set>
+
 
 
 /**
@@ -110,19 +112,25 @@ struct OptixContext {
 class OptixMeshAdapter : public gvt::render::Adapter {
 public:
 
-  OptixMeshAdapter(gvt::render::data::primitives::Mesh *mesh);
+  //OptixMeshAdapter(gvt::render::data::primitives::Mesh *mesh);
+
+  OptixMeshAdapter(std::map<int, gvt::render::data::primitives::Mesh *> &meshRef, std::map<int, glm::mat4 *> &instM,
+                      std::map<int, glm::mat4 *> &instMinv, std::map<int, glm::mat3 *> &instMinvN,
+                      std::vector<gvt::render::data::scene::Light *> &lights, std::vector<size_t> instances,
+                      bool unique = false);
 
   virtual ~OptixMeshAdapter();
 
-  ::optix::prime::Model getScene() const { return optix_model_; }
+  ::optix::prime::Model getScene() const { return _scene; }
 
   unsigned long long getPacketSize() const { return packetSize; }
 
-  virtual void trace(gvt::render::actor::RayVector &rayList, gvt::render::actor::RayVector &moved_rays, glm::mat4 *m,
-                     glm::mat4 *minv, glm::mat3 *normi, std::vector<gvt::render::data::scene::Light *> &lights,
+  virtual void trace(gvt::render::actor::RayVector &rayList, gvt::render::actor::RayVector &moved_rays/*, glm::mat4 *m,
+                     glm::mat4 *minv, glm::mat3 *normi, std::vector<gvt::render::data::scene::Light *> &lights*/,
                      size_t begin = 0, size_t end = 0);
 
-  gvt::render::data::cuda_primitives::Mesh cudaMesh;
+ gvt::render::data::cuda_primitives::Matrix3f* normi_dev;
+ gvt::render::data::cuda_primitives::Mesh * _inst2mesh_dev;
 
 protected:
   /**
@@ -133,7 +141,7 @@ protected:
   /**
    * Handle to Optix model.
    */
-  ::optix::prime::Model optix_model_;
+  ::optix::prime::Model _scene;
 
   float multiplier = 1.0f - 16.0f * std::numeric_limits<float>::epsilon();
 
@@ -144,13 +152,11 @@ protected:
 
   size_t begin, end;
 
-	gvt::render::data::cuda_primitives::Ray* disp_Buff[2];
+  gvt::render::data::cuda_primitives::Ray* disp_Buff[2];
+  gvt::render::data::cuda_primitives::Ray* cudaRaysBuff[2];
 
-	gvt::render::data::cuda_primitives::Ray* cudaRaysBuff[2];
 
-	glm::mat4 *m_pinned;
-	glm::mat4 *minv_pinned;
-	glm::mat3* normi_pinned;
+
 };
 }
 }
