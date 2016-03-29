@@ -65,9 +65,9 @@ struct OptixRay {
 struct OptixHit {
   float t;
   int triangle_id;
+  int instId;
   float u;
   float v;
-  int   instId;
 
   __device__ void print(){
 	printf("gpu hit  t: %f , triID: %d \n" ,t,triangle_id);

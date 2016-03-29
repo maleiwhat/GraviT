@@ -369,7 +369,7 @@ void cudaGetLights(std::vector<gvt::render::data::scene::Light *> gvtLights,
 
 }
 
-gvt::render::data::cuda_primitives::Mesh* cudaInstanceMesh(
+gvt::render::data::cuda_primitives::Mesh cudaInstanceMesh(
 		gvt::render::data::primitives::Mesh* mesh) {
 
 	gvt::render::data::cuda_primitives::Mesh cudaMesh;
@@ -381,18 +381,18 @@ gvt::render::data::cuda_primitives::Mesh* cudaInstanceMesh(
 	cudaMesh.faces = cudaCreateFaces(mesh->faces);
 	cudaMesh.mat = cudaCreateMaterial(mesh->mat);
 
-	gvt::render::data::cuda_primitives::Mesh* cudaMesh_dev;
-	gpuErrchk(
-				cudaMalloc((void ** ) &cudaMesh_dev,
-						sizeof(gvt::render::data::cuda_primitives::Mesh)));
+//	gvt::render::data::cuda_primitives::Mesh* cudaMesh_dev;
+//	gpuErrchk(
+//				cudaMalloc((void ** ) &cudaMesh_dev,
+//						sizeof(gvt::render::data::cuda_primitives::Mesh)));
+//
+//	gpuErrchk(cudaMemcpy(cudaMesh_dev, &cudaMesh,
+//			sizeof(gvt::render::data::cuda_primitives::Mesh),
+//				cudaMemcpyHostToDevice));
 
-	gpuErrchk(cudaMemcpy(cudaMesh_dev, &cudaMesh,
-			sizeof(gvt::render::data::cuda_primitives::Mesh),
-				cudaMemcpyHostToDevice));
 
 
-
-	return cudaMesh_dev;
+	return cudaMesh;
 }
 
 void gvt::render::data::cuda_primitives::CudaGvtContext::initCudaBuffers(
@@ -532,9 +532,12 @@ OptixMeshAdapter::OptixMeshAdapter(std::map<int, gvt::render::data::primitives::
 				                                     std::map<int, glm::mat3 *> &instMinvN,
 				                                     std::vector<gvt::render::data::scene::Light *> &lights,
 				                                     std::vector<size_t> instances, bool unique)
-				    : Adapter(meshRef, instM, instMinv, instMinvN, lights, instances, unique) {
+				    : Adapter(meshRef, instM, instMinv, instMinvN, lights, instances, unique),
+						packetSize(GVT_OPTIX_PACKET_SIZE) {
 
+	cudaSetDevice(0);
 
+	optix_context_= OptixContext::singleton()->context();
 
 	GVT_ASSERT(optix_context_.isValid(), "Optix Context is not valid");
 
@@ -566,7 +569,8 @@ OptixMeshAdapter::OptixMeshAdapter(std::map<int, gvt::render::data::primitives::
 		gpuErrchk(cudaGetLastError());
 	}
 
-	cudaSetDevice(0);
+	OptixContext::singleton()->initCuda(packetSize);
+
 
 	cudaMallocHost(&(disp_Buff[0]),
 			sizeof(gvt::render::data::cuda_primitives::Ray) * packetSize * 2);
@@ -584,7 +588,6 @@ OptixMeshAdapter::OptixMeshAdapter(std::map<int, gvt::render::data::primitives::
 					sizeof(gvt::render::data::cuda_primitives::Matrix4f)
 							* instM.size()));
 
-	gvt::render::data::cuda_primitives::Matrix3f* normi_dev;
 	gpuErrchk(
 			cudaMalloc((void ** ) &normi_dev,
 					sizeof(gvt::render::data::cuda_primitives::Matrix3f)
@@ -594,11 +597,11 @@ OptixMeshAdapter::OptixMeshAdapter(std::map<int, gvt::render::data::primitives::
 	std::set<gvt::render::data::primitives::Mesh *> _mesh;
 	std::map<gvt::render::data::primitives::Mesh *, ::optix::prime::Model> mesh2model;
 	std::map<gvt::render::data::primitives::Mesh *,
-			gvt::render::data::cuda_primitives::Mesh *> mesh2cudaMesh;
+			gvt::render::data::cuda_primitives::Mesh > mesh2cudaMesh;
 
-	std::vector<::optix::prime::Model> _instList;
-	std::vector<gvt::render::data::cuda_primitives::Mesh *> _inst2mesh;
-	std::vector<gvt::render::data::cuda_primitives::Matrix4f*> _inst2mat;
+	std::vector<RTPmodel> _instList;
+	std::vector<gvt::render::data::cuda_primitives::Mesh > _inst2mesh;
+	std::vector<gvt::render::data::cuda_primitives::Matrix4f> _inst2mat;
 
 
 	int instID =0;
@@ -610,11 +613,11 @@ OptixMeshAdapter::OptixMeshAdapter(std::map<int, gvt::render::data::primitives::
 
 		if (std::find(_mesh.begin(), _mesh.end(), mesh) == _mesh.end()) {
 
+
 			int numVerts = mesh->vertices.size();
 			int numTris = mesh->faces.size();
 
-			OptixContext::singleton()->initCuda(packetSize);
-			gvt::render::data::cuda_primitives::Mesh* cudaMesh = cudaInstanceMesh(mesh);
+			gvt::render::data::cuda_primitives::Mesh cudaMesh = cudaInstanceMesh(mesh);
 
 			// Setup the buffer to hold our vertices.
 			//
@@ -669,55 +672,44 @@ OptixMeshAdapter::OptixMeshAdapter(std::map<int, gvt::render::data::primitives::
 			optix_model_ = optix_context_->createModel();
 			GVT_ASSERT(optix_model_.isValid(), "Model is not valid");
 			optix_model_->setTriangles(indices_desc, vertices_desc);
-			//optix_model_->update(RTP_MODEL_HINT_ASYNC);
-			//optix_model_->finish();
+			optix_model_->update(RTP_MODEL_HINT_NONE);
 
-
-
-			gpuErrchk(cudaMemcpy(m_dev + instID, instM[inst],
-					sizeof(glm::vec4),
-						cudaMemcpyHostToDevice));
-
-
-			gpuErrchk(cudaMemcpy(normi_dev + instID, instMinvN[inst],
-							sizeof(glm::vec3),
-								cudaMemcpyHostToDevice));
-
-
-			_instList.push_back(optix_model_);
+			_instList.push_back(optix_model_->getRTPmodel());
 			_mesh.insert(mesh);
-
 			_inst2mesh.push_back(cudaMesh);
-			_inst2mat.push_back(m_dev + instID);
-
 			mesh2model[mesh] = optix_model_;
 			mesh2cudaMesh[mesh] = cudaMesh;
 
 		} else {
 
-			gpuErrchk(cudaMemcpy(m_dev + instID, instM[inst],
-					sizeof(glm::vec4),
-						cudaMemcpyHostToDevice));
+			::optix::prime::Model optix_model_ = mesh2model[mesh];
+			GVT_ASSERT(optix_model_.isValid(), "Model is not valid");
 
-			gpuErrchk(cudaMemcpy(normi_dev + instID, instMinvN[inst],
-							sizeof(glm::vec3),
-								cudaMemcpyHostToDevice));
+			_inst2mesh.push_back(mesh2cudaMesh[mesh]);
 
+			_instList.push_back(optix_model_->getRTPmodel());
 
-	         _inst2mesh.push_back(mesh2cudaMesh[mesh]);
-	         _inst2mat.push_back(m_dev + instID);
-	         _instList.push_back(mesh2model[mesh]);
 
 		}
 
-		instID++;
+		const float* m_ = glm::value_ptr(glm::transpose(*(instM[inst])));
+		_inst2mat.push_back(*(gvt::render::data::cuda_primitives::Matrix4f*)m_);
 
-		::optix::prime::BufferDesc instances;
-		instances = optix_context_->createBufferDesc(
+		const float* norm_ = glm::value_ptr(glm::transpose((*(instMinvN[inst]))));
+
+					gpuErrchk(
+							cudaMemcpy(normi_dev + instID,norm_,
+									sizeof(gvt::render::data::cuda_primitives::Matrix3f), cudaMemcpyHostToDevice));
+
+		instID++;
+	}
+
+	::optix::prime::BufferDesc instancesBuff;
+		instancesBuff = optix_context_->createBufferDesc(
 				RTP_BUFFER_FORMAT_INSTANCE_MODEL, RTP_BUFFER_TYPE_HOST,
 				&_instList[0]);
 
-		instances->setRange(0, _instList.size());
+		instancesBuff->setRange(0, _instList.size());
 
 		::optix::prime::BufferDesc transforms;
 		transforms = optix_context_->createBufferDesc(
@@ -729,23 +721,22 @@ OptixMeshAdapter::OptixMeshAdapter(std::map<int, gvt::render::data::primitives::
 
 
 		// create the "scene" model
-		::optix::prime::Model scene;
-		scene = optix_context_->createModel();
-		scene->setInstances(instances, transforms );
-		scene->update(RTP_MODEL_HINT_NONE);
-		scene->finish();
+
+		_scene = optix_context_->createModel();
+		_scene->setInstances(instancesBuff, transforms );
+		_scene->update(RTP_MODEL_HINT_NONE);
+
 
 		gpuErrchk(
 					cudaMalloc((void ** ) &_inst2mesh_dev,
-							sizeof(gvt::render::data::cuda_primitives::Mesh *)
+							sizeof(gvt::render::data::cuda_primitives::Mesh)
 									* _inst2mesh.size()));
 
 		gpuErrchk(cudaMemcpy(_inst2mesh_dev, &_inst2mesh[0],
-				sizeof(gvt::render::data::cuda_primitives::Mesh *)
+				sizeof(gvt::render::data::cuda_primitives::Mesh )
 													* _inst2mesh.size(),
 									cudaMemcpyHostToDevice));
 
-	}
 }
 
 OptixMeshAdapter::~OptixMeshAdapter() {
@@ -835,32 +826,32 @@ struct OptixParallelTrace {
 		::optix::prime::Model model = adapter->getScene();
 
 		RTPquery query;
-		rtpQueryCreate(model->getRTPmodel(), RTP_QUERY_TYPE_CLOSEST, &query);
+		CHK_PRIME(rtpQueryCreate(model->getRTPmodel(), RTP_QUERY_TYPE_CLOSEST, &query));
 
 		cudaPrepOptixRays(cudaGvtCtx.traceRays, NULL, cudaGvtCtx.shadowRayCount,
 				cudaGvtCtx.shadowRays, &cudaGvtCtx, true, cudaGvtCtx.stream);
 
 		RTPbufferdesc desc;
-		rtpBufferDescCreate(
+		CHK_PRIME(rtpBufferDescCreate(
 				OptixContext::singleton()->context()->getRTPcontext(),
 				RTP_BUFFER_FORMAT_RAY_ORIGIN_TMIN_DIRECTION_TMAX,
-				RTP_BUFFER_TYPE_CUDA_LINEAR, cudaGvtCtx.traceRays, &desc);
+				RTP_BUFFER_TYPE_CUDA_LINEAR, cudaGvtCtx.traceRays, &desc));
 
-		rtpBufferDescSetRange(desc, 0, cudaGvtCtx.shadowRayCount);
-		rtpQuerySetRays(query, desc);
+		CHK_PRIME(rtpBufferDescSetRange(desc, 0, cudaGvtCtx.shadowRayCount));
+		CHK_PRIME(rtpQuerySetRays(query, desc));
 
 		RTPbufferdesc desc2;
-		rtpBufferDescCreate(
+		CHK_PRIME(rtpBufferDescCreate(
 				OptixContext::singleton()->context()->getRTPcontext(),
-				RTP_BUFFER_FORMAT_HIT_T_TRIID_U_V, RTP_BUFFER_TYPE_CUDA_LINEAR,
-				cudaGvtCtx.traceHits, &desc2);
+				RTP_BUFFER_FORMAT_HIT_T_TRIID_INSTID_U_V, RTP_BUFFER_TYPE_CUDA_LINEAR,
+				cudaGvtCtx.traceHits, &desc2));
 
-		rtpBufferDescSetRange(desc2, 0, cudaGvtCtx.shadowRayCount);
-		rtpQuerySetHits(query, desc2);
+		CHK_PRIME(rtpBufferDescSetRange(desc2, 0, cudaGvtCtx.shadowRayCount));
+		CHK_PRIME(rtpQuerySetHits(query, desc2));
 
-		rtpQuerySetCudaStream(query, cudaGvtCtx.stream);
+		CHK_PRIME(rtpQuerySetCudaStream(query, cudaGvtCtx.stream));
 
-		rtpQueryExecute(query, RTP_QUERY_HINT_ASYNC);
+		CHK_PRIME(rtpQueryExecute(query, RTP_QUERY_HINT_ASYNC));
 		//rtpQueryFinish(query);
 
 		cudaProcessShadows(&cudaGvtCtx);
@@ -884,32 +875,34 @@ struct OptixParallelTrace {
 				cudaGvtCtx.rayCount, cudaGvtCtx.rays, &cudaGvtCtx, false,
 				cudaGvtCtx.stream);
 
+
+
 		::optix::prime::Model model = adapter->getScene();
 		RTPquery query;
 
-		rtpQueryCreate(model->getRTPmodel(), RTP_QUERY_TYPE_CLOSEST, &query);
+		CHK_PRIME(rtpQueryCreate(model->getRTPmodel(), RTP_QUERY_TYPE_CLOSEST, &query));
 
 		RTPbufferdesc rays;
-		rtpBufferDescCreate(
+		CHK_PRIME(rtpBufferDescCreate(
 				OptixContext::singleton()->context()->getRTPcontext(),
 				RTP_BUFFER_FORMAT_RAY_ORIGIN_TMIN_DIRECTION_TMAX,
-				RTP_BUFFER_TYPE_CUDA_LINEAR, cudaGvtCtx.traceRays, &rays);
+				RTP_BUFFER_TYPE_CUDA_LINEAR, cudaGvtCtx.traceRays, &rays));
 
-		rtpBufferDescSetRange(rays, 0, cudaGvtCtx.rayCount);
+		CHK_PRIME(rtpBufferDescSetRange(rays, 0, cudaGvtCtx.rayCount));
 
-		rtpQuerySetRays(query, rays);
+		CHK_PRIME(rtpQuerySetRays(query, rays));
 
 		RTPbufferdesc hits;
-		rtpBufferDescCreate(
+		CHK_PRIME(rtpBufferDescCreate(
 				OptixContext::singleton()->context()->getRTPcontext(),
 				 RTP_BUFFER_FORMAT_HIT_T_TRIID_INSTID_U_V, RTP_BUFFER_TYPE_CUDA_LINEAR,
-				cudaGvtCtx.traceHits, &hits);
-		rtpBufferDescSetRange(hits, 0, cudaGvtCtx.rayCount);
+				cudaGvtCtx.traceHits, &hits));
+		CHK_PRIME(rtpBufferDescSetRange(hits, 0, cudaGvtCtx.rayCount));
 
-		rtpQuerySetHits(query, hits);
+		CHK_PRIME(rtpQuerySetHits(query, hits));
 
-		rtpQuerySetCudaStream(query, cudaGvtCtx.stream);
-		rtpQueryExecute(query, RTP_QUERY_HINT_ASYNC);
+		CHK_PRIME(rtpQuerySetCudaStream(query, cudaGvtCtx.stream));
+		CHK_PRIME(rtpQueryExecute(query, RTP_QUERY_HINT_ASYNC));
 		//rtpQueryFinish(query);
 
 	}
@@ -946,6 +939,7 @@ struct OptixParallelTrace {
 		cudaGvtCtx.normi = adapter->normi_dev;
 
 		cudaGvtCtx.dispatchCount = 0;
+
 
 		for (size_t localIdx = 0; localIdx < localEnd; localIdx += packetSize) {
 
@@ -1038,7 +1032,7 @@ void OptixMeshAdapter::trace(gvt::render::actor::RayVector &rayList,
 	gpuErrchk(cudaDeviceSynchronize());
 
 	tbb::task_group _tasks;
-	bool parallel = true;
+	bool parallel = false;
 
 	_tasks.run(
 			[&]() {
