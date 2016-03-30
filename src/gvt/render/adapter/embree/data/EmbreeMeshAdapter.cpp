@@ -486,7 +486,8 @@ struct embreeParallelTrace {
     localDispatch.reserve((end - begin) * 2);
     shadowRays.reserve(GVT_EMBREE_PACKET_SIZE * lights.size());
     GVT_DEBUG(DBG_ALWAYS, "EmbreeMeshAdapter: starting while loop");
-    TLRand randEngine;
+
+    RandEngine randEngine;
     randEngine.SetSeed(begin);
     GVT_EMBREE_PACKET_TYPE ray4 = {};
     RTCORE_ALIGN(16) int valid[GVT_EMBREE_PACKET_SIZE] = { 0 };
@@ -611,7 +612,7 @@ struct embreeParallelTrace {
 
                 // TODO: remove this dependency on mesh, store material object in the database
                 // r.setDirection(adapter->getMesh()->getMaterial()->CosWeightedRandomHemisphereDirection2(normal));
-                r.direction = glm::normalize(mesh->getMaterial()->CosWeightedRandomHemisphereDirection2(normal));
+                r.direction = glm::normalize(mesh->getMaterial()->CosWeightedRandomHemisphereDirection2(normal, randSeed));
 
                 r.w = r.w * glm::dot(r.direction, normal);
                 r.depth = ndepth;
