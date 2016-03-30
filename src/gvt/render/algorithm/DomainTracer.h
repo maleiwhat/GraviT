@@ -316,7 +316,7 @@ public:
 #if defined(GVT_RENDER_ADAPTER_OPTIX) && defined(GVT_RENDER_ADAPTER_EMBREE)
             case gvt::render::adapter::Heterogeneous:
               adapter = new gvt::render::adapter::heterogeneous::data::HeterogeneousMeshAdapter(
-                  meshRef, instM.instMinv, instMinvN, lights, instances);
+                  meshRef, instM,instMinv, instMinvN, lights, instances);
               break;
 #endif
             default:

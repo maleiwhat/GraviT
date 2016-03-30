@@ -45,7 +45,11 @@ public:
    *
    * Initializes Embree the first time it is called.
    */
-  HeterogeneousMeshAdapter(gvt::render::data::primitives::Mesh *mesh);
+  //HeterogeneousMeshAdapter(gvt::render::data::primitives::Mesh *mesh);
+  HeterogeneousMeshAdapter(std::map<int, gvt::render::data::primitives::Mesh *> &meshRef, std::map<int, glm::mat4 *> &instM,
+                      std::map<int, glm::mat4 *> &instMinv, std::map<int, glm::mat3 *> &instMinvN,
+                      std::vector<gvt::render::data::scene::Light *> &lights, std::vector<size_t> instances,
+                      bool unique = false);
 
   /**
    * Release Embree copy of the mesh.
@@ -78,8 +82,7 @@ public:
    * \param moved_rays outgoing rays [rays that did not hit anything]
    * \param instNode instance db node containing dataRef and transforms
    */
-  virtual void trace(gvt::render::actor::RayVector &rayList, gvt::render::actor::RayVector &moved_rays, glm::mat4 *m,
-                     glm::mat4 *minv, glm::mat3 *normi, std::vector<gvt::render::data::scene::Light *> &lights,
+  virtual void trace(gvt::render::actor::RayVector &rayList, gvt::render::actor::RayVector &moved_rays,
                      size_t begin = 0, size_t end = 0);
 
 protected:

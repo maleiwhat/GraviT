@@ -38,9 +38,14 @@ using namespace gvt::render::actor;
 using namespace gvt::render::adapter::heterogeneous::data;
 //using namespace gvt::render::data::primitives;
 
-HeterogeneousMeshAdapter::HeterogeneousMeshAdapter(gvt::render::data::primitives::Mesh *mesh) : Adapter(mesh) {
-  _embree = new gvt::render::adapter::embree::data::EmbreeMeshAdapter(mesh);
-  _optix = new gvt::render::adapter::optix::data::OptixMeshAdapter(mesh);
+HeterogeneousMeshAdapter::HeterogeneousMeshAdapter(std::map<int, gvt::render::data::primitives::Mesh *> &meshRef,
+		std::map<int, glm::mat4 *> &instM,
+        std::map<int, glm::mat4 *> &instMinv, std::map<int, glm::mat3 *> &instMinvN,
+        std::vector<gvt::render::data::scene::Light *> &lights, std::vector<size_t> instances,
+        bool unique) : Adapter(meshRef, instM, instMinv, instMinvN, lights, instances, unique) {
+
+  _embree = new gvt::render::adapter::embree::data::EmbreeMeshAdapter(meshRef, instM, instMinv, instMinvN, lights, instances, unique);
+  _optix = new gvt::render::adapter::optix::data::OptixMeshAdapter(meshRef, instM, instMinv, instMinvN, lights, instances, unique);
 }
 
 HeterogeneousMeshAdapter::~HeterogeneousMeshAdapter() {
@@ -49,8 +54,7 @@ HeterogeneousMeshAdapter::~HeterogeneousMeshAdapter() {
 }
 
 void HeterogeneousMeshAdapter::trace(gvt::render::actor::RayVector &rayList, gvt::render::actor::RayVector &moved_rays,
-                                     glm::mat4 *m, glm::mat4 *minv, glm::mat3 *normi,
-                                     std::vector<gvt::render::data::scene::Light *> &lights, size_t begin, size_t end) {
+                                     size_t begin, size_t end) {
 #ifdef GVT_USE_DEBUG
   boost::timer::auto_cpu_timer t_functor("HeterogeneousMeshAdapter: trace time: %w\n");
 #endif
@@ -81,7 +85,7 @@ void HeterogeneousMeshAdapter::trace(gvt::render::actor::RayVector &rayList, gvt
 //          if (end >= size) end = size;
 //
 //          gput++;
-          _optix->trace(rayList, mOptix, m, minv, normi, lights, 0, split);
+          _optix->trace(rayList, mOptix,   0, split);
  //       }
  //     }
     });
@@ -98,7 +102,7 @@ void HeterogeneousMeshAdapter::trace(gvt::render::actor::RayVector &rayList, gvt
 //          if (end >= size) end = size;
 //
 //          cput++;
-            _embree->trace(rayList, moved_rays, m, minv, normi, lights, split, end);
+            _embree->trace(rayList, moved_rays,  split, end);
 
 //        }
  //     }

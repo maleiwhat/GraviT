@@ -497,35 +497,8 @@ using namespace gvt::render::data::primitives;
 
 static std::atomic<size_t> counter(0);
 
-// bool OptixMeshAdapter::init = false;
-
-//struct OptixRay {
-//	float origin[3];
-//	float t_min;
-//	float direction[3];
-//	float t_max;
-//	friend std::ostream &operator<<(std::ostream &os, const OptixRay &r) {
-//		return (os << "ray  o: " << r.origin[0] << ", " << r.origin[1] << ", "
-//				<< r.origin[2] << " d: " << r.direction[0] << ", "
-//				<< r.direction[1] << ", " << r.direction[2]);
-//	}
-//};
-//
-///// OptiX hit format
-//struct OptixHit {
-//	float t;
-//	int triangle_id;
-//	float u;
-//	float v;
-//	friend std::ostream &operator<<(std::ostream &os, const OptixHit &oh) {
-//		return (os << "hit  t: " << oh.t << " triID: " << oh.triangle_id);
-//	}
-//};
 
 OptixContext *OptixContext::_singleton;
-
-//OptixMeshAdapter::OptixMeshAdapter(gvt::render::data::primitives::Mesh *m) : Adapter(m),
-//		packetSize(GVT_OPTIX_PACKET_SIZE), optix_context_(OptixContext::singleton()->context()) {
 
 OptixMeshAdapter::OptixMeshAdapter(std::map<int, gvt::render::data::primitives::Mesh *> &meshRef,
 				                                     std::map<int, glm::mat4 *> &instM, std::map<int, glm::mat4 *> &instMinv,
@@ -582,7 +555,6 @@ OptixMeshAdapter::OptixMeshAdapter(std::map<int, gvt::render::data::primitives::
 			sizeof(gvt::render::data::cuda_primitives::Ray) * packetSize);
 
 
-	gvt::render::data::cuda_primitives::Matrix4f* m_dev;
 	gpuErrchk(
 			cudaMalloc((void ** ) &m_dev,
 					sizeof(gvt::render::data::cuda_primitives::Matrix4f)
@@ -608,6 +580,8 @@ OptixMeshAdapter::OptixMeshAdapter(std::map<int, gvt::render::data::primitives::
 	for (auto &inst : instances) {
 
 		Mesh *mesh = meshRef[inst];
+
+		mesh->generateNormals();
 		GVT_ASSERT(mesh,
 				"OptixMeshAdapter: mesh pointer in the database is null");
 
@@ -743,9 +717,9 @@ OptixMeshAdapter::~OptixMeshAdapter() {
 
 	cudaFreeHost(disp_Buff);
 	cudaFreeHost(cudaRaysBuff);
-//	cudaFreeHost(m_pinned);
-//	cudaFreeHost(minv_pinned);
-//	cudaFreeHost(normi_pinned);
+	cudaFree(normi_dev);
+	cudaFree(m_dev);
+
 
 }
 
@@ -762,23 +736,6 @@ struct OptixParallelTrace {
 	 * Shared outgoing ray list used in the current trace() call
 	 */
 	gvt::render::actor::RayVector &moved_rays;
-
-//	/**
-//	 *
-//	 * Stored transformation matrix in the current instance
-//	 */
-//	const glm::mat4 *m;
-//
-//	/**
-//	 * Stored inverse transformation matrix in the current instance
-//	 */
-//	const glm::mat4 *minv;
-//
-//	/**
-//	 * Stored upper33 inverse matrix in the current instance
-//	 */
-//	const glm::mat3 *normi;
-
 
 	/**
 	 * Thread local outgoing ray queue
@@ -924,16 +881,6 @@ struct OptixParallelTrace {
 				*(OptixContext::singleton()->_cudaGvtCtx[thread]);
 
 
-		//Mesh instance specific data
-//		gpuErrchk(
-//				cudaMemcpyAsync(cudaGvtCtx.normi, &(normi[0]),
-//						sizeof(glm::mat3), cudaMemcpyHostToDevice,
-//						cudaGvtCtx.stream));
-//		gpuErrchk(
-//				cudaMemcpyAsync(cudaGvtCtx.minv, &(minv[0]), sizeof(glm::mat4),
-//						cudaMemcpyHostToDevice, cudaGvtCtx.stream));
-//
-
 		cudaGvtCtx.unique = adapter->unique;
 		cudaGvtCtx.mesh = adapter->_inst2mesh_dev;
 		cudaGvtCtx.normi = adapter->normi_dev;
@@ -1014,17 +961,6 @@ void OptixMeshAdapter::trace(gvt::render::actor::RayVector &rayList,
 	this->end = _end;
 
 	size_t localWork = end-begin;
-
-
-//	*m_pinned = *m;
-//	m = m_pinned;
-//
-//
-//	*minv_pinned = *minv;
-//	minv = minv_pinned;
-//
-//	*normi_pinned = *normi;
-//	normi = normi_pinned;
 
 	// pull out instance transform data
 	GVT_DEBUG(DBG_ALWAYS, "OptixMeshAdapter: getting instance transform data");

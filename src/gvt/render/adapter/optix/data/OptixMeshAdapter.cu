@@ -175,6 +175,11 @@ __device__ void generateShadowRays(const Ray &r, const float4 &normal,
 
     Light *light = &(cudaGvtCtx->lights[l]);
 
+
+
+    Color c = cudaGvtCtx->mesh[instID].mat->shade(/*primID,*/
+    		r, normal, light);
+
     // Try to ensure that the shadow ray is on the correct side of the
     // triangle.
     // Technique adapted from "Robust BVH Ray Traversal" by Thiago Ize.
@@ -198,7 +203,6 @@ __device__ void generateShadowRays(const Ray &r, const float4 &normal,
     shadow_ray.id = r.id;
     shadow_ray.t_max = t_max;
 
-    Color c = cudaGvtCtx->mesh[instID].mat->shade(/*primID,*/ shadow_ray, normal, light);
 
 
     shadow_ray.color.x = c.x;

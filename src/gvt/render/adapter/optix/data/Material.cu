@@ -67,11 +67,10 @@ using namespace gvt::render::data::cuda_primitives;
 
     float4 hitPoint = ray.origin + ray.direction * ray.t;
     float4 L = normalize(lightSource->light.position - hitPoint);
-    float NdotL = fmaxf(0.f, fabs(N * L));
+    float NdotL = fmaxf(0.f, (N * L));
     Color lightSourceContrib = lightSource->contribution(hitPoint);
 
     Color diffuse = prod(lightSourceContrib, kd) * (NdotL * ray.w);
-
 
     return diffuse;
   }

@@ -190,20 +190,20 @@ public:
 #ifdef GVT_RENDER_ADAPTER_MANTA
           case gvt::render::adapter::Manta:
             adapter = new gvt::render::adapter::manta::data::MantaMeshAdapter(meshRef, instM, instMinv, instMinvN,
-                                                                              lights, instances);
+                                                                              lights, instances, acc.nodes.size() == 1);
             break;
 #endif
 #ifdef GVT_RENDER_ADAPTER_OPTIX
           case gvt::render::adapter::Optix:
             adapter = new gvt::render::adapter::optix::data::OptixMeshAdapter(meshRef, instM, instMinv, instMinvN,
-                                                                              lights, instances);
+                                                                              lights, instances, acc.nodes.size() == 1);
             break;
 #endif
 
 #if defined(GVT_RENDER_ADAPTER_OPTIX) && defined(GVT_RENDER_ADAPTER_EMBREE)
           case gvt::render::adapter::Heterogeneous:
             adapter = new gvt::render::adapter::heterogeneous::data::HeterogeneousMeshAdapter(
-                meshRef, instM.instMinv, instMinvN, lights, instances);
+                meshRef, instM,instMinv, instMinvN, lights, instances);
             break;
 #endif
           default:

@@ -131,6 +131,7 @@ public:
 
  gvt::render::data::cuda_primitives::Matrix3f* normi_dev;
  gvt::render::data::cuda_primitives::Mesh * _inst2mesh_dev;
+	gvt::render::data::cuda_primitives::Matrix4f* m_dev;
 
 protected:
   /**
