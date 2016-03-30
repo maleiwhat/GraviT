@@ -137,11 +137,15 @@ void *Application::workThread(void *p) {
     Work *w = theApplication->Deserialize(m);
     delete m;
 
+    bool deferDeletion = w->deferDeletingThis();
+
     if (w->Action()) {
       theApplication->Kill();
     }
 
-    delete w;
+    if (!deferDeletion) {
+      delete w;
+    }
   }
 
   pthread_exit(NULL);

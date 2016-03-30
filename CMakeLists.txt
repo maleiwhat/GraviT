@@ -192,9 +192,9 @@ set(GVT_CORE_HDRS ${GVT_CORE_HDRS}
 	src/gvt/core/mpi/Application.h
 	src/gvt/core/mpi/Message.h
 	src/gvt/core/mpi/MessageQ.h
-    src/gvt/core/mpi/Work.h
-    src/gvt/core/mpi/RenderWork.h
-    src/gvt/core/mpi/RenderTileWork.h
+        src/gvt/core/mpi/Work.h
+        src/gvt/core/mpi/RenderWork.h
+        src/gvt/core/mpi/RenderTileWork.h
 	src/gvt/core/Uuid.h
 	src/gvt/core/Variant.h
 	)
@@ -256,11 +256,8 @@ set(GVT_RENDER_HDRS ${GVT_RENDER_HDRS}
 	src/gvt/render/schedule/HybridScheduler.h
 	src/gvt/render/schedule/ImageScheduler.h
 	src/gvt/render/Schedulers.h
-    src/gvt/render/unit/GeometryWork.h
+	src/gvt/render/unit/Works.h
 	src/gvt/render/unit/PixelWork.h
-	src/gvt/render/unit/RayTxWork.h
-	src/gvt/render/unit/RayTxDoneWork.h
-	src/gvt/render/unit/RayCommitDoneWork.h
 	src/gvt/render/unit/RequestWork.h
 	src/gvt/render/unit/TileWork.h
 	src/gvt/render/unit/ImageTileWork.h
@@ -291,11 +288,8 @@ set(GVT_RENDER_SRCS ${GVT_RENDER_SRCS}
 	src/gvt/render/data/scene/Image.cpp
 	src/gvt/render/data/scene/Light.cpp
 	src/gvt/render/data/accel/BVH.cpp
-	src/gvt/render/unit/GeometryWork.cpp
+	src/gvt/render/unit/Works.cpp
 	src/gvt/render/unit/PixelWork.cpp
-	src/gvt/render/unit/RayTxWork.cpp
-	src/gvt/render/unit/RayTxDoneWork.cpp
-	src/gvt/render/unit/RayCommitDoneWork.cpp
 	src/gvt/render/unit/RequestWork.cpp
 	src/gvt/render/unit/TileWork.cpp
 	src/gvt/render/unit/ImageTileWork.cpp

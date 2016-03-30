@@ -61,11 +61,16 @@ public:
   virtual void Serialize(size_t &size, unsigned char *&serialized);
   static Work *Deserialize(size_t size, unsigned char *serialized);
   virtual bool Action();
-  void setRays(int instanceId, gvt::render::actor::RayVector *rays);
+  virtual bool deferDeletingThis() { return true; };
+
+  void setRays(int senderRank, int instanceId, gvt::render::actor::RayVector *outgoingRays);
+  void copyReceivedRays(std::map<int, gvt::render::actor::RayVector>* destinationRayQ);
 private:
   int instanceId;
   int numRays;
-  gvt::render::actor::RayVector *rays;
+  int senderRank;
+  gvt::render::actor::RayVector *outgoingRays;
+  gvt::render::actor::RayVector incomingRays;
 };
 }
 }

@@ -54,17 +54,19 @@ using namespace gvt::render::actor;
 WORK_CLASS(RayTxWork)
 
 void RayTxWork::Serialize(size_t &size, unsigned char *&serialized) {
-  RayVector& rayV = *rays;
+  RayVector& rayV = *outgoingRays;
   // assume raySize > 0
   int raySize = 0;
   for (int i = 0; i < numRays; ++i) {
     raySize += rayV[i].packedSize();
   }
-  size = 2 * sizeof(int) + raySize;
+  size = 3 * sizeof(int) + raySize;
   serialized = static_cast<unsigned char *>(malloc(size));
 
   unsigned char *buf = serialized;
 
+  *reinterpret_cast<int *>(buf) = senderRank;
+  buf += sizeof(int);
   *reinterpret_cast<int *>(buf) = instanceId;
   buf += sizeof(int);
   *reinterpret_cast<int *>(buf) = numRays;
@@ -76,7 +78,7 @@ void RayTxWork::Serialize(size_t &size, unsigned char *&serialized) {
   MpiRenderer *renderer = static_cast<MpiRenderer *>(Application::GetApplication());
   if (renderer->GetRank() == 0) {
     std::cout<<"Rank "<<renderer->GetRank()<<": RayTxWork::serialize: size "<<size
-             <<": instanceId "<<instanceId<<": numRays "<<numRays
+             <<": senderRank "<<senderRank<<": instanceId "<<instanceId<<": numRays "<<numRays
              <<": outgoingRays["<<i<<"]{"<<rayV[i]<<"} buf "<<(void*)buf<<std::endl;
   }
 #endif
@@ -89,49 +91,63 @@ Work *RayTxWork::Deserialize(size_t size, unsigned char *serialized) {
 
   RayTxWork *work = new RayTxWork;
 
-  int instanceId = *reinterpret_cast<int *>(buf);
-  work->instanceId = instanceId;
+  int senderRank = *reinterpret_cast<int *>(buf);
   buf += sizeof(int);
+  work->senderRank = senderRank;
+
+  int instanceId = *reinterpret_cast<int *>(buf);
+  buf += sizeof(int);
+  work->instanceId = instanceId;
+
   int numRays = *reinterpret_cast<int *>(buf);
   buf += sizeof(int);
   work->numRays = numRays;
 
   MpiRenderer *renderer = static_cast<MpiRenderer *>(Application::GetApplication());
 
-  pthread_mutex_lock(&renderer->rayBufferLock);
-  std::map<int, RayVector>* rayQ = &renderer->rayBuffer;
+  // pthread_mutex_lock(&renderer->rayBufferLock);
+  // std::map<int, RayVector>* rayQ = &renderer->rayBuffer;
 
-  std::size_t offset = 0;
-  if (rayQ->find(instanceId) != rayQ->end()) {
-    offset = (*rayQ)[instanceId].size();
-    (*rayQ)[instanceId].resize(offset + numRays);
-  } else {
-    (*rayQ)[instanceId] = RayVector(numRays);
-  }
-  RayVector& rayV = (*rayQ)[instanceId];
+  // std::size_t offset = 0;
+  // if (rayQ->find(instanceId) != rayQ->end()) {
+  //   offset = (*rayQ)[instanceId].size();
+  //   (*rayQ)[instanceId].resize(offset + numRays);
+  // } else {
+  //   (*rayQ)[instanceId] = RayVector(numRays);
+  // }
+  // RayVector& rayV = (*rayQ)[instanceId];
 
-  for(size_t i = offset; i < offset + numRays; ++i) {
+  work->incomingRays.resize(numRays);
+
+  for (int i = 0; i < numRays; ++i) {
     Ray ray(buf);
-    rayV[i] = ray;
+    work->incomingRays[i] = ray;
     buf += ray.packedSize();
-#ifdef DEBUG_RAY_COPY
-    MpiRenderer *renderer = static_cast<MpiRenderer *>(Application::GetApplication());
-    if (renderer->GetRank() == 1) {
-      std::cout<<"Rank "<<renderer->GetRank()<<": RayTxWork::deserialize: size "
-               <<size<<": instanceId "<<work->instanceId<<": numRays "<<numRays
-               <<": renderer->rayBuffer["<<i<<"]{"<<rayV[i]<<"} buf "<<(void*)buf<<std::endl;
-    }
-#endif
   }
-  pthread_mutex_unlock(&renderer->rayBufferLock);
+
+//   for(size_t i = offset; i < offset + numRays; ++i) {
+//     Ray ray(buf);
+//     rayV[i] = ray;
+//     buf += ray.packedSize();
+// #ifdef DEBUG_RAY_COPY
+//     MpiRenderer *renderer = static_cast<MpiRenderer *>(Application::GetApplication());
+//     if (renderer->GetRank() == 1) {
+//       std::cout<<"Rank "<<renderer->GetRank()<<": RayTxWork::deserialize: size "
+//                <<size<<": instanceId "<<work->instanceId<<": numRays "<<numRays
+//                <<": renderer->rayBuffer["<<i<<"]{"<<rayV[i]<<"} buf "<<(void*)buf<<std::endl;
+//     }
+// #endif
+//   }
+  // pthread_mutex_unlock(&renderer->rayBufferLock);
 
   return work;
 }
 
-void RayTxWork::setRays(int instanceId, gvt::render::actor::RayVector *rays) {
+void RayTxWork::setRays(int senderRank, int instanceId, gvt::render::actor::RayVector *outgoingRays) {
+  this->senderRank = senderRank;
   this->instanceId = instanceId;
-  this->numRays = rays->size();
-  this->rays = rays;
+  this->numRays = outgoingRays->size();
+  this->outgoingRays = outgoingRays;
 
 #ifdef DEBUG_RAY_TRANSFER
   printf("Rank %d: RayTxWork::setRays: instanceId %d: numRays %d\n",
@@ -151,24 +167,33 @@ void RayTxWork::setRays(int instanceId, gvt::render::actor::RayVector *rays) {
 }
 
 bool RayTxWork::Action() {
+  MpiRenderer *renderer = static_cast<MpiRenderer *>(Application::GetApplication());
+  renderer->bufferIncomingRays(this);
 
-  // MpiRenderer *renderer = static_cast<MpiRenderer *>(Application::GetApplication());
+//   pthread_mutex_lock(&renderer->rayBufferLock);
 
-  // pthread_mutex_lock(&renderer->rayBufferLock);
+//   std::map<int, RayVector> *destination = &renderer->rayBuffer;
 
-  // std::map<int, RayVector> *destination = &renderer->rayBuffer;
-
-  // if (destination->find(instanceId) != destination->end()) {
-  //   (*destination)[instanceId].insert((*destination)[instanceId].end(), rayBuffer.begin(), rayBuffer.end()); 
-  // } else {
-  //   (*destination)[instanceId] = rayBuffer;
-  // }
+//   if (destination->find(instanceId) != destination->end()) {
+//     (*destination)[instanceId].insert((*destination)[instanceId].end(), rayBuffer.begin(), rayBuffer.end()); 
+//   } else {
+//     (*destination)[instanceId] = rayBuffer;
+//   }
  
 // #ifdef DEBUG_RAY_TRANSFER
 //   printf("Rank %d: RayTxWork::Action: instance %d numRays %d\n", renderer->GetRank(), instanceId, numRays);
 // #endif
 
-  // pthread_mutex_unlock(&renderer->rayBufferLock);
+//   pthread_mutex_unlock(&renderer->rayBufferLock);
 
   return false;
 }
+
+void RayTxWork::copyReceivedRays(std::map<int, gvt::render::actor::RayVector>* destinationRayQ) {
+  if (destinationRayQ->find(instanceId) != destinationRayQ->end()) {
+    (*destinationRayQ)[instanceId].insert((*destinationRayQ)[instanceId].end(), incomingRays.begin(), incomingRays.end()); 
+  } else {
+    (*destinationRayQ)[instanceId] = incomingRays;
+  }
+}
+

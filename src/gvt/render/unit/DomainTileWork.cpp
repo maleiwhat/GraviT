@@ -35,12 +35,13 @@
 // DomainTileWork.cpp
 //
 
+#include "gvt/render/unit/Works.h"
 #include "gvt/render/unit/DomainTileWork.h"
 #include "gvt/render/unit/PixelGatherWork.h"
 // #include "gvt/render/unit/RayCountWork.h"
-#include "gvt/render/unit/RayTxWork.h"
-#include "gvt/render/unit/RayTxDoneWork.h"
-#include "gvt/render/unit/RayCommitDoneWork.h"
+// #include "gvt/render/unit/RayTxWork.h"
+// #include "gvt/render/unit/RayTxDoneWork.h"
+// #include "gvt/render/unit/RayCommitDoneWork.h"
 #include "gvt/render/unit/MpiRenderer.h"
 #include "gvt/render/data/scene/Image.h"
 
@@ -101,10 +102,11 @@ void DomainTileWork::setupAction() {
   TileWork::setupAction();
   myRank = Application::GetApplication()->GetRank();
   numRanks = Application::GetApplication()->GetSize();
-  rayBuffer = &renderer->rayBuffer;
+  // rayBuffer = &renderer->rayBuffer;
   // incomingRayQueueMutex = renderer->getIncomingRayQueueMutex();
   // doneTestLock = renderer->getDoneTestLock();
   // doneTestCondition = renderer->getDoneTestCondition();
+  // numRaysSent.resize(numRanks, 0);
 }
 
 bool DomainTileWork::Action() {
@@ -166,7 +168,7 @@ void DomainTileWork::traceRays(RayVector &rays) {
   size_t instTargetCount = 0;
   gvt::render::Adapter *adapter = 0;
 
-  std::vector<int> numRaysToSend(numRanks);
+  // std::vector<int> numRaysToSend(numRanks);
 
 #ifdef DEBUG_DUMP_QSTATE
   int iteration = 0;
@@ -297,37 +299,46 @@ void DomainTileWork::traceRays(RayVector &rays) {
     GVT_DEBUG(DBG_ALWAYS, "Rank [ " << myRank << "]  calling SendRays");
 
 #ifdef DEBUG_DUMP_QSTATE
-  if (myRank == 0) {
-    printf("============Rank %d before sending rays (%d)============\n", myRank, iteration);
-    for (auto &q : *rayQueue) {
-      printf("[before] Rank %d: instance %d: %lu\n", myRank, q.first, q.second.size());
-      for (int i=0; i<q.second.size(); ++i) {
-        std::cout<<"[before] Rank "<<myRank<<": iteration "<<iteration<<": inst "<< q.first << ": idx "<< i << ": { " <<q.second[i]<<" }"<<std::endl;
+    if (myRank == 0) {
+      printf("============Rank %d before sending rays (%d)============\n", myRank, iteration);
+      for (auto &q : *rayQueue) {
+        printf("[before] Rank %d: instance %d: %lu\n", myRank, q.first, q.second.size());
+        for (int i=0; i<q.second.size(); ++i) {
+          std::cout<<"[before] Rank "<<myRank<<": iteration "<<iteration<<": inst "<< q.first << ": idx "<< i << ": { " <<q.second[i]<<" }"<<std::endl;
+        }
       }
     }
-  }
 #endif
 
     {
       t_raytx.resume();
-      all_done = transferRays();
+      all_done = renderer->transferRays();
       t_raytx.stop();
     }
 
-
 #ifdef DEBUG_DUMP_QSTATE
-  if (myRank == 0) {
-    printf("============Rank %d after sending rays (%d)============\n", myRank, iteration);
-    for (auto &q : *rayQueue) {
-      printf("[after] Rank %d: instance %d: %lu\n", myRank, q.first, q.second.size());
-      for (int i=0; i<q.second.size(); ++i) {
-        std::cout<<"[after] Rank "<<myRank<<": iteration "<<iteration<<": inst "<< q.first << ": idx "<< i << ": { " <<q.second[i]<<" }"<<std::endl;
+    if (myRank == 0) {
+      printf("============Rank %d after sending rays (%d)============\n", myRank, iteration);
+      for (auto &q : *rayQueue) {
+        printf("[after] Rank %d: instance %d: %lu\n", myRank, q.first, q.second.size());
+        for (int i=0; i<q.second.size(); ++i) {
+          std::cout<<"[after] Rank "<<myRank<<": iteration "<<iteration<<": inst "<< q.first << ": idx "<< i << ": { " <<q.second[i]<<" }"<<std::endl;
+        }
       }
     }
-  }
     ++iteration;
 #endif
-
+    // if (numRanks > 1)
+    //   all_done = renderer->updateProcessStatus();
+    // else {
+    //   all_done = rayQueue->empty();
+      // all_done == (renderer->myTerminatedRayCount == (renderer->imageWidth * renderer->imageHeight));
+      // //  printf("%d\n", renderer->myTerminatedRayCount);
+      // // if ((renderer->myTerminatedRayCount % 50) == 0) {
+      // if (renderer->myTerminatedRayCount > 993000) {
+      //    printf("%d ", renderer->myTerminatedRayCount);
+      // }
+    //}
   } // while (!all_done) {
 
 #ifndef DEBUG_IMAGE_WRITE
@@ -353,42 +364,43 @@ void DomainTileWork::traceRays(RayVector &rays) {
   std::cout << "Rank " << myRank << ": [async] domain scheduler: raytx time: " << t_raytx.format();
 }
 
-bool DomainTileWork::transferRays() {
-
-  bool allDone;
-
-  if (numRanks == 1)
-    return rayQueue->empty();
-
-  sendRays();
-  sendRayTxDone();
-
-  pthread_mutex_lock(&renderer->rayCommitReadyLock);
-  while (!renderer->rayCommitReady) {
-    pthread_cond_wait(&renderer->rayCommitReadyCond, &renderer->rayCommitReadyLock);
-  }
-  renderer->rayCommitReady = false;
-  pthread_mutex_unlock(&renderer->rayCommitReadyLock);
-
-  commitRays();
-  sendRayCommitDone();
-
-  pthread_mutex_lock(&renderer->workRestartReadyLock);
-  while (!renderer->workRestartReady) {
-    pthread_cond_wait(&renderer->workRestartReadyCond, &renderer->workRestartReadyLock);
-  }
-  renderer->workRestartReady = false;
-
-  bool iamdone = rayQueue->empty();
-  allDone = renderer->allOtherProcessesDone && iamdone;
-#ifdef DEBUG_RAY_TRANSFER
-  printf("Rank %d: DomainTileWork::transferRays: iamdone %d: allOtherProcessesDone %d\n",
-         myRank, iamdone, renderer->allOtherProcessesDone);
-#endif
-  pthread_mutex_unlock(&renderer->workRestartReadyLock);
-
-  return allDone;
-}
+// void DomainTileWork::transferRays() {
+// 
+//   // bool myProcessDone;
+// 
+//   if (numRanks == 1)
+//     return rayQueue->empty();
+// 
+//   sendRays();
+//   // sendRayTxDone();
+// 
+//   // pthread_mutex_lock(&renderer->rayCommitReadyLock);
+//   // while (!renderer->rayCommitReady) {
+//   //   pthread_cond_wait(&renderer->rayCommitReadyCond, &renderer->rayCommitReadyLock);
+//   // }
+//   // renderer->rayCommitReady = false;
+//   // pthread_mutex_unlock(&renderer->rayCommitReadyLock);
+// 
+//   // commitRays();
+//   // sendRayCommitDone();
+//   receiveRays();
+// 
+//   // pthread_mutex_lock(&renderer->workRestartReadyLock);
+//   // while (!renderer->workRestartReady) {
+//   //   pthread_cond_wait(&renderer->workRestartReadyCond, &renderer->workRestartReadyLock);
+//   // }
+//   // renderer->workRestartReady = false;
+// 
+//   // myProcessDone = rayQueue->empty() && !renderer->hasInFlightRays();
+// 
+// #ifdef DEBUG_RAY_TRANSFER
+//   printf("Rank %d: DomainTileWork::transferRays: rayQ empty %d\n",
+//          myRank, rayQueue->empty());
+// #endif
+//   // pthread_mutex_unlock(&renderer->workRestartReadyLock);
+// 
+//   // return myProcessDone;
+// }
 
 // hpark: do not remove this. need this for future work
 #if 0
@@ -416,78 +428,72 @@ void DomainTileWork::sendRayCounts(std::vector<int>& numRaysToSend) {
 }
 #endif
 
-void DomainTileWork::sendRays() {
+// void DomainTileWork::transferRays() {
+//   sendRays();
+//   receiveRays();
+//   bool allDone = renderer->requestVotes();
+//   return allDone;
+// }
+// 
+// void DomainTileWork::transferRays() {
+// 
+// #ifdef DEBUG_RAY_TRANSFER
+//   size_t count = 0;
+// #endif
+//   for (auto &q : *rayQueue) {
+// 
+//     int instance = q.first;
+//     RayVector& rays = q.second; 
+// 
+//     int ownerRank = renderer->getInstanceOwner(instance);
+// 
+//     size_t numRaysToSend = rays.size();
+// 
+//     if (ownerRank != myRank && numRaysToSend > 0) {
+// #ifdef DEBUG_RAY_TRANSFER
+//       printf("Rank %d: DomainTileWork::sendRays: ray.send(to Rank %d): instance %d: ray count: %lu \n",
+//              myRank, ownerRank, instance, numRaysToSend);
+//       count += numRaysToSend;
+// #endif
+//       // renderer->updateRayTx(ownerRank, numRaysToSend);
+// 
+//       RayTransfer work;
+//       work.setRays(myRank, instance, &rays);
+//       work.Send(ownerRank);
+//     }
+//   }
+// #ifdef DEBUG_RAY_TRANSFER
+//   if (count == 0)
+//     printf("Rank %d: DomainTileWork::sendRays: no rays sent\n", myRank);
+// #endif
+// 
+//   renderer->copyReceivedRays(rayQueue);
+// }
 
-#ifdef DEBUG_RAY_TRANSFER
-  size_t count = 0;
-#endif
-  for (auto &q : *rayQueue) {
+// void DomainTileWork::sendRayTxDone() {
 
-    int instance = q.first;
-    RayVector& rays = q.second; 
+//   for (int i = 0; i < numRanks; ++i) {
+//     if (i != myRank) {
+// #ifdef DEBUG_RAY_TRANSFER
+//       printf("Rank %d: RayTxDone.send(to Rank %d)\n", myRank, i);
+// #endif
+//       RayTxDoneWork work;
+//       work.Send(i);
+//     }
+//   }
+// }
 
-    int ownerRank = renderer->getInstanceOwner(instance);
-
-    if (ownerRank != myRank && rays.size() > 0) {
-#ifdef DEBUG_RAY_TRANSFER
-      printf("Rank %d: DomainTileWork::sendRays: ray.send(to Rank %d): instance %d: ray count: %lu \n",
-             myRank, ownerRank, instance, rays.size());
-      count += rays.size();
-#endif
-      RayTxWork work;
-      work.setRays(instance, &rays);
-      work.Send(ownerRank);
-    }
-  }
-#ifdef DEBUG_RAY_TRANSFER
-  if (count == 0)
-    printf("Rank %d: DomainTileWork::sendRays: no rays sent\n", myRank);
-#endif
-}
-
-void DomainTileWork::sendRayTxDone() {
-
-  for (int i = 0; i < numRanks; ++i) {
-    if (i != myRank) {
-#ifdef DEBUG_RAY_TRANSFER
-      printf("Rank %d: RayTxDone.send(to Rank %d)\n", myRank, i);
-#endif
-      RayTxDoneWork work;
-      work.Send(i);
-    }
-  }
-}
-
-void DomainTileWork::commitRays() {
-
-  pthread_mutex_lock(&renderer->rayBufferLock);
-  for (auto &q : *rayBuffer) {
-#ifdef DEBUG_RAY_TRANSFER
-    printf("Rank %d: DomainTileWork::commitRays: instance %d: rays.size %lu\n", myRank, q.first, q.second.size());
-#endif
-    int instanceId = q.first;
-    RayVector &rays = q.second;
-    if (rayQueue->find(instanceId) != rayQueue->end()) {
-      (*rayQueue)[instanceId].insert((*rayQueue)[instanceId].end(), rays.begin(), rays.end()); 
-    } else {
-      (*rayQueue)[instanceId] = rays;
-    }
-  }
-  rayBuffer->clear();
-  pthread_mutex_unlock(&renderer->rayBufferLock);
-}
-
-void DomainTileWork::sendRayCommitDone() {
-
-  for (int i = 0; i < numRanks; ++i) {
-    if (i != myRank) {
-#ifdef DEBUG_RAY_TRANSFER
-      printf("Rank %d:  DomainTileWork::sendRayCommitDone: RayCommitDone.send(to Rank %d) iamdone = %d\n",
-             myRank, i, rayQueue->empty());
-#endif
-      RayCommitDoneWork work;
-      work.set(rayQueue->empty());
-      work.Send(i);
-    }
-  }
-}
+// void DomainTileWork::sendRayCommitDone() {
+// 
+//   for (int i = 0; i < numRanks; ++i) {
+//     if (i != myRank) {
+// #ifdef DEBUG_RAY_TRANSFER
+//       printf("Rank %d:  DomainTileWork::sendRayCommitDone: RayCommitDone.send(to Rank %d) iamdone = %d\n",
+//              myRank, i, rayQueue->empty());
+// #endif
+//       RayCommitDoneWork work;
+//       work.set(rayQueue->empty());
+//       work.Send(i);
+//     }
+//   }
+// }

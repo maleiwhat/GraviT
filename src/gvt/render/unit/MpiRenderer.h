@@ -82,12 +82,13 @@ class AbstractAccel;
 namespace gvt {
 namespace render {
 namespace unit {
-
 namespace rank {
 enum RankType { Server = 0, Display = 1, FirstWorker };
 }
 
 class TileLoadBalancer;
+class RayTransferWork;
+class VoteWork;
 
 // TODO (hpark): make a command line parser using ConfigFileLoader
 //  We could utilize existing ConfigFileLoader
@@ -111,6 +112,8 @@ struct TestDatabaseOption : public DatabaseOption {
   int instanceCountY = 2;
   int instanceCountZ = 1;
 };
+
+class Voter;
 
 class MpiRenderer : public Application {
 public:
@@ -223,40 +226,40 @@ private:
   int imageWidth;
   int imageHeight;
 
+
+// ray transfer
+public:
+  bool transferRays();
+  void bufferRayTransferWork(RayTransferWork* work);
+  void bufferVoteWork(VoteWork* work);
+  void voteForResign(VoteWork* work);
+  void applyRayTransferResult(int numRays);
+  void applyVoteResult(int voteType, unsigned int timeStamp);
+
 private:
-  friend class TraceDoneWork;
-  friend class RayCountWork;
-  friend class RayTransferWork;
-  friend class PixelGatherWork;
+  int myRank;
+  int numRanks;
 
-  friend class DomainTileWork;
-  friend class RequestWork;
+  void sendRays();
+  void receiveRays();
 
-  // ray transfer
-  friend class RayTxWork;
-  pthread_mutex_t rayBufferLock;
-  std::map<int, gvt::render::actor::RayVector> rayBuffer;
+  Voter* voter;
 
-  // ray transfer done
-  friend class RayTxDoneWork;
-  int numRayTxDoneSenders;
-  pthread_mutex_t rayTxDoneLock;
-  bool rayCommitReady;
-  pthread_mutex_t rayCommitReadyLock;
-  pthread_cond_t rayCommitReadyCond;
+  // Warning: delete these dynamicaly allocated pointers upon copying all rays
+  // TODO: minimize resizing
+  std::vector<RayTransferWork*> rayTransferBuffer;
+  pthread_mutex_t rayTransferBufferLock;
 
-  // ray commit done
-  friend class RayCommitDoneWork;
-  int numRayCommitDoneSenders;
-  int numRayQEmptyFlags;
-  bool allOtherProcessesDone;
-  pthread_mutex_t rayCommitDoneLock;
-  bool workRestartReady;
-  pthread_mutex_t workRestartReadyLock;
-  pthread_cond_t workRestartReadyCond;
+private:
+  void copyReceivedRays(std::map<int, gvt::render::actor::RayVector>* destinationRayQ);
+  // std::vector<int> perSenderReceivedRayCount;
 
+  pthread_mutex_t myTerminatedRayCountLock;
+ 
   friend class PixelGatherWork;
   friend class PixelWork;
+  friend class RequestWork;
+
   bool imageReady;
   pthread_mutex_t imageReadyLock;
   pthread_cond_t imageReadyCond;
@@ -265,6 +268,47 @@ private:
   pthread_mutex_t serverReadyLock;
   pthread_cond_t serverReadyCond;
 };
+
+class Voter {
+public:
+  Voter(int numRanks, int myRank, std::map<int, gvt::render::actor::RayVector> *rayQ);
+
+  bool updateState();
+  void addNumPendingRays(int n);
+  void subtractNumPendingRays(int n);
+
+  void applyVoteResult(int voteType, unsigned int timeStamp);
+  void bufferVoteWork(VoteWork* work);
+  void voteForResign(VoteWork* work);
+
+private:
+  enum State { WaitForNoWork, WaitForVotes, WaitForResign, Resigned };
+
+  void vote();
+  bool checkVotes();
+  void requestForVotes(int voteType, unsigned int timeStamp);
+
+  const int numRanks;
+  const int myRank;
+  const std::map<int, gvt::render::actor::RayVector> *rayQ;
+
+  int state;
+
+  pthread_mutex_t votingLock;
+  int numPendingRays;
+  unsigned int validTimeStamp;
+  bool votesAvailable;
+  bool resignGrant;
+
+  int numVotesReceived;
+  int commitCount;
+
+  int numPendingVotes;
+
+  std::vector<VoteWork*> voteWorkBuffer;
+  pthread_mutex_t voteWorkBufferLock;
+};
+
 }
 }
 }

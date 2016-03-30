@@ -40,6 +40,7 @@
 
 #include "gvt/render/unit/TileWork.h"
 #include <pthread.h>
+#include <algorithm>
 
 namespace gvt {
 namespace render {
@@ -58,15 +59,14 @@ protected:
   // virtual void filterRaysLocally(gvt::render::actor::RayVector &rays);
 
 private:
-  bool transferRays();
-  void sendRays();
-  void sendRayTxDone();
-  void commitRays();
-  void sendRayCommitDone();
-
+  // void transferRays();
+  // void sendRays();
+  // void sendRayTxDone();
+  // void commitRays();
+  // void sendRayCommitDone();
   int myRank;
   int numRanks;
-  std::map<int, gvt::render::actor::RayVector> *rayBuffer;
+  // std::map<int, gvt::render::actor::RayVector> *rayBuffer;
   // tbb::mutex *incomingRayQueueMutex;
   // pthread_mutex_t *doneTestLock;
   // pthread_cond_t *doneTestCondition;

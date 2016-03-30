@@ -85,6 +85,8 @@ public:
   virtual void Send(int destination);
   virtual void Broadcast(bool collective, bool block);
 
+  virtual bool deferDeletingThis() { return false; }
+
   int GetType() { return type; }
 
 protected:
