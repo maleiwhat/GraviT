@@ -232,7 +232,8 @@ public:
   bool transferRays();
   void bufferRayTransferWork(RayTransferWork* work);
   void bufferVoteWork(VoteWork* work);
-  void voteForResign(VoteWork* work);
+  void voteForResign(int senderRank, unsigned int timeStamp);
+  void voteForNoWork(int senderRank, unsigned int timeStamp);
   void applyRayTransferResult(int numRays);
   void applyVoteResult(int voteType, unsigned int timeStamp);
 
@@ -279,7 +280,8 @@ public:
 
   void applyVoteResult(int voteType, unsigned int timeStamp);
   void bufferVoteWork(VoteWork* work);
-  void voteForResign(VoteWork* work);
+  void voteForResign(int senderRank, unsigned int timeStamp);
+  void voteForNoWork(int senderRank, unsigned int timeStamp);
 
 private:
   enum State { WaitForNoWork, WaitForVotes, WaitForResign, Resigned };

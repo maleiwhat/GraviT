@@ -901,8 +901,12 @@ void MpiRenderer::bufferVoteWork(VoteWork* work) {
   voter->bufferVoteWork(work);
 }
 
-void MpiRenderer::voteForResign(VoteWork* work) {
-  voter->voteForResign(work);
+void MpiRenderer::voteForResign(int senderRank, unsigned int timeStamp) {
+  voter->voteForResign(senderRank, timeStamp);
+}
+
+void MpiRenderer::voteForNoWork(int senderRank, unsigned int timeStamp) {
+  voter->voteForNoWork(senderRank, timeStamp);
 }
 
 void MpiRenderer::applyRayTransferResult(int numRays) {
@@ -955,14 +959,19 @@ void Voter::bufferVoteWork(VoteWork* work) {
   pthread_mutex_unlock(&voteWorkBufferLock);
 }
 
-void Voter::voteForResign(VoteWork* work) {
+void Voter::voteForResign(int senderRank, unsigned int timeStamp) {
   int vote = (state == WaitForResign || state == Resigned) ?  VoteWork::Commit : VoteWork::Abort;
   VoteWork grant;
-  grant.setup(vote, myRank, work->getTimeStamp());
-  grant.Send(work->getSenderRank());
-  delete work;
+  grant.setup(vote, myRank, timeStamp);
+  grant.Send(senderRank);
 }
 
+void Voter::voteForNoWork(int senderRank, unsigned int timeStamp) {
+  int vote = (state != WaitForNoWork) ?  VoteWork::Commit : VoteWork::Abort;
+  VoteWork grant;
+  grant.setup(vote, myRank, timeStamp);
+  grant.Send(senderRank);
+}
 void Voter::applyVoteResult(int voteType, unsigned int timeStamp) {
   pthread_mutex_lock(&votingLock);
   --numPendingVotes;
@@ -1067,7 +1076,7 @@ bool Voter::updateState() {
     }
     break;
   }
-  vote();
+  // vote();
   pthread_mutex_unlock(&votingLock);
   return allDone;
 }
