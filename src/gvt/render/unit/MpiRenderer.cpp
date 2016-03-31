@@ -689,6 +689,7 @@ void MpiRenderer::setupRender() {
   } else if (schedType == scheduler::Domain) {
     initInstanceRankMap();
     pthread_mutex_init(&rayTransferBufferLock, NULL);
+    pthread_mutex_init(&rayTransferMutex, NULL);
     if (numRanks > 1) {
       voter = new Voter(numRanks, myRank, &rayQueue);
     }
@@ -917,6 +918,16 @@ void MpiRenderer::applyVoteResult(int voteType, unsigned int timeStamp) {
   voter->applyVoteResult(voteType, timeStamp);
 }
 
+void MpiRenderer::copyIncomingRays(int instanceId, const gvt::render::actor::RayVector *incomingRays) {
+  pthread_mutex_lock(&rayTransferMutex);
+  if (rayQueue.find(instanceId) != rayQueue.end()) {
+    rayQueue[instanceId].insert(rayQueue[instanceId].end(), incomingRays->begin(), incomingRays->end()); 
+  } else {
+    rayQueue[instanceId] = *incomingRays;
+  }
+  pthread_mutex_unlock(&rayTransferMutex);
+}
+
 Voter::Voter(int numRanks, int myRank, std::map<int, gvt::render::actor::RayVector> *rayQ)
   : numRanks(numRanks),
     myRank(myRank),
@@ -931,7 +942,7 @@ Voter::Voter(int numRanks, int myRank, std::map<int, gvt::render::actor::RayVect
     numPendingVotes(0) {
     
   pthread_mutex_init(&votingLock, NULL);
-  pthread_mutex_init(&voteWorkBufferLock, NULL);
+  // pthread_mutex_init(&voteWorkBufferLock, NULL);
 }
 
 void Voter::addNumPendingRays(int n) {

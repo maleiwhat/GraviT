@@ -56,20 +56,11 @@ public:
 protected:
   virtual void setupAction();
   virtual void traceRays(gvt::render::actor::RayVector &rays);
-  // virtual void filterRaysLocally(gvt::render::actor::RayVector &rays);
 
 private:
-  // void transferRays();
-  // void sendRays();
-  // void sendRayTxDone();
-  // void commitRays();
-  // void sendRayCommitDone();
   int myRank;
   int numRanks;
-  // std::map<int, gvt::render::actor::RayVector> *rayBuffer;
-  // tbb::mutex *incomingRayQueueMutex;
-  // pthread_mutex_t *doneTestLock;
-  // pthread_cond_t *doneTestCondition;
+  pthread_mutex_t *rayTransferMutex;
 };
 }
 }

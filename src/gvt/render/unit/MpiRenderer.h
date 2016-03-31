@@ -197,12 +197,14 @@ public:
   tbb::mutex *getIncomingRayQueueMutex() { return &incomingRayQueueMutex; }
   bool isRayQueueEmpty() const { return rayQueue.empty(); }
   bool isIncomingRayQueueEmpty() const { return incomingRayQueue.empty(); }
+  pthread_mutex_t *getRayTransferMutex() { return &rayTransferMutex; }
 
 private:
   std::map<int, gvt::render::actor::RayVector> rayQueue;
   std::map<int, gvt::render::actor::RayVector> incomingRayQueue;
   tbb::mutex *rayQueueMutex;
   tbb::mutex incomingRayQueueMutex;
+  pthread_mutex_t rayTransferMutex; // TODO: too coarse grained, use rayQueueMutex instead
 
 public:
   // image
@@ -226,7 +228,6 @@ private:
   int imageWidth;
   int imageHeight;
 
-
 // ray transfer
 public:
   bool transferRays();
@@ -236,6 +237,7 @@ public:
   void voteForNoWork(int senderRank, unsigned int timeStamp);
   void applyRayTransferResult(int numRays);
   void applyVoteResult(int voteType, unsigned int timeStamp);
+  void copyIncomingRays(int instanceId, const gvt::render::actor::RayVector *incomingRays);
 
 private:
   int myRank;
@@ -252,11 +254,6 @@ private:
   pthread_mutex_t rayTransferBufferLock;
 
 private:
-  void copyReceivedRays(std::map<int, gvt::render::actor::RayVector>* destinationRayQ);
-  // std::vector<int> perSenderReceivedRayCount;
-
-  pthread_mutex_t myTerminatedRayCountLock;
- 
   friend class PixelGatherWork;
   friend class PixelWork;
   friend class RequestWork;

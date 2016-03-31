@@ -102,11 +102,7 @@ void DomainTileWork::setupAction() {
   TileWork::setupAction();
   myRank = Application::GetApplication()->GetRank();
   numRanks = Application::GetApplication()->GetSize();
-  // rayBuffer = &renderer->rayBuffer;
-  // incomingRayQueueMutex = renderer->getIncomingRayQueueMutex();
-  // doneTestLock = renderer->getDoneTestLock();
-  // doneTestCondition = renderer->getDoneTestCondition();
-  // numRaysSent.resize(numRanks, 0);
+  // rayTransferMutex = renderer->getRayTransferMutex();
 }
 
 bool DomainTileWork::Action() {
@@ -175,7 +171,7 @@ void DomainTileWork::traceRays(RayVector &rays) {
 #endif
 
   while (!all_done) {
-
+    // pthread_mutex_lock(rayTransferMutex);
     if (!queue.empty()) {
       // process domain assigned to this proc with most rays queued
       // if there are queues for instances that are not assigned
@@ -315,6 +311,7 @@ void DomainTileWork::traceRays(RayVector &rays) {
       all_done = renderer->transferRays();
       t_raytx.stop();
     }
+    // pthread_mutex_unlock(rayTransferMutex);
 
 #ifdef DEBUG_DUMP_QSTATE
     if (myRank == 0) {
