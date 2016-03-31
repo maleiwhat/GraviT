@@ -297,7 +297,7 @@ public:
 #ifdef GVT_RENDER_ADAPTER_EMBREE
             case gvt::render::adapter::Embree:
               adapter = new gvt::render::adapter::embree::data::EmbreeMeshAdapter(meshRef, instM, instMinv, instMinvN,
-                                                                                  lights, instances);
+                                                                                  lights, instances,acc.nodes.size() == 1);
               break;
 #endif
 #ifdef GVT_RENDER_ADAPTER_MANTA

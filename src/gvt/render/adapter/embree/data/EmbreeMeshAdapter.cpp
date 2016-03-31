@@ -624,7 +624,7 @@ struct embreeParallelTrace {
               }
             } else {
               valid[pi] = 0;
-              if (!(*adapter).unique || ((*adapter).unique && r.type == gvt::render::actor::Ray::SHADOW))
+              if (!(*adapter).unique || r.type == gvt::render::actor::Ray::SHADOW)
                 localDispatch.push_back(r);
               // ray is valid, but did not hit anything, so add to dispatch
               // queue and disable it
