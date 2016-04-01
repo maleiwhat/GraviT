@@ -182,6 +182,10 @@ void gvtCameraBase::setJitterWindowSize(int windowSize) { jitterWindowSize = win
 
 // gvt::render::actor::RayVector gvtCameraBase::AllocateCameraRays() {
 void gvtCameraBase::AllocateCameraRays() {
+#ifdef __USE_TAU
+TAU_PROFILE("gvtCameraBase::AllocateCameraRays()","",TAU_DEFAULT);
+#endif
+
 #ifdef GVT_USE_DEBUG
   boost::timer::auto_cpu_timer t("gvtCameraBase::AllocateCameraRays: time: %w\n");
 #endif
