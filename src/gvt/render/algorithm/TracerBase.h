@@ -63,6 +63,10 @@
 #include <tbb/partitioner.h>
 #include <tbb/tick_count.h>
 
+#ifdef __USE_TAU
+#include <TAU.h>
+#endif
+
 namespace gvt {
 namespace render {
 namespace algorithm {
@@ -120,6 +124,9 @@ public:
 
   AbstractTrace(gvt::render::actor::RayVector &rays, gvt::render::data::scene::Image &image)
       : rays(rays), image(image) {
+#ifdef __USE_TAU
+TAU_PROFILE("src/gvt/render/algorithm/TracerBase.h:AbstractTrace ","",TAU_DEFAULT);
+#endif
     GVT_DEBUG(DBG_ALWAYS, "initializing abstract trace: num rays: " << rays.size());
     colorBuf = new glm::vec3[width * height];
 
