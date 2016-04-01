@@ -24,6 +24,10 @@
 #include "gvt/core/CoreContext.h"
 #include "gvt/core/Debug.h"
 
+#ifdef __USE_TAU
+#include <TAU.h>
+#endif
+
 using namespace gvt::core;
 
 CoreContext *CoreContext::__singleton = nullptr;
@@ -38,6 +42,10 @@ CoreContext::CoreContext() {
 CoreContext::~CoreContext() { delete __database; }
 
 CoreContext *CoreContext::instance() {
+#ifdef __USE_TAU
+TAU_PROFILE ("CoreContext *CoreContext::instance()","",TAU_DEFAULT);
+#endif
+
   if (__singleton == nullptr) {
     __singleton = new CoreContext();
   }
@@ -64,6 +72,9 @@ DBNodeH CoreContext::createNodeFromType(String type, Uuid parent) { return creat
 DBNodeH CoreContext::createNodeFromType(String type) { return createNodeFromType(type, type); }
 
 DBNodeH CoreContext::createNodeFromType(String type, String name, Uuid parent) {
+#ifdef __USE_TAU
+TAU_PROFILE ("DBNodeH CoreContext::createNodeFromType(String type, String name, Uuid parent)","",TAU_DEFAULT);
+#endif
   DBNodeH n = createNode(type, name, parent);
 
   // TODO - make these for GraviT

@@ -30,6 +30,10 @@
 #include "gvt/core/Types.h"
 #include <gvt/core/Database.h>
 
+#ifdef __USE_TAU
+#include <TAU.h>
+#endif
+
 #ifndef MAX
 #define MAX(a, b) ((a > b) ? (a) : (b))
 #endif
@@ -60,6 +64,9 @@ public:
 
   /// return a handle to the root of the object-store hierarchy
   DBNodeH getRootNode() {
+#ifdef __USE_TAU
+TAU_PROFILE("DBNodeH getRootNode()","",TAU_DEFAULT);
+#endif
     GVT_ASSERT(__database != nullptr, "The context seems to be uninitialized.");
     return __rootNode;
   }

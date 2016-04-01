@@ -71,6 +71,11 @@
 
 #include "ParseCommandLine.h"
 
+#ifdef __USE_TAU
+#include <TAU.h>
+#endif 
+
+
 using namespace std;
 using namespace gvt::render;
 
@@ -110,6 +115,9 @@ static Vertex **vlist;
 static Face **flist;
 
 int main(int argc, char **argv) {
+#ifdef __USE_TAU
+TAU_PROFILE("main","",TAU_DEFAULT);
+#endif 
 
   ParseCommandLine cmd("gvtPly");
 
@@ -163,6 +171,10 @@ int main(int argc, char **argv) {
   gvt::core::DBNodeH instNodes = cntxt->createNodeFromType("Instances", "Instances", root.UUID());
 
   // Enzo isosurface...
+#ifdef __USE_TAU
+ {
+ TAU_PROFILE("Enzo isosurface setup","",TAU_DEFAULT);
+#endif 
   for (k = 0; k < 8; k++) {
     sprintf(txt, "%d", k);
     filename = "block";
@@ -253,22 +265,47 @@ int main(int argc, char **argv) {
     instnode["bbox"] = (unsigned long long)ibox;
     instnode["centroid"] = ibox->centroid();
   }
+#ifdef __USE_TAU
+ }
+#endif
 
+#ifdef __USE_TAU
+{
+TAU_PROFILE("add lights to database","",TAU_DEFAULT);
+#endif
   // add lights, camera, and film to the database
   gvt::core::DBNodeH lightNodes = cntxt->createNodeFromType("Lights", "Lights", root.UUID());
   gvt::core::DBNodeH lightNode = cntxt->createNodeFromType("PointLight", "conelight", lightNodes.UUID());
   lightNode["position"] = glm::vec3(512.0, 512.0, 2048.0);
   lightNode["color"] = glm::vec3(100.0, 100.0, 500.0);
+#ifdef __USE_TAU
+}
+#endif
+
   // camera
   gvt::core::DBNodeH camNode = cntxt->createNodeFromType("Camera", "conecam", root.UUID());
+#ifdef __USE_TAU
+{
+TAU_PROFILE("add camera to database","",TAU_DEFAULT);
+#endif
   camNode["eyePoint"] = glm::vec3(512.0, 512.0, 4096.0);
   camNode["focus"] = glm::vec3(512.0, 512.0, 0.0);
   camNode["upVector"] = glm::vec3(0.0, 1.0, 0.0);
   camNode["fov"] = (float)(25.0 * M_PI / 180.0);
+#ifdef __USE_TAU
+}
+#endif
   // film
   gvt::core::DBNodeH filmNode = cntxt->createNodeFromType("Film", "conefilm", root.UUID());
+#ifdef __USE_TAU
+{
+TAU_PROFILE("add film to database","",TAU_DEFAULT);
+#endif
   filmNode["width"] = 1900;
   filmNode["height"] = 1080;
+#ifdef __USE_TAU
+}
+#endif
 
   if (cmd.isSet("eye")) {
     std::vector<float> eye = cmd.getValue<float>("eye");

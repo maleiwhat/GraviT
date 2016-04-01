@@ -25,6 +25,10 @@
 
 #include "gvt/core/Debug.h"
 
+#ifdef __USE_TAU
+#include <TAU.h>
+#endif
+
 using gvt::core::DBNodeH;
 using gvt::core::String;
 using gvt::core::Uuid;
