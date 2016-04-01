@@ -32,6 +32,10 @@
 #include <tbb/partitioner.h>
 #include <thread>
 
+#ifdef __USE_TAU
+#include <TAU.h>
+#endif
+
 using namespace gvt::render::data::scene;
 using namespace gvt::render::actor;
 
@@ -196,6 +200,10 @@ gvtPerspectiveCamera::gvtPerspectiveCamera(const gvtPerspectiveCamera &cam) : gv
 gvtPerspectiveCamera::~gvtPerspectiveCamera() {}
 // gvt::render::actor::RayVector gvtPerspectiveCamera::generateRays() {
 void gvtPerspectiveCamera::generateRays() {
+#ifdef __USE_TAU
+TAU_PROFILE("gvtPerspectiveCamera::generateRays()","",TAU_DEFAULT);
+#endif
+
 #ifdef GVT_USE_DEBUG
   boost::timer::auto_cpu_timer t("gvtPerspectiveCamera::generateRays: time: %w\n");
 #endif
