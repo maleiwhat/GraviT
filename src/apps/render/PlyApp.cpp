@@ -345,7 +345,7 @@ TAU_PROFILE("main","",TAU_DEFAULT);
   int schedType = root["Schedule"]["type"].value().toInteger();
   switch (schedType) {
   case gvt::render::scheduler::Image: {
-#ifdef USE_TAU
+#ifdef __USE_TAU
 TAU_PROFILE("case gvt::render::scheduler::Image","",TAU_DEFAULT);
 #endif
     std::cout << "starting image scheduler" << std::endl;
@@ -359,7 +359,7 @@ TAU_PROFILE("case gvt::render::scheduler::Image","",TAU_DEFAULT);
     break;
   }
   case gvt::render::scheduler::Domain: {
-#ifdef USE_TAU
+#ifdef __USE_TAU
 TAU_PROFILE("gvt::render::scheduler::Domain:","",TAU_DEFAULT);
 #endif
     std::cout << "starting domain scheduler" << std::endl;
