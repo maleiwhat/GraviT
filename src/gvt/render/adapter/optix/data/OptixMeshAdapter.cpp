@@ -565,9 +565,7 @@ OptixMeshAdapter::OptixMeshAdapter(std::map<int, gvt::render::data::primitives::
 					sizeof(gvt::render::data::cuda_primitives::Matrix3f)
 							* instMinvN.size()));
 
-
 	std::set<gvt::render::data::primitives::Mesh *> _mesh;
-	std::map<gvt::render::data::primitives::Mesh *, ::optix::prime::Model> mesh2model;
 	std::map<gvt::render::data::primitives::Mesh *,
 			gvt::render::data::cuda_primitives::Mesh > mesh2cudaMesh;
 
@@ -818,15 +816,15 @@ struct OptixParallelTrace {
 	void traceRays(
 			gvt::render::data::cuda_primitives::CudaGvtContext& cudaGvtCtx) {
 
-		gpuErrchk(
-				cudaMemsetAsync(cudaGvtCtx.traceRays, 0,
-						sizeof(gvt::render::data::cuda_primitives::OptixRay)
-								* cudaGvtCtx.rayCount, cudaGvtCtx.stream));
-
-		gpuErrchk(
-				cudaMemsetAsync(cudaGvtCtx.traceHits, 0,
-						sizeof(gvt::render::data::cuda_primitives::OptixHit)
-								* cudaGvtCtx.rayCount, cudaGvtCtx.stream));
+//		gpuErrchk(
+//				cudaMemsetAsync(cudaGvtCtx.traceRays, 0,
+//						sizeof(gvt::render::data::cuda_primitives::OptixRay)
+//								* cudaGvtCtx.rayCount, cudaGvtCtx.stream));
+//
+//		gpuErrchk(
+//				cudaMemsetAsync(cudaGvtCtx.traceHits, 0,
+//						sizeof(gvt::render::data::cuda_primitives::OptixHit)
+//								* cudaGvtCtx.rayCount, cudaGvtCtx.stream));
 
 		cudaPrepOptixRays(cudaGvtCtx.traceRays, cudaGvtCtx.valid,
 				cudaGvtCtx.rayCount, cudaGvtCtx.rays, &cudaGvtCtx, false,

@@ -156,6 +156,8 @@ protected:
   gvt::render::data::cuda_primitives::Ray* disp_Buff[2];
   gvt::render::data::cuda_primitives::Ray* cudaRaysBuff[2];
 
+  std::map<gvt::render::data::primitives::Mesh *, ::optix::prime::Model> mesh2model;
+
 
 
 };
