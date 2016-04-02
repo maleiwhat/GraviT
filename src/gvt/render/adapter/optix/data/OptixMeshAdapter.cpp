@@ -966,7 +966,7 @@ void OptixMeshAdapter::trace(gvt::render::actor::RayVector &rayList,
 	gpuErrchk(cudaDeviceSynchronize());
 
 	tbb::task_group _tasks;
-	bool parallel = false;
+	bool parallel = true;
 
 	_tasks.run(
 			[&]() {
