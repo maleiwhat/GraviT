@@ -240,6 +240,9 @@ TAU_PROFILE("gvtPerspectiveCamera::generateRays()","",TAU_DEFAULT);
 
   const size_t chunksize = (buffer_width * buffer_height) / (std::thread::hardware_concurrency() * 4);
   static tbb::simple_partitioner ap;
+#ifdef __USE_TAU
+  TAU_START("tbb loop in gvtPerspectiveCamera::generateRays");
+#endif
   tbb::parallel_for(
       tbb::blocked_range<size_t>(0, buffer_width * buffer_height, chunksize),
       [&](tbb::blocked_range<size_t> &chunk) {
@@ -275,5 +278,8 @@ TAU_PROFILE("gvtPerspectiveCamera::generateRays()","",TAU_DEFAULT);
         }
       },
       ap);
+#ifdef __USE_TAU
+  TAU_STOP("tbb loop in gvtPerspectiveCamera::generateRays");
+#endif
 }
 void gvtPerspectiveCamera::setFOV(const float fov) { field_of_view = fov; }
