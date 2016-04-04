@@ -35,6 +35,10 @@
 #include <glm/gtc/vec1.hpp>
 #include <limits>
 
+#ifdef __USE_TAU
+#include <TAU.h>
+#endif 
+
 namespace length
 {
 	int test()
@@ -113,6 +117,9 @@ namespace cross
 
 namespace normalize
 {
+#ifdef __USE_TAU
+  TAU_PROFILE("core_func_geometric.cpp::normalize","",TAU_DEFAULT);
+#endif
 	int test()
 	{
 		glm::vec3 Normalize1 = glm::normalize(glm::vec3(1, 0, 0));
