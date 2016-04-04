@@ -50,7 +50,7 @@ using namespace render;
 using namespace data;
 using namespace cuda_primitives;
 
-__device__ int getGlobalIdx_2D_2D() {
+__device__ __inline__ int getGlobalIdx_2D_2D() {
   int blockId = blockIdx.x + blockIdx.y * gridDim.x;
   int threadId = blockId * (blockDim.x * blockDim.y) +
                  (threadIdx.y * blockDim.x) + threadIdx.x;
@@ -106,9 +106,9 @@ __global__ void cudaKernelPrepOptixRays(OptixRay* optixrays, bool* valid,
     if (ignoreValid || valid[i]) {
        Ray &r = rays[ i];
 
-      r.origin.w=1;
-      float4 origin = r.origin;
-      float4 direction = r.direction;
+      //r.origin.w=1;
+      cuda_vec origin = r.origin;
+      cuda_vec direction = r.direction;
 
       OptixRay optix_ray;
       optix_ray.origin[0] = origin.x;
@@ -167,7 +167,7 @@ void cudaProcessShadows(CudaGvtContext* cudaGvtCtx) {
 
 
 
-__device__ void generateShadowRays(const Ray &r, const float4 &normal,
+__device__ void generateShadowRays(const Ray &r, const cuda_vec &normal,
                                    int primID,int instID, CudaGvtContext* cudaGvtCtx) {
 
   for (int l = 0; l < cudaGvtCtx->nLights; l++) {
@@ -187,9 +187,9 @@ __device__ void generateShadowRays(const Ray &r, const float4 &normal,
     const float multiplier = 1.0f - 16.0f * FLT_EPSILON;
     const float t_shadow = multiplier * r.t;
 
-    float4 origin = r.origin + r.direction * t_shadow;
-    origin.w=1.0f;
-    const float4 dir = light->light.position - origin;
+    cuda_vec origin = r.origin + r.direction * t_shadow;
+    //origin.w=1.0f;
+    const cuda_vec dir = light->light.position - origin;
     const float t_max = length(dir);
 
     Ray shadow_ray;
@@ -208,7 +208,7 @@ __device__ void generateShadowRays(const Ray &r, const float4 &normal,
     shadow_ray.color.x = c.x;
     shadow_ray.color.y = c.y;
     shadow_ray.color.z = c.z;
-    shadow_ray.color.w = 1.0f;
+    //shadow_ray.color.w = 1.0f;
 
     int a = atomicAdd((int *)&(cudaGvtCtx->shadowRayCount), 1);
     cudaGvtCtx->shadowRays[a] = shadow_ray;
@@ -227,9 +227,10 @@ __global__ void kernel(gvt::render::data::cuda_primitives::CudaGvtContext* cudaG
 
     if (cudaGvtCtx->valid[tID]) {
       Ray &r = cudaGvtCtx->rays[tID];
-      if (cudaGvtCtx->traceHits[tID].triangle_id >= 0) {
+      const OptixHit hit = cudaGvtCtx->traceHits[tID];
+      if (hit.triangle_id >= 0) {
 
-    	  int instID = cudaGvtCtx->traceHits[tID].instId;
+    	 const int instID = hit.instId;
 
         // ray has hit something
         // shadow ray hit something, so it should be dropped
@@ -237,27 +238,27 @@ __global__ void kernel(gvt::render::data::cuda_primitives::CudaGvtContext* cudaG
         	return;
         }
 
-        float t = cudaGvtCtx->traceHits[tID].t;
+        float t = hit.t;
         r.t = t;
 
-        float4 manualNormal;
+        cuda_vec manualNormal;
         {
-          const int triangle_id = cudaGvtCtx->traceHits[tID].triangle_id;
+          const int triangle_id = hit.triangle_id;
 #ifndef FLAT_SHADING
-          const float u = cudaGvtCtx->traceHits[tID].u;
-          const float v = cudaGvtCtx->traceHits[tID].v;
+          const float u = hit.u;
+          const float v = hit.v;
           const int3 &normals =
         		  cudaGvtCtx->mesh[instID].faces_to_normals[triangle_id]; // FIXME: need to
                                                    // figure out
                                                    // to store
           // `faces_to_normals`
           // list
-          const float4 &a =   cudaGvtCtx->mesh[instID].normals[normals.x];
-          const float4 &b =   cudaGvtCtx->mesh[instID].normals[normals.y];
-          const float4 &c =   cudaGvtCtx->mesh[instID].normals[normals.z];
+          const cuda_vec &a =   cudaGvtCtx->mesh[instID].normals[normals.x];
+          const cuda_vec &b =   cudaGvtCtx->mesh[instID].normals[normals.y];
+          const cuda_vec &c =   cudaGvtCtx->mesh[instID].normals[normals.z];
           manualNormal = a * u + b * v + c * (1.0f - u - v);
 
-          manualNormal =make_float4(
+          manualNormal =make_cuda_vec(
               cudaGvtCtx->normi[instID] * make_float3(manualNormal.x,
             		  manualNormal.y,manualNormal.z));
 
@@ -281,7 +282,7 @@ __global__ void kernel(gvt::render::data::cuda_primitives::CudaGvtContext* cudaG
           manualNormal = normal.normalize();
 #endif
         }
-        const float4 &normal = manualNormal;
+        const cuda_vec &normal = manualNormal;
 
 
         // reduce contribution of the color that the shadow rays get
@@ -290,8 +291,7 @@ __global__ void kernel(gvt::render::data::cuda_primitives::CudaGvtContext* cudaG
           r.w = r.w * t;
         }
 
-       generateShadowRays(r, normal, cudaGvtCtx->
-        		traceHits[tID].triangle_id, instID, cudaGvtCtx);
+       generateShadowRays(r, normal, hit.triangle_id, instID, cudaGvtCtx);
 
         int ndepth = r.depth - 1;
         float p = 1.f - cudaRand();
@@ -305,9 +305,9 @@ __global__ void kernel(gvt::render::data::cuda_primitives::CudaGvtContext* cudaG
 
           const float t_secondary = multiplier * r.t;
           r.origin = r.origin + r.direction * t_secondary;
-          r.origin.w=1.0f;
+          //r.origin.w=1.0f;
 
-         float4 dir = normalize(cudaGvtCtx->mesh[instID].mat->material.
+         cuda_vec dir = normalize(cudaGvtCtx->mesh[instID].mat->material.
                   		  CosWeightedRandomHemisphereDirection2(normal));
 
           r.setDirection(dir);

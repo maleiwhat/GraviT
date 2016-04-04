@@ -34,24 +34,24 @@
 using namespace gvt::render::data::cuda_primitives;
 
 
-//BaseLight::BaseLight(const float4 position) : position(position) {}
+//BaseLight::BaseLight(const cuda_vec position) : position(position) {}
 
 //BaseLight::~BaseLight() {}
 
-__device__ float4 BaseLight::contribution(const float4 &hit) const { return make_float4(0.f); }
+__device__ cuda_vec BaseLight::contribution(const cuda_vec &hit) const { return make_cuda_vec(0.f); }
 
-//PointLight::PointLight(const float4 position, const float4 color) : BaseLight(position), color(color) {}
+//PointLight::PointLight(const cuda_vec position, const cuda_vec color) : BaseLight(position), color(color) {}
 
 //PointLight::~PointLight() {}
 
-__device__ float4 PointLight::contribution(const float4 &hit) const {
-  float distance = 1.f / length(((float4)position -hit));
+__device__ cuda_vec PointLight::contribution(const cuda_vec &hit) const {
+  float distance = 1.f / length(((cuda_vec)position -hit));
   distance = (distance > 1.f) ? 1.f : distance;
   return color * (distance);
 }
 
-//AmbientLight::AmbientLight(const float4 color) : BaseLight(), color(color) {}
+//AmbientLight::AmbientLight(const cuda_vec color) : BaseLight(), color(color) {}
 
 //AmbientLight::~AmbientLight() {}
 
-__device__ float4 AmbientLight::contribution(const float4 &hit) const { return color; }
+__device__ cuda_vec AmbientLight::contribution(const cuda_vec &hit) const { return color; }

@@ -69,45 +69,48 @@
 #include <float.h>
 
 
-__inline__ void cudaRayToGvtRay(
-		const gvt::render::data::cuda_primitives::Ray& cudaRay,
-		gvt::render::actor::Ray& gvtRay) {
-
-	memcpy(&(gvtRay.origin[0]), &(cudaRay.origin.x), sizeof(glm::vec3));
-	memcpy(&(gvtRay.direction[0]), &(cudaRay.direction.x), sizeof(glm::vec3));
-//	memcpy(&(gvtRay.inverseDirection[0]), &(cudaRay.inverseDirection.x),
-//			sizeof(float) * 4);
-	memcpy(glm::value_ptr(gvtRay.color), &(cudaRay.color.x),
-			sizeof(glm::vec3));
-	gvtRay.id = cudaRay.id;
-	gvtRay.depth = cudaRay.depth;
-	gvtRay.w = cudaRay.w;
-	gvtRay.t = cudaRay.t;
-	gvtRay.t_min = cudaRay.t_min;
-	gvtRay.t_max = cudaRay.t_max;
-	gvtRay.type = cudaRay.type;
-
-}
-
-__inline__ void gvtRayToCudaRay(const gvt::render::actor::Ray& gvtRay,
-		gvt::render::data::cuda_primitives::Ray& cudaRay) {
-
-	memcpy(&(cudaRay.origin.x), &(gvtRay.origin[0]), sizeof(glm::vec3));
-	cudaRay.origin.w=1.0f;
-	memcpy(&(cudaRay.direction.x), &(gvtRay.direction[0]),sizeof(glm::vec3));
-//	memcpy(&(cudaRay.inverseDirection.x), &(gvtRay.inverseDirection[0]),
-//			sizeof(float) * 4);
-	memcpy(&(cudaRay.color.x), glm::value_ptr(gvtRay.color),
-			sizeof(float4));
-	cudaRay.id = gvtRay.id;
-	cudaRay.depth = gvtRay.depth;
-	cudaRay.w = gvtRay.w;
-	cudaRay.t = gvtRay.t;
-	cudaRay.t_min = gvtRay.t_min;
-	cudaRay.t_max = gvtRay.t_max;
-	cudaRay.type = gvtRay.type;
-
-}
+//__inline__ void cudaRayToGvtRay(
+//		const gvt::render::data::cuda_primitives::Ray& cudaRay,
+//		gvt::render::actor::Ray& gvtRay) {
+//
+//	memcpy(&(gvtRay.origin[0]), &(cudaRay.origin.x), sizeof(glm::vec3));
+//	memcpy(&(gvtRay.direction[0]), &(cudaRay.direction.x), sizeof(glm::vec3));
+////	memcpy(&(gvtRay.inverseDirection[0]), &(cudaRay.inverseDirection.x),
+////			sizeof(float) * 4);
+//	memcpy(glm::value_ptr(gvtRay.color), &(cudaRay.color.x),
+//			sizeof(glm::vec3));
+//	gvtRay.id = cudaRay.id;
+//	gvtRay.depth = cudaRay.depth;
+//	gvtRay.w = cudaRay.w;
+//	gvtRay.t = cudaRay.t;
+//	gvtRay.t_min = cudaRay.t_min;
+//	gvtRay.t_max = cudaRay.t_max;
+//	gvtRay.type = cudaRay.type;
+//
+//}
+//
+//__inline__ void gvtRayToCudaRay(const gvt::render::actor::Ray& gvtRay,
+//		gvt::render::data::cuda_primitives::Ray& cudaRay) {
+//
+////	memcpy(&(cudaRay.origin.x), &(gvtRay.origin[0]), sizeof(glm::vec3));
+////	//cudaRay.origin.w=1.0f;
+////	memcpy(&(cudaRay.direction.x), &(gvtRay.direction[0]),sizeof(glm::vec3));
+//////	memcpy(&(cudaRay.inverseDirection.x), &(gvtRay.inverseDirection[0]),
+//////			sizeof(float) * 4);
+////	memcpy(&(cudaRay.color.x), glm::value_ptr(gvtRay.color),
+////			sizeof(cuda_vec));
+////	cudaRay.id = gvtRay.id;
+////	cudaRay.depth = gvtRay.depth;
+////	cudaRay.w = gvtRay.w;
+////	cudaRay.t = gvtRay.t;
+////	cudaRay.t_min = gvtRay.t_min;
+////	cudaRay.t_max = gvtRay.t_max;
+////	cudaRay.type = gvtRay.type;
+//
+//
+////	memcpy(&cudaRay, gvtRay.data, 64);
+//
+//}
 
 int3*
 cudaCreateFacesToNormals(
@@ -138,26 +141,26 @@ cudaCreateFacesToNormals(
 
 }
 
-float4*
+cuda_vec*
 cudaCreateNormals(std::vector<glm::vec3>& gvt_normals) {
 
-	float4* normalsBuff;
+	cuda_vec* normalsBuff;
 
 	gpuErrchk(
 			cudaMalloc((void ** ) &normalsBuff,
-					sizeof(float4) * gvt_normals.size()));
+					sizeof(cuda_vec) * gvt_normals.size()));
 
-	std::vector<float4> normals;
+	std::vector<cuda_vec> normals;
 	for (int i = 0; i < gvt_normals.size(); i++) {
 
-		float4 v = make_float4(gvt_normals[i].x, gvt_normals[i].y,
-				gvt_normals[i].z, 0.f);
+		cuda_vec v = make_cuda_vec(gvt_normals[i].x, gvt_normals[i].y,
+				gvt_normals[i].z);
 		normals.push_back(v);
 	}
 
 	gpuErrchk(
 			cudaMemcpy(normalsBuff, &normals[0],
-					sizeof(float4) * gvt_normals.size(),
+					sizeof(cuda_vec) * gvt_normals.size(),
 					cudaMemcpyHostToDevice));
 
 	return normalsBuff;
@@ -214,8 +217,8 @@ cudaCreateMaterial(gvt::render::data::primitives::Material *gvtMat) {
 
 		gvtMat->pack(buff);
 
-		cudaMat.phong.kd = *(float4 *) buff;
-		cudaMat.phong.ks = *(float4 *) (buff + 16);
+		cudaMat.phong.kd = *(cuda_vec *) buff;
+		cudaMat.phong.ks = *(cuda_vec *) (buff + 16);
 		cudaMat.phong.alpha = *(float *) (buff + 32);
 
 		delete[] buff;
@@ -229,8 +232,8 @@ cudaCreateMaterial(gvt::render::data::primitives::Material *gvtMat) {
 
 		gvtMat->pack(buff);
 
-		cudaMat.blinn.kd = *(float4 *) buff;
-		cudaMat.blinn.ks = *(float4 *) (buff + 16);
+		cudaMat.blinn.kd = *(cuda_vec *) buff;
+		cudaMat.blinn.ks = *(cuda_vec *) (buff + 16);
 		cudaMat.blinn.alpha = *(float *) (buff + 32);
 
 		delete[] buff;
@@ -255,22 +258,24 @@ void cudaSetRays(gvt::render::actor::RayVector::iterator gvtRayVector,
 		cudaStream_t& stream,
 		gvt::render::data::cuda_primitives::Ray* cudaRays) {
 
-	const int offset_rays =
-			localRayCount > std::thread::hardware_concurrency() ?
-					localRayCount / std::thread::hardware_concurrency() : 100;
+//	const int offset_rays =
+//			localRayCount > std::thread::hardware_concurrency() ?
+//					localRayCount / std::thread::hardware_concurrency() : 100;
 
 
-	static tbb::auto_partitioner ap;
-	tbb::parallel_for(tbb::blocked_range<int>(0, localRayCount, 128),
-			[&](tbb::blocked_range<int> chunk) {
-				for (int jj = chunk.begin(); jj < chunk.end(); jj++) {
-						gvtRayToCudaRay(gvtRayVector[jj], cudaRays[jj]);
+//	static tbb::auto_partitioner ap;
+//	tbb::parallel_for(tbb::blocked_range<int>(0, localRayCount, 128),
+//			[&](tbb::blocked_range<int> chunk) {
+//				for (int jj = chunk.begin(); jj < chunk.end(); jj++) {
+//						gvtRayToCudaRay(gvtRayVector[jj], cudaRays[jj]);
+//
+//				}}, ap);
 
-				}}, ap);
-
+	//Copying to pinned
+	memcpy(cudaRays, &gvtRayVector[0], sizeof(gvt::render::data::cuda_primitives::Ray)*localRayCount);
 
 	gpuErrchk(
-			cudaMemcpyAsync(cudaRays_devPtr, &cudaRays[0],
+			cudaMemcpyAsync(cudaRays_devPtr, cudaRays,
 					sizeof(gvt::render::data::cuda_primitives::Ray)
 							* localRayCount, cudaMemcpyHostToDevice, stream));
 
@@ -285,30 +290,33 @@ void cudaGetRays(size_t& localDispatchSize,
 
 
 	gpuErrchk(
-			cudaMemcpyAsync(&disp_tmp[0], cudaGvtCtx.dispatch,
+			cudaMemcpyAsync(disp_tmp, cudaGvtCtx.dispatch,
 					sizeof(gvt::render::data::cuda_primitives::Ray)
 							* cudaGvtCtx.dispatchCount, cudaMemcpyDeviceToHost,
 					cudaGvtCtx.stream));
 
 	gpuErrchk(cudaStreamSynchronize(cudaGvtCtx.stream));
 
+	memcpy(&localDispatch[localDispatchSize],disp_tmp,sizeof(gvt::render::data::cuda_primitives::Ray)
+			* cudaGvtCtx.dispatchCount);
 
-	static tbb::auto_partitioner ap;
-	tbb::parallel_for(tbb::blocked_range<int>(0, cudaGvtCtx.dispatchCount, 128),
-			[&](tbb::blocked_range<int> chunk) {
-				for (int jj = chunk.begin(); jj < chunk.end(); jj++) {
-					if (jj < cudaGvtCtx.dispatchCount) {
-						gvt::render::actor::Ray& gvtRay =
-						localDispatch[localDispatchSize + jj];
-						const gvt::render::data::cuda_primitives::Ray& cudaRay =
-						disp_tmp[jj];
 
-						cudaRayToGvtRay(cudaRay, gvtRay);
-
-						//gvtRay.setDirection(gvtRay.direction);
-					}
-				}
-			}, ap);
+//	static tbb::auto_partitioner ap;
+//	tbb::parallel_for(tbb::blocked_range<int>(0, cudaGvtCtx.dispatchCount, 128),
+//			[&](tbb::blocked_range<int> chunk) {
+//				for (int jj = chunk.begin(); jj < chunk.end(); jj++) {
+//					if (jj < cudaGvtCtx.dispatchCount) {
+//						gvt::render::actor::Ray& gvtRay =
+//						localDispatch[localDispatchSize + jj];
+//						const gvt::render::data::cuda_primitives::Ray& cudaRay =
+//						disp_tmp[jj];
+//
+//						cudaRayToGvtRay(cudaRay, gvtRay);
+//
+//						//gvtRay.setDirection(gvtRay.direction);
+//					}
+//				}
+//			}, ap);
 
 
 	localDispatchSize += cudaGvtCtx.dispatchCount;
@@ -333,9 +341,9 @@ void cudaGetLights(std::vector<gvt::render::data::scene::Light *> gvtLights,
 					dynamic_cast<gvt::render::data::scene::AmbientLight *>(gvtLights[i]);
 
 			memcpy(&(cudaLights[i].ambient.position.x), &(l->position.x),
-					sizeof(float4));
+					sizeof(cuda_vec));
 			memcpy(&(cudaLights[i].ambient.color.x), &(l->color.x),
-					sizeof(float4));
+					sizeof(cuda_vec));
 
 			cudaLights[i].type =
 					gvt::render::data::cuda_primitives::LIGH_TYPE::AMBIENT;
@@ -347,9 +355,9 @@ void cudaGetLights(std::vector<gvt::render::data::scene::Light *> gvtLights,
 					dynamic_cast<gvt::render::data::scene::PointLight *>(gvtLights[i]);
 
 			memcpy(&(cudaLights[i].point.position.x), &(l->position.x),
-					sizeof(float4));
+					sizeof(cuda_vec));
 			memcpy(&(cudaLights[i].point.color.x), &(l->color.x),
-					sizeof(float4));
+					sizeof(cuda_vec));
 
 			cudaLights[i].type =
 					gvt::render::data::cuda_primitives::LIGH_TYPE::POINT;
@@ -486,6 +494,8 @@ void gvt::render::data::cuda_primitives::CudaGvtContext::initCudaBuffers(
 	//normi = normiBuff;
 	//minv = minvBuff;
 
+	dirty = true;
+
 }
 
 // TODO: add logic for other packet sizes
@@ -532,7 +542,7 @@ OptixMeshAdapter::OptixMeshAdapter(std::map<int, gvt::render::data::primitives::
 //				activeDevices.push_back(i);
 			// Oversubcribe the GPU
 			packetSize = prop.multiProcessorCount
-					* prop.maxThreadsPerMultiProcessor;
+					* prop.maxThreadsPerMultiProcessor * 8 /* hand tunned value*/;
 
 		}
 		if (!activeDevices.size()) {
@@ -884,6 +894,7 @@ struct OptixParallelTrace {
 		cudaGvtCtx.normi = adapter->normi_dev;
 
 		cudaGvtCtx.dispatchCount = 0;
+		cudaGvtCtx.dirty=true;
 
 
 		for (size_t localIdx = 0; localIdx < localEnd; localIdx += packetSize) {
@@ -899,26 +910,30 @@ struct OptixParallelTrace {
 			gvt::render::actor::RayVector::iterator localRayList = rayList
 					+ begin + localIdx;
 
-	
+
 			cudaSetRays(localRayList, localPacketSize, cudaGvtCtx.rays,
 					localIdx, cudaGvtCtx.stream, cudaRaysBuff);
 
 
 			cudaGvtCtx.validRayLeft = true;
+			cudaGvtCtx.dirty=true;
+
 			while (cudaGvtCtx.validRayLeft) {
 
 				cudaGvtCtx.validRayLeft = false;
 				cudaGvtCtx.shadowRayCount = 0;
 
+				cudaGvtCtx.dirty=true;
+
 				traceRays(cudaGvtCtx);
 
 				shade(&cudaGvtCtx);
 
-				gpuErrchk(cudaStreamSynchronize(cudaGvtCtx.stream)); //get shadow ray count
+				gpuErrchk(cudaStreamSynchronize(cudaGvtCtx.stream)); //wait for shadow ray count
 
 				traceShadowRays(cudaGvtCtx);
 
-				gpuErrchk(cudaStreamSynchronize(cudaGvtCtx.stream)); //get validRayLeft
+				gpuErrchk(cudaStreamSynchronize(cudaGvtCtx.stream)); //wait for validRayLeft
 
 //				if (cudaGvtCtx.validRayLeft)
 //					printf("Valid Rays left..\n");

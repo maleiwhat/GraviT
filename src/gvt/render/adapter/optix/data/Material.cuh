@@ -56,7 +56,7 @@ namespace cuda_primitives {
 
 typedef enum {BASE_MATERIAL, LAMBERT, PHONG, BLINN} MATERIAL_TYPE;
 
-typedef float4 Color;
+
 
 
 /// surface material properties
@@ -72,7 +72,7 @@ public:
 
   }*/
 
-	// __device__ float4 shade(const Ray &ray,                const float4 &sufaceNormal,
+	// __device__ cuda_vec shade(const Ray &ray,                const cuda_vec &sufaceNormal,
       //                                    const Light *lightSource);
  /*  gvt::render::actor::RayVector ao(const gvt::render::actor::Ray &ray,
                                            const gvt::core::math::Vector4f &sufaceNormal, float samples);
@@ -82,22 +82,22 @@ public:
 
 
 
-   __device__  float4 CosWeightedRandomHemisphereDirection2(float4 n) ;
+   __device__  cuda_vec CosWeightedRandomHemisphereDirection2(cuda_vec n) ;
 
 
 };
 
 class Lambert : public BaseMaterial {
 public:
-/*   __device__ Lambert(float4 kd = make_float4(0)){
+/*   __device__ Lambert(cuda_vec kd = make_cuda_vec(0)){
 
   }
    __device__ virtual ~Lambert(){
 
   }*/
 
-	 __device__ float4 shade( const Ray &ray,
-            const float4 &sufaceNormal,
+	 __device__ cuda_vec shade( const Ray &ray,
+            const cuda_vec &sufaceNormal,
             const Light *lightSource);
 
                                           /*
@@ -106,7 +106,7 @@ public:
   virtual gvt::render::actor::RayVector secundary(const gvt::render::actor::Ray &ray,
                                                   const gvt::core::math::Vector4f &sufaceNormal, float samples);*/
 
-  float4 kd;
+  cuda_vec kd;
 };
 
 
@@ -114,13 +114,13 @@ public:
 class Phong : public BaseMaterial {
 public:
 
-	/* __device__ Phong(const float4 &kd = make_float4(0),
-        const float4 &ks = make_float4(0), const float &alpha = 1.f);
+	/* __device__ Phong(const cuda_vec &kd = make_cuda_vec(0),
+        const cuda_vec &ks = make_cuda_vec(0), const float &alpha = 1.f);
 
 	 __device__ virtual ~Phong();
 */
-	 __device__ float4 shade(const Ray &ray,
-                                          const float4 &sufaceNormal,
+	 __device__ cuda_vec shade(const Ray &ray,
+                                          const cuda_vec &sufaceNormal,
                                           const Light *lightSource);
 
   /*
@@ -129,8 +129,8 @@ public:
   virtual gvt::render::actor::RayVector secundary(const gvt::render::actor::Ray &ray,
                                                   const gvt::core::math::Vector4f &sufaceNormal, float samples);*/
 
- float4 kd;
- float4 ks;
+ cuda_vec kd;
+ cuda_vec ks;
   float alpha;
 };
 
@@ -142,8 +142,8 @@ public:
   BlinnPhong(const BlinnPhong &orig);
   virtual ~BlinnPhong();
 */
-	 __device__ float4 shade(const Ray &ray,
-                                          const float4 &sufaceNormal,
+	 __device__ cuda_vec shade(const Ray &ray,
+                                          const cuda_vec &sufaceNormal,
                                           const Light *lightSource);
 
   /*
@@ -152,8 +152,8 @@ public:
   virtual gvt::render::actor::RayVector secundary(const gvt::render::actor::Ray &ray,
                                                   const gvt::core::math::Vector4f &sufaceNormal, float samples);*/
 
-  float4 kd;
-  float4 ks;
+  cuda_vec kd;
+  cuda_vec ks;
   float alpha;
 };
 
@@ -169,10 +169,10 @@ typedef struct {
 	};
 
 	 __device__
-	float4 shade(const Ray &ray, const float4 &sufaceNormal,
+	cuda_vec shade(const Ray &ray, const cuda_vec &sufaceNormal,
 			const Light *lightSource) {
 
-		float4 r;
+		cuda_vec r;
 		switch (type) {
 		case BASE_MATERIAL:
 			//r = material.shade(ray, sufaceNormal, lightSource);
