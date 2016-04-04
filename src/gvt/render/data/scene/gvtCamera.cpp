@@ -244,7 +244,7 @@ TAU_PROFILE("gvtPerspectiveCamera::generateRays()","",TAU_DEFAULT);
       tbb::blocked_range<size_t>(0, buffer_width * buffer_height, chunksize),
       [&](tbb::blocked_range<size_t> &chunk) {
 #ifdef __USE_TAU
-	TAU_PROFILE("tbb loop in gvtPerspectiveCamera::generateRays","",TAU_DEFAULT);
+	TAU_PROFILE("tbb idx loop in gvtPerspectiveCamera::generateRays","",TAU_DEFAULT);
 #endif
         for (size_t idx = chunk.begin(); idx < chunk.end(); idx++) {
           // multi - jittered samples
@@ -253,6 +253,9 @@ TAU_PROFILE("gvtPerspectiveCamera::generateRays()","",TAU_DEFAULT);
           // glm::vec4 camera_space_ray_direction;
           for (int k = 0; k < samples; k++) {
             for (int w = 0; w < samples; w++) {
+#ifdef __USE_TAU
+	TAU_PROFILE("tbb w loop in gvtPerspectiveCamera::generateRays","",TAU_DEFAULT);
+#endif
               // calculate scale factors -1.0 < x,y < 1.0
               int ridx = idx * samples2 + k * samples + w;
               x = float(i) * wmult - 1.0 + (w - half_sample) * offset + offset * (randEngine.fastrand(0, 1) - 0.5);
