@@ -31,6 +31,9 @@ typedef unsigned short ushort;
 #ifndef __CUDACC__
 #include <math.h>
 
+#ifdef __USE_TAU
+#include <TAU.h>
+#endif
 ////////////////////////////////////////////////////////////////////////////////
 // host implementations of CUDA functions
 ////////////////////////////////////////////////////////////////////////////////
@@ -1221,18 +1224,27 @@ inline  __device__ float length(float4 v)
 
 inline  __device__ float2 normalize(float2 v)
 {
+#ifdef __USE_TAU
+   TAU_PROFILE("float2 normalize","",TAU_DEFAULT);
+#endif
     float invLen = rsqrtf(dot(v, v));
     return v * invLen;
 }
 
 inline  __device__ float3 normalize(float3 v)
 {
+#ifdef __USE_TAU
+   TAU_PROFILE("float3 normalize","",TAU_DEFAULT);
+#endif
     float invLen = rsqrtf(dot(v, v));
     return v * invLen;
 }
 
 inline  __device__ float4 normalize(float4 v)
 {
+#ifdef __USE_TAU
+   TAU_PROFILE("float4 normalize","",TAU_DEFAULT);
+#endif
     float invLen = rsqrtf(dot(v, v));
     return v * invLen;
 }
