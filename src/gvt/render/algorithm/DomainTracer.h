@@ -124,7 +124,6 @@ public:
     // create a map of instances to mpi rank
     for (size_t i = 0; i < instancenodes.size(); i++) {
       gvt::core::DBNodeH meshNode = instancenodes[i]["meshRef"].deRef();
-
       size_t dataIdx = -1;
       for (size_t d = 0; d < dataNodes.size(); d++) {
         if (dataNodes[d].UUID() == meshNode.UUID()) {
@@ -197,12 +196,6 @@ public:
     gvt::core::time::timer t_adapter(false, "domain tracer: adapter :");
     gvt::core::time::timer t_filter(false, "domain tracer: filter :");
 
-    // gvt::core::time::timer t_trace(false);
-    // gvt::core::time::timer t_sort(false);
-    // gvt::core::time::timer t_shuffle(false);
-    // gvt::core::time::timer t_gather(false);
-    // gvt::core::time::timer t_send(false);
-    // gvt::core::time::timer t_frame(true);
     GVT_DEBUG(DBG_ALWAYS, "domain scheduler: starting, num rays: " << rays.size());
     gvt::core::DBNodeH root = gvt::render::RenderContext::instance()->getRootNode();
 
@@ -241,6 +234,7 @@ public:
     int instTarget = -1;
     size_t instTargetCount = 0;
 
+    static gvt::render::data::accel::BVH &acc = *dynamic_cast<gvt::render::data::accel::BVH *>(acceleration);
     gvt::render::Adapter *adapter = 0;
     do {
 
@@ -285,7 +279,6 @@ public:
             GVT_DEBUG(DBG_ALWAYS, "image scheduler: creating new adapter");
 
             // gvt::core::DBNodeH meshNode = instancenodes[instTarget]["meshRef"].deRef();
-            static gvt::render::data::accel::BVH &acc = *dynamic_cast<gvt::render::data::accel::BVH *>(acceleration);
 
             const size_t start = acc.nodes[instTarget]->instanceSetIdx;
             const size_t end = start + acc.nodes[instTarget]->numInstances;
@@ -297,7 +290,7 @@ public:
 #ifdef GVT_RENDER_ADAPTER_EMBREE
             case gvt::render::adapter::Embree:
               adapter = new gvt::render::adapter::embree::data::EmbreeMeshAdapter(meshRef, instM, instMinv, instMinvN,
-                                                                                  lights, instances);
+                                                                                  lights, instances,acc.nodes.size() == 1);
               break;
 #endif
 #ifdef GVT_RENDER_ADAPTER_MANTA
@@ -351,7 +344,7 @@ public:
         }
       } while (instTarget != -1);
 
-      {
+      if(acc.nodes.size() > 1){
         t_send.resume();
         // done with current domain, send off rays to their proper processors.
         GVT_DEBUG(DBG_ALWAYS, "Rank [ " << mpi.rank << "]  calling SendRays");
@@ -382,7 +375,9 @@ public:
         all_done = (not_done == 0);
         t_send.stop();
         delete[] empties;
-      }
+      } else {
+	all_done =true;
+	}
     } while (!all_done);
 
 // std::cout << "domain scheduler: select time: " << t_sort.format();

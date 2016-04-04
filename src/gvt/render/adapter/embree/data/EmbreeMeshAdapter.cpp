@@ -612,7 +612,8 @@ struct embreeParallelTrace {
 
                 // TODO: remove this dependency on mesh, store material object in the database
                 // r.setDirection(adapter->getMesh()->getMaterial()->CosWeightedRandomHemisphereDirection2(normal));
-                r.direction = glm::normalize(mesh->getMaterial()->CosWeightedRandomHemisphereDirection2(normal, randSeed));
+                r.direction =
+                    glm::normalize(mesh->getMaterial()->CosWeightedRandomHemisphereDirection2(normal, randSeed));
 
                 r.w = r.w * glm::dot(r.direction, normal);
                 r.depth = ndepth;
@@ -623,7 +624,8 @@ struct embreeParallelTrace {
               }
             } else {
               valid[pi] = 0;
-              if (!(*adapter).unique || r.type == gvt::render::actor::Ray::SHADOW) localDispatch.push_back(r);
+              if (!(*adapter).unique || r.type == gvt::render::actor::Ray::SHADOW)
+                localDispatch.push_back(r);
               // ray is valid, but did not hit anything, so add to dispatch
               // queue and disable it
             }

@@ -97,10 +97,9 @@ public:
 
     if (mpi) {
       GVT_DEBUG(DBG_ALWAYS, "image scheduler: filter locally mpi: [" << rays_start << ", " << rays_end << "]");
-      gvt::render::actor::RayVector lrays;
-      lrays.assign(rays.begin() + rays_start, rays.begin() + rays_end);
-      rays.clear();
-      shuffleRays(lrays, -1);
+      rays.erase(rays.begin(),rays.begin()+rays_start);
+      rays.resize(rays_end -rays_start);
+      shuffleRays(rays, -1);
     } else {
       GVT_DEBUG(DBG_ALWAYS, "image scheduler: filter locally non mpi: " << rays.size());
       shuffleRays(rays, -1);
@@ -135,6 +134,7 @@ public:
     gvt::render::actor::RayVector moved_rays;
     int instTarget = -1, instTargetCount = 0;
     // process domains until all rays are terminated
+    static gvt::render::data::accel::BVH &acc = *dynamic_cast<gvt::render::data::accel::BVH *>(acceleration);
     do {
       // process domain with most rays queued
       instTarget = -1;
@@ -172,7 +172,6 @@ public:
           GVT_DEBUG(DBG_ALWAYS, "image scheduler: creating new adapter");
 
           // gvt::core::DBNodeH meshNode = instancenodes[instTarget]["meshRef"].deRef();
-          static gvt::render::data::accel::BVH &acc = *dynamic_cast<gvt::render::data::accel::BVH *>(acceleration);
 
           const size_t start = acc.nodes[instTarget]->instanceSetIdx;
           const size_t end = start + acc.nodes[instTarget]->numInstances;
