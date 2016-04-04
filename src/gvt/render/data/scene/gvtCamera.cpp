@@ -240,13 +240,12 @@ TAU_PROFILE("gvtPerspectiveCamera::generateRays()","",TAU_DEFAULT);
 
   const size_t chunksize = (buffer_width * buffer_height) / (std::thread::hardware_concurrency() * 4);
   static tbb::simple_partitioner ap;
-#ifdef __USE_TAU
-  TAU_START("tbb loop in gvtPerspectiveCamera::generateRays");
-#endif
   tbb::parallel_for(
       tbb::blocked_range<size_t>(0, buffer_width * buffer_height, chunksize),
       [&](tbb::blocked_range<size_t> &chunk) {
-
+#ifdef __USE_TAU
+	TAU_PROFILE("tbb loop in gvtPerspectiveCamera::generateRays","",TAU_DEFAULT);
+#endif
         for (size_t idx = chunk.begin(); idx < chunk.end(); idx++) {
           // multi - jittered samples
           int i = idx % buffer_width, j = idx / buffer_width;
@@ -264,6 +263,10 @@ TAU_PROFILE("gvtPerspectiveCamera::generateRays()","",TAU_DEFAULT);
               camera_space_ray_direction[0] = cam2wrld[0][0] * x + cam2wrld[0][1] * y + z[0];
               camera_space_ray_direction[1] = cam2wrld[1][0] * x + cam2wrld[1][1] * y + z[1];
               camera_space_ray_direction[2] = cam2wrld[2][0] * x + cam2wrld[2][1] * y + z[2];
+#ifdef __USE_TAU
+	{
+	TAU_PROFILE("ray inside","",TAU_DEFAULT);
+#endif
               Ray &ray = rays[ridx];
               ray.id = idx;
               ray.t_min = gvt::render::actor::Ray::RAY_EPSILON;
@@ -273,13 +276,13 @@ TAU_PROFILE("gvtPerspectiveCamera::generateRays()","",TAU_DEFAULT);
               ray.type = Ray::PRIMARY;
               ray.direction = glm::normalize(camera_space_ray_direction);
               ray.depth = depth;
+#ifdef __USE_TAU
+	}
+#endif
             }
           }
         }
       },
       ap);
-#ifdef __USE_TAU
-  TAU_STOP("tbb loop in gvtPerspectiveCamera::generateRays");
-#endif
 }
 void gvtPerspectiveCamera::setFOV(const float fov) { field_of_view = fov; }
