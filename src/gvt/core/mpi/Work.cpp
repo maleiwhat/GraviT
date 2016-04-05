@@ -25,9 +25,7 @@ void Work::Send(int i) {
 void Work::Broadcast(bool collective, bool block) {
   Message *m = new Message(this, collective, block);
   m->Enqueue();
-
   if (block) {
     m->Wait();
-    delete m;
   }
 }

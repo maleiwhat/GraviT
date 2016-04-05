@@ -122,6 +122,7 @@ protected:
   bool blocking;
   pthread_mutex_t lock;
   pthread_cond_t cond;
+  bool blockingMessageReady;
 
   unsigned char *serialized;
   MPI_Status status;

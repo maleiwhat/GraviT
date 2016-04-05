@@ -69,7 +69,6 @@ Work *PixelGatherWork::Deserialize(size_t size, unsigned char *serialized) {
 }
 
 bool PixelGatherWork::Action() {
-
   MpiRenderer *renderer = static_cast<MpiRenderer *>(Application::GetApplication());
   int width = renderer->getImageWidth();
   int height = renderer->getImageHeight();

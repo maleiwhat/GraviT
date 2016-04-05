@@ -711,24 +711,6 @@ void MpiRenderer::freeRender() {
 }
 
 void MpiRenderer::render() {
-  TestDatabaseOption *option = static_cast<TestDatabaseOption *>(dbOption);
-  int numFrames = option->numFrames;
-  if (numFrames > 1) {
-    printf("error: unable to run more than 1 frame for now.\n") ;
-    exit(1);
-  }
-  t_run.start();
-  for (int i=0; i<numFrames; ++i) { // for profiling
-    if (GetRank() == 0) {
-      printf("frame %d\n", i);
-    }
-    run();
-  }
-  t_run.stop();
-  std::cout << "Rank " << GetRank() << ": run time: " << t_run.format();
-}
-
-void MpiRenderer::run() {
 
   TestDatabaseOption *option = static_cast<TestDatabaseOption *>(dbOption);
 
@@ -776,14 +758,18 @@ void MpiRenderer::run() {
       DomainTileWork work;
       work.setTileSize(0, 0, imageWidth, imageHeight);
 
-      work.Action();
+      const int numFrames = 30;
 
-      pthread_mutex_lock(&imageReadyLock);
-      while(!this->imageReady) {
-        pthread_cond_wait(&imageReadyCond, &imageReadyLock);
+      for (int i = 0; i < numFrames; ++i) {
+        work.Action();
+        pthread_mutex_lock(&imageReadyLock);
+        while(!this->imageReady) {
+          pthread_cond_wait(&imageReadyCond, &imageReadyLock);
+        }
+        imageReady = false;
+        pthread_mutex_unlock(&imageReadyLock);
+        printf("[async mpi] domain scheduler frame %d done\n", i);
       }
-      imageReady = false;
-      pthread_mutex_unlock(&imageReadyLock);
       
       Kill();
     }

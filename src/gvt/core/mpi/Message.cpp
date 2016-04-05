@@ -53,7 +53,7 @@ void *MessageManager::messageThread(void *p) {
   pthread_cond_signal(&theMessageManager->cond);
   pthread_mutex_unlock(&theMessageManager->lock);
 
-  Message *m = NULL;
+  Message *outgoingMsg = NULL;
 
   Message *pending_message = new Message();
   while (!theApplication->IsDoneSet()) {
@@ -83,41 +83,37 @@ void *MessageManager::messageThread(void *p) {
     if (theApplication->GetOutgoingMessageQueue()->IsReady()) {
 
       bool serve = true;
-      if (m) { // wait until previous message
-        if (m->IsIsendDone()) {
-          delete m;
-          m = NULL;
+      if (outgoingMsg) { // wait until previous message
+        if (outgoingMsg->IsIsendDone()) {
+          delete outgoingMsg;
+          outgoingMsg = NULL;
         } else {
           serve = false;
         }
       }
 
       if (serve) {
-        // Message *m = theApplication->GetOutgoingMessageQueue()->Dequeue();
-        m = theApplication->GetOutgoingMessageQueue()->Dequeue();
-        if (m) {
-
+        outgoingMsg = theApplication->GetOutgoingMessageQueue()->Dequeue();
+        if (outgoingMsg) {
           // Send it on
-          m->Send();
+          outgoingMsg->Send();
 
           // If this is a collective, execute its work here in the message thread
-          if (m->header.collective) {
-            Work *w = theApplication->Deserialize(m);
+          if (outgoingMsg->header.collective) {
+            Work *w = theApplication->Deserialize(outgoingMsg);
             bool kill_me = w->Action();
 
-            if (m->blocking) {
-              pthread_mutex_lock(&m->lock);
-              pthread_cond_signal(&m->cond);
-              pthread_mutex_unlock(&m->lock);
-            } else
-              delete m;
+            if (outgoingMsg->blocking) {
+              pthread_mutex_lock(&outgoingMsg->lock);
+              outgoingMsg->blockingMessageReady = true;
+              pthread_cond_signal(&outgoingMsg->cond);
+              pthread_mutex_unlock(&outgoingMsg->lock);
+            }
   
             if (kill_me) {
               theApplication->Kill();
             }
           }
-          // } else
-          //   delete m;
         } else {
           break;
         }
@@ -126,6 +122,7 @@ void *MessageManager::messageThread(void *p) {
   }
 
   if (pending_message) delete pending_message;
+  if (outgoingMsg) delete outgoingMsg;
 
   // Make sure outgoing queue is flushed to make sure any
   // quit message is propagated
@@ -189,7 +186,8 @@ Message::Message(Work *w, bool collective, bool b) {
   if (blocking) {
     pthread_mutex_init(&lock, NULL);
     pthread_cond_init(&cond, NULL);
-    pthread_mutex_lock(&lock);
+    // pthread_mutex_lock(&lock);
+    blockingMessageReady = false;
   }
 
   header.collective = collective;
@@ -278,8 +276,14 @@ Message::~Message() {
 void Message::Wait() {
   if (!blocking)
     std::cerr << "Error... waiting on non-blocking message?\n";
-  else
-    pthread_cond_wait(&cond, &lock);
+  else {
+    pthread_mutex_lock(&lock);
+    while(!blockingMessageReady) {
+      pthread_cond_wait(&cond, &lock);
+    }
+    blockingMessageReady = false;
+    pthread_mutex_unlock(&lock);
+  }
 }
 
 bool Message::IsReady() {
