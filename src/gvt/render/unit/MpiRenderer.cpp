@@ -758,7 +758,7 @@ void MpiRenderer::render() {
       DomainTileWork work;
       work.setTileSize(0, 0, imageWidth, imageHeight);
 
-      const int numFrames = 30;
+      const int numFrames = 2;
 
       for (int i = 0; i < numFrames; ++i) {
         work.Action();
