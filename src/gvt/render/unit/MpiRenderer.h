@@ -90,26 +90,16 @@ class TileLoadBalancer;
 class RayTransferWork;
 class VoteWork;
 
-// TODO (hpark): make a command line parser using ConfigFileLoader
-//  We could utilize existing ConfigFileLoader
-//  instead of the following option structs.
-//  The following will suffice for now.
-
-struct DatabaseOption {
-  virtual ~DatabaseOption() {}
+struct MpiRendererOptions {
+  virtual ~MpiRendererOptions() {}
   int schedulerType = gvt::render::scheduler::Domain;
   int adapterType = gvt::render::adapter::Embree;
-  // std::vector<std::string> meshFilenames; // TODO
-  int filmWidth = 1280;
-  int filmHeight = 720;
+  int width = 1280;
+  int height = 720;
   bool asyncMpi = true;
-  int numFrames = 1;
-  bool ply = true;
-};
-
-struct TestDatabaseOption : public DatabaseOption {
-  int instanceCountX = 2;
-  int instanceCountY = 2;
+  bool ply = false;
+  int instanceCountX = 1;
+  int instanceCountY = 1;
   int instanceCountZ = 1;
 };
 
@@ -121,8 +111,9 @@ public:
   virtual ~MpiRenderer();
 
   // for configuring database
-  virtual void parseCommandLine(int argc, char **argv);
-  virtual void createDatabase();
+  void printUsage(const char *argv);
+  void parseCommandLine(int argc, char **argv);
+  void createDatabase();
 
   // helper APIs for creating database
   bool isNodeTypeReserved(const std::string &type);
@@ -172,7 +163,7 @@ public:
   int getInstanceOwner(int domainId) { return instanceRankMap[instanceNodes[domainId].UUID()]; }
 
 private:
-  DatabaseOption *dbOption;
+  MpiRendererOptions options;
   gvt::render::RenderContext *renderContext;
   gvt::core::Vector<gvt::core::DBNodeH> instanceNodes;
   gvt::core::DBNodeH root;

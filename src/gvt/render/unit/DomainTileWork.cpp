@@ -345,6 +345,10 @@ void DomainTileWork::traceRays(RayVector &rays) {
     quit.Broadcast(true, true);
   }
 #endif
+  if (adapter) {
+    delete adapter;
+    adapter = 0;
+  }
   std::cout << "Rank " << myRank << ": [async] domain scheduler: trace time: " << t_trace.format();
   std::cout << "Rank " << myRank << ": [async] domain scheduler: sched time: " << t_sched.format();
   std::cout << "Rank " << myRank << ": [async] domain scheduler: raytx time: " << t_raytx.format();

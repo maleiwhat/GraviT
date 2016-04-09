@@ -143,7 +143,7 @@ static Face **flist;
 #define MAX(a, b) ((a > b) ? (a) : (b))
 
 MpiRenderer::MpiRenderer(int *argc, char ***argv)
-    : Application(argc, argv), camera(NULL), image(NULL), dbOption(NULL), tileLoadBalancer(NULL), voter(NULL) {
+    : Application(argc, argv), camera(NULL), image(NULL), tileLoadBalancer(NULL), voter(NULL) {
 
   renderContext = gvt::render::RenderContext::instance();
 
@@ -156,46 +156,69 @@ MpiRenderer::MpiRenderer(int *argc, char ***argv)
 MpiRenderer::~MpiRenderer() {
   if (camera != NULL) delete camera;
   if (image != NULL) delete image;
-  if (dbOption != NULL) delete dbOption;
   if (tileLoadBalancer != NULL) delete tileLoadBalancer;
 }
 
+void MpiRenderer::printUsage(const char *argv) {
+  printf("Usage : %s [-h] [-a <adapter>] [-d] [-n <x y z>] [-p] [-s <scheduler>] [-W <image_width>] [-H <image_height>]\n", argv);
+  printf("  -h, --help\n");
+  printf("  -a, --adapter <embree | manta | optix> (default: embree)\n");
+  printf("  -s, --scheduler <domain | image> (default: domain)\n");
+  printf("  -d, --disable-aync-mpi\n");
+  printf("  -n, --num-instances <x, y, z> specify the number of instances in each direction (default: 1 1 1). effective only with obj.\n");
+  printf("  -p, --ply use ply models\n");
+  printf("  -W, --width <image_width> (default: 1280)\n");
+  printf("  -H, --height <image_height> (default: 1280)\n");
+}
+
 void MpiRenderer::parseCommandLine(int argc, char **argv) {
-
-  // TODO (hpark): generalize this
-  this->dbOption = new TestDatabaseOption;
-  TestDatabaseOption *option = static_cast<TestDatabaseOption *>(dbOption);
-
-  if (argc > 1) {
-    if (*argv[1] == 'i' || *argv[1] == 'I') {
-      option->schedulerType = gvt::render::scheduler::Image;
-    } else if (*argv[1] == 'd' || *argv[1] == 'D') {
-      option->schedulerType = gvt::render::scheduler::Domain;
+  for (int i = 1; i < argc; ++i) {
+    if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
+      printUsage(argv[0]);
+      exit(1);
+    } else if (strcmp(argv[i], "-a") == 0 || strcmp(argv[i], "--adapter") == 0) {
+      ++i;
+      if (strcmp(argv[i], "embree") == 0) {
+        options.adapterType = gvt::render::adapter::Embree;
+      } else if (strcmp(argv[i], "manta") == 0) {
+        options.adapterType = gvt::render::adapter::Manta;
+      } else if (strcmp(argv[i], "optix") == 0) {
+        options.adapterType = gvt::render::adapter::Optix;
+      } else {
+        printf("error: %s not defined\n", argv[i]);
+        exit(1);
+      }
+    } else if (strcmp(argv[i], "-s") == 0 || strcmp(argv[i], "--scheduler") == 0) {
+      ++i;
+      if (strcmp(argv[i], "domain") == 0) {
+        options.schedulerType = gvt::render::scheduler::Domain;
+      } else if (strcmp(argv[i], "image") == 0) {
+        options.schedulerType = gvt::render::scheduler::Image;
+      } else {
+        printf("error: %s not defined\n", argv[i]);
+        exit(1);
+      }
+    } else if (strcmp(argv[i], "-d") == 0 || strcmp(argv[i], "--disable-async-mpi") == 0) {
+      options.asyncMpi = false;
+    } else if (strcmp(argv[i], "-n") == 0 || strcmp(argv[i], "--num-instances") == 0) {
+       options.instanceCountX = atoi(argv[++i]);
+       options.instanceCountY = atoi(argv[++i]);
+       options.instanceCountZ = atoi(argv[++i]);
+    } else if (strcmp(argv[i], "-p") == 0 || strcmp(argv[i], "--ply") == 0) {
+      options.ply = true;
+    } else if (strcmp(argv[i], "-W") == 0 || strcmp(argv[i], "--width") == 0) {
+      options.width = atoi(argv[++i]);
+    } else if (strcmp(argv[i], "-H") == 0 || strcmp(argv[i], "--height") == 0) {
+      options.height = atoi(argv[++i]);
+    } else {
+      printf("error: %s not defined\n", argv[i]);
+      exit(1);
     }
-    if (*argv[1] == 'I' || *argv[1] == 'D') {
-      option->asyncMpi = false;
-    }
-  }
-  if (argc > 4) {
-    option->instanceCountX = atoi(argv[2]);
-    option->instanceCountY = atoi(argv[3]);
-    option->instanceCountZ = atoi(argv[4]);
-  }
-  if (argc > 6) {
-    option->filmWidth = atoi(argv[5]);
-    option->filmHeight = atoi(argv[6]);
-  }
-  if (argc > 7) {
-    if (*argv[7] == 'o') { // obj
-      option->ply = false;
-    }
-    // option->numFrames = atoi(argv[7]);
   }
 }
 
 void MpiRenderer::createDatabase() {
-  TestDatabaseOption *option = static_cast<TestDatabaseOption *>(dbOption);
-  if (option->ply) {
+  if (options.ply) {
     makePlyDatabase();
   } else {
     makeObjDatabase();
@@ -203,7 +226,6 @@ void MpiRenderer::createDatabase() {
 }
 
 void MpiRenderer::makePlyDatabase() {
-  TestDatabaseOption *option = static_cast<TestDatabaseOption *>(dbOption);
   // mess I use to open and read the ply file with the c utils I found.
   PlyFile *in_ply;
   Vertex *vert;
@@ -343,58 +365,13 @@ void MpiRenderer::makePlyDatabase() {
   Point4f focus(512.0, 512.0, 0.0, 1.0);
   Vector4f upVector(0.0, 1.0, 0.0, 0.0);
   float fov = (float)(25.0 * M_PI / 180.0);
-  Uuid cameraNodeId = createCameraNode(eye, focus, upVector, fov, option->filmWidth, option->filmHeight);
+  Uuid cameraNodeId = createCameraNode(eye, focus, upVector, fov, options.width, options.height);
 
-  // gvt::core::DBNodeH camNode = renderContext->createNodeFromType("Camera", "conecam", root.UUID());
-  // camNode["eyePoint"] = Point4f(512.0, 512.0, 4096.0, 1.0);
-  // camNode["focus"] = Point4f(512.0, 512.0, 0.0, 1.0);
-  // camNode["upVector"] = Vector4f(0.0, 1.0, 0.0, 0.0);
-  // camNode["fov"] = (float)(25.0 * M_PI / 180.0);
   // film
-  Uuid filmNodeId = createFilmNode(option->filmWidth, option->filmHeight, "");
+  Uuid filmNodeId = createFilmNode(options.width, options.height, "");
 
-  // gvt::core::DBNodeH filmNode = renderContext->createNodeFromType("Film", "conefilm", root.UUID());
-  // filmNode["width"] = option->filmWidth;
-  // filmNode["height"] = option->filmHeight;
-  // filmNode["width"] = 2000;
-  // filmNode["height"] = 2000;
-
-//   gvt::core::DBNodeH schedNode = renderContext->createNodeFromType("Schedule", "Enzosched", root.UUID());
-//   schedNode["type"] = gvt::render::scheduler::Image;
-// // schedNode["type"] = gvt::render::scheduler::Domain;
-
-// #ifdef GVT_RENDER_ADAPTER_EMBREE
-//   int adapterType = gvt::render::adapter::Embree;
-// #elif GVT_RENDER_ADAPTER_MANTA
-//   int adapterType = gvt::render::adapter::Manta;
-// #elif GVT_RENDER_ADAPTER_OPTIX
-//   int adapterType = gvt::render::adapter::Optix;
-// #elif
-//   GVT_DEBUG(DBG_ALWAYS, "ERROR: missing valid adapter");
-// #endif
-
-  // schedNode["adapter"] = gvt::render::adapter::Embree;
-
-  Uuid scheduleNodeId = createScheduleNode(option->schedulerType, option->adapterType);
-
-  // end db setup
-
-  // use db to create structs needed by system
-
-  // setup gvtCamera from database entries
-  // gvtPerspectiveCamera mycamera;
-  // Point4f cameraposition = camNode["eyePoint"].value().toPoint4f();
-  // Point4f focus = camNode["focus"].value().toPoint4f();
-  // float fov = camNode["fov"].value().toFloat();
-  // Vector4f up = camNode["upVector"].value().toVector4f();
-  // mycamera.lookAt(cameraposition, focus, up);
-  // mycamera.setFOV(fov);
-  // mycamera.setFilmsize(filmNode["width"].value().toInteger(), filmNode["height"].value().toInteger());
-
-// #ifdef GVT_USE_MPE
-//   MPE_Log_event(readend, 0, NULL);
-// #endif
-  // setup image from database sizes
+  // scheduler
+  Uuid scheduleNodeId = createScheduleNode(options.schedulerType, options.adapterType);
 }
 
 void MpiRenderer::makeObjDatabase() {
@@ -420,10 +397,9 @@ void MpiRenderer::makeObjDatabase() {
   const float gapY = extent[1] * 0.2f;
   const float gapZ = extent[2] * 0.2f;
 
-  TestDatabaseOption *option = static_cast<TestDatabaseOption *>(dbOption);
-  int instanceCountX = option->instanceCountX;
-  int instanceCountY = option->instanceCountY;
-  int instanceCountZ = option->instanceCountZ;
+  int instanceCountX = options.instanceCountX;
+  int instanceCountY = options.instanceCountY;
+  int instanceCountZ = options.instanceCountZ;
 
   Vector3f minPos((extent[0] + gapX) * instanceCountX * -0.5f, (extent[1] + gapY) * instanceCountY * -0.5f,
                   (extent[2] + gapZ) * instanceCountZ * -0.5f);
@@ -460,31 +436,13 @@ void MpiRenderer::makeObjDatabase() {
   Point4f focus(0.0, 0.0, 0.0, 1.0);
   Vector4f upVector(0.0, 1.0, 0.0, 0.0);
   float fov = (45.0 * M_PI / 180.0);
-  // const unsigned int width = 1920;
-  // const unsigned int height = 1080;
-  const unsigned int width = option->filmWidth;
-  const unsigned int height = option->filmHeight;
-  Uuid cameraNodeId = createCameraNode(eye, focus, upVector, fov, width, height);
+  Uuid cameraNodeId = createCameraNode(eye, focus, upVector, fov, options.width, options.height);
 
   // create film node
-  Uuid filmNodeId = createFilmNode(width, height, objName);
+  Uuid filmNodeId = createFilmNode(options.width, options.height, objName);
 
-// create the scheduler node
-// valid schedulers = {Image, Domain}
-// valid adapters = {Embree, Manta, Optix}
-#ifdef GVT_RENDER_ADAPTER_EMBREE
-  int adapterType = gvt::render::adapter::Embree;
-#elif GVT_RENDER_ADAPTER_MANTA
-  int adapterType = gvt::render::adapter::Manta;
-#elif GVT_RENDER_ADAPTER_OPTIX
-  int adapterType = gvt::render::adapter::Optix;
-#else
-  GVT_DEBUG(DBG_ALWAYS, "ERROR: missing valid adapter");
-#endif
-
-  adapterType = gvt::render::adapter::Embree;
-  // adapterType = gvt::render::adapter::Manta;
-  Uuid scheduleNodeId = createScheduleNode(option->schedulerType, option->adapterType);
+  // create the scheduler node
+  Uuid scheduleNodeId = createScheduleNode(options.schedulerType, options.adapterType);
 }
 
 bool MpiRenderer::isNodeTypeReserved(const std::string &type) {
@@ -711,14 +669,11 @@ void MpiRenderer::freeRender() {
 }
 
 void MpiRenderer::render() {
-
-  TestDatabaseOption *option = static_cast<TestDatabaseOption *>(dbOption);
-
   setupRender();
   int schedType = root["Schedule"]["type"].value().toInteger();
   int rank = GetRank();
 
-  if (option->asyncMpi) {
+  if (options.asyncMpi) {
     // TODO (hpark):
     // collapse the following two if-else blocks into a single block
     if (schedType == scheduler::Image) { // image scheduler with mpi layer
@@ -758,8 +713,7 @@ void MpiRenderer::render() {
       DomainTileWork work;
       work.setTileSize(0, 0, imageWidth, imageHeight);
 
-      const int numFrames = 2;
-
+      const int numFrames = 1;
       for (int i = 0; i < numFrames; ++i) {
         work.Action();
         pthread_mutex_lock(&imageReadyLock);
@@ -770,16 +724,10 @@ void MpiRenderer::render() {
         pthread_mutex_unlock(&imageReadyLock);
         printf("[async mpi] domain scheduler frame %d done\n", i);
       }
-      
       Kill();
     }
-
     freeRender();
-
   } else { // without mpi layer
-
-    // int rank = GetRank();
-    // setupRender();
     camera->AllocateCameraRays();
     camera->generateRays();
     image = new Image(imageWidth, imageHeight, "image");
