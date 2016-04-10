@@ -49,8 +49,10 @@
 #include <map>
 #include <tbb/mutex.h>
 #include <pthread.h>
+#include <chrono>
 
 using namespace gvt::core::mpi;
+using namespace std::chrono;
 
 namespace gvt {
 namespace render {
@@ -111,41 +113,31 @@ public:
   virtual ~MpiRenderer();
 
   // for configuring database
-  void printUsage(const char *argv);
   void parseCommandLine(int argc, char **argv);
   void createDatabase();
-
-  // helper APIs for creating database
-  bool isNodeTypeReserved(const std::string &type);
-
-  gvt::core::DBNodeH getNode(const gvt::core::Uuid &id);
-
-  gvt::core::Uuid createNode(const std::string &type, const std::string &name);
-
-  gvt::core::Uuid addMesh(const gvt::core::Uuid &parentNodeId, const std::string &meshName,
-                          const std::string &objFilename);
-
-  gvt::render::data::primitives::Box3D getMeshBounds(const gvt::core::Uuid &id);
-  gvt::render::data::primitives::Box3D getMeshBounds(const std::string &objFilename);
-
-  gvt::core::Uuid addInstance(const gvt::core::Uuid &parentNodeId, const gvt::core::Uuid &meshId, int instanceId,
-                              const std::string &instanceName,
-                              gvt::core::math::AffineTransformMatrix<float> *transform);
-
-  gvt::core::Uuid addPointLight(const gvt::core::Uuid &parentNodeId, const std::string &lightName,
-                                const gvt::core::math::Vector4f &position, const gvt::core::math::Vector4f &color);
-
-  gvt::core::Uuid createCameraNode(const gvt::core::math::Point4f &eye, const gvt::core::math::Point4f &focus,
-                                   const gvt::core::math::Vector4f &upVector, float fov, unsigned int width,
-                                   unsigned int height);
-
-  gvt::core::Uuid createFilmNode(int width, int height, const std::string &sceneName);
-
-  gvt::core::Uuid createScheduleNode(int schedulerType, int adapterType);
   void render();
 
 private:
-  void run();
+  // helpers
+  void printUsage(const char *argv);
+  bool isNodeTypeReserved(const std::string &type);
+  gvt::core::DBNodeH getNode(const gvt::core::Uuid &id);
+  gvt::core::Uuid createNode(const std::string &type, const std::string &name);
+  gvt::core::Uuid addMesh(const gvt::core::Uuid &parentNodeId, const std::string &meshName,
+                          const std::string &objFilename);
+  gvt::render::data::primitives::Box3D getMeshBounds(const gvt::core::Uuid &id);
+  gvt::render::data::primitives::Box3D getMeshBounds(const std::string &objFilename);
+  gvt::core::Uuid addInstance(const gvt::core::Uuid &parentNodeId, const gvt::core::Uuid &meshId, int instanceId,
+                              const std::string &instanceName,
+                              gvt::core::math::AffineTransformMatrix<float> *transform);
+  gvt::core::Uuid addPointLight(const gvt::core::Uuid &parentNodeId, const std::string &lightName,
+                                const gvt::core::math::Vector4f &position, const gvt::core::math::Vector4f &color);
+  gvt::core::Uuid createCameraNode(const gvt::core::math::Point4f &eye, const gvt::core::math::Point4f &focus,
+                                   const gvt::core::math::Vector4f &upVector, float fov, unsigned int width,
+                                   unsigned int height);
+  gvt::core::Uuid createFilmNode(int width, int height, const std::string &sceneName);
+  gvt::core::Uuid createScheduleNode(int schedulerType, int adapterType);
+
   void initServer();
   void setupRender();
   void freeRender();
@@ -297,6 +289,25 @@ private:
 
   std::vector<VoteWork*> voteWorkBuffer;
   pthread_mutex_t voteWorkBufferLock;
+};
+
+class Timer {
+public:
+  Timer() {
+    elapsed = 0.0;
+    st = high_resolution_clock::now();
+  }
+  void start() {
+    st = high_resolution_clock::now();
+  }
+  void stop() {
+    auto et = high_resolution_clock::now(); 
+    elapsed += std::chrono::duration<double, std::ratio<1,1000>>(et - st).count();
+  }
+  double getElapsed() const { return elapsed; }
+private:
+  high_resolution_clock::time_point st;
+  double elapsed;
 };
 
 }
