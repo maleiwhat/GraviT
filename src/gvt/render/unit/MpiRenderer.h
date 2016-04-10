@@ -56,12 +56,6 @@ using namespace std::chrono;
 
 namespace gvt {
 namespace render {
-class RenderContext;
-}
-}
-
-namespace gvt {
-namespace render {
 namespace data {
 namespace scene {
 class gvtPerspectiveCamera;
@@ -130,7 +124,6 @@ private:
 
 public:
   // database, context, and domain mapping
-  gvt::render::RenderContext *getRenderContext() { return renderContext; }
   gvt::core::Vector<gvt::core::DBNodeH> &getInstanceNodes() { return instanceNodes; }
   std::size_t getInstanceNodesSize() const { return instanceNodes.size(); }
   gvt::core::DBNodeH getMeshNode(int domainId) { return instanceNodes[domainId]["meshRef"].deRef(); }
@@ -139,7 +132,6 @@ public:
 
 private:
   MpiRendererOptions options;
-  gvt::render::RenderContext *renderContext;
   gvt::core::Vector<gvt::core::DBNodeH> instanceNodes;
   gvt::core::DBNodeH root;
   std::map<gvt::core::Uuid, int> instanceRankMap;

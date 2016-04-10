@@ -112,12 +112,6 @@ using namespace gvt::render::unit;
 MpiRenderer::MpiRenderer(int *argc, char ***argv)
     : Application(argc, argv), camera(NULL), image(NULL), tileLoadBalancer(NULL), voter(NULL) {
 
-  renderContext = gvt::render::RenderContext::instance();
-
-  if (renderContext == NULL) {
-    std::cout << "Something went wrong initializing the context" << std::endl;
-    exit(0);
-  }
 }
 
 MpiRenderer::~MpiRenderer() {
@@ -196,6 +190,11 @@ void MpiRenderer::createDatabase() {
     scene.makeObjDatabase();
   }
   // create camera
+  auto renderContext = gvt::render::RenderContext::instance();
+  if (renderContext == NULL) {
+    std::cout << "Something went wrong initializing the context" << std::endl;
+    exit(1);
+  }
   gvt::core::DBNodeH root = renderContext->getRootNode();
   gvt::core::DBNodeH node = renderContext->createNodeFromType("Camera", "cam", root.UUID());
   Point4f eye(0.0, 0.5, 1.2, 1.0);
@@ -250,9 +249,12 @@ void MpiRenderer::initInstanceRankMap() {
 }
 
 void MpiRenderer::setupRender() {
-
   tbb::task_scheduler_init init(std::thread::hardware_concurrency());
-
+  auto renderContext = gvt::render::RenderContext::instance();
+  if (renderContext == NULL) {
+    std::cout << "Something went wrong initializing the context" << std::endl;
+    exit(1);
+  }
   root = renderContext->getRootNode();
   instanceNodes = root["Instances"].getChildren();
   GVT_DEBUG(DBG_ALWAYS, "num instances: " << instanceNodes.size());
