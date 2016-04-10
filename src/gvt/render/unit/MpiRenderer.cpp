@@ -37,16 +37,16 @@
 
 #include "gvt/render/unit/MpiRenderer.h"
 
-#include "gvt/render/RenderContext.h"
-#include "gvt/render/Types.h"
-#include <vector>
-#include <algorithm>
-#include <set>
-#include "gvt/core/mpi/Wrapper.h"
 #include "gvt/core/Math.h"
+#include "gvt/core/mpi/Wrapper.h"
+#include "gvt/render/RenderContext.h"
+#include "gvt/render/Schedulers.h"
+#include "gvt/render/Types.h"
 #include "gvt/render/data/Dataset.h"
 #include "gvt/render/data/Domains.h"
-#include "gvt/render/Schedulers.h"
+#include <algorithm>
+#include <set>
+#include <vector>
 
 #ifdef GVT_RENDER_ADAPTER_EMBREE
 #include "gvt/render/adapter/embree/Wrapper.h"
@@ -61,39 +61,40 @@
 #endif
 
 #include "gvt/render/algorithm/Tracers.h"
-#include "gvt/render/data/scene/gvtCamera.h"
-#include "gvt/render/data/scene/Image.h"
 #include "gvt/render/data/Primitives.h"
-#include "gvt/render/data/domain/reader/ObjReader.h"
+#include "gvt/render/data/scene/Image.h"
+#include "gvt/render/data/scene/gvtCamera.h"
+// #include "gvt/render/data/domain/reader/ObjReader.h"
 #include "gvt/render/data/accel/BVH.h"
 
-#include <boost/range/algorithm.hpp>
 #include "gvt/core/mpi/Application.h"
+#include <boost/range/algorithm.hpp>
 
-#include "gvt/render/unit/RequestWork.h"
-#include "gvt/render/unit/TileWork.h"
-#include "gvt/render/unit/ImageTileWork.h"
 #include "gvt/render/unit/DomainTileWork.h"
-#include "gvt/render/unit/PixelWork.h"
-#include "gvt/render/unit/Works.h"
+#include "gvt/render/unit/ImageTileWork.h"
 #include "gvt/render/unit/PixelGatherWork.h"
+#include "gvt/render/unit/PixelWork.h"
+#include "gvt/render/unit/RequestWork.h"
 #include "gvt/render/unit/TileLoadBalancer.h"
+#include "gvt/render/unit/TileWork.h"
+#include "gvt/render/unit/Works.h"
 
-#include "gvt/render/algorithm/ImageTracer.h"
 #include "gvt/render/algorithm/DomainTracer.h"
+#include "gvt/render/algorithm/ImageTracer.h"
 
+#include <boost/timer/timer.hpp>
 #include <iostream>
 #include <mpi.h>
-#include <boost/timer/timer.hpp>
 
 #include <tbb/task_scheduler_init.h>
 #include <thread>
- 
+
 #include <math.h>
 #include <stdio.h>
-#include <ply.h>
 
 #include <queue>
+
+#include "apps/render/TestScenes.h"
 
 // #define DEBUG_MPI_RENDERER
 // #define DEBUG_RAYTX
@@ -107,40 +108,6 @@ using namespace gvt::render::data::scene;
 using namespace gvt::render::schedule;
 using namespace gvt::render::data::primitives;
 using namespace gvt::render::unit;
-
-static boost::timer::cpu_timer t_run;
-
-typedef struct Vertex {
-  float x, y, z;
-  float nx, ny, nz;
-  void *other_props; /* other properties */
-} Vertex;
-
-typedef struct Face {
-  unsigned char nverts; /* number of vertex indices in list */
-  int *verts;           /* vertex index list */
-  void *other_props;    /* other properties */
-} Face;
-
-PlyProperty vert_props[] = {
-  /* list of property information for a vertex */
-  { "x", Float32, Float32, offsetof(Vertex, x), 0, 0, 0, 0 },
-  { "y", Float32, Float32, offsetof(Vertex, y), 0, 0, 0, 0 },
-  { "z", Float32, Float32, offsetof(Vertex, z), 0, 0, 0, 0 },
-  { "nx", Float32, Float32, offsetof(Vertex, nx), 0, 0, 0, 0 },
-  { "ny", Float32, Float32, offsetof(Vertex, ny), 0, 0, 0, 0 },
-  { "nz", Float32, Float32, offsetof(Vertex, nz), 0, 0, 0, 0 },
-};
-
-PlyProperty face_props[] = {
-  /* list of property information for a face */
-  { "vertex_indices", Int32, Int32, offsetof(Face, verts), 1, Uint8, Uint8, offsetof(Face, nverts) },
-};
-static Vertex **vlist;
-static Face **flist;
-
-#define MIN(a, b) ((a < b) ? (a) : (b))
-#define MAX(a, b) ((a > b) ? (a) : (b))
 
 MpiRenderer::MpiRenderer(int *argc, char ***argv)
     : Application(argc, argv), camera(NULL), image(NULL), tileLoadBalancer(NULL), voter(NULL) {
@@ -160,12 +127,15 @@ MpiRenderer::~MpiRenderer() {
 }
 
 void MpiRenderer::printUsage(const char *argv) {
-  printf("Usage : %s [-h] [-a <adapter>] [-d] [-n <x y z>] [-p] [-s <scheduler>] [-W <image_width>] [-H <image_height>]\n", argv);
+  printf(
+      "Usage : %s [-h] [-a <adapter>] [-d] [-n <x y z>] [-p] [-s <scheduler>] [-W <image_width>] [-H <image_height>]\n",
+      argv);
   printf("  -h, --help\n");
   printf("  -a, --adapter <embree | manta | optix> (default: embree)\n");
   printf("  -s, --scheduler <domain | image> (default: domain)\n");
   printf("  -d, --disable-aync-mpi\n");
-  printf("  -n, --num-instances <x, y, z> specify the number of instances in each direction (default: 1 1 1). effective only with obj.\n");
+  printf("  -n, --num-instances <x, y, z> specify the number of instances in each direction (default: 1 1 1). "
+         "effective only with obj.\n");
   printf("  -p, --ply use ply models\n");
   printf("  -W, --width <image_width> (default: 1280)\n");
   printf("  -H, --height <image_height> (default: 1280)\n");
@@ -201,9 +171,9 @@ void MpiRenderer::parseCommandLine(int argc, char **argv) {
     } else if (strcmp(argv[i], "-d") == 0 || strcmp(argv[i], "--disable-async-mpi") == 0) {
       options.asyncMpi = false;
     } else if (strcmp(argv[i], "-n") == 0 || strcmp(argv[i], "--num-instances") == 0) {
-       options.instanceCountX = atoi(argv[++i]);
-       options.instanceCountY = atoi(argv[++i]);
-       options.instanceCountZ = atoi(argv[++i]);
+      options.instanceCountX = atoi(argv[++i]);
+      options.instanceCountY = atoi(argv[++i]);
+      options.instanceCountZ = atoi(argv[++i]);
     } else if (strcmp(argv[i], "-p") == 0 || strcmp(argv[i], "--ply") == 0) {
       options.ply = true;
     } else if (strcmp(argv[i], "-W") == 0 || strcmp(argv[i], "--width") == 0) {
@@ -218,374 +188,34 @@ void MpiRenderer::parseCommandLine(int argc, char **argv) {
 }
 
 void MpiRenderer::createDatabase() {
+  // create scene
+  apps::render::TestScenes scene(options);
   if (options.ply) {
-    makePlyDatabase();
+    scene.makePlyDatabase();
   } else {
-    makeObjDatabase();
+    scene.makeObjDatabase();
   }
-}
-
-void MpiRenderer::makePlyDatabase() {
-  // mess I use to open and read the ply file with the c utils I found.
-  PlyFile *in_ply;
-  Vertex *vert;
-  Face *face;
-  int elem_count, nfaces, nverts;
-  int i, j, k;
-  float xmin, ymin, zmin, xmax, ymax, zmax;
-  char *elem_name;
-  ;
-  FILE *myfile;
-  char txt[16];
-  std::string temp;
-  std::string filename, filepath, rootdir;
-  // rootdir = "/Users/jbarbosa/r/EnzoPlyData/";
-  rootdir = "/work/01197/semeraro/maverick/DAVEDATA/EnzoPlyData/";
-  // filename = "/work/01197/semeraro/maverick/DAVEDATA/EnzoPlyData/block0.ply";
-  // myfile = fopen(filename.c_str(),"r");
-  // MPI_Init(&argc, &argv);
-  // MPI_Pcontrol(0);
-  // int rank = -1;
-  // MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
-  // gvt::render::RenderContext *renderContext = gvt::render::RenderContext::instance();
-  // if (renderContext == NULL) {
-  //   std::cout << "Something went wrong initializing the context" << std::endl;
-  //   exit(0);
-  // }
+  // create camera
   gvt::core::DBNodeH root = renderContext->getRootNode();
-  gvt::core::DBNodeH dataNodes = renderContext->createNodeFromType("Data", "Data", root.UUID());
-  gvt::core::DBNodeH instNodes = renderContext->createNodeFromType("Instances", "Instances", root.UUID());
-
-  // // create data node
-  // Uuid dataNodeId = createNode("Data", "Data");
-  // Uuid instancesNodeId = createNode("Instances", "Instances");
-
-  // Enzo isosurface...
-  const int numPlyFiles = 8;
-  for (k = 0; k < numPlyFiles; k++) {
-    sprintf(txt, "%d", k);
-    filename = "block";
-    filename += txt;
-    gvt::core::DBNodeH plyMeshNode = renderContext->createNodeFromType("Mesh", filename.c_str(), dataNodes.UUID());
-    // read in some ply data and get ready to load it into the mesh
-    // filepath = rootdir + "block" + std::string(txt) + ".ply";
-    filepath = rootdir + filename + ".ply";
-    myfile = fopen(filepath.c_str(), "r");
-    in_ply = read_ply(myfile);
-    for (i = 0; i < in_ply->num_elem_types; i++) {
-      elem_name = setup_element_read_ply(in_ply, i, &elem_count);
-      temp = elem_name;
-      if (temp == "vertex") {
-        vlist = (Vertex **)malloc(sizeof(Vertex *) * elem_count);
-        nverts = elem_count;
-        setup_property_ply(in_ply, &vert_props[0]);
-        setup_property_ply(in_ply, &vert_props[1]);
-        setup_property_ply(in_ply, &vert_props[2]);
-        for (j = 0; j < elem_count; j++) {
-          vlist[j] = (Vertex *)malloc(sizeof(Vertex));
-          get_element_ply(in_ply, (void *)vlist[j]);
-        }
-      } else if (temp == "face") {
-        flist = (Face **)malloc(sizeof(Face *) * elem_count);
-        nfaces = elem_count;
-        setup_property_ply(in_ply, &face_props[0]);
-        for (j = 0; j < elem_count; j++) {
-          flist[j] = (Face *)malloc(sizeof(Face));
-          get_element_ply(in_ply, (void *)flist[j]);
-        }
-      }
-    }
-    close_ply(in_ply);
-    // smoosh data into the mesh object
-    {
-      Mesh *mesh = new Mesh(new Lambert(Vector4f(1.0, 1.0, 1.0, 1.0)));
-      vert = vlist[0];
-      xmin = vert->x;
-      ymin = vert->y;
-      zmin = vert->z;
-      xmax = vert->x;
-      ymax = vert->y;
-      zmax = vert->z;
-
-      for (i = 0; i < nverts; i++) {
-        vert = vlist[i];
-        xmin = MIN(vert->x, xmin);
-        ymin = MIN(vert->y, ymin);
-        zmin = MIN(vert->z, zmin);
-        xmax = MAX(vert->x, xmax);
-        ymax = MAX(vert->y, ymax);
-        zmax = MAX(vert->z, zmax);
-        mesh->addVertex(Point4f(vert->x, vert->y, vert->z, 1.0));
-      }
-      Point4f lower(xmin, ymin, zmin);
-      Point4f upper(xmax, ymax, zmax);
-      Box3D *meshbbox = new gvt::render::data::primitives::Box3D(lower, upper);
-      // add faces to mesh
-      for (i = 0; i < nfaces; i++) {
-        face = flist[i];
-        mesh->addFace(face->verts[0] + 1, face->verts[1] + 1, face->verts[2] + 1);
-      }
-      mesh->generateNormals();
-      // add Enzo mesh to the database
-      // plyMeshNode["file"] = string("/work/01197/semeraro/maverick/DAVEDATA/EnzoPlyDATA/Block0.ply");
-      plyMeshNode["file"] = string(filepath);
-      plyMeshNode["bbox"] = (unsigned long long)meshbbox;
-      plyMeshNode["ptr"] = (unsigned long long)mesh;
-    }
-    // add instance
-    gvt::core::DBNodeH instnode = renderContext->createNodeFromType("Instance", "inst", instNodes.UUID());
-    gvt::core::DBNodeH meshNode = plyMeshNode;
-    Box3D *mbox = (Box3D *)meshNode["bbox"].value().toULongLong();
-    instnode["id"] = k;
-    instnode["meshRef"] = meshNode.UUID();
-    auto m = new gvt::core::math::AffineTransformMatrix<float>(true);
-    auto minv = new gvt::core::math::AffineTransformMatrix<float>(true);
-    auto normi = new gvt::core::math::Matrix3f();
-    instnode["mat"] = (unsigned long long)m;
-    *minv = m->inverse();
-    instnode["matInv"] = (unsigned long long)minv;
-    *normi = m->upper33().inverse().transpose();
-    instnode["normi"] = (unsigned long long)normi;
-    auto il = (*m) * mbox->bounds[0];
-    auto ih = (*m) * mbox->bounds[1];
-    Box3D *ibox = new gvt::render::data::primitives::Box3D(il, ih);
-    instnode["bbox"] = (unsigned long long)ibox;
-    instnode["centroid"] = ibox->centroid();
-  }
-
-  // add lights, camera, and film to the database
-  gvt::core::DBNodeH lightNodes = renderContext->createNodeFromType("Lights", "Lights", root.UUID());
-  gvt::core::DBNodeH lightNode = renderContext->createNodeFromType("PointLight", "conelight", lightNodes.UUID());
-  lightNode["position"] = Vector4f(512.0, 512.0, 2048.0, 0.0);
-  lightNode["color"] = Vector4f(1.0, 1.0, 1.0, 0.0);
-
-  // camera
-  Point4f eye(512.0, 512.0, 4096.0, 1.0);
-  Point4f focus(512.0, 512.0, 0.0, 1.0);
-  Vector4f upVector(0.0, 1.0, 0.0, 0.0);
-  float fov = (float)(25.0 * M_PI / 180.0);
-  Uuid cameraNodeId = createCameraNode(eye, focus, upVector, fov, options.width, options.height);
-
-  // film
-  Uuid filmNodeId = createFilmNode(options.width, options.height, "");
-
-  // scheduler
-  Uuid scheduleNodeId = createScheduleNode(options.schedulerType, options.adapterType);
-}
-
-void MpiRenderer::makeObjDatabase() {
-  // create data node
-  Uuid dataNodeId = createNode("Data", "Data");
-
-  std::string objName("bunny"); // TODO: fixed for now
-
-  // // add a mesh
-  // Uuid meshNodeId
-  //     = addMesh(dataNodeId, objName + "_mesh",
-  //               "../data/geom/" + objName + ".obj");
-
-  // create instances node
-  Uuid instancesNodeId = createNode("Instances", "Instances");
-
-  // add instances
-  // Box3D meshBounds = getMeshBounds(meshNodeId);
-  Box3D meshBounds = getMeshBounds("../data/geom/" + objName + ".obj");
-  Vector3f extent = meshBounds.extent();
-
-  const float gapX = extent[0] * 0.2f;
-  const float gapY = extent[1] * 0.2f;
-  const float gapZ = extent[2] * 0.2f;
-
-  int instanceCountX = options.instanceCountX;
-  int instanceCountY = options.instanceCountY;
-  int instanceCountZ = options.instanceCountZ;
-
-  Vector3f minPos((extent[0] + gapX) * instanceCountX * -0.5f, (extent[1] + gapY) * instanceCountY * -0.5f,
-                  (extent[2] + gapZ) * instanceCountZ * -0.5f);
-
-  int instanceId = 0;
-  for (int z = 0; z < instanceCountZ; ++z) {
-    for (int y = 0; y < instanceCountY; ++y) {
-      for (int x = 0; x < instanceCountX; ++x) {
-        // add a mesh
-        Uuid meshNodeId = addMesh(dataNodeId, objName + "_mesh", "../data/geom/" + objName + ".obj");
-
-        // int instanceId = y * 2 + x;
-        // m: transform matrix
-        auto m = new gvt::core::math::AffineTransformMatrix<float>(true);
-        *m = *m * gvt::core::math::AffineTransformMatrix<float>::createTranslation(minPos[0] + x * (extent[0] + gapX),
-                                                                                   minPos[1] + y * (extent[1] + gapY),
-                                                                                   minPos[2] + z * (extent[2] + gapZ));
-        *m = *m * gvt::core::math::AffineTransformMatrix<float>::createScale(1.0f, 1.0f, 1.0f);
-        Uuid instanceUuid = addInstance(instancesNodeId, meshNodeId, instanceId++, objName, m);
-      }
-    }
-  }
-
-  // create lights node
-  Uuid lightsNodeId = createNode("Lights", "Lights");
-
-  // add lights
-  Vector4f lightPosition(0.0, 0.1, 0.5, 0.0);
-  Vector4f lightColor(1.0, 1.0, 1.0, 0.0);
-  Uuid lightNodeId = addPointLight(lightsNodeId, "point_light", lightPosition, lightColor);
-
-  // create camera node
+  gvt::core::DBNodeH node = renderContext->createNodeFromType("Camera", "cam", root.UUID());
   Point4f eye(0.0, 0.5, 1.2, 1.0);
   Point4f focus(0.0, 0.0, 0.0, 1.0);
   Vector4f upVector(0.0, 1.0, 0.0, 0.0);
   float fov = (45.0 * M_PI / 180.0);
-  Uuid cameraNodeId = createCameraNode(eye, focus, upVector, fov, options.width, options.height);
-
-  // create film node
-  Uuid filmNodeId = createFilmNode(options.width, options.height, objName);
-
-  // create the scheduler node
-  Uuid scheduleNodeId = createScheduleNode(options.schedulerType, options.adapterType);
-}
-
-bool MpiRenderer::isNodeTypeReserved(const std::string &type) {
-  return ((type == std::string("Camera")) || (type == std::string("Film")) || (type == std::string("View")) ||
-          (type == std::string("Dataset")) || (type == std::string("Attribute")) || (type == std::string("Mesh")) ||
-          (type == std::string("Instance")) || (type == std::string("PointLight")) ||
-          (type == std::string("Schedule")));
-}
-
-DBNodeH MpiRenderer::getNode(const Uuid &id) { return renderContext->getNode(id); }
-
-Uuid MpiRenderer::createNode(const std::string &type, const std::string &name) {
-  if (isNodeTypeReserved(type)) {
-    std::cout << "error: reserved node type " << type << std::endl;
-    exit(1);
+  if (options.ply) {
+    eye = Point4f(512.0, 512.0, 4096.0, 1.0);
+    focus = Point4f(512.0, 512.0, 0.0, 1.0);
+    upVector = Vector4f(0.0, 1.0, 0.0, 0.0);
+    fov = (float)(25.0 * M_PI / 180.0);
   }
-  gvt::core::DBNodeH root = renderContext->getRootNode();
-  gvt::core::DBNodeH node = renderContext->createNodeFromType(type, name, root.UUID());
-  return node.UUID();
-}
-
-Uuid MpiRenderer::addMesh(const Uuid &parentNodeId, const std::string &meshName, const std::string &objFilename) {
-  gvt::core::DBNodeH node = renderContext->createNodeFromType("Mesh", meshName, parentNodeId);
-  gvt::render::data::domain::reader::ObjReader objReader(objFilename);
-  Mesh *mesh = objReader.getMesh();
-  mesh->generateNormals();
-  mesh->computeBoundingBox();
-  Box3D *meshbbox = mesh->getBoundingBox();
-  // add mesh to the database
-  node["file"] = objFilename;
-  node["bbox"] = (unsigned long long)meshbbox;
-  node["ptr"] = (unsigned long long)mesh;
-  return node.UUID();
-}
-
-Box3D MpiRenderer::getMeshBounds(const std::string &objFilename) {
-  gvt::render::data::domain::reader::ObjReader objReader(objFilename);
-  Mesh *mesh = objReader.getMesh();
-  // mesh->generateNormals();
-  mesh->computeBoundingBox();
-  Box3D *bounds = mesh->getBoundingBox();
-  return *bounds;
-}
-
-Box3D MpiRenderer::getMeshBounds(const Uuid &id) {
-  gvt::core::DBNodeH meshNode = renderContext->getNode(id);
-  // Box3D* bounds = *gvt::core::variant_toBox3DPtr(meshNode["bbox"].value());
-  Box3D *bounds = (Box3D *)meshNode["bbox"].value().toULongLong();
-  return *bounds;
-}
-
-Uuid MpiRenderer::addInstance(const Uuid &parentNodeId, const Uuid &meshId, int instanceId,
-                              const std::string &instanceName,
-                              gvt::core::math::AffineTransformMatrix<float> *transform) {
-
-  gvt::core::DBNodeH node = renderContext->createNodeFromType("Instance", instanceName, parentNodeId);
-
-  gvt::core::DBNodeH meshNode = renderContext->getNode(meshId);
-  // Box3D* mbox = *gvt::core::variant_toBox3DPtr(meshNode["bbox"].value());
-  Box3D *mbox = (Box3D *)meshNode["bbox"].value().toULongLong();
-
-  node["id"] = instanceId; // unique id per instance
-  node["meshRef"] = meshNode.UUID();
-
-  // transform the instance
-  // auto m = new gvt::core::math::AffineTransformMatrix<float>(true);
-  auto minv = new gvt::core::math::AffineTransformMatrix<float>(true);
-  auto normi = new gvt::core::math::Matrix3f();
-
-  auto m = transform;
-  node["mat"] = (unsigned long long)m;
-  *minv = m->inverse();
-  node["matInv"] = (unsigned long long)minv;
-  *normi = m->upper33().inverse().transpose();
-  node["normi"] = (unsigned long long)normi;
-
-  // transform mesh bounding box
-  auto il = (*m) * mbox->bounds[0];
-  auto ih = (*m) * mbox->bounds[1];
-  Box3D *ibox = new gvt::render::data::primitives::Box3D(il, ih);
-  node["bbox"] = (unsigned long long)ibox;
-  node["centroid"] = ibox->centroid();
-
-#ifdef DEBUG_MPI_RENDERER
-  printf("[new instance %d] bounds: min(%.3f %.3f %.3f), max(%.3f %.3f %.3f)\n", instanceId, il[0], il[1], il[2], ih[0],
-         ih[1], ih[2]);
-#endif
-
-  return node.UUID();
-}
-
-Uuid MpiRenderer::addPointLight(const Uuid &parentNodeId, const std::string &lightName, const Vector4f &position,
-                                const Vector4f &color) {
-  gvt::core::DBNodeH node = renderContext->createNodeFromType("PointLight", lightName, parentNodeId);
-  node["position"] = Vector4f(0.0, 0.1, 0.5, 0.0);
-  node["color"] = Vector4f(1.0, 1.0, 1.0, 0.0);
-  return node.UUID();
-}
-
-Uuid MpiRenderer::createCameraNode(const Point4f &eye, const Point4f &focus, const Vector4f &upVector, float fov,
-                                   unsigned int width, unsigned int height) {
-
-  gvt::core::DBNodeH root = renderContext->getRootNode();
-
-  gvt::core::DBNodeH node = renderContext->createNodeFromType("Camera", "cam", root.UUID());
-
   node["eyePoint"] = eye;
   node["focus"] = focus;
   node["upVector"] = upVector;
   node["fov"] = fov;
-
   camera = new gvtPerspectiveCamera();
   camera->lookAt(eye, focus, upVector);
   camera->setFOV(fov);
-  camera->setFilmsize(width, height);
-
-  return node.UUID();
-}
-
-Uuid MpiRenderer::createFilmNode(int width, int height, const std::string &sceneName) {
-
-  gvt::core::DBNodeH root = renderContext->getRootNode();
-
-  gvt::core::DBNodeH node = renderContext->createNodeFromType("Film", "film", root.UUID());
-
-  node["width"] = width;
-  node["height"] = height;
-
-  // image = new Image(width, height, sceneName);
-
-  return node.UUID();
-}
-
-Uuid MpiRenderer::createScheduleNode(int schedulerType, int adapterType) {
-
-  gvt::core::DBNodeH root = renderContext->getRootNode();
-
-  gvt::core::DBNodeH node = renderContext->createNodeFromType("Schedule", "sched", root.UUID());
-
-  node["type"] = schedulerType;
-  node["adapter"] = adapterType;
-
-  return node.UUID();
+  camera->setFilmsize(options.width, options.height);
 }
 
 void MpiRenderer::initInstanceRankMap() {
@@ -609,7 +239,7 @@ void MpiRenderer::initInstanceRankMap() {
     // NOTE: mpi-data(domain) assignment strategy
     int ownerRank = static_cast<int>(dataIdx) % GetSize();
     GVT_DEBUG(DBG_ALWAYS, "[" << GetRank() << "] domain scheduler: instId: " << i << ", dataIdx: " << dataIdx
-                           << ", target mpi node: " << ownerRank << ", world size: " << GetSize());
+                              << ", target mpi node: " << ownerRank << ", world size: " << GetSize());
 #ifdef DEBUG_MPI_RENDERER
     std::cout << "[" << GetRank() << "] domain scheduler: instId: " << i << ", dataIdx: " << dataIdx
               << ", target mpi node: " << ownerRank << ", world size: " << GetSize() << "\n";
@@ -637,10 +267,10 @@ void MpiRenderer::setupRender() {
 
   numRanks = GetSize();
   myRank = GetRank();
-   
-  if (schedType == scheduler::Image)  {
+
+  if (schedType == scheduler::Image) {
     if (GetRank() == rank::Server) {
-      serverReady = false; 
+      serverReady = false;
       pthread_mutex_init(&serverReadyLock, NULL);
       pthread_cond_init(&serverReadyCond, NULL);
     }
@@ -653,7 +283,7 @@ void MpiRenderer::setupRender() {
     }
   }
   // image write
-  imageReady = false; 
+  imageReady = false;
   pthread_mutex_init(&imageReadyLock, NULL);
   pthread_cond_init(&imageReadyCond, NULL);
 }
@@ -678,8 +308,7 @@ void MpiRenderer::render() {
     // collapse the following two if-else blocks into a single block
     if (schedType == scheduler::Image) { // image scheduler with mpi layer
 
-      if (rank == 0)
-        printf("[async mpi] starting image scheduler using %d processes\n", GetSize());
+      if (rank == 0) printf("[async mpi] starting image scheduler using %d processes\n", GetSize());
 
       RequestWork::Register();
       TileWork::Register();
@@ -699,8 +328,7 @@ void MpiRenderer::render() {
       Wait();
 
     } else { // domain scheduler with mpi layer
-      if (rank == 0)
-        printf("[async mpi] starting domain scheduler using %d processes\n", GetSize());
+      if (rank == 0) printf("[async mpi] starting domain scheduler using %d processes\n", GetSize());
 
       DomainTileWork::Register();
       RayTransferWork::Register();
@@ -717,7 +345,7 @@ void MpiRenderer::render() {
       for (int i = 0; i < numFrames; ++i) {
         work.Action();
         pthread_mutex_lock(&imageReadyLock);
-        while(!this->imageReady) {
+        while (!this->imageReady) {
           pthread_cond_wait(&imageReadyCond, &imageReadyLock);
         }
         imageReady = false;
@@ -785,14 +413,14 @@ bool MpiRenderer::transferRays() {
     receiveRays();
     return voter->updateState();
   } else {
-    return rayQueue.empty(); 
+    return rayQueue.empty();
   }
 }
 
 void MpiRenderer::sendRays() {
   for (auto &q : rayQueue) {
     int instance = q.first;
-    RayVector& rays = q.second; 
+    RayVector &rays = q.second;
     int ownerRank = getInstanceOwner(instance);
     size_t numRaysToSend = rays.size();
     if (ownerRank != myRank && numRaysToSend > 0) {
@@ -810,7 +438,7 @@ void MpiRenderer::sendRays() {
 void MpiRenderer::receiveRays() {
   pthread_mutex_lock(&rayTransferBufferLock);
   for (size_t i = 0; i < rayTransferBuffer.size(); ++i) {
-    RayTransferWork* raytx = rayTransferBuffer[i];
+    RayTransferWork *raytx = rayTransferBuffer[i];
     raytx->copyIncomingRays(&rayQueue);
 
     RayTransferWork grant;
@@ -826,36 +454,26 @@ void MpiRenderer::receiveRays() {
   pthread_mutex_unlock(&rayTransferBufferLock);
 }
 
-void MpiRenderer::bufferRayTransferWork(RayTransferWork* work) {
+void MpiRenderer::bufferRayTransferWork(RayTransferWork *work) {
   pthread_mutex_lock(&rayTransferBufferLock);
   rayTransferBuffer.push_back(work); // TODO: avoid resizing
   pthread_mutex_unlock(&rayTransferBufferLock);
 }
 
-void MpiRenderer::bufferVoteWork(VoteWork* work) {
-  voter->bufferVoteWork(work);
-}
+void MpiRenderer::bufferVoteWork(VoteWork *work) { voter->bufferVoteWork(work); }
 
-void MpiRenderer::voteForResign(int senderRank, unsigned int timeStamp) {
-  voter->voteForResign(senderRank, timeStamp);
-}
+void MpiRenderer::voteForResign(int senderRank, unsigned int timeStamp) { voter->voteForResign(senderRank, timeStamp); }
 
-void MpiRenderer::voteForNoWork(int senderRank, unsigned int timeStamp) {
-  voter->voteForNoWork(senderRank, timeStamp);
-}
+void MpiRenderer::voteForNoWork(int senderRank, unsigned int timeStamp) { voter->voteForNoWork(senderRank, timeStamp); }
 
-void MpiRenderer::applyRayTransferResult(int numRays) {
-  voter->subtractNumPendingRays(numRays);
-}
+void MpiRenderer::applyRayTransferResult(int numRays) { voter->subtractNumPendingRays(numRays); }
 
-void MpiRenderer::applyVoteResult(int voteType, unsigned int timeStamp) {
-  voter->applyVoteResult(voteType, timeStamp);
-}
+void MpiRenderer::applyVoteResult(int voteType, unsigned int timeStamp) { voter->applyVoteResult(voteType, timeStamp); }
 
 void MpiRenderer::copyIncomingRays(int instanceId, const gvt::render::actor::RayVector *incomingRays) {
   pthread_mutex_lock(&rayTransferMutex);
   if (rayQueue.find(instanceId) != rayQueue.end()) {
-    rayQueue[instanceId].insert(rayQueue[instanceId].end(), incomingRays->begin(), incomingRays->end()); 
+    rayQueue[instanceId].insert(rayQueue[instanceId].end(), incomingRays->begin(), incomingRays->end());
   } else {
     rayQueue[instanceId] = *incomingRays;
   }
@@ -863,18 +481,9 @@ void MpiRenderer::copyIncomingRays(int instanceId, const gvt::render::actor::Ray
 }
 
 Voter::Voter(int numRanks, int myRank, std::map<int, gvt::render::actor::RayVector> *rayQ)
-  : numRanks(numRanks),
-    myRank(myRank),
-    rayQ(rayQ),
-    state(WaitForNoWork),
-    numPendingRays(0),
-    validTimeStamp(0),
-    votesAvailable(false),
-    resignGrant(false),
-    numVotesReceived(0),
-    commitCount(0),
-    numPendingVotes(0) {
-    
+    : numRanks(numRanks), myRank(myRank), rayQ(rayQ), state(WaitForNoWork), numPendingRays(0), validTimeStamp(0),
+      votesAvailable(false), resignGrant(false), numVotesReceived(0), commitCount(0), numPendingVotes(0) {
+
   pthread_mutex_init(&votingLock, NULL);
   // pthread_mutex_init(&voteWorkBufferLock, NULL);
 }
@@ -888,31 +497,33 @@ void Voter::addNumPendingRays(int n) {
 void Voter::subtractNumPendingRays(int n) {
   pthread_mutex_lock(&votingLock);
 #ifdef DEBUG_RAYTX
-  printf("rank %d: Voter::subtractNumPendingRays: numPendingRays(before) %d numPendingRays(after) %d\n", myRank, numPendingRays, (numPendingRays-n));
+  printf("rank %d: Voter::subtractNumPendingRays: numPendingRays(before) %d numPendingRays(after) %d\n", myRank,
+         numPendingRays, (numPendingRays - n));
 #endif
   numPendingRays -= n;
   assert(numPendingRays >= 0);
   pthread_mutex_unlock(&votingLock);
 }
 
-void Voter::bufferVoteWork(VoteWork* work) {
+void Voter::bufferVoteWork(VoteWork *work) {
   pthread_mutex_lock(&voteWorkBufferLock);
   voteWorkBuffer.push_back(work); // TODO: avoid resizing
 #ifdef DEBUG_RAYTX
-  printf("rank %d: Voter::bufferVoteWork received vote request from rank %d voteType %d timeStamp %d\n", myRank, work->getSenderRank(), work->getVoteType(), work->getTimeStamp());
+  printf("rank %d: Voter::bufferVoteWork received vote request from rank %d voteType %d timeStamp %d\n", myRank,
+         work->getSenderRank(), work->getVoteType(), work->getTimeStamp());
 #endif
   pthread_mutex_unlock(&voteWorkBufferLock);
 }
 
 void Voter::voteForResign(int senderRank, unsigned int timeStamp) {
-  int vote = (state == WaitForResign || state == Resigned) ?  VoteWork::Commit : VoteWork::Abort;
+  int vote = (state == WaitForResign || state == Resigned) ? VoteWork::Commit : VoteWork::Abort;
   VoteWork grant;
   grant.setup(vote, myRank, timeStamp);
   grant.Send(senderRank);
 }
 
 void Voter::voteForNoWork(int senderRank, unsigned int timeStamp) {
-  int vote = (state != WaitForNoWork) ?  VoteWork::Commit : VoteWork::Abort;
+  int vote = (state != WaitForNoWork) ? VoteWork::Commit : VoteWork::Abort;
   VoteWork grant;
   grant.setup(vote, myRank, timeStamp);
   grant.Send(senderRank);
@@ -928,7 +539,9 @@ void Voter::applyVoteResult(int voteType, unsigned int timeStamp) {
     if (numVotesReceived == numRanks - 1) {
       votesAvailable = true;
 #ifdef DEBUG_RAYTX
-      printf("rank %d: Voter::applyVoteResult: votesAvailable %d, numPendingVotes %d, numVotesReceived %d, commitCount %d voteType %d\n", myRank, votesAvailable, numPendingVotes, numVotesReceived, commitCount, voteType);
+      printf("rank %d: Voter::applyVoteResult: votesAvailable %d, numPendingVotes %d, numVotesReceived %d, commitCount "
+             "%d voteType %d\n",
+             myRank, votesAvailable, numPendingVotes, numVotesReceived, commitCount, voteType);
 #endif
     }
   }
@@ -941,85 +554,78 @@ bool Voter::updateState() {
   bool hasWork = !(rayQ->empty() && numPendingRays == 0);
   bool allDone = false;
 
-  switch(state) {
-    case WaitForNoWork: { // has work
-      if (!hasWork) {
-        requestForVotes(VoteWork::NoWork, validTimeStamp);
-        state = WaitForVotes;
+  switch (state) {
+  case WaitForNoWork: { // has work
+    if (!hasWork) {
+      requestForVotes(VoteWork::NoWork, validTimeStamp);
+      state = WaitForVotes;
 #ifdef DEBUG_RAYTX
-        printf("rank %d: WaitForNoWork -> WaitForVotes\n", myRank);
+      printf("rank %d: WaitForNoWork -> WaitForVotes\n", myRank);
 #endif
-      }
     }
-    break;
-    case WaitForVotes: { // pending votes
-      if (hasWork) {
-        ++validTimeStamp;
-        numVotesReceived = 0;
-        commitCount = 0;
-        votesAvailable = false;
-        state = WaitForNoWork;
+  } break;
+  case WaitForVotes: { // pending votes
+    if (hasWork) {
+      ++validTimeStamp;
+      numVotesReceived = 0;
+      commitCount = 0;
+      votesAvailable = false;
+      state = WaitForNoWork;
 #ifdef DEBUG_RAYTX
-        printf("rank %d: WaitForVotes -> WaitForNoWork\n", myRank);
+      printf("rank %d: WaitForVotes -> WaitForNoWork\n", myRank);
 #endif
-      } else if (votesAvailable) {
-        bool commit = checkVotes();
+    } else if (votesAvailable) {
+      bool commit = checkVotes();
 
-        numVotesReceived = 0;
-        commitCount = 0;
-        votesAvailable = false;
+      numVotesReceived = 0;
+      commitCount = 0;
+      votesAvailable = false;
 
-        if (commit) {
-          requestForVotes(VoteWork::Resign, validTimeStamp);
-          state = WaitForResign;
+      if (commit) {
+        requestForVotes(VoteWork::Resign, validTimeStamp);
+        state = WaitForResign;
 #ifdef DEBUG_RAYTX
         printf("rank %d: updateState(): WaitForVotes -> WaitForResign\n", myRank);
 #endif
-        } else { 
+      } else {
 #ifdef DEBUG_RAYTX
         printf("rank %d: updateState(): abort message received. retrying requestForVotes.\n", myRank);
 #endif
-          // TODO: hpark adjust request interval based on workloads?
-          requestForVotes(VoteWork::NoWork, validTimeStamp);
-        }
+        // TODO: hpark adjust request interval based on workloads?
+        requestForVotes(VoteWork::NoWork, validTimeStamp);
       }
     }
-    break;
-    case WaitForResign: {
-      if (hasWork) { // TODO: hpark possible? can't just think of this case
-        assert(false); // TODO: hpark let's disable this for now
-        ++validTimeStamp;
-        numVotesReceived = 0;
-        commitCount = 0;
-        votesAvailable = false;
-        state = WaitForNoWork;
+  } break;
+  case WaitForResign: {
+    if (hasWork) {   // TODO: hpark possible? can't just think of this case
+      assert(false); // TODO: hpark let's disable this for now
+      ++validTimeStamp;
+      numVotesReceived = 0;
+      commitCount = 0;
+      votesAvailable = false;
+      state = WaitForNoWork;
 
-      } else if (votesAvailable) {
-        bool commit = checkVotes();
+    } else if (votesAvailable) {
+      bool commit = checkVotes();
 
-        numVotesReceived = 0;
-        commitCount = 0;
-        votesAvailable = false;
+      numVotesReceived = 0;
+      commitCount = 0;
+      votesAvailable = false;
 
-        if (commit) {
-          allDone = true;
-          state = Resigned;
+      if (commit) {
+        allDone = true;
+        state = Resigned;
 #ifdef DEBUG_RAYTX
         printf("rank %d: WaitForResign allDone=true\n", myRank);
 #endif
-        } else {
-          requestForVotes(VoteWork::Resign, validTimeStamp);
-        }
+      } else {
+        requestForVotes(VoteWork::Resign, validTimeStamp);
       }
     }
-    break;
-    case Resigned: {
-    }
-    break;
-    default: {
-      state = WaitForNoWork;
-    }
-    break;
+  } break;
+  case Resigned: {
+  } break;
+  default: { state = WaitForNoWork; } break;
   }
   // vote();
   pthread_mutex_unlock(&votingLock);
@@ -1029,16 +635,17 @@ bool Voter::updateState() {
 void Voter::vote() {
   pthread_mutex_lock(&voteWorkBufferLock);
   for (size_t i = 0; i < voteWorkBuffer.size(); ++i) {
-    VoteWork* request = voteWorkBuffer[i];
+    VoteWork *request = voteWorkBuffer[i];
 #ifdef DEBUG_RAYTX
-  printf("rank %d: processing vote request type=%d timeStamp=%d\n", myRank, request->getVoteType(), request->getTimeStamp());
+    printf("rank %d: processing vote request type=%d timeStamp=%d\n", myRank, request->getVoteType(),
+           request->getTimeStamp());
 #endif
     int vote;
     int type = request->getVoteType();
     if (type == VoteWork::NoWork) {
-      vote = (state != WaitForNoWork) ?  VoteWork::Commit : VoteWork::Abort;
-    // } else if (type == VoteWork::Resign) {
-    //   vote = (state == WaitForResign) ?  VoteWork::Commit : VoteWork::Abort;
+      vote = (state != WaitForNoWork) ? VoteWork::Commit : VoteWork::Abort;
+      // } else if (type == VoteWork::Resign) {
+      //   vote = (state == WaitForResign) ?  VoteWork::Commit : VoteWork::Abort;
     } else {
       assert(false);
     }
@@ -1046,7 +653,9 @@ void Voter::vote() {
     grant.setup(vote, myRank, request->getTimeStamp());
     grant.Send(request->getSenderRank());
 #ifdef DEBUG_RAYTX
-    printf("rank %d: sent vote voteType %d timeStamp %d to rank %d in response to vote Type %d (state %d numPendingVotes %d)\n", myRank, vote, request->getTimeStamp(), request->getSenderRank(), type, state, numPendingVotes);
+    printf("rank %d: sent vote voteType %d timeStamp %d to rank %d in response to vote Type %d (state %d "
+           "numPendingVotes %d)\n",
+           myRank, vote, request->getTimeStamp(), request->getSenderRank(), type, state, numPendingVotes);
 #endif
     delete request;
   }
@@ -1054,9 +663,7 @@ void Voter::vote() {
   pthread_mutex_unlock(&voteWorkBufferLock);
 }
 
-bool Voter::checkVotes() {
-  return (commitCount == numRanks - 1);
-}
+bool Voter::checkVotes() { return (commitCount == numRanks - 1); }
 
 void Voter::requestForVotes(int voteType, unsigned int timeStamp) {
   numPendingVotes += (numRanks - 1);

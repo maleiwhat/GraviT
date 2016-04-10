@@ -37,19 +37,19 @@
 #ifndef GVT_RENDER_UNIT_MPI_RENDERER_H
 #define GVT_RENDER_UNIT_MPI_RENDERER_H
 
-#include "gvt/core/mpi/Application.h"
 #include "gvt/core/DatabaseNode.h"
-#include "gvt/core/math/Vector.h"
 #include "gvt/core/Types.h"
+#include "gvt/core/math/Vector.h"
+#include "gvt/core/mpi/Application.h"
 
 #include "gvt/render/Types.h"
-#include "gvt/render/data/primitives/BBox.h"
+#include "gvt/render/actor/Ray.h"
 
-#include <vector>
-#include <map>
-#include <tbb/mutex.h>
-#include <pthread.h>
 #include <chrono>
+#include <map>
+#include <pthread.h>
+#include <tbb/mutex.h>
+#include <vector>
 
 using namespace gvt::core::mpi;
 using namespace std::chrono;
@@ -120,23 +120,6 @@ public:
 private:
   // helpers
   void printUsage(const char *argv);
-  bool isNodeTypeReserved(const std::string &type);
-  gvt::core::DBNodeH getNode(const gvt::core::Uuid &id);
-  gvt::core::Uuid createNode(const std::string &type, const std::string &name);
-  gvt::core::Uuid addMesh(const gvt::core::Uuid &parentNodeId, const std::string &meshName,
-                          const std::string &objFilename);
-  gvt::render::data::primitives::Box3D getMeshBounds(const gvt::core::Uuid &id);
-  gvt::render::data::primitives::Box3D getMeshBounds(const std::string &objFilename);
-  gvt::core::Uuid addInstance(const gvt::core::Uuid &parentNodeId, const gvt::core::Uuid &meshId, int instanceId,
-                              const std::string &instanceName,
-                              gvt::core::math::AffineTransformMatrix<float> *transform);
-  gvt::core::Uuid addPointLight(const gvt::core::Uuid &parentNodeId, const std::string &lightName,
-                                const gvt::core::math::Vector4f &position, const gvt::core::math::Vector4f &color);
-  gvt::core::Uuid createCameraNode(const gvt::core::math::Point4f &eye, const gvt::core::math::Point4f &focus,
-                                   const gvt::core::math::Vector4f &upVector, float fov, unsigned int width,
-                                   unsigned int height);
-  gvt::core::Uuid createFilmNode(int width, int height, const std::string &sceneName);
-  gvt::core::Uuid createScheduleNode(int schedulerType, int adapterType);
 
   void initServer();
   void setupRender();
@@ -211,11 +194,11 @@ private:
   int imageWidth;
   int imageHeight;
 
-// ray transfer
+  // ray transfer
 public:
   bool transferRays();
-  void bufferRayTransferWork(RayTransferWork* work);
-  void bufferVoteWork(VoteWork* work);
+  void bufferRayTransferWork(RayTransferWork *work);
+  void bufferVoteWork(VoteWork *work);
   void voteForResign(int senderRank, unsigned int timeStamp);
   void voteForNoWork(int senderRank, unsigned int timeStamp);
   void applyRayTransferResult(int numRays);
@@ -229,11 +212,11 @@ private:
   void sendRays();
   void receiveRays();
 
-  Voter* voter;
+  Voter *voter;
 
   // Warning: delete these dynamicaly allocated pointers upon copying all rays
   // TODO: minimize resizing
-  std::vector<RayTransferWork*> rayTransferBuffer;
+  std::vector<RayTransferWork *> rayTransferBuffer;
   pthread_mutex_t rayTransferBufferLock;
 
 private:
@@ -259,7 +242,7 @@ public:
   void subtractNumPendingRays(int n);
 
   void applyVoteResult(int voteType, unsigned int timeStamp);
-  void bufferVoteWork(VoteWork* work);
+  void bufferVoteWork(VoteWork *work);
   void voteForResign(int senderRank, unsigned int timeStamp);
   void voteForNoWork(int senderRank, unsigned int timeStamp);
 
@@ -287,7 +270,7 @@ private:
 
   int numPendingVotes;
 
-  std::vector<VoteWork*> voteWorkBuffer;
+  std::vector<VoteWork *> voteWorkBuffer;
   pthread_mutex_t voteWorkBufferLock;
 };
 
@@ -297,19 +280,26 @@ public:
     elapsed = 0.0;
     st = high_resolution_clock::now();
   }
-  void start() {
-    st = high_resolution_clock::now();
-  }
+  void start() { st = high_resolution_clock::now(); }
   void stop() {
-    auto et = high_resolution_clock::now(); 
-    elapsed += std::chrono::duration<double, std::ratio<1,1000>>(et - st).count();
+    auto et = high_resolution_clock::now();
+    elapsed += std::chrono::duration<double, std::ratio<1, 1000> >(et - st).count();
   }
   double getElapsed() const { return elapsed; }
+
 private:
   high_resolution_clock::time_point st;
   double elapsed;
 };
 
+class Profiler {
+public:
+  enum Type { Trace = 0, Shuffle, Send, Receive, Vote, Size };
+  Profiler() { times.resize(Size, 0.0); }
+
+private:
+  std::vector<double> times;
+};
 }
 }
 }
