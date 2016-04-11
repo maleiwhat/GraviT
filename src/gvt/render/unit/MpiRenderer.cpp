@@ -116,6 +116,7 @@
 
 // #define DEBUG_MPI_RENDERER
 // #define DEBUG_RAYTX
+#define ENABLE_TIMERS
 
 using namespace std;
 using namespace gvt::render;
@@ -363,16 +364,30 @@ void MpiRenderer::render() {
 
       image = new Image(imageWidth, imageHeight, "image");
 
+#ifdef ENABLE_TIMERS
+      Timer timer_total;
+      Timer timer_wait_image;
+#endif
       for (int i = 0; i < options.numFrames; ++i) {
         runDomainTracer();
+        timer_wait_image.start();
         pthread_mutex_lock(&imageReadyLock);
         while (!this->imageReady) {
           pthread_cond_wait(&imageReadyCond, &imageReadyLock);
         }
         imageReady = false;
         pthread_mutex_unlock(&imageReadyLock);
+#ifdef ENABLE_TIMERS
+        timer_wait_image.stop();
+        profiler.update(Profiler::WaitImage, timer_wait_image.getElapsed());
+#endif
         printf("[async mpi] domain scheduler frame %d done\n", i);
       }
+#ifdef ENABLE_TIMERS
+      timer_total.stop();
+      profiler.update(Profiler::Total, timer_total.getElapsed());
+      profiler.print(options.numFrames);
+#endif
       Application::Kill();
     }
     freeRender();
@@ -430,13 +445,32 @@ void MpiRenderer::aggregatePixel(int pixelId, const GVT_COLOR_ACCUM &addend) {
 }
 
 bool MpiRenderer::transferRays() {
+#ifdef ENABLE_TIMERS
+  Timer timer_vote;
+  Timer timer_transfer;
+#endif
+  bool done;
   if (numRanks > 1) {
     sendRays();
     receiveRays();
-    return voter->updateState();
+#ifdef ENABLE_TIMERS
+    timer_transfer.stop();
+    profiler.update(Profiler::Transfer, timer_transfer.getElapsed());
+    timer_vote.start();
+#endif
+    done = voter->updateState();
+#ifdef ENABLE_TIMERS
+    timer_vote.stop();
+    profiler.update(Profiler::Vote, timer_vote.getElapsed());
+#endif
   } else {
-    return rayQueue.empty();
+    done = rayQueue.empty();
+#ifdef ENABLE_TIMERS
+    timer_transfer.stop();
+    profiler.update(Profiler::Transfer, timer_transfer.getElapsed());
+#endif
   }
+  return done;
 }
 
 void MpiRenderer::sendRays() {
@@ -499,12 +533,16 @@ void MpiRenderer::copyIncomingRays(int instanceId, const gvt::render::actor::Ray
 }
 
 void MpiRenderer::runDomainTracer() {
-  Timer timer_total;
+#ifdef ENABLE_TIMERS
+  Timer timer_primary;
+#endif
   RayVector rays;
   generatePrimaryRays(rays);
+#ifdef ENABLE_TIMERS
+  timer_primary.stop();
+  profiler.update(Profiler::Primary, timer_primary.getElapsed());
+#endif
   domainTracer(rays);
-  timer_total.stop();
-  profiler.update(Profiler::Total, timer_total.getElapsed());
 }
 
 void MpiRenderer::generatePrimaryRays(RayVector &rays) {
@@ -564,19 +602,23 @@ void MpiRenderer::filterRaysLocally(RayVector &rays) {
 }
 
 void MpiRenderer::domainTracer(RayVector &rays) {
+#ifdef ENABLE_TIMERS
   Timer timer_filter;
-  Timer timer_sched;
+  Timer timer_schedule;
   Timer timer_trace;
   Timer timer_shuffle;
+#endif
 
   GVT_DEBUG(DBG_ALWAYS, "domain scheduler: starting, num rays: " << rays.size());
   int adapterType = root["Schedule"]["adapter"].value().toInteger();
   long domain_counter = 0;
 
+#ifdef ENABLE_TIMERS
   timer_filter.start();
   filterRaysLocally(rays);
   timer_filter.stop();
   profiler.update(Profiler::Filter, timer_filter.getElapsed())
+#endif
 
   GVT_DEBUG(DBG_LOW, "tracing rays");
   // process domains until all rays are terminated
@@ -593,6 +635,7 @@ void MpiRenderer::domainTracer(RayVector &rays) {
   while (!all_done) {
     // pthread_mutex_lock(rayTransferMutex);
     if (!rayQueue.empty()) {
+      timer_schedule.start();
       // process domain assigned to this proc with most rays queued
       // if there are queues for instances that are not assigned
       // to the current rank, erase those entries
@@ -617,8 +660,19 @@ void MpiRenderer::domainTracer(RayVector &rays) {
         rayQueue.erase(instId);
       }
       if (instTarget == -1) {
+#ifdef ENABLE_TIMERS
+        timer_schedule.stop();
+        profiler.update(Profiler::Schedule, timer_schedule.getElapsed());
+#endif
         continue;
       }
+#ifdef ENABLE_TIMERS
+      else {
+        timer_schedule.stop();
+        profiler.update(Profiler::Schedule, timer_schedule.getElapsed());
+      }
+#endif
+      
       GVT_DEBUG(DBG_ALWAYS, "domain scheduler: next instance: " << instTarget << ", rays: " << instTargetCount << " ["
                                                                 << myRank << "]");
       // doms_to_send.clear();
@@ -681,7 +735,9 @@ void MpiRenderer::domainTracer(RayVector &rays) {
         GVT_DEBUG(DBG_ALWAYS, "[" << myRank << "] domain scheduler: calling process rayQueue");
         gvt::core::DBNodeH instNode = getInstanceNode(instTarget);
         {
+#ifdef ENABLE_TIMERS
           timer_trace.start();
+#endif
           moved_rays.reserve(rayQueue[instTarget].size() * 10);
           if (!adapter) {
             printf("nulll adapter detected\n");
@@ -689,14 +745,20 @@ void MpiRenderer::domainTracer(RayVector &rays) {
           }
           adapter->trace(rayQueue[instTarget], moved_rays, instNode);
           rayQueue[instTarget].clear();
+#ifdef ENABLE_TIMERS
           timer_trace.stop();
           profiler.update(Profiler::Trace, timer_trace.getElapsed());
+#endif
         }
+#ifdef ENABLE_TIMERS
         timer_shuffle.start();
+#endif
         shuffleRays(moved_rays, instNode);
         moved_rays.clear();
+#ifdef ENABLE_TIMERS
         timer_shuffle.stop();
         profiler.update(Profiler::Shuffle, timer_shuffle.getElapsed());
+#endif
       }
     } // if (!rayQueue.empty()) {
     // done with current domain, send off rays to their proper processors.
@@ -776,3 +838,58 @@ void MpiRenderer::shuffleRays(gvt::render::actor::RayVector &rays, gvt::core::DB
   rays.clear();
 }
 
+void MpiRenderer::compositePixels() {
+#ifdef ENABLE_TIMERS
+  Timer timer_composite;
+#endif
+  size_t size = options.width * options.height;
+  for (size_t i = 0; i < size; i++) image->Add(i, framebuffer[i]);
+
+  unsigned char *rgb = image->GetBuffer();
+  int rgb_buf_size = 3 * size;
+  unsigned char *bufs = (myRank == 0) ? new unsigned char[numRanks * rgb_buf_size] : NULL;
+
+  MPI_Gather(rgb, rgb_buf_size, MPI_UNSIGNED_CHAR, bufs, rgb_buf_size, MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);
+
+  if (myRank == 0) {
+    int nchunks = std::thread::hardware_concurrency() * 2;
+    int chunk_size = size / nchunks;
+    std::vector<std::pair<int, int> > chunks(nchunks);
+    std::vector<std::future<void> > futures;
+    for (int ii = 0; ii < nchunks - 1; ii++) {
+      chunks.push_back(std::make_pair(ii * chunk_size, ii * chunk_size + chunk_size));
+    }
+    int ii = nchunks - 1;
+    chunks.push_back(std::make_pair(ii * chunk_size, size));
+    for (auto &limit : chunks) {
+      futures.push_back(std::async(std::launch::async, [&]() {
+        // // std::pair<int,int> limit = std::make_pair(0,size);
+        // for (size_t i = 1; i < mpi.world_size; ++i) {
+        for (size_t i = 1; i < numRanks; ++i) {
+          for (int j = limit.first * 3; j < limit.second * 3; j += 3) {
+            int p = i * rgb_buf_size + j; // assumes black background, so adding is fine (r==g==b== 0)
+            rgb[j + 0] += bufs[p + 0];
+            rgb[j + 1] += bufs[p + 1];
+            rgb[j + 2] += bufs[p + 2];
+            // printf("%d (%f %f %f)\n", p, rgb[j], rgb[j+1], rgb[j+2]);
+          }
+        }
+      }));
+    }
+    for (std::future<void> &f : futures) {
+      f.wait();
+    }
+    printf("[async mpi] Rank %d: writing result to file\n", myRank);
+    image->Write(false);
+  }
+  delete[] bufs;
+
+  pthread_mutex_lock(&imageReadyLock);
+  imageReady = true;
+  pthread_cond_signal(&imageReadyCond);
+  pthread_mutex_unlock(&imageReadyLock);
+#ifdef ENABLE_TIMERS
+  timer_composite.stop();
+  profiler.update(Profiler::Composite, timer_composite.getElapsed());
+#endif
+}

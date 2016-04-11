@@ -110,11 +110,29 @@ class Voter;
 
 class Profiler {
 public:
-  enum Type { Total = 0, Filter, Trace, Shuffle, Transfer, Vote, Size };
-  Profiler() { times.resize(Size, 0.0); }
+  enum Type { Total = 0, Primary, Filter, Schedule, Trace, Shuffle, Transfer, Vote, Composite, WaitImage, Size };
+  Profiler() {
+    times.resize(Size, 0.0);
+    names.resize(Size);
+    names = { "Total", "Primary_rays", "Filter", "Schedule", "Trace", "Shuffle", "Transfer", "Vote", "Composite", "WaitImage" };
+  }
   void update(int type, double elapsed) { times[type] += elapsed; }
+  void print(int numFrames) {
+    double aggregated = 0.0;
+    for (int i=0; i<names.size(); ++i) {
+      if (i != Total) {
+        aggregated += times[i];
+      }
+      double avg = times[i] / numFrames;
+      double percent = (times[i] * 100) / times[Total];
+      std::cout << names[i] << ": " << avg << " ms ("<< percent <<" %)\n";
+    }
+    double misc = times[Total] - aggregated;
+    std::cout << "Misc: " << misc / numFrames << " ms ("<< (misc * 100) / times[Total]  <<" %)\n";
+  }
 private:
   std::vector<double> times;
+  std::vector<std::string> names;
 };
 
 class MpiRenderer : public Application {
@@ -247,6 +265,10 @@ private:
   void filterRaysLocally(gvt::render::actor::RayVector &rays);
   void shuffleRays(gvt::render::actor::RayVector &rays, gvt::core::DBNodeH instNode);
 
+public:
+  void compositePixels();
+
+private:
   gvt::render::Adapter *adapter;
   Profiler profiler;
 };
@@ -260,7 +282,7 @@ public:
   void start() { st = high_resolution_clock::now(); }
   void stop() {
     auto et = high_resolution_clock::now();
-    elapsed += std::chrono::duration<double, std::ratio<1, 1000> >(et - st).count();
+    elapsed = std::chrono::duration<double, std::ratio<1, 1000> >(et - st).count();
   }
   double getElapsed() const { return elapsed; }
 
