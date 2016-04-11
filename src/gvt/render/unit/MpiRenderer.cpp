@@ -131,9 +131,7 @@ using namespace gvt::render::unit;
 using namespace gvt::render::actor;
 
 MpiRenderer::MpiRenderer(int *argc, char ***argv)
-    : Application(argc, argv), camera(NULL), image(NULL), tileLoadBalancer(NULL), voter(NULL) {
-
-}
+    : Application(argc, argv), camera(NULL), image(NULL), tileLoadBalancer(NULL), voter(NULL) {}
 
 MpiRenderer::~MpiRenderer() {
   if (camera != NULL) delete camera;
