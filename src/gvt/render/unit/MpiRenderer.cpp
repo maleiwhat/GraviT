@@ -309,6 +309,14 @@ void MpiRenderer::setupRender() {
   imageReady = false;
   pthread_mutex_init(&imageReadyLock, NULL);
   pthread_cond_init(&imageReadyCond, NULL);
+
+  gatherTimesStart = false;
+  pthread_mutex_init(&gatherTimesStartMutex, NULL);
+  pthread_cond_init(&gatherTimesStartCond, NULL);
+
+  gatherTimesDone = false;
+  pthread_mutex_init(&gatherTimesDoneMutex, NULL);
+  pthread_cond_init(&gatherTimesDoneCond, NULL);
 }
 
 void MpiRenderer::freeRender() {
@@ -375,7 +383,7 @@ void MpiRenderer::render() {
         timer_wait_image.start();
 #endif
         pthread_mutex_lock(&imageReadyLock);
-        while (!this->imageReady) {
+        while (!imageReady) {
           pthread_cond_wait(&imageReadyCond, &imageReadyLock);
         }
         imageReady = false;
@@ -389,10 +397,23 @@ void MpiRenderer::render() {
 #ifdef ENABLE_TIMERS
       timer_total.stop();
       profiler.update(Profiler::Total, timer_total.getElapsed());
+
+      pthread_mutex_lock(&gatherTimesStartMutex);
+      gatherTimesStart = true;
+      pthread_cond_signal(&gatherTimesStartCond);
+      pthread_mutex_unlock(&gatherTimesStartMutex);
+
       if (myRank == 0) {
         TimeGatherWork timeGather;
         timeGather.Broadcast(true, true);
       }
+
+      pthread_mutex_lock(&gatherTimesDoneMutex);
+      while (!gatherTimesDone) {
+        pthread_cond_wait(&gatherTimesDoneCond, &gatherTimesDoneMutex);
+      }
+      gatherTimesDone = false;
+      pthread_mutex_unlock(&gatherTimesDoneMutex);
 #endif
       Application::Kill();
     }
@@ -901,13 +922,27 @@ void MpiRenderer::compositePixels() {
 }
 
 void MpiRenderer::gatherTimes() {
+  pthread_mutex_lock(&gatherTimesStartMutex);
+  while (!gatherTimesStart) {
+    pthread_cond_wait(&gatherTimesStartCond, &gatherTimesStartMutex);
+  }
+  gatherTimesStart = false;
+  pthread_mutex_unlock(&gatherTimesStartMutex);
+
   int recvcount = numRanks * Profiler::Size;
   if (myRank == 0) {
     profiler.gtimes.resize(recvcount);
   }
+
   MPI_Gather(static_cast<const void *>(&profiler.times[0]), Profiler::Size, MPI_DOUBLE,
              static_cast<void *>(&profiler.gtimes[0]), recvcount, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
   if (myRank == 0) {
     profiler.print(options.numFrames, numRanks);
   }
+
+  pthread_mutex_lock(&gatherTimesDoneMutex);
+  gatherTimesDone = true;
+  pthread_cond_signal(&gatherTimesDoneCond);
+  pthread_mutex_unlock(&gatherTimesDoneMutex);
 }

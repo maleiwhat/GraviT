@@ -296,6 +296,14 @@ public:
 private:
   gvt::render::Adapter *adapter;
   Profiler profiler;
+
+  bool gatherTimesStart;
+  pthread_mutex_t gatherTimesStartMutex;
+  pthread_cond_t gatherTimesStartCond;
+
+  bool gatherTimesDone;
+  pthread_mutex_t gatherTimesDoneMutex;
+  pthread_cond_t gatherTimesDoneCond;
 };
 
 class Timer {
