@@ -108,6 +108,15 @@ struct MpiRendererOptions {
 
 class Voter;
 
+class Profiler {
+public:
+  enum Type { Total = 0, Filter, Trace, Shuffle, Transfer, Vote, Size };
+  Profiler() { times.resize(Size, 0.0); }
+  void update(int type, double elapsed) { times[type] += elapsed; }
+private:
+  std::vector<double> times;
+};
+
 class MpiRenderer : public Application {
 public:
   MpiRenderer(int *argc, char ***argv);
@@ -239,6 +248,7 @@ private:
   void shuffleRays(gvt::render::actor::RayVector &rays, gvt::core::DBNodeH instNode);
 
   gvt::render::Adapter *adapter;
+  Profiler profiler;
 };
 
 class Timer {
@@ -259,14 +269,6 @@ private:
   double elapsed;
 };
 
-class Profiler {
-public:
-  enum Type { Trace = 0, Shuffle, Send, Receive, Vote, Size };
-  Profiler() { times.resize(Size, 0.0); }
-
-private:
-  std::vector<double> times;
-};
 }
 }
 }

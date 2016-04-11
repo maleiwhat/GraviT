@@ -499,9 +499,12 @@ void MpiRenderer::copyIncomingRays(int instanceId, const gvt::render::actor::Ray
 }
 
 void MpiRenderer::runDomainTracer() {
+  Timer timer_total;
   RayVector rays;
   generatePrimaryRays(rays);
   domainTracer(rays);
+  timer_total.stop();
+  profiler.update(Profiler::Total, timer_total.getElapsed());
 }
 
 void MpiRenderer::generatePrimaryRays(RayVector &rays) {
@@ -561,11 +564,19 @@ void MpiRenderer::filterRaysLocally(RayVector &rays) {
 }
 
 void MpiRenderer::domainTracer(RayVector &rays) {
+  Timer timer_filter;
+  Timer timer_sched;
+  Timer timer_trace;
+  Timer timer_shuffle;
+
   GVT_DEBUG(DBG_ALWAYS, "domain scheduler: starting, num rays: " << rays.size());
   int adapterType = root["Schedule"]["adapter"].value().toInteger();
   long domain_counter = 0;
 
+  timer_filter.start();
   filterRaysLocally(rays);
+  timer_filter.stop();
+  profiler.update(Profiler::Filter, timer_filter.getElapsed())
 
   GVT_DEBUG(DBG_LOW, "tracing rays");
   // process domains until all rays are terminated
@@ -670,6 +681,7 @@ void MpiRenderer::domainTracer(RayVector &rays) {
         GVT_DEBUG(DBG_ALWAYS, "[" << myRank << "] domain scheduler: calling process rayQueue");
         gvt::core::DBNodeH instNode = getInstanceNode(instTarget);
         {
+          timer_trace.start();
           moved_rays.reserve(rayQueue[instTarget].size() * 10);
           if (!adapter) {
             printf("nulll adapter detected\n");
@@ -677,14 +689,19 @@ void MpiRenderer::domainTracer(RayVector &rays) {
           }
           adapter->trace(rayQueue[instTarget], moved_rays, instNode);
           rayQueue[instTarget].clear();
+          timer_trace.stop();
+          profiler.update(Profiler::Trace, timer_trace.getElapsed());
         }
+        timer_shuffle.start();
         shuffleRays(moved_rays, instNode);
         moved_rays.clear();
+        timer_shuffle.stop();
+        profiler.update(Profiler::Shuffle, timer_shuffle.getElapsed());
       }
     } // if (!rayQueue.empty()) {
     // done with current domain, send off rays to their proper processors.
     GVT_DEBUG(DBG_ALWAYS, "Rank [ " << myRank << "]  calling SendRays");
-    { all_done = transferRays(); }
+    all_done = transferRays();
     // pthread_mutex_unlock(rayTransferMutex);
   } // while (!all_done) {
 
