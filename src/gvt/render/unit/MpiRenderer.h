@@ -225,47 +225,6 @@ private:
   pthread_cond_t serverReadyCond;
 };
 
-class Voter {
-public:
-  Voter(int numRanks, int myRank, std::map<int, gvt::render::actor::RayVector> *rayQ);
-
-  bool updateState();
-  void addNumPendingRays(int n);
-  void subtractNumPendingRays(int n);
-
-  void applyVoteResult(int voteType, unsigned int timeStamp);
-  void bufferVoteWork(VoteWork *work);
-  void voteForResign(int senderRank, unsigned int timeStamp);
-  void voteForNoWork(int senderRank, unsigned int timeStamp);
-
-private:
-  enum State { WaitForNoWork, WaitForVotes, WaitForResign, Resigned };
-
-  void vote();
-  bool checkVotes();
-  void requestForVotes(int voteType, unsigned int timeStamp);
-
-  const int numRanks;
-  const int myRank;
-  const std::map<int, gvt::render::actor::RayVector> *rayQ;
-
-  int state;
-
-  pthread_mutex_t votingLock;
-  int numPendingRays;
-  unsigned int validTimeStamp;
-  bool votesAvailable;
-  bool resignGrant;
-
-  int numVotesReceived;
-  int commitCount;
-
-  int numPendingVotes;
-
-  std::vector<VoteWork *> voteWorkBuffer;
-  pthread_mutex_t voteWorkBufferLock;
-};
-
 class Timer {
 public:
   Timer() {
