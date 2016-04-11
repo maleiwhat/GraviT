@@ -43,7 +43,7 @@ namespace render {
 namespace data {
 namespace cuda_primitives {
 
-typedef enum {BASE_LIGHT, AMBIENT, POINT} LIGH_TYPE;
+typedef enum {BASE_LIGHT, AMBIENT, POINT, AREA} LIGH_TYPE;
 
 class BaseLight {
 public:
@@ -51,7 +51,7 @@ public:
 	BaseLight(const cuda_vec position = make_cuda_vec(0.f));
   virtual ~BaseLight();
 */
-	   __device__ cuda_vec contribution(const cuda_vec &hit) const;
+           __device__ cuda_vec contribution(const cuda_vec &hit,const cuda_vec &samplePos) const;
 
 
   cuda_vec position;
@@ -68,7 +68,7 @@ public:
   AmbientLight(const AmbientLight &orig);
   virtual ~AmbientLight();
 */
-	   __device__ cuda_vec contribution(const cuda_vec &hit) const;
+           __device__ cuda_vec contribution(const cuda_vec &hit,const cuda_vec &samplePos) const;
 
   cuda_vec color;
 };
@@ -80,9 +80,26 @@ public:
 
   virtual ~PointLight();
 */
-	   __device__  cuda_vec contribution(const cuda_vec &hit) const;
+           __device__  cuda_vec contribution(const cuda_vec &hit,const cuda_vec &samplePos) const;
 
   cuda_vec color;
+};
+
+class AreaLight : public BaseLight {
+public:
+
+
+  __device__ cuda_vec contribution(const cuda_vec &hitpoint, const cuda_vec &samplePos) const;
+
+  __device__ cuda_vec  GetPosition();
+
+  cuda_vec color;
+  cuda_vec LightNormal;
+  float LightWidth;
+  float LightHeight;
+
+  cuda_vec u, v, w;
+
 };
 
 
@@ -92,20 +109,25 @@ typedef struct {
 		BaseLight light;
 		AmbientLight ambient;
 		PointLight point;
+                AreaLight area;
+
 	};
 
-	   __device__ cuda_vec contribution(const cuda_vec &hit) const {
-		cuda_vec r;
+           __device__ cuda_vec contribution(const cuda_vec &hit,const cuda_vec &samplePos) const {
+        	   cuda_vec r;
 		switch (type) {
 		case BASE_LIGHT:
-			r = light.contribution(hit);
+                        r = light.contribution(hit,samplePos);
 			break;
 		case AMBIENT:
-			r = ambient.contribution(hit);
+                        r = ambient.contribution(hit,samplePos);
 			break;
 		case POINT:
-			r = point.contribution(hit);
+                        r = point.contribution(hit,samplePos);
 			break;
+                case AREA:
+                        r = area.contribution(hit,samplePos);
+                            break;
 		default:
 			break;
 		}

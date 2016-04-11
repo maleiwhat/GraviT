@@ -41,6 +41,7 @@
 #include <gvt/render/Types.h>
 #include <gvt/render/algorithm/TracerBase.h>
 
+
 #ifdef GVT_RENDER_ADAPTER_EMBREE
 #include <gvt/render/adapter/embree/Wrapper.h>
 #endif

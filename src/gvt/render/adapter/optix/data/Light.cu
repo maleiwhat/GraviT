@@ -33,19 +33,20 @@
 
 using namespace gvt::render::data::cuda_primitives;
 
+__device__ float cudaRand( );
 
 //BaseLight::BaseLight(const cuda_vec position) : position(position) {}
 
 //BaseLight::~BaseLight() {}
 
-__device__ cuda_vec BaseLight::contribution(const cuda_vec &hit) const { return make_cuda_vec(0.f); }
+__device__ cuda_vec BaseLight::contribution(const cuda_vec &hit,const cuda_vec &samplePos) const { return make_cuda_vec(0.f); }
 
 //PointLight::PointLight(const cuda_vec position, const cuda_vec color) : BaseLight(position), color(color) {}
 
 //PointLight::~PointLight() {}
 
-__device__ cuda_vec PointLight::contribution(const cuda_vec &hit) const {
-  float distance = 1.f / length(((cuda_vec)position -hit));
+__device__ cuda_vec PointLight::contribution(const cuda_vec &hit,const cuda_vec &samplePos) const {
+  float distance = 1.f / length((samplePos -hit));
   distance = (distance > 1.f) ? 1.f : distance;
   return color * (distance);
 }
@@ -54,4 +55,25 @@ __device__ cuda_vec PointLight::contribution(const cuda_vec &hit) const {
 
 //AmbientLight::~AmbientLight() {}
 
-__device__ cuda_vec AmbientLight::contribution(const cuda_vec &hit) const { return color; }
+__device__ cuda_vec AmbientLight::contribution(const cuda_vec &hit,const cuda_vec &samplePos) const { return color; }
+
+
+__device__ cuda_vec AreaLight::GetPosition() {
+  // generate points on plane then transform
+  float xLocation = (cudaRand() - 0.5) * LightWidth;
+  //float yLocation = 0;
+  float zLocation = (cudaRand()  - 0.5) * LightHeight;
+
+  // x coord
+  float xCoord = xLocation * u.x + zLocation * w.x;
+  float yCoord = xLocation * u.y + zLocation * w.y;
+  float zCoord = xLocation * u.z + zLocation * w.z;
+
+  return make_cuda_vec(position.x + xCoord, position.y + yCoord, position.z + zCoord);
+}
+
+__device__ cuda_vec AreaLight::contribution(const cuda_vec &hit,const cuda_vec &samplePos) const {
+  float distance = 1.f / length(samplePos - hit);
+  distance = (distance > 1.f) ? 1.f : distance;
+  return color * (distance);
+}

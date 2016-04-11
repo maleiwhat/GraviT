@@ -29,6 +29,7 @@
 #define GVT_RENDER_DATA_ACCEL_BVH_H
 
 #include <stack>
+#include <mutex>
 
 #include <gvt/core/Math.h>
 #include <gvt/render/actor/RayPacket.h>
@@ -64,6 +65,7 @@ public:
 
     while (cur) {
       float tlocal = std::numeric_limits<float>::max();
+
       if (!(cur->bbox.intersectDistance(origin, inv, tlocal))) {
         cur = *(--stackptr);
         continue;

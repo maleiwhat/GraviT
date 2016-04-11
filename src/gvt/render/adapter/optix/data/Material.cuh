@@ -1,3 +1,4 @@
+
 /* =======================================================================================
    This file is released as part of GraviT - scalable, platform independent ray tracing
    tacc.github.io/GraviT
@@ -29,22 +30,14 @@
  */
 
 
-#ifndef GVT_RENDER_DATA_PRIMITIVES_MATERIAL_CUH
-#define GVT_RENDER_DATA_PRIMITIVES_MATERIAL_CUH
-
-//#include <gvt/core/Math.h>
-//#include <gvt/render/actor/Ray.h>
-//#include <gvt/render/data/scene/Light.h>
-
-//#include <boost/container/vector.hpp>
-//#include <time.h>
+#ifndef CUDASHADING_H
+#define CUDASHADING_H
 
 #include <vector_functions.h>
 
 #include "Ray.cuh"
 #include "Light.cuh"
-
-__device__ float cudaRand( );
+#include <gvt/render/data/primitives/Material.h>
 
 
 namespace gvt {
@@ -53,151 +46,24 @@ namespace data {
 namespace cuda_primitives {
 
 
-
-typedef enum {BASE_MATERIAL, LAMBERT, PHONG, BLINN} MATERIAL_TYPE;
-
-
-
-
-/// surface material properties
-/** surface material properties used to shade intersected geometry
-*/
-class BaseMaterial {
-public:
-/*   __device__ BaseMaterial(){
-
-  }
-  // __device__ Material(const Material &orig);
-   __device__  virtual ~BaseMaterial(){
-
-  }*/
-
-	// __device__ cuda_vec shade(const Ray &ray,                const cuda_vec &sufaceNormal,
-      //                                    const Light *lightSource);
- /*  gvt::render::actor::RayVector ao(const gvt::render::actor::Ray &ray,
-                                           const gvt::core::math::Vector4f &sufaceNormal, float samples);
-   gvt::render::actor::RayVector secondary(const gvt::render::actor::Ray &ray,
-                                                  const gvt::core::math::Vector4f &sufaceNormal, float samples);*/
-
-
-
-
-   __device__  cuda_vec CosWeightedRandomHemisphereDirection2(cuda_vec n) ;
-
-
-};
-
-class Lambert : public BaseMaterial {
-public:
-/*   __device__ Lambert(cuda_vec kd = make_cuda_vec(0)){
-
-  }
-   __device__ virtual ~Lambert(){
-
-  }*/
-
-	 __device__ cuda_vec shade( const Ray &ray,
-            const cuda_vec &sufaceNormal,
-            const Light *lightSource);
-
-                                          /*
-  virtual gvt::render::actor::RayVector ao(const gvt::render::actor::Ray &ray,
-                                           const gvt::core::math::Vector4f &sufaceNormal, float samples);
-  virtual gvt::render::actor::RayVector secundary(const gvt::render::actor::Ray &ray,
-                                                  const gvt::core::math::Vector4f &sufaceNormal, float samples);*/
-
-  cuda_vec kd;
-};
-
-
-
-class Phong : public BaseMaterial {
-public:
-
-	/* __device__ Phong(const cuda_vec &kd = make_cuda_vec(0),
-        const cuda_vec &ks = make_cuda_vec(0), const float &alpha = 1.f);
-
-	 __device__ virtual ~Phong();
-*/
-	 __device__ cuda_vec shade(const Ray &ray,
-                                          const cuda_vec &sufaceNormal,
-                                          const Light *lightSource);
-
-  /*
-  virtual gvt::render::actor::RayVector ao(const gvt::render::actor::Ray &ray,
-                                           const gvt::core::math::Vector4f &sufaceNormal, float samples);
-  virtual gvt::render::actor::RayVector secundary(const gvt::render::actor::Ray &ray,
-                                                  const gvt::core::math::Vector4f &sufaceNormal, float samples);*/
-
- cuda_vec kd;
- cuda_vec ks;
-  float alpha;
-};
-
-
-class BlinnPhong : public BaseMaterial {
-public:
- /* BlinnPhong(const gvt::core::math::Vector4f &kd = gvt::core::math::Vector4f(),
-             const gvt::core::math::Vector4f &ks = gvt::core::math::Vector4f(), const float &alpha = 1.f);
-  BlinnPhong(const BlinnPhong &orig);
-  virtual ~BlinnPhong();
-*/
-	 __device__ cuda_vec shade(const Ray &ray,
-                                          const cuda_vec &sufaceNormal,
-                                          const Light *lightSource);
-
-  /*
-  virtual gvt::render::actor::RayVector ao(const gvt::render::actor::Ray &ray,
-                                           const gvt::core::math::Vector4f &sufaceNormal, float samples);
-  virtual gvt::render::actor::RayVector secundary(const gvt::render::actor::Ray &ray,
-                                                  const gvt::core::math::Vector4f &sufaceNormal, float samples);*/
-
-  cuda_vec kd;
-  cuda_vec ks;
-  float alpha;
-};
-
-
-typedef struct {
-
-	MATERIAL_TYPE type;
-	union {
-		BaseMaterial material;
-		Lambert lambert;
-		Phong phong;
-		BlinnPhong blinn;
-	};
-
-	 __device__
-	cuda_vec shade(const Ray &ray, const cuda_vec &sufaceNormal,
-			const Light *lightSource) {
-
-		cuda_vec r;
-		switch (type) {
-		case BASE_MATERIAL:
-			//r = material.shade(ray, sufaceNormal, lightSource);
-			break;
-		case LAMBERT:
-			r = lambert.shade(ray, sufaceNormal, lightSource);
-			break;
-		case PHONG:
-			r = phong.shade(ray, sufaceNormal, lightSource);
-			break;
-		case BLINN:
-			r = blinn.shade(ray, sufaceNormal, lightSource);
-			break;
-		default:
-			break;
-		}
-		return r;
-	}
-
-} Material;
-
+/*
+ * Material proxy call implemented per adpater
+ * Interfaces to the different shading materials may be significantly different
+ * mainly due to light assessing and vec formats
+ */
+    __device__  bool Shade(
+           gvt::render::data::primitives::Material* material,
+                              const Ray &ray,
+                              const cuda_vec &sufaceNormal,
+                              const Light *lightSource,
+                              const cuda_vec lightPostion,
+                              cuda_vec& color);
 
 }
 }
 }
 }
 
-#endif /* GVT_RENDER_DATA_PRIMITIVES_MATERIAL_CUH */
+
+#endif // CUDASHADING_H
+
