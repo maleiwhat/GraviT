@@ -369,7 +369,9 @@ void MpiRenderer::render() {
 #endif
       for (int i = 0; i < options.numFrames; ++i) {
         runDomainTracer();
+#ifdef ENABLE_TIMERS
         timer_wait_image.start();
+#endif
         pthread_mutex_lock(&imageReadyLock);
         while (!this->imageReady) {
           pthread_cond_wait(&imageReadyCond, &imageReadyLock);
@@ -634,7 +636,9 @@ void MpiRenderer::domainTracer(RayVector &rays) {
   while (!all_done) {
     // pthread_mutex_lock(rayTransferMutex);
     if (!rayQueue.empty()) {
+#ifdef ENABLE_TIMERS
       timer_schedule.start();
+#endif
       // process domain assigned to this proc with most rays queued
       // if there are queues for instances that are not assigned
       // to the current rank, erase those entries
