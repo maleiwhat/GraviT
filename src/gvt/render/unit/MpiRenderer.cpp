@@ -113,7 +113,6 @@
 #include <gvt/render/adapter/heterogeneous/Wrapper.h>
 #endif
 
-#include <boost/timer/timer.hpp>
 #include <tbb/mutex.h>
 
 // #define DEBUG_MPI_RENDERER
@@ -561,10 +560,6 @@ void MpiRenderer::filterRaysLocally(RayVector &rays) {
 }
 
 void MpiRenderer::domainTracer(RayVector &rays) {
-  boost::timer::cpu_timer t_sched;
-  t_sched.start();
-  boost::timer::cpu_timer t_trace;
-  boost::timer::cpu_timer t_raytx;
   GVT_DEBUG(DBG_ALWAYS, "domain scheduler: starting, num rays: " << rays.size());
   int adapterType = root["Schedule"]["adapter"].value().toInteger();
   long domain_counter = 0;
@@ -669,11 +664,9 @@ void MpiRenderer::domainTracer(RayVector &rays) {
         GVT_DEBUG(DBG_ALWAYS, "[" << myRank << "] domain scheduler: calling process rayQueue");
         gvt::core::DBNodeH instNode = getInstanceNode(instTarget);
         {
-          t_trace.resume();
           moved_rays.reserve(rayQueue[instTarget].size() * 10);
           adapter->trace(rayQueue[instTarget], moved_rays, instNode);
           rayQueue[instTarget].clear();
-          t_trace.stop();
         }
         shuffleRays(moved_rays, instNode);
         moved_rays.clear();
@@ -681,11 +674,7 @@ void MpiRenderer::domainTracer(RayVector &rays) {
     } // if (!rayQueue.empty()) {
     // done with current domain, send off rays to their proper processors.
     GVT_DEBUG(DBG_ALWAYS, "Rank [ " << myRank << "]  calling SendRays");
-    {
-      t_raytx.resume();
-      all_done = transferRays();
-      t_raytx.stop();
-    }
+    { all_done = transferRays(); }
     // pthread_mutex_unlock(rayTransferMutex);
   } // while (!all_done) {
 
@@ -698,10 +687,6 @@ void MpiRenderer::domainTracer(RayVector &rays) {
     delete adapter;
     adapter = 0;
   }
-
-  std::cout << "Rank " << myRank << ": [async] domain scheduler: trace time: " << t_trace.format();
-  std::cout << "Rank " << myRank << ": [async] domain scheduler: sched time: " << t_sched.format();
-  std::cout << "Rank " << myRank << ": [async] domain scheduler: raytx time: " << t_raytx.format();
 }
 
 /**
