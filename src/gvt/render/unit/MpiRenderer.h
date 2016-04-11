@@ -223,6 +223,13 @@ private:
   bool serverReady;
   pthread_mutex_t serverReadyLock;
   pthread_cond_t serverReadyCond;
+
+private:
+  void runDomainTracer();
+  void generatePrimaryRays(gvt::render::actor::RayVector &rays);
+  void domainTracer(gvt::render::actor::RayVector &rays);
+  void filterRaysLocally(gvt::render::actor::RayVector &rays);
+  void shuffleRays(gvt::render::actor::RayVector &rays, gvt::core::DBNodeH instNode);
 };
 
 class Timer {

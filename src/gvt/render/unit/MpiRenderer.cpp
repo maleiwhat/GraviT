@@ -70,7 +70,7 @@
 #include "gvt/core/mpi/Application.h"
 #include <boost/range/algorithm.hpp>
 
-#include "gvt/render/unit/DomainTileWork.h"
+// #include "gvt/render/unit/DomainTileWork.h"
 #include "gvt/render/unit/ImageTileWork.h"
 #include "gvt/render/unit/PixelGatherWork.h"
 #include "gvt/render/unit/PixelWork.h"
@@ -97,6 +97,25 @@
 #include "apps/render/TestScenes.h"
 #include "gvt/render/unit/Voter.h"
 
+#ifdef GVT_RENDER_ADAPTER_EMBREE
+#include <gvt/render/adapter/embree/Wrapper.h>
+#endif
+
+#ifdef GVT_RENDER_ADAPTER_MANTA
+#include <gvt/render/adapter/manta/Wrapper.h>
+#endif
+
+#ifdef GVT_RENDER_ADAPTER_OPTIX
+#include <gvt/render/adapter/optix/Wrapper.h>
+#endif
+
+#if defined(GVT_RENDER_ADAPTER_OPTIX) && defined(GVT_RENDER_ADAPTER_EMBREE)
+#include <gvt/render/adapter/heterogeneous/Wrapper.h>
+#endif
+
+#include <boost/timer/timer.hpp>
+#include <tbb/mutex.h>
+
 // #define DEBUG_MPI_RENDERER
 // #define DEBUG_RAYTX
 
@@ -109,6 +128,7 @@ using namespace gvt::render::data::scene;
 using namespace gvt::render::schedule;
 using namespace gvt::render::data::primitives;
 using namespace gvt::render::unit;
+using namespace gvt::render::actor;
 
 MpiRenderer::MpiRenderer(int *argc, char ***argv)
     : Application(argc, argv), camera(NULL), image(NULL), tileLoadBalancer(NULL), voter(NULL) {
@@ -333,7 +353,7 @@ void MpiRenderer::render() {
     } else { // domain scheduler with mpi layer
       if (rank == 0) printf("[async mpi] starting domain scheduler using %d processes\n", GetSize());
 
-      DomainTileWork::Register();
+      // DomainTileWork::Register();
       RayTransferWork::Register();
       VoteWork::Register();
       PixelGatherWork::Register();
@@ -341,12 +361,13 @@ void MpiRenderer::render() {
       Start();
 
       image = new Image(imageWidth, imageHeight, "image");
-      DomainTileWork work;
-      work.setTileSize(0, 0, imageWidth, imageHeight);
+      // DomainTileWork work;
+      // work.setTileSize(0, 0, imageWidth, imageHeight);
 
       const int numFrames = 1;
       for (int i = 0; i < numFrames; ++i) {
-        work.Action();
+        // work.Action();
+        runDomainTracer();
         pthread_mutex_lock(&imageReadyLock);
         while (!this->imageReady) {
           pthread_cond_wait(&imageReadyCond, &imageReadyLock);
@@ -464,13 +485,9 @@ void MpiRenderer::bufferRayTransferWork(RayTransferWork *work) {
 }
 
 void MpiRenderer::bufferVoteWork(VoteWork *work) { voter->bufferVoteWork(work); }
-
 void MpiRenderer::voteForResign(int senderRank, unsigned int timeStamp) { voter->voteForResign(senderRank, timeStamp); }
-
 void MpiRenderer::voteForNoWork(int senderRank, unsigned int timeStamp) { voter->voteForNoWork(senderRank, timeStamp); }
-
 void MpiRenderer::applyRayTransferResult(int numRays) { voter->subtractNumPendingRays(numRays); }
-
 void MpiRenderer::applyVoteResult(int voteType, unsigned int timeStamp) { voter->applyVoteResult(voteType, timeStamp); }
 
 void MpiRenderer::copyIncomingRays(int instanceId, const gvt::render::actor::RayVector *incomingRays) {
@@ -483,4 +500,274 @@ void MpiRenderer::copyIncomingRays(int instanceId, const gvt::render::actor::Ray
   pthread_mutex_unlock(&rayTransferMutex);
 }
 
+void MpiRenderer::runDomainTracer() {
+  RayVector rays;
+  generatePrimaryRays(rays);
+  domainTracer(rays);
+}
+
+void MpiRenderer::generatePrimaryRays(RayVector &rays) {
+  const int imageWidth = options.width;
+  const int imageHeight = options.height;
+  const int tileW = options.width;
+  const int tileH = options.height;
+  const int startX = 0;
+  const int startY = 0;
+
+  gvt::core::DBNodeH root = gvt::render::RenderContext::instance()->getRootNode();
+  Point4f eye = root["Camera"]["eyePoint"].value().toPoint4f();
+  float fov = root["Camera"]["fov"].value().toFloat();
+  const AffineTransformMatrix<float> &cameraToWorld = camera->getCameraToWorld();
+
+  rays.resize(tileW * tileH);
+
+  // Generate rays direction in camera space and transform to world space.
+  int i, j;
+  int tilePixelId, imagePixelId;
+  float aspectRatio = float(imageWidth) / float(imageHeight);
+  float x, y;
+  // these basis directions are scaled by the aspect ratio and
+  // the field of view.
+  Vector4f camera_vert_basis_vector = Vector4f(0, 1, 0, 0) * tan(fov * 0.5);
+  Vector4f camera_horiz_basis_vector = Vector4f(1, 0, 0, 0) * tan(fov * 0.5) * aspectRatio;
+  Vector4f camera_normal_basis_vector = Vector4f(0, 0, 1, 0);
+  Vector4f camera_space_ray_direction;
+
+  for (j = startY; j < startY + tileH; j++) {
+    for (i = startX; i < startX + tileW; i++) {
+      // select a ray and load it up
+      tilePixelId = (j - startY) * tileW + (i - startX);
+      imagePixelId = j * imageWidth + i;
+      Ray &ray = rays[tilePixelId];
+      ray.id = imagePixelId;
+      ray.w = 1.0; // ray weight 1 for no subsamples. mod later
+      ray.origin = eye;
+      ray.type = Ray::PRIMARY;
+      // calculate scale factors -1.0 < x,y < 1.0
+      x = 2.0 * float(i) / float(imageWidth - 1) - 1.0;
+      y = 2.0 * float(j) / float(imageHeight - 1) - 1.0;
+      // calculate ray direction in camera space;
+      camera_space_ray_direction =
+          camera_normal_basis_vector + x * camera_horiz_basis_vector + y * camera_vert_basis_vector;
+      // transform ray to world coordinate space;
+      ray.setDirection(cameraToWorld * camera_space_ray_direction.normalize());
+      ray.depth = 0;
+    }
+  }
+}
+
+void MpiRenderer::filterRaysLocally(RayVector &rays) {
+  auto nullNode = gvt::core::DBNodeH(); // temporary workaround until shuffleRays is fully replaced
+  GVT_DEBUG(DBG_ALWAYS, "image scheduler: filter locally non mpi: " << rays.size());
+  shuffleRays(rays, nullNode);
+}
+
+void MpiRenderer::domainTracer(RayVector &rays) {
+  boost::timer::cpu_timer t_sched;
+  t_sched.start();
+  boost::timer::cpu_timer t_trace;
+  boost::timer::cpu_timer t_raytx;
+  GVT_DEBUG(DBG_ALWAYS, "domain scheduler: starting, num rays: " << rays.size());
+  int adapterType = root["Schedule"]["adapter"].value().toInteger();
+  long domain_counter = 0;
+
+  filterRaysLocally(rays);
+
+  GVT_DEBUG(DBG_LOW, "tracing rays");
+  // process domains until all rays are terminated
+  bool all_done = false;
+  // std::set<int> doms_to_send;
+  int lastInstance = -1;
+  // gvt::render::data::domain::AbstractDomain* dom = NULL;
+  gvt::render::actor::RayVector moved_rays;
+  moved_rays.reserve(1000);
+  int instTarget = -1;
+  size_t instTargetCount = 0;
+  gvt::render::Adapter *adapter = 0;
+
+  while (!all_done) {
+    // pthread_mutex_lock(rayTransferMutex);
+    if (!rayQueue.empty()) {
+      // process domain assigned to this proc with most rays queued
+      // if there are queues for instances that are not assigned
+      // to the current rank, erase those entries
+      instTarget = -1;
+      instTargetCount = 0;
+      std::vector<int> to_del;
+      GVT_DEBUG(DBG_ALWAYS, "domain scheduler: selecting next instance, num queues: " << rayQueue.size());
+      for (auto &q : rayQueue) {
+        const bool inRank = (getInstanceOwner(q.first) == myRank);
+        if (q.second.empty() || !inRank) {
+          to_del.push_back(q.first);
+          continue;
+        }
+        if (inRank && q.second.size() > instTargetCount) {
+          instTargetCount = q.second.size();
+          instTarget = q.first;
+        }
+      }
+      // erase empty queues
+      for (int instId : to_del) {
+        GVT_DEBUG(DBG_ALWAYS, "rank[" << myRank << "] DOMAINTRACER: deleting rayQueue for instance " << instId);
+        rayQueue.erase(instId);
+      }
+      if (instTarget == -1) {
+        continue;
+      }
+      GVT_DEBUG(DBG_ALWAYS, "domain scheduler: next instance: " << instTarget << ", rays: " << instTargetCount << " ["
+                                                                << myRank << "]");
+      // doms_to_send.clear();
+      // pnav: use this to ignore domain x:        int domi=0;if (0)
+      if (instTarget >= 0) {
+        GVT_DEBUG(DBG_LOW, "Getting instance " << instTarget);
+        // gvt::render::Adapter *adapter = 0;
+        gvt::core::DBNodeH meshNode = getMeshNode(instTarget);
+        if (instTarget != lastInstance) {
+          // TODO: before we would free the previous domain before loading the
+          // next
+          // this can be replicated by deleting the adapter
+          delete adapter;
+          adapter = 0;
+        }
+        // track domains loaded
+        if (instTarget != lastInstance) {
+          ++domain_counter;
+          lastInstance = instTarget;
+          //
+          // 'getAdapterFromCache' functionality
+          if (!adapter) {
+            GVT_DEBUG(DBG_ALWAYS, "domain scheduler: creating new adapter");
+            switch (adapterType) {
+#ifdef GVT_RENDER_ADAPTER_EMBREE
+            case gvt::render::adapter::Embree:
+              adapter = new gvt::render::adapter::embree::data::EmbreeMeshAdapter(meshNode);
+              break;
+#endif
+#ifdef GVT_RENDER_ADAPTER_MANTA
+            case gvt::render::adapter::Manta:
+              adapter = new gvt::render::adapter::manta::data::MantaMeshAdapter(meshNode);
+              break;
+#endif
+#ifdef GVT_RENDER_ADAPTER_OPTIX
+            case gvt::render::adapter::Optix:
+              adapter = new gvt::render::adapter::optix::data::OptixMeshAdapter(meshNode);
+              break;
+#endif
+#if defined(GVT_RENDER_ADAPTER_OPTIX) && defined(GVT_RENDER_ADAPTER_EMBREE)
+            case gvt::render::adapter::Heterogeneous:
+              adapter = new gvt::render::adapter::heterogeneous::data::HeterogeneousMeshAdapter(meshNode);
+              break;
+#endif
+            default:
+              GVT_DEBUG(DBG_SEVERE, "domain scheduler: unknown adapter type: " << adapterType);
+            }
+            // adapterCache[meshNode.UUID()] = adapter; // note: cache logic
+            // comes later when we implement hybrid
+          }
+          // end 'getAdapterFromCache' concept
+          //
+        }
+        GVT_ASSERT(adapter != nullptr, "domain scheduler: adapter not set");
+        GVT_DEBUG(DBG_ALWAYS, "[" << myRank << "] domain scheduler: calling process rayQueue");
+        gvt::core::DBNodeH instNode = getInstanceNode(instTarget);
+        {
+          t_trace.resume();
+          moved_rays.reserve(rayQueue[instTarget].size() * 10);
+          adapter->trace(rayQueue[instTarget], moved_rays, instNode);
+          rayQueue[instTarget].clear();
+          t_trace.stop();
+        }
+        shuffleRays(moved_rays, instNode);
+        moved_rays.clear();
+      }
+    } // if (!rayQueue.empty()) {
+    // done with current domain, send off rays to their proper processors.
+    GVT_DEBUG(DBG_ALWAYS, "Rank [ " << myRank << "]  calling SendRays");
+    {
+      t_raytx.resume();
+      all_done = transferRays();
+      t_raytx.stop();
+    }
+    // pthread_mutex_unlock(rayTransferMutex);
+  } // while (!all_done) {
+
+  if (myRank == 0) {
+    PixelGatherWork compositePixels;
+    compositePixels.Broadcast(true, true);
+  }
+
+  if (adapter) {
+    delete adapter;
+    adapter = 0;
+  }
+
+  std::cout << "Rank " << myRank << ": [async] domain scheduler: trace time: " << t_trace.format();
+  std::cout << "Rank " << myRank << ": [async] domain scheduler: sched time: " << t_sched.format();
+  std::cout << "Rank " << myRank << ": [async] domain scheduler: raytx time: " << t_raytx.format();
+}
+
+/**
+ * Given a queue of rays, intersects them against the accel structure
+ * to find out what instance they will hit next
+ */
+void MpiRenderer::shuffleRays(gvt::render::actor::RayVector &rays, gvt::core::DBNodeH instNode) {
+  GVT_DEBUG(DBG_ALWAYS, "[" << mpi.rank << "] Shuffle: start");
+  GVT_DEBUG(DBG_ALWAYS, "[" << mpi.rank << "] Shuffle: rays: " << rays.size());
+
+  const size_t raycount = rays.size();
+  const int domID = (instNode) ? instNode["id"].value().toInteger() : -1;
+  const gvt::render::data::primitives::Box3D domBB =
+      (instNode) ? *((Box3D *)instNode["bbox"].value().toULongLong()) : gvt::render::data::primitives::Box3D();
+
+  // tbb::parallel_for(size_t(0), size_t(rays.size()),
+  //      [&] (size_t index) {
+  tbb::parallel_for(
+      tbb::blocked_range<gvt::render::actor::RayVector::iterator>(rays.begin(), rays.end()),
+      [&](tbb::blocked_range<gvt::render::actor::RayVector::iterator> raysit) {
+        std::map<int, gvt::render::actor::RayVector> local_queue;
+        for (gvt::render::actor::Ray &r : raysit) {
+          // for (gvt::render::actor::RayVector::iterator it = rays.begin(); it != rays.end(); ++it) {
+          //   gvt::render::actor::Ray &r = *it;
+          if (domID != -1) {
+            float t = FLT_MAX;
+            if (r.domains.empty() && domBB.intersectDistance(r, t)) {
+              r.origin += r.direction * t;
+            }
+          }
+          if (r.domains.empty()) {
+            acceleration->intersect(r, r.domains);
+            boost::sort(r.domains);
+          }
+          if (!r.domains.empty() && (int)(*r.domains.begin()) == domID) {
+            r.domains.erase(r.domains.begin());
+          }
+          if (!r.domains.empty()) {
+            int firstDomainOnList = (*r.domains.begin());
+            r.domains.erase(r.domains.begin());
+            // tbb::mutex::scoped_lock sl(queue_mutex[firstDomainOnList]);
+            local_queue[firstDomainOnList].push_back(r);
+          } else if (instNode) {
+            // TODO (hpark): do we need this lock?
+            tbb::mutex::scoped_lock fbloc(colorBufMutex[r.id % imageWidth]);
+            aggregatePixel(r.id, r.color);
+          }
+        }
+
+        std::vector<int> _doms;
+        std::transform(local_queue.begin(), local_queue.end(), std::back_inserter(_doms),
+                       [](const std::map<int, gvt::render::actor::RayVector>::value_type &pair) { return pair.first; });
+        while (!_doms.empty()) {
+          int dom = _doms.front();
+          _doms.erase(_doms.begin());
+          if (rayQueueMutex[dom].try_lock()) {
+            rayQueue[dom].insert(rayQueue[dom].end(), std::make_move_iterator(local_queue[dom].begin()),
+                                 std::make_move_iterator(local_queue[dom].end()));
+            rayQueueMutex[dom].unlock();
+          } else {
+            _doms.push_back(dom);
+          }
+        }
+      });
+  rays.clear();
+}
 
