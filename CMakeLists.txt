@@ -267,6 +267,7 @@ set(GVT_RENDER_HDRS ${GVT_RENDER_HDRS}
 	src/gvt/render/unit/MpiRenderer.h
 	src/gvt/render/unit/Voter.h
 	src/gvt/render/Types.h
+	src/apps/render/TestScenes.h
 	)
 
 
@@ -299,6 +300,7 @@ set(GVT_RENDER_SRCS ${GVT_RENDER_SRCS}
 	src/gvt/render/unit/TileLoadBalancer.cpp
 	src/gvt/render/unit/MpiRenderer.cpp
 	src/gvt/render/unit/Voter.cpp
+	src/apps/render/TestScenes.cpp
 	)
 
 
@@ -508,7 +510,7 @@ if (GVT_MPI_RENDERER_APP)
 	find_package(MPI REQUIRED)
 	include_directories(${MPI_INCLUDE_PATH} src/apps/render ${PLYPATH})
 	set(GVT_MPI_RENDERER_LIBS ${GVT_MPI_RENDERER_LIBS} ${MPI_LIBRARIES})
-	set(GVT_MPI_RENDERER_SRCS ${GVT_MPI_RENDERER_SRCS} src/apps/render/TestScenes.cpp src/apps/render/MpiRendererApp.cpp ${PLYPATH}/ply.c)
+	set(GVT_MPI_RENDERER_SRCS ${GVT_MPI_RENDERER_SRCS} src/apps/render/MpiRendererApp.cpp ${PLYPATH}/ply.c)
 
 	add_executable(gvtMpiRenderer ${GVT_MPI_RENDERER_SRCS})
 	target_link_libraries(gvtMpiRenderer gvtCore gvtRender ${GVT_MPI_RENDERER_LIBS} )

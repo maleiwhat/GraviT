@@ -56,6 +56,12 @@ using namespace std::chrono;
 
 namespace gvt {
 namespace render {
+class Adapter;
+}
+}
+
+namespace gvt {
+namespace render {
 namespace data {
 namespace scene {
 class gvtPerspectiveCamera;
@@ -230,6 +236,8 @@ private:
   void domainTracer(gvt::render::actor::RayVector &rays);
   void filterRaysLocally(gvt::render::actor::RayVector &rays);
   void shuffleRays(gvt::render::actor::RayVector &rays, gvt::core::DBNodeH instNode);
+
+  gvt::render::Adapter *adapter;
 };
 
 class Timer {

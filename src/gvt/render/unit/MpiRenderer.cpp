@@ -70,7 +70,6 @@
 #include "gvt/core/mpi/Application.h"
 #include <boost/range/algorithm.hpp>
 
-// #include "gvt/render/unit/DomainTileWork.h"
 #include "gvt/render/unit/ImageTileWork.h"
 #include "gvt/render/unit/PixelGatherWork.h"
 #include "gvt/render/unit/PixelWork.h"
@@ -130,12 +129,13 @@ using namespace gvt::render::unit;
 using namespace gvt::render::actor;
 
 MpiRenderer::MpiRenderer(int *argc, char ***argv)
-    : Application(argc, argv), camera(NULL), image(NULL), tileLoadBalancer(NULL), voter(NULL) {}
+    : Application(argc, argv), camera(NULL), image(NULL), tileLoadBalancer(NULL), voter(NULL), adapter(NULL) {}
 
 MpiRenderer::~MpiRenderer() {
   if (camera != NULL) delete camera;
   if (image != NULL) delete image;
   if (tileLoadBalancer != NULL) delete tileLoadBalancer;
+  if (adapter != NULL) delete adapter;
 }
 
 void MpiRenderer::printUsage(const char *argv) {
@@ -150,7 +150,7 @@ void MpiRenderer::printUsage(const char *argv) {
          "effective only with obj.\n");
   printf("  -p, --ply use ply models\n");
   printf("  -W, --width <image_width> (default: 1280)\n");
-  printf("  -H, --height <image_height> (default: 1280)\n");
+  printf("  -H, --height <image_height> (default: 720)\n");
 }
 
 void MpiRenderer::parseCommandLine(int argc, char **argv) {
@@ -335,7 +335,7 @@ void MpiRenderer::render() {
       ImageTileWork::Register();
       PixelWork::Register();
 
-      Start();
+      Application::Start();
 
       if (rank == rank::Server) {
         initServer();
@@ -345,25 +345,21 @@ void MpiRenderer::render() {
       request.setSourceRank(GetRank());
       request.Send(rank::Server);
 
-      Wait();
+      Application::Wait();
 
     } else { // domain scheduler with mpi layer
       if (rank == 0) printf("[async mpi] starting domain scheduler using %d processes\n", GetSize());
 
-      // DomainTileWork::Register();
       RayTransferWork::Register();
       VoteWork::Register();
       PixelGatherWork::Register();
 
-      Start();
+      Application::Start();
 
       image = new Image(imageWidth, imageHeight, "image");
-      // DomainTileWork work;
-      // work.setTileSize(0, 0, imageWidth, imageHeight);
 
-      const int numFrames = 1;
+      const int numFrames = 2;
       for (int i = 0; i < numFrames; ++i) {
-        // work.Action();
         runDomainTracer();
         pthread_mutex_lock(&imageReadyLock);
         while (!this->imageReady) {
@@ -373,7 +369,7 @@ void MpiRenderer::render() {
         pthread_mutex_unlock(&imageReadyLock);
         printf("[async mpi] domain scheduler frame %d done\n", i);
       }
-      Kill();
+      Application::Kill();
     }
     freeRender();
   } else { // without mpi layer
@@ -576,7 +572,7 @@ void MpiRenderer::domainTracer(RayVector &rays) {
   moved_rays.reserve(1000);
   int instTarget = -1;
   size_t instTargetCount = 0;
-  gvt::render::Adapter *adapter = 0;
+  // gvt::render::Adapter *adapter = 0;
 
   while (!all_done) {
     // pthread_mutex_lock(rayTransferMutex);
@@ -616,11 +612,16 @@ void MpiRenderer::domainTracer(RayVector &rays) {
         // gvt::render::Adapter *adapter = 0;
         gvt::core::DBNodeH meshNode = getMeshNode(instTarget);
         if (instTarget != lastInstance) {
-          // TODO: before we would free the previous domain before loading the
-          // next
+          // TODO: before we would free the previous domain before loading the next
           // this can be replicated by deleting the adapter
-          delete adapter;
-          adapter = 0;
+          // if (!adapter) {
+          //   printf("trying to delete null adapter instTarget %d lastInstance %d\n", instTarget, lastInstance);
+          //   exit(1);
+          // }
+          if (!adapter) {
+            delete adapter;
+            adapter = 0;
+          }
         }
         // track domains loaded
         if (instTarget != lastInstance) {
@@ -665,6 +666,10 @@ void MpiRenderer::domainTracer(RayVector &rays) {
         gvt::core::DBNodeH instNode = getInstanceNode(instTarget);
         {
           moved_rays.reserve(rayQueue[instTarget].size() * 10);
+          if (!adapter) {
+            printf("nulll adapter detected\n");
+            exit(1);
+          }
           adapter->trace(rayQueue[instTarget], moved_rays, instNode);
           rayQueue[instTarget].clear();
         }
@@ -681,11 +686,6 @@ void MpiRenderer::domainTracer(RayVector &rays) {
   if (myRank == 0) {
     PixelGatherWork compositePixels;
     compositePixels.Broadcast(true, true);
-  }
-
-  if (adapter) {
-    delete adapter;
-    adapter = 0;
   }
 }
 
