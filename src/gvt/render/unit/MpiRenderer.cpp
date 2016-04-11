@@ -140,7 +140,7 @@ MpiRenderer::~MpiRenderer() {
 
 void MpiRenderer::printUsage(const char *argv) {
   printf(
-      "Usage : %s [-h] [-a <adapter>] [-d] [-n <x y z>] [-p] [-s <scheduler>] [-W <image_width>] [-H <image_height>]\n",
+      "Usage : %s [-h] [-a <adapter>] [-d] [-n <x y z>] [-p] [-s <scheduler>] [-W <image_width>] [-H <image_height>] [-N <num_frames>]\n",
       argv);
   printf("  -h, --help\n");
   printf("  -a, --adapter <embree | manta | optix> (default: embree)\n");
@@ -151,6 +151,7 @@ void MpiRenderer::printUsage(const char *argv) {
   printf("  -p, --ply use ply models\n");
   printf("  -W, --width <image_width> (default: 1280)\n");
   printf("  -H, --height <image_height> (default: 720)\n");
+  printf("  -N, --num-frames <num_frames> (default: 1)\n");
 }
 
 void MpiRenderer::parseCommandLine(int argc, char **argv) {
@@ -192,6 +193,8 @@ void MpiRenderer::parseCommandLine(int argc, char **argv) {
       options.width = atoi(argv[++i]);
     } else if (strcmp(argv[i], "-H") == 0 || strcmp(argv[i], "--height") == 0) {
       options.height = atoi(argv[++i]);
+    } else if (strcmp(argv[i], "-N") == 0 || strcmp(argv[i], "--num-frames") == 0) {
+      options.numFrames = atoi(argv[++i]);
     } else {
       printf("error: %s not defined\n", argv[i]);
       exit(1);
@@ -328,6 +331,8 @@ void MpiRenderer::render() {
     // collapse the following two if-else blocks into a single block
     if (schedType == scheduler::Image) { // image scheduler with mpi layer
 
+      GVT_ASSERT(options.numFrames == 1, "multiple frames not supported yet for image scheduler");
+
       if (rank == 0) printf("[async mpi] starting image scheduler using %d processes\n", GetSize());
 
       RequestWork::Register();
@@ -358,8 +363,7 @@ void MpiRenderer::render() {
 
       image = new Image(imageWidth, imageHeight, "image");
 
-      const int numFrames = 2;
-      for (int i = 0; i < numFrames; ++i) {
+      for (int i = 0; i < options.numFrames; ++i) {
         runDomainTracer();
         pthread_mutex_lock(&imageReadyLock);
         while (!this->imageReady) {
@@ -373,6 +377,7 @@ void MpiRenderer::render() {
     }
     freeRender();
   } else { // without mpi layer
+    GVT_ASSERT(options.numFrames == 1, "multiple frames not supported yet for schedulers with synchronous MPI");
     camera->AllocateCameraRays();
     camera->generateRays();
     image = new Image(imageWidth, imageHeight, "image");
