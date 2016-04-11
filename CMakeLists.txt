@@ -262,7 +262,6 @@ set(GVT_RENDER_HDRS ${GVT_RENDER_HDRS}
 	src/gvt/render/unit/TileWork.h
 	src/gvt/render/unit/ImageTileWork.h
 	src/gvt/render/unit/DomainTileWork.h
-	src/gvt/render/unit/PixelGatherWork.h
 	src/gvt/render/unit/TileLoadBalancer.h
 	src/gvt/render/unit/MpiRenderer.h
 	src/gvt/render/unit/Voter.h
@@ -296,7 +295,6 @@ set(GVT_RENDER_SRCS ${GVT_RENDER_SRCS}
 	src/gvt/render/unit/TileWork.cpp
 	src/gvt/render/unit/ImageTileWork.cpp
 	src/gvt/render/unit/DomainTileWork.cpp
-	src/gvt/render/unit/PixelGatherWork.cpp
 	src/gvt/render/unit/TileLoadBalancer.cpp
 	src/gvt/render/unit/MpiRenderer.cpp
 	src/gvt/render/unit/Voter.cpp

@@ -101,6 +101,14 @@ private:
   unsigned int timeStamp;
 };
 
+class PixelGatherWork : public Work {
+  WORK_CLASS_HEADER(PixelGatherWork)
+public:
+  virtual ~PixelGatherWork() {}
+  virtual void Serialize(std::size_t &size, unsigned char *&serialized);
+  static Work *Deserialize(std::size_t size, unsigned char *serialized);
+  virtual bool Action();
+};
 }
 }
 }

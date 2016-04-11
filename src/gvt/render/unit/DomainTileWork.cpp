@@ -37,11 +37,6 @@
 
 #include "gvt/render/unit/Works.h"
 #include "gvt/render/unit/DomainTileWork.h"
-#include "gvt/render/unit/PixelGatherWork.h"
-// #include "gvt/render/unit/RayCountWork.h"
-// #include "gvt/render/unit/RayTxWork.h"
-// #include "gvt/render/unit/RayTxDoneWork.h"
-// #include "gvt/render/unit/RayCommitDoneWork.h"
 #include "gvt/render/unit/MpiRenderer.h"
 #include "gvt/render/data/scene/Image.h"
 

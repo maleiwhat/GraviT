@@ -224,3 +224,27 @@ bool VoteWork::Action() {
   }
   return false;
 }
+
+WORK_CLASS(PixelGatherWork)
+
+void PixelGatherWork::Serialize(size_t &size, unsigned char *&serialized) {
+  size = 0;
+  serialized = NULL;
+}
+
+Work *PixelGatherWork::Deserialize(size_t size, unsigned char *serialized) {
+  if (size != 0) {
+    std::cerr << "PixelGatherWork deserializer call with size != 0 rank " << Application::GetApplication()->GetRank()
+              << "\n";
+    exit(1);
+  }
+  PixelGatherWork *work = new PixelGatherWork;
+  return work;
+}
+
+bool PixelGatherWork::Action() {
+  MpiRenderer *renderer = static_cast<MpiRenderer *>(Application::GetApplication());
+  renderer->compositePixels();
+  return false;
+}
+

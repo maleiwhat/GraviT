@@ -71,7 +71,6 @@
 #include <boost/range/algorithm.hpp>
 
 #include "gvt/render/unit/ImageTileWork.h"
-#include "gvt/render/unit/PixelGatherWork.h"
 #include "gvt/render/unit/PixelWork.h"
 #include "gvt/render/unit/RequestWork.h"
 #include "gvt/render/unit/TileLoadBalancer.h"
