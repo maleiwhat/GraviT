@@ -109,6 +109,15 @@ public:
   static Work *Deserialize(std::size_t size, unsigned char *serialized);
   virtual bool Action();
 };
+
+class TimeGatherWork : public Work {
+  WORK_CLASS_HEADER(TimeGatherWork)
+public:
+  virtual ~TimeGatherWork() {}
+  virtual void Serialize(std::size_t &size, unsigned char *&serialized);
+  static Work *Deserialize(std::size_t size, unsigned char *serialized);
+  virtual bool Action();
+};
 }
 }
 }

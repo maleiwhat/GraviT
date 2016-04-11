@@ -85,7 +85,11 @@ namespace gvt {
 namespace render {
 namespace unit {
 namespace rank {
-enum RankType { Server = 0, Display = 1, FirstWorker };
+enum RankType {
+  Server = 0,
+  Display = 1,
+  FirstWorker
+};
 }
 
 class TileLoadBalancer;
@@ -110,28 +114,48 @@ class Voter;
 
 class Profiler {
 public:
-  enum Type { Total = 0, Primary, Filter, Schedule, Trace, Shuffle, Transfer, Vote, Composite, WaitImage, Size };
+  enum Type {
+    Total = 0,
+    Primary,
+    Filter,
+    Schedule,
+    Trace,
+    Shuffle,
+    Transfer,
+    Vote,
+    Composite,
+    WaitImage,
+    Size
+  };
   Profiler() {
     times.resize(Size, 0.0);
     names.resize(Size);
-    names = { "Total", "Primary_rays", "Filter", "Schedule", "Trace", "Shuffle", "Transfer", "Vote", "Composite", "WaitImage" };
+    names = { "Total",   "Primary_rays", "Filter", "Schedule",  "Trace",
+              "Shuffle", "Transfer",     "Vote",   "Composite", "WaitImage" };
   }
   void update(int type, double elapsed) { times[type] += elapsed; }
-  void print(int numFrames) {
-    double aggregated = 0.0;
-    for (int i=0; i<names.size(); ++i) {
-      if (i != Total) {
-        aggregated += times[i];
+  void print(int numFrames, int numRanks) {
+    for (int p = 0; p < numRanks; ++p) {
+      std::cout << "Process " << p << "\n";
+      double aggregated = 0.0;
+      int totalIdx = p * Size + Total;
+      for (int i = 0; i < names.size(); ++i) {
+        int index = p * Size + i;
+        if (i != totalIdx) {
+          aggregated += times[index];
+        }
+        double avg = times[index] / numFrames;
+        double percent = (times[index] * 100) / times[totalIdx];
+        std::cout << names[i] << ": " << avg << " ms (" << percent << " %)\n";
       }
-      double avg = times[i] / numFrames;
-      double percent = (times[i] * 100) / times[Total];
-      std::cout << names[i] << ": " << avg << " ms ("<< percent <<" %)\n";
+      double misc = times[totalIdx] - aggregated;
+      std::cout << "Misc: " << misc / numFrames << " ms (" << (misc * 100) / times[totalIdx] << " %)\n\n";
     }
-    double misc = times[Total] - aggregated;
-    std::cout << "Misc: " << misc / numFrames << " ms ("<< (misc * 100) / times[Total]  <<" %)\n";
   }
 private:
-  std::vector<double> times;
+  friend class MpiRenderer;
+  std::vector<double> times;  // times for my rank
+  std::vector<double> gtimes; // times gathered from all ranks
   std::vector<std::string> names;
 };
 
@@ -267,6 +291,7 @@ private:
 
 public:
   void compositePixels();
+  void gatherTimes();
 
 private:
   gvt::render::Adapter *adapter;
@@ -290,7 +315,6 @@ private:
   high_resolution_clock::time_point st;
   double elapsed;
 };
-
 }
 }
 }

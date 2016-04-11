@@ -139,9 +139,9 @@ MpiRenderer::~MpiRenderer() {
 }
 
 void MpiRenderer::printUsage(const char *argv) {
-  printf(
-      "Usage : %s [-h] [-a <adapter>] [-d] [-n <x y z>] [-p] [-s <scheduler>] [-W <image_width>] [-H <image_height>] [-N <num_frames>]\n",
-      argv);
+  printf("Usage : %s [-h] [-a <adapter>] [-d] [-n <x y z>] [-p] [-s <scheduler>] [-W <image_width>] [-H "
+         "<image_height>] [-N <num_frames>]\n",
+         argv);
   printf("  -h, --help\n");
   printf("  -a, --adapter <embree | manta | optix> (default: embree)\n");
   printf("  -s, --scheduler <domain | image> (default: domain)\n");
@@ -264,7 +264,7 @@ void MpiRenderer::initInstanceRankMap() {
     std::cout << "[" << GetRank() << "] domain scheduler: instId: " << i << ", dataIdx: " << dataIdx
               << ", target mpi node: " << ownerRank << ", world size: " << GetSize() << "\n";
 #endif
-    GVT_ASSERT(dataIdx != (size_t)-1, "domain scheduler: could not find data node");
+    GVT_ASSERT(dataIdx != (size_t) - 1, "domain scheduler: could not find data node");
     instanceRankMap[instanceNodes[i].UUID()] = ownerRank;
   }
 }
@@ -358,7 +358,9 @@ void MpiRenderer::render() {
       RayTransferWork::Register();
       VoteWork::Register();
       PixelGatherWork::Register();
-
+#ifdef ENABLE_TIMERS
+      TimeGatherWork::Register();
+#endif
       Application::Start();
 
       image = new Image(imageWidth, imageHeight, "image");
@@ -387,7 +389,10 @@ void MpiRenderer::render() {
 #ifdef ENABLE_TIMERS
       timer_total.stop();
       profiler.update(Profiler::Total, timer_total.getElapsed());
-      profiler.print(options.numFrames);
+      if (myRank == 0) {
+        TimeGatherWork timeGather;
+        timeGather.Broadcast(true, true);
+      }
 #endif
       Application::Kill();
     }
@@ -620,8 +625,7 @@ void MpiRenderer::domainTracer(RayVector &rays) {
   timer_filter.stop();
   profiler.update(Profiler::Filter, timer_filter.getElapsed())
 #endif
-
-  GVT_DEBUG(DBG_LOW, "tracing rays");
+      GVT_DEBUG(DBG_LOW, "tracing rays");
   // process domains until all rays are terminated
   bool all_done = false;
   // std::set<int> doms_to_send;
@@ -675,7 +679,7 @@ void MpiRenderer::domainTracer(RayVector &rays) {
         profiler.update(Profiler::Schedule, timer_schedule.getElapsed());
       }
 #endif
-      
+
       GVT_DEBUG(DBG_ALWAYS, "domain scheduler: next instance: " << instTarget << ", rays: " << instTargetCount << " ["
                                                                 << myRank << "]");
       // doms_to_send.clear();
@@ -791,53 +795,52 @@ void MpiRenderer::shuffleRays(gvt::render::actor::RayVector &rays, gvt::core::DB
 
   // tbb::parallel_for(size_t(0), size_t(rays.size()),
   //      [&] (size_t index) {
-  tbb::parallel_for(
-      tbb::blocked_range<gvt::render::actor::RayVector::iterator>(rays.begin(), rays.end()),
-      [&](tbb::blocked_range<gvt::render::actor::RayVector::iterator> raysit) {
-        std::map<int, gvt::render::actor::RayVector> local_queue;
-        for (gvt::render::actor::Ray &r : raysit) {
-          // for (gvt::render::actor::RayVector::iterator it = rays.begin(); it != rays.end(); ++it) {
-          //   gvt::render::actor::Ray &r = *it;
-          if (domID != -1) {
-            float t = FLT_MAX;
-            if (r.domains.empty() && domBB.intersectDistance(r, t)) {
-              r.origin += r.direction * t;
-            }
-          }
-          if (r.domains.empty()) {
-            acceleration->intersect(r, r.domains);
-            boost::sort(r.domains);
-          }
-          if (!r.domains.empty() && (int)(*r.domains.begin()) == domID) {
-            r.domains.erase(r.domains.begin());
-          }
-          if (!r.domains.empty()) {
-            int firstDomainOnList = (*r.domains.begin());
-            r.domains.erase(r.domains.begin());
-            // tbb::mutex::scoped_lock sl(queue_mutex[firstDomainOnList]);
-            local_queue[firstDomainOnList].push_back(r);
-          } else if (instNode) {
-            // TODO (hpark): do we need this lock?
-            tbb::mutex::scoped_lock fbloc(colorBufMutex[r.id % imageWidth]);
-            aggregatePixel(r.id, r.color);
-          }
+  tbb::parallel_for(tbb::blocked_range<gvt::render::actor::RayVector::iterator>(rays.begin(), rays.end()),
+                    [&](tbb::blocked_range<gvt::render::actor::RayVector::iterator> raysit) {
+    std::map<int, gvt::render::actor::RayVector> local_queue;
+    for (gvt::render::actor::Ray &r : raysit) {
+      // for (gvt::render::actor::RayVector::iterator it = rays.begin(); it != rays.end(); ++it) {
+      //   gvt::render::actor::Ray &r = *it;
+      if (domID != -1) {
+        float t = FLT_MAX;
+        if (r.domains.empty() && domBB.intersectDistance(r, t)) {
+          r.origin += r.direction * t;
         }
+      }
+      if (r.domains.empty()) {
+        acceleration->intersect(r, r.domains);
+        boost::sort(r.domains);
+      }
+      if (!r.domains.empty() && (int)(*r.domains.begin()) == domID) {
+        r.domains.erase(r.domains.begin());
+      }
+      if (!r.domains.empty()) {
+        int firstDomainOnList = (*r.domains.begin());
+        r.domains.erase(r.domains.begin());
+        // tbb::mutex::scoped_lock sl(queue_mutex[firstDomainOnList]);
+        local_queue[firstDomainOnList].push_back(r);
+      } else if (instNode) {
+        // TODO (hpark): do we need this lock?
+        tbb::mutex::scoped_lock fbloc(colorBufMutex[r.id % imageWidth]);
+        aggregatePixel(r.id, r.color);
+      }
+    }
 
-        std::vector<int> _doms;
-        std::transform(local_queue.begin(), local_queue.end(), std::back_inserter(_doms),
-                       [](const std::map<int, gvt::render::actor::RayVector>::value_type &pair) { return pair.first; });
-        while (!_doms.empty()) {
-          int dom = _doms.front();
-          _doms.erase(_doms.begin());
-          if (rayQueueMutex[dom].try_lock()) {
-            rayQueue[dom].insert(rayQueue[dom].end(), std::make_move_iterator(local_queue[dom].begin()),
-                                 std::make_move_iterator(local_queue[dom].end()));
-            rayQueueMutex[dom].unlock();
-          } else {
-            _doms.push_back(dom);
-          }
-        }
-      });
+    std::vector<int> _doms;
+    std::transform(local_queue.begin(), local_queue.end(), std::back_inserter(_doms),
+                   [](const std::map<int, gvt::render::actor::RayVector>::value_type &pair) { return pair.first; });
+    while (!_doms.empty()) {
+      int dom = _doms.front();
+      _doms.erase(_doms.begin());
+      if (rayQueueMutex[dom].try_lock()) {
+        rayQueue[dom].insert(rayQueue[dom].end(), std::make_move_iterator(local_queue[dom].begin()),
+                             std::make_move_iterator(local_queue[dom].end()));
+        rayQueueMutex[dom].unlock();
+      } else {
+        _doms.push_back(dom);
+      }
+    }
+  });
   rays.clear();
 }
 
@@ -895,4 +898,16 @@ void MpiRenderer::compositePixels() {
   timer_composite.stop();
   profiler.update(Profiler::Composite, timer_composite.getElapsed());
 #endif
+}
+
+void MpiRenderer::gatherTimes() {
+  int recvcount = numRanks * Profiler::Size;
+  if (myRank == 0) {
+    profiler.gtimes.resize(recvcount);
+  }
+  MPI_Gather(static_cast<const void *>(&profiler.times[0]), Profiler::Size, MPI_DOUBLE,
+             static_cast<void *>(&profiler.gtimes[0]), recvcount, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+  if (myRank == 0) {
+    profiler.print(options.numFrames, numRanks);
+  }
 }

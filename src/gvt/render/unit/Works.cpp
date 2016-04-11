@@ -248,3 +248,26 @@ bool PixelGatherWork::Action() {
   return false;
 }
 
+WORK_CLASS(TimeGatherWork)
+
+void TimeGatherWork::Serialize(size_t &size, unsigned char *&serialized) {
+  size = 0;
+  serialized = NULL;
+}
+
+Work *TimeGatherWork::Deserialize(size_t size, unsigned char *serialized) {
+  if (size != 0) {
+    std::cerr << "TimeGatherWork deserializer call with size != 0 rank " << Application::GetApplication()->GetRank()
+              << "\n";
+    exit(1);
+  }
+  TimeGatherWork *work = new TimeGatherWork;
+  return work;
+}
+
+bool TimeGatherWork::Action() {
+  MpiRenderer *renderer = static_cast<MpiRenderer *>(Application::GetApplication());
+  renderer->gatherTimes();
+  return false;
+}
+
