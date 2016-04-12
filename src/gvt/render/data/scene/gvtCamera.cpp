@@ -268,7 +268,7 @@ TAU_PROFILE("gvtPerspectiveCamera::generateRays()","",TAU_DEFAULT);
               camera_space_ray_direction[2] = cam2wrld[2][0] * x + cam2wrld[2][1] * y + z[2];
 #ifdef __USE_TAU
 	{
-	TAU_PROFILE("ray inside","",TAU_DEFAULT);
+	TAU_PROFILE("Ray methods in w loop in gvtPerspectiveCamera::generateRays","",TAU_DEFAULT);
 #endif
               Ray &ray = rays[ridx];
               ray.id = idx;

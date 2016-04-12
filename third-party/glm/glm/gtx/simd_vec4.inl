@@ -6,6 +6,10 @@
 // Licence : This source is under MIT License
 // File    : glm/gtx/simd_vec4.inl
 ///////////////////////////////////////////////////////////////////////////////////////////////////
+//
+#ifdef __USE_TAU
+#include <TAU.h>
+#endif
 
 namespace glm{
 namespace detail{
@@ -645,6 +649,9 @@ GLM_FUNC_QUALIFIER detail::fvec4SIMD normalize
 	detail::fvec4SIMD const & x
 )
 {
+#ifdef __USE_TAU
+TAU_PROFILE("detail::fvec4SIMD normalize","",TAU_DEFAULT);
+#endif
 	__m128 dot0 = detail::sse_dot_ps(x.Data, x.Data);
 	__m128 isr0 = inversesqrt(detail::fvec4SIMD(dot0)).Data;
 	__m128 mul0 = _mm_mul_ps(x.Data, isr0);
