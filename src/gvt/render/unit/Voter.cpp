@@ -11,6 +11,17 @@ Voter::Voter(int numRanks, int myRank, std::map<int, gvt::render::actor::RayVect
   // pthread_mutex_init(&voteWorkBufferLock, NULL);
 }
 
+void Voter::reset() {
+  state = WaitForNoWork;
+  numPendingRays = 0;
+  validTimeStamp = 0;
+  votesAvailable = false;
+  resignGrant = false;
+  numVotesReceived = 0;
+  commitCount = 0;
+  numPendingVotes = 0;
+}
+
 void Voter::addNumPendingRays(int n) {
   pthread_mutex_lock(&votingLock);
   numPendingRays += n;
@@ -147,8 +158,13 @@ bool Voter::updateState() {
     }
   } break;
   case Resigned: {
+    // reset();
+    // state = WaitForNoWork;
   } break;
-  default: { state = WaitForNoWork; } break;
+  default: {
+    // reset();
+    // state = WaitForNoWork;
+  } break;
   }
   // vote();
   pthread_mutex_unlock(&votingLock);

@@ -48,6 +48,8 @@ class Voter {
 public:
   Voter(int numRanks, int myRank, std::map<int, gvt::render::actor::RayVector> *rayQ);
 
+  void reset();
+
   bool updateState();
   void addNumPendingRays(int n);
   void subtractNumPendingRays(int n);

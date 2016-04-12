@@ -378,6 +378,7 @@ void MpiRenderer::render() {
       Timer timer_wait_image;
 #endif
       for (int i = 0; i < options.numFrames; ++i) {
+        printf("[async mpi] Rank %d: frame %d start\n", myRank, i);
         runDomainTracer();
 #ifdef ENABLE_TIMERS
         timer_wait_image.start();
@@ -392,7 +393,8 @@ void MpiRenderer::render() {
         timer_wait_image.stop();
         profiler.update(Profiler::WaitImage, timer_wait_image.getElapsed());
 #endif
-        printf("[async mpi] domain scheduler frame %d done\n", i);
+        voter->reset();
+        printf("[async mpi] Rank %d: frame %d done\n", myRank, i);
       }
 #ifdef ENABLE_TIMERS
       timer_total.stop();
@@ -929,16 +931,16 @@ void MpiRenderer::gatherTimes() {
   gatherTimesStart = false;
   pthread_mutex_unlock(&gatherTimesStartMutex);
 
-  int recvcount = numRanks * Profiler::Size;
   if (myRank == 0) {
-    profiler.gtimes.resize(recvcount);
+    profiler.gtimes.resize(numRanks * Profiler::Size);
   }
 
   MPI_Gather(static_cast<const void *>(&profiler.times[0]), Profiler::Size, MPI_DOUBLE,
-             static_cast<void *>(&profiler.gtimes[0]), recvcount, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+             static_cast<void *>(&profiler.gtimes[0]), Profiler::Size, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
   if (myRank == 0) {
     profiler.print(options.numFrames, numRanks);
+    // for (int i = 0; i < profiler.gtimes.size(); ++i) printf("[%d]=%f\n", i, profiler.gtimes[i]);
   }
 
   pthread_mutex_lock(&gatherTimesDoneMutex);

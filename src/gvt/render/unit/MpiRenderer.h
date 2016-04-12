@@ -139,19 +139,20 @@ public:
       std::cout << "Process " << p << "\n";
       double aggregated = 0.0;
       int totalIdx = p * Size + Total;
-      for (int i = 0; i < names.size(); ++i) {
+      for (int i = 0; i < Size; ++i) {
         int index = p * Size + i;
-        if (i != totalIdx) {
-          aggregated += times[index];
+        if (i != Total) {
+          aggregated += (gtimes[index] / numFrames);
         }
-        double avg = times[index] / numFrames;
-        double percent = (times[index] * 100) / times[totalIdx];
+        double avg = gtimes[index] / numFrames;
+        double percent = (gtimes[index] * 100) / gtimes[totalIdx];
         std::cout << names[i] << ": " << avg << " ms (" << percent << " %)\n";
       }
-      double misc = times[totalIdx] - aggregated;
-      std::cout << "Misc: " << misc / numFrames << " ms (" << (misc * 100) / times[totalIdx] << " %)\n\n";
+      double misc = (gtimes[totalIdx] / numFrames) - aggregated;
+      std::cout << "Misc: " << misc << " ms (" << (misc * 100) / (gtimes[totalIdx] / numFrames) << " %)\n\n";
     }
   }
+
 private:
   friend class MpiRenderer;
   std::vector<double> times;  // times for my rank
