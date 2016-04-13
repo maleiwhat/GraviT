@@ -243,6 +243,9 @@ TAU_PROFILE("gvtPerspectiveCamera::generateRays()","",TAU_DEFAULT);
   tbb::parallel_for(
       tbb::blocked_range<size_t>(0, buffer_width * buffer_height, chunksize),
       [&](tbb::blocked_range<size_t> &chunk) {
+#ifdef __SV_DEBUG
+	std::cout << "tbb thread id is  " << std::this_thread::get_id()<< std::endl;
+#endif
 #ifdef __USE_TAU
 	TAU_PROFILE("tbb idx loop in gvtPerspectiveCamera::generateRays","",TAU_DEFAULT);
 #endif
