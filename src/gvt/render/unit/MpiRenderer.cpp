@@ -129,23 +129,28 @@ using namespace gvt::render::unit;
 using namespace gvt::render::actor;
 
 MpiRenderer::MpiRenderer(int *argc, char ***argv)
-    : Application(argc, argv), camera(NULL), image(NULL), tileLoadBalancer(NULL), voter(NULL), adapter(NULL) {}
+    : Application(argc, argv), camera(NULL), image(NULL), tileLoadBalancer(NULL), voter(NULL), adapter(NULL),
+      acceleration(NULL), rayQueueMutex(NULL), colorBufMutex(NULL) {}
 
 MpiRenderer::~MpiRenderer() {
   if (camera != NULL) delete camera;
   if (image != NULL) delete image;
   if (tileLoadBalancer != NULL) delete tileLoadBalancer;
   if (adapter != NULL) delete adapter;
+  if (acceleration) delete acceleration;
+  if (rayQueueMutex) delete[] rayQueueMutex;
+  if (colorBufMutex) delete[] colorBufMutex;
+  if (voter) delete voter;
 }
 
 void MpiRenderer::printUsage(const char *argv) {
-  printf("Usage : %s [-h] [-a <adapter>] [-d] [-n <x y z>] [-p] [-s <scheduler>] [-W <image_width>] [-H "
+  printf("Usage : %s [-h] [-a <adapter>] [-n <x y z>] [-p] [-s <scheduler>] [-W <image_width>] [-H "
          "<image_height>] [-N <num_frames>]\n",
          argv);
   printf("  -h, --help\n");
   printf("  -a, --adapter <embree | manta | optix> (default: embree)\n");
-  printf("  -s, --scheduler <domain | image> (default: domain)\n");
-  printf("  -d, --disable-aync-mpi\n");
+  printf("  -s, --scheduler <0-3> (default: 1)\n");
+  printf("      0: AsyncImage, 1: AysncDomain, 2: SyncImage, 3:SyncDomain\n");
   printf("  -n, --num-instances <x, y, z> specify the number of instances in each direction (default: 1 1 1). "
          "effective only with obj.\n");
   printf("  -p, --ply use ply models\n");
@@ -172,17 +177,11 @@ void MpiRenderer::parseCommandLine(int argc, char **argv) {
         exit(1);
       }
     } else if (strcmp(argv[i], "-s") == 0 || strcmp(argv[i], "--scheduler") == 0) {
-      ++i;
-      if (strcmp(argv[i], "domain") == 0) {
-        options.schedulerType = gvt::render::scheduler::Domain;
-      } else if (strcmp(argv[i], "image") == 0) {
-        options.schedulerType = gvt::render::scheduler::Image;
-      } else {
+      options.schedulerType = atoi(argv[++i]);
+      if (options.schedulerType < 0 || options.schedulerType >= MpiRendererOptions::NumSchedulers) {
         printf("error: %s not defined\n", argv[i]);
         exit(1);
       }
-    } else if (strcmp(argv[i], "-d") == 0 || strcmp(argv[i], "--disable-async-mpi") == 0) {
-      options.asyncMpi = false;
     } else if (strcmp(argv[i], "-n") == 0 || strcmp(argv[i], "--num-instances") == 0) {
       options.instanceCountX = atoi(argv[++i]);
       options.instanceCountY = atoi(argv[++i]);
@@ -269,7 +268,7 @@ void MpiRenderer::initInstanceRankMap() {
   }
 }
 
-void MpiRenderer::setupRender() {
+void MpiRenderer::setupCommon() {
   tbb::task_scheduler_init init(std::thread::hardware_concurrency());
   auto renderContext = gvt::render::RenderContext::instance();
   if (renderContext == NULL) {
@@ -285,30 +284,8 @@ void MpiRenderer::setupRender() {
   acceleration = new gvt::render::data::accel::BVH(instanceNodes);
   rayQueueMutex = new tbb::mutex[instanceNodes.size()];
   colorBufMutex = new tbb::mutex[imageWidth];
-
-  int schedType = root["Schedule"]["type"].value().toInteger();
-
   numRanks = GetSize();
   myRank = GetRank();
-
-  if (schedType == scheduler::Image) {
-    if (GetRank() == rank::Server) {
-      serverReady = false;
-      pthread_mutex_init(&serverReadyLock, NULL);
-      pthread_cond_init(&serverReadyCond, NULL);
-    }
-  } else if (schedType == scheduler::Domain) {
-    initInstanceRankMap();
-    pthread_mutex_init(&rayTransferBufferLock, NULL);
-    pthread_mutex_init(&rayTransferMutex, NULL);
-    if (numRanks > 1) {
-      voter = new Voter(numRanks, myRank, &rayQueue);
-    }
-  }
-  // image write
-  imageReady = false;
-  pthread_mutex_init(&imageReadyLock, NULL);
-  pthread_cond_init(&imageReadyCond, NULL);
 
   gatherTimesStart = false;
   pthread_mutex_init(&gatherTimesStartMutex, NULL);
@@ -317,6 +294,39 @@ void MpiRenderer::setupRender() {
   gatherTimesDone = false;
   pthread_mutex_init(&gatherTimesDoneMutex, NULL);
   pthread_cond_init(&gatherTimesDoneCond, NULL);
+}
+
+void MpiRenderer::setupAsyncImage() {
+  setupCommon();
+  if (myRank == rank::Server) {
+    serverReady = false;
+    pthread_mutex_init(&serverReadyLock, NULL);
+    pthread_cond_init(&serverReadyCond, NULL);
+  }
+}
+
+void MpiRenderer::setupAsyncDomain() {
+  setupCommon();
+  initInstanceRankMap();
+
+  pthread_mutex_init(&rayTransferBufferLock, NULL);
+  pthread_mutex_init(&rayTransferMutex, NULL);
+
+  imageReady = false;
+  pthread_mutex_init(&imageReadyLock, NULL);
+  pthread_cond_init(&imageReadyCond, NULL);
+
+  if (numRanks > 1) {
+    voter = new Voter(numRanks, myRank, &rayQueue);
+  }
+}
+
+void MpiRenderer::setupSyncImage() {
+  setupCommon();
+}
+
+void MpiRenderer::setupSyncDomain() {
+  setupCommon();
 }
 
 void MpiRenderer::freeRender() {
@@ -330,121 +340,136 @@ void MpiRenderer::freeRender() {
 }
 
 void MpiRenderer::render() {
-  setupRender();
-  int schedType = root["Schedule"]["type"].value().toInteger();
-  int rank = GetRank();
+  switch (options.schedulerType) {
+  case MpiRendererOptions::AsyncImage: {
+    renderAsyncImage();
+  } break;
+  case MpiRendererOptions::AsyncDomain: {
+    renderAsyncDomain();
+  } break;
+  case MpiRendererOptions::SyncImage: {
+    renderSyncImage();
+  } break;
+  case MpiRendererOptions::SyncDomain: {
+    renderSyncDomain();
+  } break;
+  default: {
+    printf("error: unknown scheduler type %d\n", options.schedulerType);
+    exit(1);
+  } break;
+  }
+}
 
-  if (options.asyncMpi) {
-    // TODO (hpark):
-    // collapse the following two if-else blocks into a single block
-    if (schedType == scheduler::Image) { // image scheduler with mpi layer
+void MpiRenderer::renderAsyncImage() {
+  setupAsyncImage();
+  GVT_ASSERT(options.numFrames == 1, "multiple frames not supported yet for image scheduler");
+  if (myRank == 0) printf("[async mpi] starting image scheduler using %d processes\n", GetSize());
 
-      GVT_ASSERT(options.numFrames == 1, "multiple frames not supported yet for image scheduler");
+  RequestWork::Register();
+  TileWork::Register();
+  ImageTileWork::Register();
+  PixelWork::Register();
 
-      if (rank == 0) printf("[async mpi] starting image scheduler using %d processes\n", GetSize());
+  Application::Start();
+  if (myRank == rank::Server) {
+    initServer();
+  }
+  RequestWork request;
+  request.setSourceRank(GetRank());
+  request.Send(rank::Server);
+  Application::Wait();
+}
 
-      RequestWork::Register();
-      TileWork::Register();
-      ImageTileWork::Register();
-      PixelWork::Register();
+void MpiRenderer::renderAsyncDomain() {
+  setupAsyncDomain();
+  if (myRank == 0) printf("[async mpi] starting domain scheduler using %d processes\n", GetSize());
 
-      Application::Start();
-
-      if (rank == rank::Server) {
-        initServer();
-      }
-
-      RequestWork request;
-      request.setSourceRank(GetRank());
-      request.Send(rank::Server);
-
-      Application::Wait();
-
-    } else { // domain scheduler with mpi layer
-      if (rank == 0) printf("[async mpi] starting domain scheduler using %d processes\n", GetSize());
-
-      RayTransferWork::Register();
-      VoteWork::Register();
-      PixelGatherWork::Register();
+  RayTransferWork::Register();
+  VoteWork::Register();
+  PixelGatherWork::Register();
 #ifdef ENABLE_TIMERS
-      TimeGatherWork::Register();
+  TimeGatherWork::Register();
 #endif
-      Application::Start();
+  Application::Start();
 
-      image = new Image(imageWidth, imageHeight, "image");
+  image = new Image(imageWidth, imageHeight, "image");
 
 #ifdef ENABLE_TIMERS
-      Timer timer_total;
-      Timer timer_wait_image;
+  Timer timer_total;
+  Timer timer_wait_image;
 #endif
-      for (int i = 0; i < options.numFrames; ++i) {
-        printf("[async mpi] Rank %d: frame %d start\n", myRank, i);
-        runDomainTracer();
+  for (int i = 0; i < options.numFrames; ++i) {
+    printf("[async mpi] Rank %d: frame %d start\n", myRank, i);
+    runDomainTracer();
 #ifdef ENABLE_TIMERS
-        timer_wait_image.start();
+    timer_wait_image.start();
 #endif
-        pthread_mutex_lock(&imageReadyLock);
-        while (!imageReady) {
-          pthread_cond_wait(&imageReadyCond, &imageReadyLock);
-        }
-        imageReady = false;
-        pthread_mutex_unlock(&imageReadyLock);
+    pthread_mutex_lock(&imageReadyLock);
+    while (!imageReady) pthread_cond_wait(&imageReadyCond, &imageReadyLock);
+    imageReady = false;
+    pthread_mutex_unlock(&imageReadyLock);
 #ifdef ENABLE_TIMERS
-        timer_wait_image.stop();
-        profiler.update(Profiler::WaitImage, timer_wait_image.getElapsed());
+    timer_wait_image.stop();
+    profiler.update(Profiler::WaitImage, timer_wait_image.getElapsed());
 #endif
-        voter->reset();
-        printf("[async mpi] Rank %d: frame %d done\n", myRank, i);
-      }
+    if (numRanks > 1) voter->reset();
+    printf("[async mpi] Rank %d: frame %d done\n", myRank, i);
+  }
 #ifdef ENABLE_TIMERS
-      timer_total.stop();
-      profiler.update(Profiler::Total, timer_total.getElapsed());
+  timer_total.stop();
+  profiler.update(Profiler::Total, timer_total.getElapsed());
 
-      pthread_mutex_lock(&gatherTimesStartMutex);
-      gatherTimesStart = true;
-      pthread_cond_signal(&gatherTimesStartCond);
-      pthread_mutex_unlock(&gatherTimesStartMutex);
+  pthread_mutex_lock(&gatherTimesStartMutex);
+  gatherTimesStart = true;
+  pthread_cond_signal(&gatherTimesStartCond);
+  pthread_mutex_unlock(&gatherTimesStartMutex);
 
-      if (myRank == 0) {
-        TimeGatherWork timeGather;
-        timeGather.Broadcast(true, true);
-      }
+  if (myRank == 0) {
+    TimeGatherWork timeGather;
+    timeGather.Broadcast(true, true);
+  }
 
-      pthread_mutex_lock(&gatherTimesDoneMutex);
-      while (!gatherTimesDone) {
-        pthread_cond_wait(&gatherTimesDoneCond, &gatherTimesDoneMutex);
-      }
-      gatherTimesDone = false;
-      pthread_mutex_unlock(&gatherTimesDoneMutex);
+  pthread_mutex_lock(&gatherTimesDoneMutex);
+  while (!gatherTimesDone) {
+    pthread_cond_wait(&gatherTimesDoneCond, &gatherTimesDoneMutex);
+  }
+  gatherTimesDone = false;
+  pthread_mutex_unlock(&gatherTimesDoneMutex);
 #endif
-      Application::Kill();
-    }
-    freeRender();
-  } else { // without mpi layer
-    GVT_ASSERT(options.numFrames == 1, "multiple frames not supported yet for schedulers with synchronous MPI");
-    camera->AllocateCameraRays();
-    camera->generateRays();
-    image = new Image(imageWidth, imageHeight, "image");
+  Application::Kill();
+}
 
-    if (schedType == scheduler::Image) {
-      if (rank == 0)
-        printf("[sync mpi] starting image scheduler without the mpi layer using %d processes\n", GetSize());
-      gvt::render::algorithm::Tracer<ImageScheduler>(camera->rays, *image)();
-    } else {
-      if (rank == 0)
-        printf("[sync mpi] starting domain scheduler without the mpi layer using %d processes\n", GetSize());
-      gvt::render::algorithm::Tracer<DomainScheduler>(camera->rays, *image)();
-    }
+void MpiRenderer::renderSyncImage() {
+  setupSyncImage();
+  GVT_ASSERT(options.numFrames == 1, "multiple frames not supported yet for schedulers with synchronous MPI");
+  camera->AllocateCameraRays();
+  camera->generateRays();
+  image = new Image(imageWidth, imageHeight, "image");
+  if (myRank == 0) printf("[sync mpi] starting image scheduler without the mpi layer using %d processes\n", GetSize());
+  gvt::render::algorithm::Tracer<ImageScheduler>(camera->rays, *image)();
+  image->Write();
+  Quit::Register();
+  Start();
+  if (myRank == 0) {
+    Quit quit;
+    quit.Broadcast(true, true);
+  }
+}
 
-    image->Write();
-    freeRender();
-
-    Quit::Register();
-    Start();
-    if (rank == 0) {
-      Quit quit;
-      quit.Broadcast(true, true);
-    }
+void MpiRenderer::renderSyncDomain() {
+  setupSyncDomain();
+  GVT_ASSERT(options.numFrames == 1, "multiple frames not supported yet for schedulers with synchronous MPI");
+  camera->AllocateCameraRays();
+  camera->generateRays();
+  image = new Image(imageWidth, imageHeight, "image");
+  if (myRank == 0) printf("[sync mpi] starting domain scheduler without the mpi layer using %d processes\n", GetSize());
+  gvt::render::algorithm::Tracer<DomainScheduler>(camera->rays, *image)();
+  image->Write();
+  Quit::Register();
+  Start();
+  if (myRank == 0) {
+    Quit quit;
+    quit.Broadcast(true, true);
   }
 }
 

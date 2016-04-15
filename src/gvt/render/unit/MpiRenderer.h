@@ -97,12 +97,18 @@ class RayTransferWork;
 class VoteWork;
 
 struct MpiRendererOptions {
+  enum SchedulerType {
+    AsyncImage = 0,
+    AsyncDomain,
+    SyncImage,
+    SyncDomain,
+    NumSchedulers
+  };
   virtual ~MpiRendererOptions() {}
-  int schedulerType = gvt::render::scheduler::Domain;
+  int schedulerType = AsyncDomain;
   int adapterType = gvt::render::adapter::Embree;
   int width = 1280;
   int height = 720;
-  bool asyncMpi = true;
   bool ply = false;
   int instanceCountX = 1;
   int instanceCountY = 1;
@@ -175,7 +181,6 @@ private:
   void printUsage(const char *argv);
 
   void initServer();
-  void setupRender();
   void freeRender();
   void initInstanceRankMap();
   void makeObjDatabase();
@@ -284,6 +289,15 @@ private:
   pthread_cond_t serverReadyCond;
 
 private:
+  void setupCommon();
+  void setupAsyncImage();
+  void setupAsyncDomain();
+  void setupSyncImage();
+  void setupSyncDomain();
+  void renderAsyncImage();
+  void renderAsyncDomain();
+  void renderSyncImage();
+  void renderSyncDomain();
   void runDomainTracer();
   void generatePrimaryRays(gvt::render::actor::RayVector &rays);
   void domainTracer(gvt::render::actor::RayVector &rays);
