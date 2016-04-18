@@ -401,6 +401,7 @@ void MpiRenderer::renderAsyncDomain() {
   for (int i = 0; i < options.numFrames; ++i) {
     printf("[async mpi] Rank %d: frame %d start\n", myRank, i);
     runDomainTracer();
+
 #ifdef ENABLE_TIMERS
     timer_wait_image.start();
 #endif
@@ -418,7 +419,6 @@ void MpiRenderer::renderAsyncDomain() {
 #ifdef ENABLE_TIMERS
   timer_total.stop();
   profiler.update(Profiler::Total, timer_total.getElapsed());
-
   pthread_mutex_lock(&gatherTimesStartMutex);
   gatherTimesStart = true;
   pthread_cond_signal(&gatherTimesStartCond);
@@ -669,7 +669,9 @@ void MpiRenderer::domainTracer(RayVector &rays) {
 
 #ifdef ENABLE_TIMERS
   timer_filter.start();
+#endif
   filterRaysLocally(rays);
+#ifdef ENABLE_TIMERS
   timer_filter.stop();
   profiler.update(Profiler::Filter, timer_filter.getElapsed())
 #endif
@@ -841,14 +843,12 @@ void MpiRenderer::shuffleRays(gvt::render::actor::RayVector &rays, gvt::core::DB
   const gvt::render::data::primitives::Box3D domBB =
       (instNode) ? *((Box3D *)instNode["bbox"].value().toULongLong()) : gvt::render::data::primitives::Box3D();
 
-  // tbb::parallel_for(size_t(0), size_t(rays.size()),
-  //      [&] (size_t index) {
-  tbb::parallel_for(tbb::blocked_range<gvt::render::actor::RayVector::iterator>(rays.begin(), rays.end()),
-                    [&](tbb::blocked_range<gvt::render::actor::RayVector::iterator> raysit) {
+  // tbb::parallel_for(tbb::blocked_range<gvt::render::actor::RayVector::iterator>(rays.begin(), rays.end()),
+  //                   [&](tbb::blocked_range<gvt::render::actor::RayVector::iterator> raysit) {
     std::map<int, gvt::render::actor::RayVector> local_queue;
-    for (gvt::render::actor::Ray &r : raysit) {
-      // for (gvt::render::actor::RayVector::iterator it = rays.begin(); it != rays.end(); ++it) {
-      //   gvt::render::actor::Ray &r = *it;
+    // for (gvt::render::actor::Ray &r : raysit) {
+    for (gvt::render::actor::RayVector::iterator it = rays.begin(); it != rays.end(); ++it) {
+      gvt::render::actor::Ray &r = *it;
       if (domID != -1) {
         float t = FLT_MAX;
         if (r.domains.empty() && domBB.intersectDistance(r, t)) {
@@ -868,7 +868,6 @@ void MpiRenderer::shuffleRays(gvt::render::actor::RayVector &rays, gvt::core::DB
         // tbb::mutex::scoped_lock sl(queue_mutex[firstDomainOnList]);
         local_queue[firstDomainOnList].push_back(r);
       } else if (instNode) {
-        // TODO (hpark): do we need this lock?
         tbb::mutex::scoped_lock fbloc(colorBufMutex[r.id % imageWidth]);
         aggregatePixel(r.id, r.color);
       }
@@ -888,7 +887,7 @@ void MpiRenderer::shuffleRays(gvt::render::actor::RayVector &rays, gvt::core::DB
         _doms.push_back(dom);
       }
     }
-  });
+  // });
   rays.clear();
 }
 

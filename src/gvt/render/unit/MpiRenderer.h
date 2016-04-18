@@ -139,7 +139,13 @@ public:
     names = { "Total",   "Primary_rays", "Filter", "Schedule",  "Trace",
               "Shuffle", "Transfer",     "Vote",   "Composite", "WaitImage" };
   }
-  void update(int type, double elapsed) { times[type] += elapsed; }
+  void update(int type, double elapsed) {
+    if (type >= Size) {
+      printf("error: undefined profiler type %d\n", type);
+      exit(1);
+    }
+    times[type] += elapsed;
+  }
   void print(int numFrames, int numRanks) {
     for (int p = 0; p < numRanks; ++p) {
       std::cout << "Process " << p << "\n";
