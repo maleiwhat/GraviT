@@ -131,3 +131,5 @@ float Box3D::surfaceArea() const {
   glm::vec3 diag = bounds_max - bounds_min;
   return (2.f * (diag.x * diag.y + diag.y * diag.z + diag.z * diag.x));
 }
+
+glm::vec3 Box3D::extent() const { return bounds_max - bounds_min; }

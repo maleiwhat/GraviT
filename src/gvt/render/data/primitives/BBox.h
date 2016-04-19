@@ -80,6 +80,7 @@ public:
   int wideRangingBoxDir() const;
   glm::vec3 centroid() const;
   float surfaceArea() const;
+  glm::vec3 extent() const;
 
   friend std::ostream &operator<<(std::ostream &os, const Box3D &bbox) {
     os << bbox.bounds_min << " x ";

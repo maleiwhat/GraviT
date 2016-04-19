@@ -81,8 +81,9 @@ public:
 
   unsigned char *GetBuffer() { return rgb; }
 
-  void Write();
+  void Write(bool rankCheck = true);
   void clear() { std::memset(rgb, 0, sizeof(char) * 3 * width * height); }
+
 
   ~Image() { delete[] rgb; }
 
