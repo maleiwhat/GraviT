@@ -36,9 +36,9 @@
 
 using namespace gvt::render::data::scene;
 
-void Image::Write() {
+void Image::Write(bool rankCheck) {
 
-  if (MPI::COMM_WORLD.Get_rank() != 0) return;
+  if (rankCheck && MPI::COMM_WORLD.Get_rank() != 0) return;
 
   std::string ext;
   switch (format) {

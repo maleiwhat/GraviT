@@ -61,6 +61,7 @@ if (GVT_RENDER)
   option(GVT_SIMPLE_APP			"Build the simple application" ON)
   option(GVT_SIMPLE_FILE_LOAD_APP		"Build the simple application (load obj file)" ON)
   option(GVT_PLY_APP "Build the ply reader application (load ply file)" ON)
+  option(GVT_MPI_RENDERER_APP "Build the MPI renderer application (load obj file)" ON)
   add_definitions(-DGVT_RENDER)
 endif(GVT_RENDER)
 
@@ -207,6 +208,10 @@ set(GVT_CORE_HDRS ${GVT_CORE_HDRS}
   src/gvt/core/Types.h
   src/gvt/core/Uuid.h
   src/gvt/core/Variant.h
+  src/gvt/core/mpi/Application.h
+  src/gvt/core/mpi/Message.h
+  src/gvt/core/mpi/MessageQ.h
+  src/gvt/core/mpi/Work.h
 )
 
 set(GVT_CORE_SRCS ${GVT_CORE_SRCS}
@@ -215,6 +220,10 @@ set(GVT_CORE_SRCS ${GVT_CORE_SRCS}
   src/gvt/core/DatabaseNode.cpp
   src/gvt/core/Uuid.cpp
   src/gvt/core/Variant.cpp
+  src/gvt/core/mpi/Application.cpp
+  src/gvt/core/mpi/Message.cpp
+  src/gvt/core/mpi/MessageQ.cpp
+  src/gvt/core/mpi/Work.cpp
 )
 
 
@@ -255,6 +264,16 @@ set(GVT_RENDER_HDRS ${GVT_RENDER_HDRS}
   src/gvt/render/schedule/ImageScheduler.h
   src/gvt/render/Schedulers.h
   src/gvt/render/Types.h
+  src/gvt/render/unit/Works.h
+  # src/gvt/render/unit/PixelWork.h
+  # src/gvt/render/unit/RequestWork.h
+  # src/gvt/render/unit/TileWork.h
+  # src/gvt/render/unit/ImageTileWork.h
+  # src/gvt/render/unit/DomainTileWork.h
+  src/gvt/render/unit/TileLoadBalancer.h
+  src/gvt/render/unit/MpiRenderer.h
+  src/gvt/render/unit/Voter.h
+  src/apps/render/TestScenes.h
 )
 
 
@@ -271,6 +290,16 @@ set(GVT_RENDER_SRCS ${GVT_RENDER_SRCS}
   src/gvt/render/data/scene/Image.cpp
   src/gvt/render/data/scene/Light.cpp
   src/gvt/render/data/accel/BVH.cpp
+  src/gvt/render/unit/Works.cpp
+  # src/gvt/render/unit/PixelWork.cpp
+  # src/gvt/render/unit/RequestWork.cpp
+  # src/gvt/render/unit/TileWork.cpp
+  # src/gvt/render/unit/ImageTileWork.cpp
+  # src/gvt/render/unit/DomainTileWork.cpp
+  # src/gvt/render/unit/TileLoadBalancer.cpp
+  src/gvt/render/unit/MpiRenderer.cpp
+  src/gvt/render/unit/Voter.cpp
+  src/apps/render/TestScenes.cpp
 )
 
 
@@ -537,3 +566,23 @@ if (GVT_GLRENDER_APP)
     RUNTIME DESTINATION bin
   )
 endif(GVT_GLRENDER_APP)
+
+if (GVT_MPI_RENDERER_APP)
+  if (GVT_MPE)
+    if (DEFINED ENV{MPEHOME})
+      set(MPE_HOME_DIR $ENV{MPEHOME})
+      set (MPE_INCLUDE_DIR ${MPE_HOME_DIR}/include)
+      include_directories(${MPE_INCLUDE_DIR} src/apps/render)
+      FIND_LIBRARY(MPE_LIB1 NAME mpe PATHS ${MPE_HOME_DIR} PATH_SUFFIXES lib)
+      FIND_LIBRARY(MPE_LIB2 NAME lmpe PATHS ${MPE_HOME_DIR} PATH_SUFFIXES lib)
+      set(GVT_MPI_RENDERER_LIBS ${GVT_MPI_RENDERER_LIBS} ${MPE_LIB2})
+      set(GVT_MPI_RENDERER_LIBS ${GVT_MPI_RENDERER_LIBS} ${MPE_LIB1})
+    endif(DEFINED ENV{MPEHOME})
+  endif (GVT_MPE)
+  find_package(MPI REQUIRED)
+  include_directories(${MPI_INCLUDE_PATH} src/apps/render ${PLYPATH})
+  set(GVT_MPI_RENDERER_LIBS ${GVT_MPI_RENDERER_LIBS} ${MPI_LIBRARIES})
+  set(GVT_MPI_RENDERER_SRCS ${GVT_MPI_RENDERER_SRCS} src/apps/render/MpiRendererApp.cpp ${PLYPATH}/ply.c)
+  add_executable(gvtMpiRenderer ${GVT_MPI_RENDERER_SRCS})
+  target_link_libraries(gvtMpiRenderer gvtCore gvtRender ${GVT_MPI_RENDERER_LIBS})
+endif(GVT_MPI_RENDERER_APP)

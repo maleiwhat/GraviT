@@ -61,6 +61,8 @@
 
 #define RAY_BUF_SIZE 10485760 // 10 MB per neighbor
 
+// #define DEBUG_RAY_TRANSFER
+
 using namespace gvt::core::mpi;
 namespace gvt {
 namespace render {
