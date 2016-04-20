@@ -61,12 +61,19 @@
 
 #define RAY_BUF_SIZE 10485760 // 10 MB per neighbor
 
+#ifdef __USE_TAU
+#include <TAU.h>
+#endif
+
 // #define DEBUG_RAY_TRANSFER
 
 using namespace gvt::core::mpi;
 namespace gvt {
 namespace render {
 namespace algorithm {
+#ifdef __USE_TAU
+  TAU_PROFILE("gvt::render::algorithm","",TAU_DEFAULT);
+#endif
 
 /// work scheduler that strives to keep domains loaded and send rays
 /**
