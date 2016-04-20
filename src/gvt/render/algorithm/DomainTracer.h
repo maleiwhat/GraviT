@@ -92,9 +92,7 @@ namespace algorithm {
    */
 template <> class Tracer<gvt::render::schedule::DomainScheduler> : public AbstractTrace {
 public:
-  #ifdef __USE_TAU
-  TAU_PROFILE("gvt::render::algorithm::AbstractTrace","",TAU_DEFAULT);
-#endif
+
   std::set<int> neighbors;
 
   size_t rays_start, rays_end;
@@ -157,6 +155,9 @@ public:
   virtual ~Tracer() {}
 
   void shuffleDropRays(gvt::render::actor::RayVector &rays) {
+#ifdef __USE_TAU
+  TAU_PROFILE("gvt::render::algorithm::shuffleDropRays","",TAU_DEFAULT);
+#endif
     const size_t chunksize = MAX(2, rays.size() / (std::thread::hardware_concurrency() * 4));
     static gvt::render::data::accel::BVH &acc = *dynamic_cast<gvt::render::data::accel::BVH *>(acceleration);
     static tbb::simple_partitioner ap;
