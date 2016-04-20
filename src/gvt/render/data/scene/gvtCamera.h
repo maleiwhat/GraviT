@@ -104,6 +104,11 @@ public:
     return up_vector;
   };
   // clang-format on
+
+  const glm::mat4 &getCameraToWorld() const { return cam2wrld; }
+
+  const glm::mat4 &getWorldToCamera() const { return wrld2cam; }
+
 protected:
   int samples;
   int jitterWindowSize;
