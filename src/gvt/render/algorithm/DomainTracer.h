@@ -71,9 +71,7 @@ using namespace gvt::core::mpi;
 namespace gvt {
 namespace render {
 namespace algorithm {
-#ifdef __USE_TAU
-  TAU_PROFILE("gvt::render::algorithm","",TAU_DEFAULT);
-#endif
+
 
 /// work scheduler that strives to keep domains loaded and send rays
 /**
@@ -94,6 +92,9 @@ namespace algorithm {
    */
 template <> class Tracer<gvt::render::schedule::DomainScheduler> : public AbstractTrace {
 public:
+  #ifdef __USE_TAU
+  TAU_PROFILE("gvt::render::algorithm::AbstractTrace","",TAU_DEFAULT);
+#endif
   std::set<int> neighbors;
 
   size_t rays_start, rays_end;
