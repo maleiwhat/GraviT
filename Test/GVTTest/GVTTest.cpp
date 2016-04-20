@@ -149,6 +149,7 @@ int main(int argc, char **argv) {
   gvt::core::DBNodeH schedNode = cntxt->createNodeFromType("Schedule", "Enzosched", root.UUID());
 
   // parse the command line
+  //e.g. bin/gvttest -i ../EnzoPlyData -cp 512.0,512.0,4096.0 -fp 512.0,512.0,0.0 -lp 512.0,512.0,2048.0 -lc 100.0,100.0,100.0 -o enzo
   if ((argc < 2)) {
     // no input so render the defalut empty image
   } else {
@@ -366,8 +367,27 @@ int main(int argc, char **argv) {
           light_pos = { lpx, lpy, lpz };
         }
       }
+      else if (arg == "-lc") // light position
+            {
+              if (++i < argc) {
+                std::string arg2(argv[i]);
+                size_t pos = arg2.find(",");
+                if (pos != std::string::npos) {
+                  arg2.replace(pos, 1, " ");
+                }
+                pos = arg2.find(",");
+                if (pos != std::string::npos) {
+                  arg2.replace(pos, 1, " ");
+                }
+                float lpx, lpy, lpz;
+                std::stringstream ss(arg2);
+                ss >> lpx >> lpy >> lpz;
+                light_color = { lpx, lpy, lpz };
+              }
+            }
     }
   }
+
 #if 1
   MPI_Init(&argc, &argv);
   MPI_Pcontrol(0);
