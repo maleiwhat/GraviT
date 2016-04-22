@@ -60,6 +60,7 @@ public:
   void voteForNoWork(int senderRank, unsigned int timeStamp);
 
 private:
+  friend class MpiRenderer;
   enum State { WaitForNoWork, WaitForVotes, WaitForResign, Resigned };
 
   void vote();

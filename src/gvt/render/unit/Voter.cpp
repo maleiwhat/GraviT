@@ -1,6 +1,9 @@
 #include "gvt/render/unit/Voter.h"
 #include "gvt/render/unit/Works.h"
 
+// #define DEBUG_RAYTX
+// #define DEBUG_VOTER
+
 using namespace gvt::render::unit;
 
 Voter::Voter(int numRanks, int myRank, std::map<int, gvt::render::actor::RayVector> *rayQ)
@@ -85,7 +88,13 @@ void Voter::applyVoteResult(int voteType, unsigned int timeStamp) {
 bool Voter::updateState() {
   pthread_mutex_lock(&votingLock);
 
-  bool hasWork = !(rayQ->empty() && numPendingRays == 0);
+  int notDone = 0;
+  for (auto &q : *rayQ) notDone += q.second.size();
+  bool hasWork = !(notDone == 0 && numPendingRays == 0);
+#ifdef DEBUG_VOTER
+  printf("rank %d notDone %d numPendingRays %d\n", myRank, notDone, numPendingRays);
+#endif
+  // bool hasWork = !(rayQ->empty() && numPendingRays == 0);
   bool allDone = false;
 
   switch (state) {

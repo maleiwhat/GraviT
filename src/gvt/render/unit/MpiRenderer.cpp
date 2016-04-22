@@ -114,6 +114,7 @@
 
 // #define DEBUG_MPI_RENDERER
 // #define DEBUG_RAYTX
+// #define DEBUG_VOTER
 #define ENABLE_TIMERS
 
 using namespace std;
@@ -532,6 +533,9 @@ bool MpiRenderer::transferRays() {
     timer_vote.start();
 #endif
     done = voter->updateState();
+#ifdef DEBUG_VOTER
+    if (myRank == 0) printf("rank %d: voter state %d\n", myRank, voter->state);
+#endif
 #ifdef ENABLE_TIMERS
     timer_vote.stop();
     profiler.update(Profiler::Vote, timer_vote.getElapsed());
@@ -559,8 +563,9 @@ void MpiRenderer::sendRays() {
       RayTransferWork work;
       work.setup(RayTransferWork::Request, myRank, instance, &rays);
       work.Send(ownerRank);
+      rays.clear();
 #ifdef DEBUG_RAYTX
-      printf("rank %d: sent %lu rays instance %d\n", myRank, numRaysToSend, instance);
+      printf("rank %d: sent %lu rays instance %d to rank %d\n", myRank, numRaysToSend, instance, ownerRank);
 #endif
     }
   }
@@ -864,6 +869,7 @@ void MpiRenderer::domainTracer(RayVector &rays) {
 // std::cout << "domain scheduler: trace time: " << t_trace.format();
 // std::cout << "domain scheduler: shuffle time: " << t_shuffle.format();
 // std::cout << "domain scheduler: send time: " << t_send.format();
+  printf("Rank %d is done.\n", myRank);
 
 // add colors to the framebuffer
   t_gather.resume();
