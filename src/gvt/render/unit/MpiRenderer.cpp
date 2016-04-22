@@ -116,6 +116,7 @@
 // #define DEBUG_MPI_RENDERER
 // #define DEBUG_RAYTX
 // #define DEBUG_VOTER
+#define PROFILE_RAY_COUNTS
 
 using namespace std;
 using namespace gvt::render;
@@ -592,6 +593,9 @@ bool MpiRenderer::transferRays() {
 }
 
 void MpiRenderer::sendRays() {
+#ifdef PROFILE_RAY_COUNTS
+  uint64_t rayCount = 0;
+#endif
   for (auto &q : rayQ) {
     int instance = q.first;
     RayVector &rays = q.second;
@@ -603,14 +607,23 @@ void MpiRenderer::sendRays() {
       work.setup(RayTransferWork::Request, myRank, instance, &rays);
       work.Send(ownerRank);
       rays.clear();
+#ifdef PROFILE_RAY_COUNTS
+      rayCount += numRaysToSend;
+#endif
 #ifdef DEBUG_RAYTX
       printf("rank %d: sent %lu rays instance %d to rank %d\n", myRank, numRaysToSend, instance, ownerRank);
 #endif
     }
   }
+#ifdef PROFILE_RAY_COUNTS
+  profiler.addRayCountSend(rayCount);
+#endif
 }
 
 void MpiRenderer::receiveRays() {
+#ifdef PROFILE_RAY_COUNTS
+  uint64_t rayCount = 0;
+#endif
   pthread_mutex_lock(&rayTransferBufferLock);
   for (size_t i = 0; i < rayTransferBuffer.size(); ++i) {
     RayTransferWork *raytx = rayTransferBuffer[i];
@@ -619,14 +632,19 @@ void MpiRenderer::receiveRays() {
     RayTransferWork grant;
     grant.setup(RayTransferWork::Grant, myRank, raytx->getNumRays());
     grant.Send(raytx->getSenderRank());
+#ifdef PROFILE_RAY_COUNTS
+    rayCount += raytx->getNumRays();
+#endif
 #ifdef DEBUG_RAYTX
     printf("rank %d: recved %d rays instance %d \n", myRank, raytx->getNumRays(), raytx->getInstanceId());
 #endif
     delete raytx;
   }
   rayTransferBuffer.clear(); // TODO: avoid this
-
   pthread_mutex_unlock(&rayTransferBufferLock);
+#ifdef PROFILE_RAY_COUNTS
+  profiler.addRayCountRecv(rayCount);
+#endif
 }
 
 void MpiRenderer::bufferRayTransferWork(RayTransferWork *work) {
@@ -818,6 +836,11 @@ void MpiRenderer::domainTracer(RayVector &rays) {
       }
       t_schedule.stop();
       profiler.update(Profiler::Schedule, t_schedule.getElapsed());
+
+#ifdef PROFILE_RAY_COUNTS
+      profiler.addRayCountProc(instTargetCount);
+#endif
+
       GVT_DEBUG(DBG_ALWAYS, "image scheduler: next instance: " << instTarget << ", rays: " << instTargetCount);
 
       if (instTarget >= 0) {
@@ -1125,10 +1148,18 @@ void MpiRenderer::gatherTimes() {
 
   if (myRank == 0) {
     profiler.gtimes.resize(numRanks * Profiler::Size);
+#ifdef PROFILE_RAY_COUNTS
+    profiler.grays.resize(numRanks);
+#endif
   }
 
   MPI_Gather(static_cast<const void *>(&profiler.times[0]), Profiler::Size, MPI_DOUBLE,
              static_cast<void *>(&profiler.gtimes[0]), Profiler::Size, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+#ifdef PROFILE_RAY_COUNTS
+  MPI_Gather(static_cast<const void *>(&profiler.rays), sizeof(Profiler::RayCounts), MPI_BYTE,
+             static_cast<void *>(&profiler.grays[0]), sizeof(Profiler::RayCounts), MPI_BYTE, 0, MPI_COMM_WORLD);
+#endif
 
   if (myRank == 0) {
     profiler.print(options.numFrames, numRanks);

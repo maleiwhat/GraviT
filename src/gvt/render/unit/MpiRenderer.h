@@ -53,6 +53,7 @@
 #include <pthread.h>
 #include <tbb/mutex.h>
 #include <vector>
+#include <cstdint>
 
 using namespace gvt::core::mpi;
 using namespace std::chrono;
@@ -152,6 +153,11 @@ public:
     }
     times[type] += elapsed;
   }
+
+  void addRayCountProc(uint64_t n) { rays.proc += n; }
+  void addRayCountSend(uint64_t n) { rays.send += n; }
+  void addRayCountRecv(uint64_t n) { rays.recv += n; }
+
   void print(int numFrames, int numRanks) {
     for (int p = 0; p < numRanks; ++p) {
       std::cout << "Process " << p << "\n";
@@ -167,7 +173,12 @@ public:
         std::cout << names[i] << ": " << avg << " ms (" << percent << " %)\n";
       }
       double misc = (gtimes[totalIdx] / numFrames) - aggregated;
-      std::cout << "Misc: " << misc << " ms (" << (misc * 100) / (gtimes[totalIdx] / numFrames) << " %)\n\n";
+      std::cout << "Misc: " << misc << " ms (" << (misc * 100) / (gtimes[totalIdx] / numFrames) << " %)\n";
+      if (grays.size() == numRanks) {
+        std::cout << "Processed rays: " << (grays[p].proc / numFrames) << "\n";
+        std::cout << "Sent rays: " << (grays[p].send / numFrames) << "\n";
+        std::cout << "Received rays: " << (grays[p].recv / numFrames) << "\n\n";
+      }
     }
   }
 
@@ -176,6 +187,13 @@ private:
   std::vector<double> times;  // times for my rank
   std::vector<double> gtimes; // times gathered from all ranks
   std::vector<std::string> names;
+  struct RayCounts {
+    uint64_t proc = 0;
+    uint64_t send = 0;
+    uint64_t recv = 0;
+  };
+  RayCounts rays; // ray counts for my rank
+  std::vector<RayCounts> grays; // ray counts gathered from all ranks
 };
 
 class MpiRenderer : public Application {
