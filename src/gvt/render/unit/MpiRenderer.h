@@ -197,19 +197,11 @@ private:
   void makeObjDatabase();
   void makePlyDatabase();
 
-public:
-  // database, context, and domain mapping
-  // gvt::core::Vector<gvt::core::DBNodeH> &getInstanceNodes() { return instancenodes; }
-  // std::size_t getInstanceNodesSize() const { return instancenodes.size(); }
-  gvt::core::DBNodeH getMeshNode(int domainId) { return instancenodes[domainId]["meshRef"].deRef(); }
-  gvt::core::DBNodeH getInstanceNode(int domainId) { return instancenodes[domainId]; }
-  int getInstanceOwner(int domainId) { return instanceRankMap[instancenodes[domainId].UUID()]; }
-
 private:
   MpiRendererOptions options;
   gvt::core::Vector<gvt::core::DBNodeH> instancenodes;
   gvt::core::DBNodeH root;
-  std::map<gvt::core::Uuid, int> instanceRankMap;
+  std::map<int, size_t> mpiInstanceMap;
   std::map<int, gvt::render::data::primitives::Mesh *> meshRef;
   std::map<int, glm::mat4 *> instM;
   std::map<int, glm::mat4 *> instMinv;
@@ -226,16 +218,6 @@ private:
   gvt::render::data::scene::gvtPerspectiveCamera *camera;
   TileLoadBalancer *tileLoadBalancer;
   gvt::render::data::accel::AbstractAccel *acceleration;
-
-// public:
-//   // ray queue
-//   std::map<int, gvt::render::actor::RayVector> *getRayQueue() { return &rayQ; }
-//   std::map<int, gvt::render::actor::RayVector> *getIncomingRayQueue() { return &incomingRayQueue; }
-//   tbb::mutex *getRayQueueMutex() { return rayQMutex; }
-//   tbb::mutex *getIncomingRayQueueMutex() { return &incomingRayQueueMutex; }
-//   bool isRayQueueEmpty() const { return rayQ.empty(); }
-//   bool isIncomingRayQueueEmpty() const { return incomingRayQueue.empty(); }
-//   pthread_mutex_t *getRayTransferMutex() { return &rayTransferMutex; }
 
 private:
   std::map<int, gvt::render::actor::RayVector> rayQ;

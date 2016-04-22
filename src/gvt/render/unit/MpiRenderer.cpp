@@ -237,33 +237,30 @@ void MpiRenderer::createDatabase() {
 }
 
 void MpiRenderer::initInstanceRankMap() {
-
   gvt::core::Vector<gvt::core::DBNodeH> dataNodes = root["Data"].getChildren();
-
 #ifdef DEBUG_MPI_RENDERER
   std::cout << "instance node size: " << instancenodes.size() << "\ndata node size: " << dataNodes.size() << "\n";
 #endif
-
   // create a map of instances to mpi rank
-  for (size_t i = 0; i < instancenodes.size(); ++i) {
+  for (size_t i = 0; i < instancenodes.size(); i++) {
     gvt::core::DBNodeH meshNode = instancenodes[i]["meshRef"].deRef();
+
     size_t dataIdx = -1;
-    for (size_t d = 0; d < dataNodes.size(); ++d) {
+    for (size_t d = 0; d < dataNodes.size(); d++) {
       if (dataNodes[d].UUID() == meshNode.UUID()) {
         dataIdx = d;
         break;
       }
     }
+
     // NOTE: mpi-data(domain) assignment strategy
-    int ownerRank = static_cast<int>(dataIdx) % GetSize();
+    size_t mpiNode = dataIdx % GetSize();
+
     GVT_DEBUG(DBG_ALWAYS, "[" << GetRank() << "] domain scheduler: instId: " << i << ", dataIdx: " << dataIdx
-                              << ", target mpi node: " << ownerRank << ", world size: " << GetSize());
-#ifdef DEBUG_MPI_RENDERER
-    std::cout << "[" << GetRank() << "] domain scheduler: instId: " << i << ", dataIdx: " << dataIdx
-              << ", target mpi node: " << ownerRank << ", world size: " << GetSize() << "\n";
-#endif
-    GVT_ASSERT(dataIdx != (size_t) - 1, "domain scheduler: could not find data node");
-    instanceRankMap[instancenodes[i].UUID()] = ownerRank;
+                              << ", target mpi node: " << mpiNode << ", world size: " << GetSize());
+
+    GVT_ASSERT(dataIdx != -1, "domain scheduler: could not find data node");
+    mpiInstanceMap[i] = mpiNode;
   }
 }
 
@@ -586,7 +583,7 @@ void MpiRenderer::sendRays() {
   for (auto &q : rayQ) {
     int instance = q.first;
     RayVector &rays = q.second;
-    int ownerRank = getInstanceOwner(instance);
+    int ownerRank = mpiInstanceMap[instance];
     size_t numRaysToSend = rays.size();
     if (ownerRank != myRank && numRaysToSend > 0) {
       voter->addNumPendingRays(numRaysToSend);
@@ -729,8 +726,7 @@ void MpiRenderer::shuffleDropRays(RayVector &rays) {
                         gvt::render::actor::Ray &r = *(raysit.begin() + i);
                         if (hits[i].next != -1) {
                           r.origin = r.origin + r.direction * (hits[i].t * 0.8f);
-                          // const bool inRank = mpiInstanceMap[hits[i].next] == mpi.rank;
-                          const bool inRank = (getInstanceOwner(hits[i].next) == myRank);
+                          const bool inRank = mpiInstanceMap[hits[i].next] == myRank;
                           if (inRank) local_queue[hits[i].next].push_back(r);
                         }
                       }
@@ -802,8 +798,7 @@ void MpiRenderer::domainTracer(RayVector &rays) {
       //      ++q) {
       for (auto &q : rayQ) {
 
-        // const bool inRank = mpiInstanceMap[q.first] == mpi.rank;
-        const bool inRank = (getInstanceOwner(q.first) == myRank);
+        const bool inRank = mpiInstanceMap[q.first] == myRank;
         if (inRank && q.second.size() > instTargetCount) {
           instTargetCount = q.second.size();
           instTarget = q.first;
