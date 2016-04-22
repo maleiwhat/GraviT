@@ -144,21 +144,24 @@ MpiRenderer::~MpiRenderer() {
 
 void MpiRenderer::printUsage(const char *argv) {
   printf("Usage : %s [-h] [-a <adapter>] [-n <x y z>] [-p] [-s <scheduler>] [-W <image_width>] [-H "
-         "<image_height>] [-N <num_frames>]\n",
+         "<image_height>] [-N <num_frames>] [-t <num_tbb_threads>]\n",
          argv);
   printf("  -h, --help\n");
   printf("  -a, --adapter <embree | manta | optix> (default: embree)\n");
   printf("  -s, --scheduler <0-3> (default: 1)\n");
-  printf("      0: AsyncImage, 1: AysncDomain, 2: SyncImage, 3:SyncDomain\n");
+  printf("      0: AsyncImage (n/a), 1: AysncDomain, 2: SyncImage (n/a), 3:SyncDomain\n");
   printf("  -n, --num-instances <x, y, z> specify the number of instances in each direction (default: 1 1 1). "
          "effective only with obj.\n");
   printf("  -p, --ply use ply models\n");
   printf("  -W, --width <image_width> (default: 1280)\n");
   printf("  -H, --height <image_height> (default: 720)\n");
   printf("  -N, --num-frames <num_frames> (default: 1)\n");
+  printf("  -t, --tbb <num_tbb_threads>\n");
+  printf("      (default: # cores for sync. schedulers or # cores - 2 for async. schedulers)\n");
 }
 
 void MpiRenderer::parseCommandLine(int argc, char **argv) {
+  options.numTbbThreads = -1;
   for (int i = 1; i < argc; ++i) {
     if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
       printUsage(argv[0]);
@@ -193,9 +196,18 @@ void MpiRenderer::parseCommandLine(int argc, char **argv) {
       options.height = atoi(argv[++i]);
     } else if (strcmp(argv[i], "-N") == 0 || strcmp(argv[i], "--num-frames") == 0) {
       options.numFrames = atoi(argv[++i]);
+    } else if (strcmp(argv[i], "-t") == 0 || strcmp(argv[i], "--tbb") == 0) {
+      options.numTbbThreads = atoi(argv[++i]);
     } else {
       printf("error: %s not defined\n", argv[i]);
       exit(1);
+    }
+  }
+  if (options.numTbbThreads <= 0) {
+    if (options.schedulerType == 2 || options.schedulerType == 3) {
+      options.numTbbThreads = MAX(1, std::thread::hardware_concurrency());
+    } else {
+      options.numTbbThreads = MAX(1, std::thread::hardware_concurrency() - 2);
     }
   }
 }
@@ -265,7 +277,7 @@ void MpiRenderer::initInstanceRankMap() {
 }
 
 void MpiRenderer::setupCommon() {
-  tbb::task_scheduler_init init(std::thread::hardware_concurrency());
+  tbb::task_scheduler_init init(options.numTbbThreads);
   auto renderContext = gvt::render::RenderContext::instance();
   if (renderContext == NULL) {
     std::cout << "Something went wrong initializing the context" << std::endl;

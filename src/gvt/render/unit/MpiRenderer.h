@@ -117,6 +117,7 @@ struct MpiRendererOptions {
   int instanceCountY = 1;
   int instanceCountZ = 1;
   int numFrames = 1;
+  int numTbbThreads;
 };
 
 class Voter;
