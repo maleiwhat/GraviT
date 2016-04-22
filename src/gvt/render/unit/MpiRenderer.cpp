@@ -375,9 +375,9 @@ void MpiRenderer::render() {
   // case MpiRendererOptions::SyncImage: {
   //   renderSyncImage();
   // } break;
-  // case MpiRendererOptions::SyncDomain: {
-  //   renderSyncDomain();
-  // } break;
+  case MpiRendererOptions::SyncDomain: {
+    renderSyncDomain();
+  } break;
   default: {
     printf("error: unknown scheduler type %d\n", options.schedulerType);
     exit(1);
@@ -478,22 +478,32 @@ void MpiRenderer::renderAsyncDomain() {
 //   }
 // }
 
-// void MpiRenderer::renderSyncDomain() {
-//   setupSyncDomain();
-//   GVT_ASSERT(options.numFrames == 1, "multiple frames not supported yet for schedulers with synchronous MPI");
-//   camera->AllocateCameraRays();
-//   camera->generateRays();
-//   image = new Image(imageWidth, imageHeight, "image");
-//   if (myRank == 0) printf("[sync mpi] starting domain scheduler without the mpi layer using %d processes\n", GetSize());
-//   gvt::render::algorithm::Tracer<DomainScheduler>(camera->rays, *image)();
-//   image->Write();
-//   Quit::Register();
-//   Start();
-//   if (myRank == 0) {
-//     Quit quit;
-//     quit.Broadcast(true, true);
-//   }
-// }
+void MpiRenderer::renderSyncDomain() {
+  setupSyncDomain();
+
+  camera->AllocateCameraRays();
+  camera->generateRays();
+  image = new Image(imageWidth, imageHeight, "image");
+
+  if (myRank == 0) printf("[sync mpi] starting domain scheduler without the mpi layer using %d processes\n", GetSize());
+  gvt::render::algorithm::Tracer<DomainScheduler> tracer(camera->rays, *image);
+  for (int i = 0; i < options.numFrames; ++i) {
+    printf("[sync mpi] Rank %d: frame %d start\n", myRank, i);
+    camera->AllocateCameraRays();
+    camera->generateRays();
+    image->clear();
+    tracer();
+    if (myRank == 0) image->Write();
+    printf("[sync mpi] Rank %d: frame %d done\n", myRank, i);
+  }
+
+  Quit::Register();
+  Start();
+  if (myRank == 0) {
+    Quit quit;
+    quit.Broadcast(true, true);
+  }
+}
 
 // void MpiRenderer::initServer() {
 //   // TODO (hpark): For now, equally divide the image
