@@ -192,6 +192,10 @@ TAU_PROFILE("src/gvt/render/algorithm/TracerBase.h:AbstractTrace ","",TAU_DEFAUL
    * to find out what instance they will hit next
    */
   inline void shuffleRays(gvt::render::actor::RayVector &rays, const int domID) {
+#ifdef __USE_TAU
+ TAU_PROFILE("tracerbase.h::shuffleRays","",TAU_DEFAULT);
+#endif
+
 
     GVT_DEBUG(DBG_ALWAYS, "[" << mpi.rank << "] Shuffle: start");
     GVT_DEBUG(DBG_ALWAYS, "[" << mpi.rank << "] Shuffle: rays: " << rays.size());
@@ -201,6 +205,9 @@ TAU_PROFILE("src/gvt/render/algorithm/TracerBase.h:AbstractTrace ","",TAU_DEFAUL
     static tbb::simple_partitioner ap;
     tbb::parallel_for(tbb::blocked_range<gvt::render::actor::RayVector::iterator>(rays.begin(), rays.end(), chunksize),
                       [&](tbb::blocked_range<gvt::render::actor::RayVector::iterator> raysit) {
+#ifdef __USE_TAU
+  TAU_PROFILE("tracerbase.h::shuffleRays::tbb::parallel_for","",TAU_DEFAULT);
+#endif
                         std::vector<gvt::render::data::accel::BVH::hit> hits =
                             acc.intersect<GVT_SIMD_WIDTH>(raysit.begin(), raysit.end(), domID);
                         std::map<int, gvt::render::actor::RayVector> local_queue;
