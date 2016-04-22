@@ -123,22 +123,24 @@ class Profiler {
 public:
   enum Type {
     Total = 0,
-    Primary,
+    GenPrimaryRays,
     Filter,
     Schedule,
+    Adapter,
     Trace,
     Shuffle,
-    Transfer,
+    Send,
+    Receive,
     Vote,
     Composite,
-    WaitImage,
+    WaitComposite,
     Size
   };
   Profiler() {
     times.resize(Size, 0.0);
     names.resize(Size);
-    names = { "Total",   "Primary_rays", "Filter", "Schedule",  "Trace",
-              "Shuffle", "Transfer",     "Vote",   "Composite", "WaitImage" };
+    names = { "Total",   "GenPrimaryRays", "Filter",  "Schedule", "Adapter",   "Trace",
+              "Shuffle", "Send",           "Receive", "Vote",     "Composite", "WaitComposite" };
   }
   void update(int type, double elapsed) {
     if (type >= Size) {

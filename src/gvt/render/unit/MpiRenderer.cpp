@@ -115,7 +115,6 @@
 // #define DEBUG_MPI_RENDERER
 // #define DEBUG_RAYTX
 // #define DEBUG_VOTER
-#define ENABLE_TIMERS
 
 using namespace std;
 using namespace gvt::render;
@@ -413,37 +412,35 @@ void MpiRenderer::renderAsyncDomain() {
   RayTransferWork::Register();
   VoteWork::Register();
   PixelGatherWork::Register();
-#ifdef ENABLE_TIMERS
   TimeGatherWork::Register();
-#endif
   Application::Start();
 
   image = new Image(imageWidth, imageHeight, "image");
 
-#ifdef ENABLE_TIMERS
-  Timer timer_total;
-  Timer timer_wait_image;
-#endif
+  Timer t_total;
+  Timer t_wait_composite;
+
   for (int i = 0; i < options.numFrames; ++i) {
     printf("[async mpi] Rank %d: frame %d start\n", myRank, i);
     runDomainTracer();
-#ifdef ENABLE_TIMERS
-    timer_wait_image.start();
-#endif
+
+    t_wait_composite.start();
     pthread_mutex_lock(&imageReadyLock);
+
     while (!imageReady) pthread_cond_wait(&imageReadyCond, &imageReadyLock);
     imageReady = false;
     pthread_mutex_unlock(&imageReadyLock);
-#ifdef ENABLE_TIMERS
-    timer_wait_image.stop();
-    profiler.update(Profiler::WaitImage, timer_wait_image.getElapsed());
-#endif
+
+    t_wait_composite.stop();
+    profiler.update(Profiler::WaitComposite, t_wait_composite.getElapsed());
+
     if (numRanks > 1) voter->reset();
     printf("[async mpi] Rank %d: frame %d done\n", myRank, i);
   }
-#ifdef ENABLE_TIMERS
-  timer_total.stop();
-  profiler.update(Profiler::Total, timer_total.getElapsed());
+
+  t_total.stop();
+  profiler.update(Profiler::Total, t_total.getElapsed());
+
   pthread_mutex_lock(&gatherTimesStartMutex);
   gatherTimesStart = true;
   pthread_cond_signal(&gatherTimesStartCond);
@@ -460,7 +457,7 @@ void MpiRenderer::renderAsyncDomain() {
   }
   gatherTimesDone = false;
   pthread_mutex_unlock(&gatherTimesDoneMutex);
-#endif
+
   Application::Kill();
 }
 
@@ -519,35 +516,36 @@ void MpiRenderer::renderAsyncDomain() {
 void MpiRenderer::aggregatePixel(int pixelId, const glm::vec3 &addend) { colorBuf[pixelId] += addend; }
 
 bool MpiRenderer::transferRays() {
-#ifdef ENABLE_TIMERS
-  Timer timer_vote;
-  Timer timer_transfer;
-#endif
+
+  Timer t_send;
+  Timer t_receive;
+  Timer t_vote;
+
   bool done;
   if (numRanks > 1) {
+
+    t_send.start();
     sendRays();
+    t_send.stop();
+    profiler.update(Profiler::Send, t_send.getElapsed());
+
+    t_receive.start();
     receiveRays();
-#ifdef ENABLE_TIMERS
-    timer_transfer.stop();
-    profiler.update(Profiler::Transfer, timer_transfer.getElapsed());
-    timer_vote.start();
-#endif
+    t_receive.stop();
+    profiler.update(Profiler::Receive, t_receive.getElapsed());
+
+    t_vote.start();
     done = voter->updateState();
 #ifdef DEBUG_VOTER
     if (myRank == 0) printf("rank %d: voter state %d\n", myRank, voter->state);
 #endif
-#ifdef ENABLE_TIMERS
-    timer_vote.stop();
-    profiler.update(Profiler::Vote, timer_vote.getElapsed());
-#endif
+    t_vote.stop();
+    profiler.update(Profiler::Vote, t_vote.getElapsed());
+
   } else {
     int not_done = 0;
     for (auto &q : rayQ) not_done += q.second.size();
     done = (not_done == 0);
-#ifdef ENABLE_TIMERS
-    timer_transfer.stop();
-    profiler.update(Profiler::Transfer, timer_transfer.getElapsed());
-#endif
   }
   return done;
 }
@@ -613,17 +611,15 @@ void MpiRenderer::copyIncomingRays(int instanceId, const gvt::render::actor::Ray
 }
 
 void MpiRenderer::runDomainTracer() {
-#ifdef ENABLE_TIMERS
-  Timer timer_primary;
-#endif
+  Timer t_primary;
   // RayVector rays;
   // generatePrimaryRays(rays);
   camera->AllocateCameraRays();
   camera->generateRays();
-#ifdef ENABLE_TIMERS
-  timer_primary.stop();
-  profiler.update(Profiler::Primary, timer_primary.getElapsed());
-#endif
+
+  t_primary.stop();
+  profiler.update(Profiler::GenPrimaryRays, t_primary.getElapsed());
+
   domainTracer(camera->rays);
 }
 
@@ -720,16 +716,12 @@ void MpiRenderer::shuffleDropRays(RayVector &rays) {
 }
 
 void MpiRenderer::domainTracer(RayVector &rays) {
-  gvt::core::time::timer t_diff(false, "domain tracer: diff timers/frame:");
-  gvt::core::time::timer t_all(false, "domain tracer: all timers:");
-  gvt::core::time::timer t_frame(true, "domain tracer: frame :");
-  gvt::core::time::timer t_gather(false, "domain tracer: gather :");
-  gvt::core::time::timer t_send(false, "domain tracer: send :");
-  gvt::core::time::timer t_shuffle(false, "domain tracer: shuffle :");
-  gvt::core::time::timer t_trace(false, "domain tracer: trace :");
-  gvt::core::time::timer t_sort(false, "domain tracer: select :");
-  gvt::core::time::timer t_adapter(false, "domain tracer: adapter :");
-  gvt::core::time::timer t_filter(false, "domain tracer: filter :");
+  Timer t_filter;
+  Timer t_schedule;
+  Timer t_adapter;
+  Timer t_trace;
+  Timer t_shuffle;
+  Timer t_composite;
 
   GVT_DEBUG(DBG_ALWAYS, "domain scheduler: starting, num rays: " << rays.size());
   gvt::core::DBNodeH root = gvt::render::RenderContext::instance()->getRootNode();
@@ -744,9 +736,10 @@ void MpiRenderer::domainTracer(RayVector &rays) {
 // sort rays into queues
 // note: right now throws away rays that do not hit any domain owned by the current
 // rank
-  t_filter.resume();
+  t_filter.start();
   filterRaysLocally(rays);
   t_filter.stop();
+  profiler.update(Profiler::Filter, t_filter.getElapsed());
 
   GVT_DEBUG(DBG_LOW, "tracing rays");
 
@@ -771,7 +764,7 @@ void MpiRenderer::domainTracer(RayVector &rays) {
       instTarget = -1;
       instTargetCount = 0;
 
-      t_sort.resume();
+      t_schedule.start();
       GVT_DEBUG(DBG_ALWAYS, "domain scheduler: selecting next instance, num queues: " << rayQ.size());
       // for (std::map<int, gvt::render::actor::RayVector>::iterator q = this->queue.begin(); q != this->queue.end();
       //      ++q) {
@@ -784,11 +777,12 @@ void MpiRenderer::domainTracer(RayVector &rays) {
           instTarget = q.first;
         }
       }
-      t_sort.stop();
+      t_schedule.stop();
+      profiler.update(Profiler::Schedule, t_schedule.getElapsed());
       GVT_DEBUG(DBG_ALWAYS, "image scheduler: next instance: " << instTarget << ", rays: " << instTargetCount);
 
       if (instTarget >= 0) {
-        t_adapter.resume();
+        t_adapter.start();
         gvt::render::Adapter *adapter = 0;
         // gvt::core::DBNodeH meshNode = instancenodes[instTarget]["meshRef"].deRef();
 
@@ -834,12 +828,13 @@ void MpiRenderer::domainTracer(RayVector &rays) {
           adapterCache[mesh] = adapter;
         }
         t_adapter.stop();
+        profiler.update(Profiler::Adapter, t_adapter.getElapsed());
         GVT_ASSERT(adapter != nullptr, "image scheduler: adapter not set");
         // end getAdapterFromCache concept
 
         GVT_DEBUG(DBG_ALWAYS, "image scheduler: calling process queue");
         {
-          t_trace.resume();
+          t_trace.start();
           moved_rays.reserve(rayQ[instTarget].size() * 10);
 #ifdef GVT_USE_DEBUG
           boost::timer::auto_cpu_timer t("Tracing rays in adapter: %w\n");
@@ -850,211 +845,31 @@ void MpiRenderer::domainTracer(RayVector &rays) {
           rayQ[instTarget].clear();
 
           t_trace.stop();
+          profiler.update(Profiler::Trace, t_trace.getElapsed());
         }
 
         GVT_DEBUG(DBG_ALWAYS, "image scheduler: marching rays");
-        t_shuffle.resume();
+
+        t_shuffle.start();
         shuffleRays(moved_rays, instTarget);
         moved_rays.clear();
         t_shuffle.stop();
+        profiler.update(Profiler::Shuffle, t_shuffle.getElapsed());
       }
     } while (instTarget != -1);
 
-    t_send.resume();
     all_done = transferRays();
-    t_send.stop();
   } while (!all_done);
 
-// std::cout << "domain scheduler: select time: " << t_sort.format();
-// std::cout << "domain scheduler: trace time: " << t_trace.format();
-// std::cout << "domain scheduler: shuffle time: " << t_shuffle.format();
-// std::cout << "domain scheduler: send time: " << t_send.format();
-  printf("Rank %d is done.\n", myRank);
-
-// add colors to the framebuffer
-  t_gather.resume();
+  // add colors to the framebuffer
+  t_composite.start();
   if (myRank == 0) {
     PixelGatherWork compositePixels;
     compositePixels.Broadcast(true, true);
   }
-  t_gather.stop();
-  t_frame.stop();
-  t_all = t_sort + t_trace + t_shuffle + t_gather + t_adapter + t_filter + t_send;
-  t_diff = t_frame - t_all;
+  t_composite.stop();
+  profiler.update(Profiler::Composite, t_composite.getElapsed());
 }
-// #ifdef ENABLE_TIMERS
-//   Timer timer_filter;
-//   Timer timer_schedule;
-//   Timer timer_trace;
-//   Timer timer_shuffle;
-// #endif
-// 
-//   GVT_DEBUG(DBG_ALWAYS, "domain scheduler: starting, num rays: " << rays.size());
-//   int adapterType = root["Schedule"]["adapter"].value().toInteger();
-//   long domain_counter = 0;
-// 
-// #ifdef ENABLE_TIMERS
-//   timer_filter.start();
-// #endif
-//   filterRaysLocally(rays);
-// #ifdef ENABLE_TIMERS
-//   timer_filter.stop();
-//   profiler.update(Profiler::Filter, timer_filter.getElapsed())
-// #endif
-//       GVT_DEBUG(DBG_LOW, "tracing rays");
-//   // process domains until all rays are terminated
-//   bool all_done = false;
-//   // std::set<int> doms_to_send;
-//   int lastInstance = -1;
-//   // gvt::render::data::domain::AbstractDomain* dom = NULL;
-//   gvt::render::actor::RayVector moved_rays;
-//   moved_rays.reserve(1000);
-//   int instTarget = -1;
-//   size_t instTargetCount = 0;
-//   // gvt::render::Adapter *adapter = 0;
-// 
-//   while (!all_done) {
-//     // pthread_mutex_lock(rayTransferMutex);
-//     if (!rayQ.empty()) {
-// #ifdef ENABLE_TIMERS
-//       timer_schedule.start();
-// #endif
-//       // process domain assigned to this proc with most rays queued
-//       // if there are queues for instances that are not assigned
-//       // to the current rank, erase those entries
-//       instTarget = -1;
-//       instTargetCount = 0;
-//       std::vector<int> to_del;
-//       GVT_DEBUG(DBG_ALWAYS, "domain scheduler: selecting next instance, num queues: " << rayQ.size());
-//       for (auto &q : rayQ) {
-//         const bool inRank = (getInstanceOwner(q.first) == myRank);
-//         if (q.second.empty() || !inRank) {
-//           to_del.push_back(q.first);
-//           continue;
-//         }
-//         if (inRank && q.second.size() > instTargetCount) {
-//           instTargetCount = q.second.size();
-//           instTarget = q.first;
-//         }
-//       }
-//       // erase empty queues
-//       for (int instId : to_del) {
-//         GVT_DEBUG(DBG_ALWAYS, "rank[" << myRank << "] DOMAINTRACER: deleting rayQ for instance " << instId);
-//         rayQ.erase(instId);
-//       }
-//       if (instTarget == -1) {
-// #ifdef ENABLE_TIMERS
-//         timer_schedule.stop();
-//         profiler.update(Profiler::Schedule, timer_schedule.getElapsed());
-// #endif
-//         continue;
-//       }
-// #ifdef ENABLE_TIMERS
-//       else {
-//         timer_schedule.stop();
-//         profiler.update(Profiler::Schedule, timer_schedule.getElapsed());
-//       }
-// #endif
-// 
-//       GVT_DEBUG(DBG_ALWAYS, "domain scheduler: next instance: " << instTarget << ", rays: " << instTargetCount << " ["
-//                                                                 << myRank << "]");
-//       // doms_to_send.clear();
-//       // pnav: use this to ignore domain x:        int domi=0;if (0)
-//       if (instTarget >= 0) {
-//         GVT_DEBUG(DBG_LOW, "Getting instance " << instTarget);
-//         // gvt::render::Adapter *adapter = 0;
-//         gvt::core::DBNodeH meshNode = getMeshNode(instTarget);
-//         if (instTarget != lastInstance) {
-//           // TODO: before we would free the previous domain before loading the next
-//           // this can be replicated by deleting the adapter
-//           // if (!adapter) {
-//           //   printf("trying to delete null adapter instTarget %d lastInstance %d\n", instTarget, lastInstance);
-//           //   exit(1);
-//           // }
-//           if (!adapter) {
-//             delete adapter;
-//             adapter = 0;
-//           }
-//         }
-//         // track domains loaded
-//         if (instTarget != lastInstance) {
-//           ++domain_counter;
-//           lastInstance = instTarget;
-//           //
-//           // 'getAdapterFromCache' functionality
-//           if (!adapter) {
-//             GVT_DEBUG(DBG_ALWAYS, "domain scheduler: creating new adapter");
-//             switch (adapterType) {
-// #ifdef GVT_RENDER_ADAPTER_EMBREE
-//             case gvt::render::adapter::Embree:
-//               adapter = new gvt::render::adapter::embree::data::EmbreeMeshAdapter(meshNode);
-//               break;
-// #endif
-// #ifdef GVT_RENDER_ADAPTER_MANTA
-//             case gvt::render::adapter::Manta:
-//               adapter = new gvt::render::adapter::manta::data::MantaMeshAdapter(meshNode);
-//               break;
-// #endif
-// #ifdef GVT_RENDER_ADAPTER_OPTIX
-//             case gvt::render::adapter::Optix:
-//               adapter = new gvt::render::adapter::optix::data::OptixMeshAdapter(meshNode);
-//               break;
-// #endif
-// #if defined(GVT_RENDER_ADAPTER_OPTIX) && defined(GVT_RENDER_ADAPTER_EMBREE)
-//             case gvt::render::adapter::Heterogeneous:
-//               adapter = new gvt::render::adapter::heterogeneous::data::HeterogeneousMeshAdapter(meshNode);
-//               break;
-// #endif
-//             default:
-//               GVT_DEBUG(DBG_SEVERE, "domain scheduler: unknown adapter type: " << adapterType);
-//             }
-//             // adapterCache[meshNode.UUID()] = adapter; // note: cache logic
-//             // comes later when we implement hybrid
-//           }
-//           // end 'getAdapterFromCache' concept
-//           //
-//         }
-//         GVT_ASSERT(adapter != nullptr, "domain scheduler: adapter not set");
-//         GVT_DEBUG(DBG_ALWAYS, "[" << myRank << "] domain scheduler: calling process rayQ");
-//         gvt::core::DBNodeH instNode = getInstanceNode(instTarget);
-//         {
-// #ifdef ENABLE_TIMERS
-//           timer_trace.start();
-// #endif
-//           moved_rays.reserve(rayQ[instTarget].size() * 10);
-//           if (!adapter) {
-//             printf("nulll adapter detected\n");
-//             exit(1);
-//           }
-//           adapter->trace(rayQ[instTarget], moved_rays, instNode);
-//           rayQ[instTarget].clear();
-// #ifdef ENABLE_TIMERS
-//           timer_trace.stop();
-//           profiler.update(Profiler::Trace, timer_trace.getElapsed());
-// #endif
-//         }
-// #ifdef ENABLE_TIMERS
-//         timer_shuffle.start();
-// #endif
-//         shuffleRays(moved_rays, instNode);
-//         moved_rays.clear();
-// #ifdef ENABLE_TIMERS
-//         timer_shuffle.stop();
-//         profiler.update(Profiler::Shuffle, timer_shuffle.getElapsed());
-// #endif
-//       }
-//     } // if (!rayQ.empty()) {
-//     // done with current domain, send off rays to their proper processors.
-//     GVT_DEBUG(DBG_ALWAYS, "Rank [ " << myRank << "]  calling SendRays");
-//     all_done = transferRays();
-//     // pthread_mutex_unlock(rayTransferMutex);
-//   } // while (!all_done) {
-// 
-//   if (myRank == 0) {
-//     PixelGatherWork compositePixels;
-//     compositePixels.Broadcast(true, true);
-//   }
-// }
 
 void MpiRenderer::shuffleRays(gvt::render::actor::RayVector &rays, int domID) {
   GVT_DEBUG(DBG_ALWAYS, "[" << mpi.rank << "] Shuffle: start");
