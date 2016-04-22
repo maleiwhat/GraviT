@@ -520,10 +520,18 @@ void MpiRenderer::renderSyncDomain() {
 
   if (myRank == 0) {
     profiler.gtimes.resize(numRanks * Profiler::Size);
+#ifdef PROFILE_RAY_COUNTS
+    profiler.grays.resize(numRanks);
+#endif
   }
 
   MPI_Gather(static_cast<const void *>(&profiler.times[0]), Profiler::Size, MPI_DOUBLE,
              static_cast<void *>(&profiler.gtimes[0]), Profiler::Size, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+#ifdef PROFILE_RAY_COUNTS
+  MPI_Gather(static_cast<const void *>(&profiler.rays), sizeof(Profiler::RayCounts), MPI_BYTE,
+             static_cast<void *>(&profiler.grays[0]), sizeof(Profiler::RayCounts), MPI_BYTE, 0, MPI_COMM_WORLD);
+#endif
 
   if (myRank == 0) {
     profiler.print(options.numFrames, numRanks);

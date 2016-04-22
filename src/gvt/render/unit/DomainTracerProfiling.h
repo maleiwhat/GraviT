@@ -65,6 +65,7 @@
 #define RAY_BUF_SIZE 10485760 // 10 MB per neighbor
 
 // #define DEBUG_RAY_TRANSFER
+#define PROFILE_RAY_COUNTS
 
 using namespace gvt::core::mpi;
 using namespace gvt::render::unit;
@@ -295,6 +296,9 @@ public:
         t_schedule.stop();
         profiler.update(Profiler::Schedule, t_schedule.getElapsed());
 
+#ifdef PROFILE_RAY_COUNTS
+        profiler.addRayCountProc(instTargetCount);
+#endif
         GVT_DEBUG(DBG_ALWAYS, "image scheduler: next instance: " << instTarget << ", rays: " << instTargetCount);
 
         if (instTarget >= 0) {
@@ -454,6 +458,9 @@ public:
       reqs[i] = MPI_REQUEST_NULL;
     }
 
+#ifdef PROFILE_RAY_COUNTS
+    uint64_t rayCount = 0;
+#endif
     // count how many rays are to be sent to each neighbor
     // for (std::map<int, gvt::render::actor::RayVector>::iterator q = queue.begin(); q != queue.end(); ++q) {
     for (auto &q : queue) {
@@ -465,6 +472,9 @@ public:
         int buf_size = 0;
 
         outbound[n_ptr] += q.second.size(); // outbound[n_ptr] has number of rays going
+#ifdef PROFILE_RAY_COUNTS
+        rayCount += q.second.size();
+#endif
         for (size_t r = 0; r < q.second.size(); ++r) {
           buf_size += (q.second)[r].packedSize(); // rays can have diff packed sizes
         }
@@ -475,6 +485,10 @@ public:
                                                   << std::endl);
       }
     }
+
+#ifdef PROFILE_RAY_COUNTS
+    profiler.addRayCountSend(rayCount);
+#endif
 
     // let the neighbors know what's coming
     // and find out what's coming here
@@ -562,6 +576,9 @@ public:
 
 
     // ******************* unpack rays into the queues **************************
+#ifdef PROFILE_RAY_COUNTS
+    rayCount = 0;
+#endif
     for (int n = 0; n < mpi.world_size; ++n) { // bds loop over all
       GVT_DEBUG(DBG_ALWAYS, "[" << mpi.rank << "] " << n << " inbound[2*n] " << inbound[2 * n] << std::endl);
       if (inbound[2 * n] > 0) {
@@ -582,9 +599,15 @@ public:
             queue[q_number].push_back(r);
             ptr += r.packedSize();
           }
+#ifdef PROFILE_RAY_COUNTS
+          rayCount += raysinqueue;
+#endif
         }
       }
     }
+#ifdef PROFILE_RAY_COUNTS
+    profiler.addRayCountRecv(rayCount);
+#endif
     GVT_DEBUG(DBG_ALWAYS, "[" << mpi.rank << "]: sent and received rays" << std::endl);
 
     // clean up
