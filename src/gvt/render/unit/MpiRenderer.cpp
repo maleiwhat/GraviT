@@ -75,6 +75,7 @@
 #include "gvt/render/unit/TileLoadBalancer.h"
 #include "gvt/render/unit/TileWork.h"
 #include "gvt/render/unit/Works.h"
+#include "gvt/render/unit/DomainTracerProfiling.h"
 
 #include "gvt/render/algorithm/DomainTracer.h"
 #include "gvt/render/algorithm/ImageTracer.h"
@@ -480,21 +481,42 @@ void MpiRenderer::renderAsyncDomain() {
 
 void MpiRenderer::renderSyncDomain() {
   setupSyncDomain();
+  image = new Image(imageWidth, imageHeight, "image");
 
   camera->AllocateCameraRays();
   camera->generateRays();
-  image = new Image(imageWidth, imageHeight, "image");
+
+  Timer t_total;
 
   if (myRank == 0) printf("[sync mpi] starting domain scheduler without the mpi layer using %d processes\n", GetSize());
-  gvt::render::algorithm::Tracer<DomainScheduler> tracer(camera->rays, *image);
+  gvt::render::algorithm::Tracer<gvt::render::schedule::DomainSchedulerProfiling> tracer(camera->rays, *image, profiler);
   for (int i = 0; i < options.numFrames; ++i) {
     printf("[sync mpi] Rank %d: frame %d start\n", myRank, i);
+
+    Timer t_primary;
     camera->AllocateCameraRays();
     camera->generateRays();
+    t_primary.stop();
+    profiler.update(Profiler::GenPrimaryRays, t_primary.getElapsed());
+
     image->clear();
     tracer();
     if (myRank == 0) image->Write();
     printf("[sync mpi] Rank %d: frame %d done\n", myRank, i);
+  }
+
+  t_total.stop();
+  profiler.update(Profiler::Total, t_total.getElapsed());
+
+  if (myRank == 0) {
+    profiler.gtimes.resize(numRanks * Profiler::Size);
+  }
+
+  MPI_Gather(static_cast<const void *>(&profiler.times[0]), Profiler::Size, MPI_DOUBLE,
+             static_cast<void *>(&profiler.gtimes[0]), Profiler::Size, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+  if (myRank == 0) {
+    profiler.print(options.numFrames, numRanks);
   }
 
   Quit::Register();

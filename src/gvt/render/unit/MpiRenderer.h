@@ -46,6 +46,8 @@
 #include "gvt/render/Types.h"
 #include "gvt/render/actor/Ray.h"
 
+#include "gvt/render/algorithm/TracerBase.h"
+
 #include <chrono>
 #include <map>
 #include <pthread.h>

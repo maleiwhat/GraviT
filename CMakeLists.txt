@@ -274,6 +274,7 @@ set(GVT_RENDER_HDRS ${GVT_RENDER_HDRS}
   src/gvt/render/unit/MpiRenderer.h
   src/gvt/render/unit/Voter.h
   src/apps/render/TestScenes.h
+  src/gvt/render/unit/DomainTracerProfiling.h
 )
 
 
