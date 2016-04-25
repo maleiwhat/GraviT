@@ -261,8 +261,7 @@ TAU_PROFILE("gvtPerspectiveCamera::generateRays()","",TAU_DEFAULT);
 #endif
               // calculate scale factors -1.0 < x,y < 1.0
 #ifdef __USE_TAU
-	TAU_PROFILE("[1]-tbb w loop in gvtPerspectiveCamera::generateRays","",TAU_DEFAULT);
-  {
+	TAU_START("one: tbb w loop");
 #endif
               int ridx = idx * samples2 + k * samples + w;
               x = float(i) * wmult - 1.0 + (w - half_sample) * offset + offset * (randEngine.fastrand(0, 1) - 0.5);
@@ -270,19 +269,19 @@ TAU_PROFILE("gvtPerspectiveCamera::generateRays()","",TAU_DEFAULT);
               y = float(j) * hmult - 1.0 + (k - half_sample) * offset + offset * (randEngine.fastrand(0, 1) - 0.5);
               y *= vert;
 #ifdef __USE_TAU
-	}
-#endif
-#ifdef __USE_TAU
-	TAU_PROFILE("[2]-tbb w loop in gvtPerspectiveCamera::generateRays","",TAU_DEFAULT);
-  {
+	TAU_STOP("one: tbb w loop");
+	TAU_START("two: tbb w loop");
 #endif
 
               glm::vec3 camera_space_ray_direction;
-              camera_space_ray_direction[0] = cam2wrld[0][0] * x + cam2wrld[0][1] * y + z[0];
-              camera_space_ray_direction[1] = cam2wrld[1][0] * x + cam2wrld[1][1] * y + z[1];
-              camera_space_ray_direction[2] = cam2wrld[2][0] * x + cam2wrld[2][1] * y + z[2];
+            for( int d = 0; d < 3; d++) {
+              camera_space_ray_direction[d] = cam2wrld[d][0] * x + cam2wrld[d][1] * y + z[0];
+            }
+//              camera_space_ray_direction[0] = cam2wrld[0][0] * x + cam2wrld[0][1] * y + z[0];
+//              camera_space_ray_direction[1] = cam2wrld[1][0] * x + cam2wrld[1][1] * y + z[1];
+//              camera_space_ray_direction[2] = cam2wrld[2][0] * x + cam2wrld[2][1] * y + z[2];
 #ifdef __USE_TAU
-	}
+	TAU_STOP("two: tbb w loop");
 #endif
 #ifdef __USE_TAU
 	{
