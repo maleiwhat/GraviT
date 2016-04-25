@@ -150,7 +150,7 @@ void MpiRenderer::printUsage(const char *argv) {
   printf("  -h, --help\n");
   printf("  -a, --adapter <embree | manta | optix> (default: embree)\n");
   printf("  -s, --scheduler <0-3> (default: 1)\n");
-  printf("      0: AsyncImage (n/a), 1: AysncDomain, 2: SyncImage (n/a), 3:SyncDomain\n");
+  printf("      0: AsyncImage (n/a), 1: AysncDomain, 2: SyncImage, 3:SyncDomain\n");
   printf("  -n, --num-instances <x, y, z> specify the number of instances in each direction (default: 1 1 1). "
          "effective only with obj.\n");
   printf("  -p, --ply use ply models\n");
@@ -383,9 +383,9 @@ void MpiRenderer::render() {
   case MpiRendererOptions::AsyncDomain: {
     renderAsyncDomain();
   } break;
-  // case MpiRendererOptions::SyncImage: {
-  //   renderSyncImage();
-  // } break;
+  case MpiRendererOptions::SyncImage: {
+    renderSyncImage();
+  } break;
   case MpiRendererOptions::SyncDomain: {
     renderSyncDomain();
   } break;
@@ -472,22 +472,31 @@ void MpiRenderer::renderAsyncDomain() {
   Application::Kill();
 }
 
-// void MpiRenderer::renderSyncImage() {
-//   setupSyncImage();
-//   GVT_ASSERT(options.numFrames == 1, "multiple frames not supported yet for schedulers with synchronous MPI");
-//   camera->AllocateCameraRays();
-//   camera->generateRays();
-//   image = new Image(imageWidth, imageHeight, "image");
-//   if (myRank == 0) printf("[sync mpi] starting image scheduler without the mpi layer using %d processes\n", GetSize());
-//   gvt::render::algorithm::Tracer<ImageScheduler>(camera->rays, *image)();
-//   image->Write();
-//   Quit::Register();
-//   Start();
-//   if (myRank == 0) {
-//     Quit quit;
-//     quit.Broadcast(true, true);
-//   }
-// }
+void MpiRenderer::renderSyncImage() {
+  setupSyncImage();
+  GVT_ASSERT(numRanks == 1, "multiple nodes not yet supported for the image scheduler");
+  image = new Image(imageWidth, imageHeight, "image");
+
+  if (myRank == 0) printf("[sync mpi] starting image scheduler without the mpi layer using %d processes\n", GetSize());
+
+  gvt::render::algorithm::Tracer<ImageScheduler> tracer(camera->rays, *image);
+
+  for (int i = 0; i < options.numFrames; ++i) {
+    printf("[sync mpi] Rank %d: frame %d start\n", myRank, i);
+    camera->AllocateCameraRays();
+    camera->generateRays();
+    image->clear();
+    tracer();
+    if (myRank == 0) image->Write();
+  }
+
+  Quit::Register();
+  Start();
+  if (myRank == 0) {
+    Quit quit;
+    quit.Broadcast(true, true);
+  }
+}
 
 void MpiRenderer::renderSyncDomain() {
   setupSyncDomain();
