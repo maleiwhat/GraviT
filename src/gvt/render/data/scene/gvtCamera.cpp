@@ -274,6 +274,7 @@ TAU_PROFILE("gvtPerspectiveCamera::generateRays()","",TAU_DEFAULT);
 #endif
 
               glm::vec3 camera_space_ray_direction;
+#pragma simd
             for( int d = 0; d < 3; d++) {
               camera_space_ray_direction[d] = cam2wrld[d][0] * x + cam2wrld[d][1] * y + z[0];
             }
