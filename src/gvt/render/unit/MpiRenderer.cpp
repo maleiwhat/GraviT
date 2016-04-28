@@ -446,7 +446,6 @@ void MpiRenderer::renderAsyncDomain() {
     profiler.update(Profiler::WaitComposite, t_wait_composite.getElapsed());
 
     if (numRanks > 1) voter->reset();
-    printf("[async mpi] Rank %d: frame %d done\n", myRank, i);
   }
 
   t_total.stop();
@@ -487,7 +486,7 @@ void MpiRenderer::renderSyncImage() {
     camera->generateRays();
     image->clear();
     tracer();
-    if (myRank == 0) image->Write();
+    image->Write();
   }
 
   Quit::Register();
@@ -583,15 +582,17 @@ bool MpiRenderer::transferRays() {
   bool done;
   if (numRanks > 1) {
 
-    t_send.start();
-    sendRays();
-    t_send.stop();
-    profiler.update(Profiler::Send, t_send.getElapsed());
+    if (voter->isCommunicationAllowed()) { // TODO: potential improvement
+      t_send.start();
+      sendRays();
+      t_send.stop();
+      profiler.update(Profiler::Send, t_send.getElapsed());
 
-    t_receive.start();
-    receiveRays();
-    t_receive.stop();
-    profiler.update(Profiler::Receive, t_receive.getElapsed());
+      t_receive.start();
+      receiveRays();
+      t_receive.stop();
+      profiler.update(Profiler::Receive, t_receive.getElapsed());
+    }
 
     t_vote.start();
     done = voter->updateState();
@@ -602,11 +603,18 @@ bool MpiRenderer::transferRays() {
     profiler.update(Profiler::Vote, t_vote.getElapsed());
 
   } else {
-    int not_done = 0;
-    for (auto &q : rayQ) not_done += q.second.size();
-    done = (not_done == 0);
+    done = !hasWork();
   }
+
+  assert(!done || (done && !hasWork()));
+
   return done;
+}
+
+bool MpiRenderer::hasWork() const {
+  int not_done = 0;
+  for (auto &q : rayQ) not_done += q.second.size();
+  return (not_done > 0);
 }
 
 void MpiRenderer::sendRays() {
@@ -671,10 +679,7 @@ void MpiRenderer::bufferRayTransferWork(RayTransferWork *work) {
 }
 
 void MpiRenderer::bufferVoteWork(VoteWork *work) { voter->bufferVoteWork(work); }
-void MpiRenderer::voteForResign(int senderRank, unsigned int timeStamp) { voter->voteForResign(senderRank, timeStamp); }
-void MpiRenderer::voteForNoWork(int senderRank, unsigned int timeStamp) { voter->voteForNoWork(senderRank, timeStamp); }
 void MpiRenderer::applyRayTransferResult(int numRays) { voter->subtractNumPendingRays(numRays); }
-void MpiRenderer::applyVoteResult(int voteType, unsigned int timeStamp) { voter->applyVoteResult(voteType, timeStamp); }
 
 void MpiRenderer::copyIncomingRays(int instanceId, const gvt::render::actor::RayVector *incomingRays) {
   pthread_mutex_lock(&rayTransferMutex);

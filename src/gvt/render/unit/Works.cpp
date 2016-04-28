@@ -189,8 +189,6 @@ void VoteWork::Serialize(size_t &size, unsigned char *&serialized) {
   *reinterpret_cast<int *>(buf) = voteType;
   buf += sizeof(int);
   *reinterpret_cast<int *>(buf) = senderRank;
-  buf += sizeof(int);
-  *reinterpret_cast<unsigned int *>(buf) = timeStamp;
 }
 
 Work *VoteWork::Deserialize(size_t size, unsigned char *serialized) {
@@ -201,26 +199,30 @@ Work *VoteWork::Deserialize(size_t size, unsigned char *serialized) {
   work->voteType = *reinterpret_cast<int *>(buf);
   buf += sizeof(int);
   work->senderRank = *reinterpret_cast<int *>(buf);
-  buf += sizeof(int);
-  work->timeStamp = *reinterpret_cast<unsigned int *>(buf);
 
   return work;
 }
 
-void VoteWork::setup(int voteType, int senderRank, unsigned int timeStamp) {
+void VoteWork::setup(int voteType, int senderRank) {
   this->voteType = voteType;
   this->senderRank = senderRank;
-  this->timeStamp = timeStamp;
 }
 
 bool VoteWork::Action() {
   MpiRenderer *renderer = static_cast<MpiRenderer *>(Application::GetApplication());
-  if (voteType == NoWork) {
-    renderer->voteForNoWork(senderRank, timeStamp);
-  } else if (voteType == Resign) {
-    renderer->voteForResign(senderRank, timeStamp);
-  } else { // Commit or Abort
-    renderer->applyVoteResult(voteType, timeStamp);
+  if (voteType == PROPOSE) {
+    renderer->setProposeAvailable();
+  } else if (voteType == DO_COMMIT) {
+    renderer->commit();
+  } else if (voteType == DO_ABORT) {
+    renderer->abort();
+  } else if (voteType == VOTE_COMMIT) {
+    renderer->voteCommit();
+  } else if (voteType == VOTE_ABORT) {
+    renderer->voteAbort();
+  } else {
+    printf("rank %d: invalid Vote Type %d\n", renderer->GetRank(), voteType); 
+    exit(1);
   }
   return false;
 }

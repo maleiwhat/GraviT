@@ -54,35 +54,38 @@ public:
   void addNumPendingRays(int n);
   void subtractNumPendingRays(int n);
 
-  void applyVoteResult(int voteType, unsigned int timeStamp);
   void bufferVoteWork(VoteWork *work);
-  void voteForResign(int senderRank, unsigned int timeStamp);
-  void voteForNoWork(int senderRank, unsigned int timeStamp);
+
+  void setProposeAvailable();
+  void voteCommit();
+  void voteAbort();
+  void commit();
+  void abort();
+  bool isCommunicationAllowed() const;
 
 private:
   friend class MpiRenderer;
-  enum State { WaitForNoWork, WaitForVotes, WaitForResign, Resigned };
+  enum State { PREPARE_COORDINATOR, PROPOSE, PREPARE_COHORT, VOTE, TERMINATE };
+  enum Role { COORDINATOR = 0 };
 
-  void vote();
-  bool checkVotes();
-  void requestForVotes(int voteType, unsigned int timeStamp);
+  bool hasWork() const;
+  bool achievedConsensus() const;
+  void broadcast(int voteWorkType) const;
+  void sendVote(int voteWorkType) const;
 
   const int numRanks;
   const int myRank;
   const std::map<int, gvt::render::actor::RayVector> *rayQ;
 
   int state;
-
   pthread_mutex_t votingLock;
   int numPendingRays;
-  unsigned int validTimeStamp;
-  bool votesAvailable;
-  bool resignGrant;
-
+  bool allVotesAvailable;
   int numVotesReceived;
-  int commitCount;
-
-  int numPendingVotes;
+  int commitVoteCount;
+  bool proposeAvailable;
+  bool commitAbortAvailable;
+  bool doCommit;
 
   std::vector<VoteWork *> voteWorkBuffer;
   pthread_mutex_t voteWorkBufferLock;

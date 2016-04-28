@@ -47,6 +47,7 @@
 #include "gvt/render/actor/Ray.h"
 
 #include "gvt/render/algorithm/TracerBase.h"
+#include "gvt/render/unit/Voter.h"
 
 #include <chrono>
 #include <map>
@@ -120,8 +121,6 @@ struct MpiRendererOptions {
   int numFrames = 1;
   int numTbbThreads;
 };
-
-class Voter;
 
 class Profiler {
 public:
@@ -274,10 +273,18 @@ public:
   void bufferRayTransferWork(RayTransferWork *work);
   void bufferVoteWork(VoteWork *work);
   void voteForResign(int senderRank, unsigned int timeStamp);
-  void voteForNoWork(int senderRank, unsigned int timeStamp);
   void applyRayTransferResult(int numRays);
   void applyVoteResult(int voteType, unsigned int timeStamp);
   void copyIncomingRays(int instanceId, const gvt::render::actor::RayVector *incomingRays);
+
+  void setProposeAvailable() { voter->setProposeAvailable(); }
+  void voteCommit() { voter->voteCommit(); }
+  void voteAbort() { voter->voteAbort(); }
+  void commit() { voter->commit(); }
+  void abort() { voter->abort(); }
+
+private:
+  bool hasWork() const;
 
 private:
   int myRank;
