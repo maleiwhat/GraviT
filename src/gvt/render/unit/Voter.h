@@ -49,7 +49,6 @@ public:
   Voter(int numRanks, int myRank, std::map<int, gvt::render::actor::RayVector> *rayQ);
 
   void reset();
-
   bool updateState();
   void addNumPendingRays(int n);
   void subtractNumPendingRays(int n);
@@ -65,7 +64,7 @@ public:
 
 private:
   friend class MpiRenderer;
-  enum State { PREPARE_COORDINATOR, PROPOSE, PREPARE_COHORT, VOTE, TERMINATE };
+  enum State { PREPARE_COORDINATOR = 0, PROPOSE, PREPARE_COHORT, VOTE, TERMINATE, NUM_STATES };
   enum Role { COORDINATOR = 0 };
 
   bool hasWork() const;
@@ -89,6 +88,8 @@ private:
 
   std::vector<VoteWork *> voteWorkBuffer;
   pthread_mutex_t voteWorkBufferLock;
+
+  std::vector<std::string> stateNames;
 };
 }
 }

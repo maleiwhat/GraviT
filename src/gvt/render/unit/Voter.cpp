@@ -17,6 +17,11 @@ Voter::Voter(int numRanks, int myRank, std::map<int, gvt::render::actor::RayVect
   } else {
     state = PREPARE_COHORT;
   }
+
+#ifdef DEBUG_VOTER
+  stateNames.resize(NUM_STATES);
+  stateNames = { "PREPARE_COORDINATOR", "PROPOSE", "PREPARE_COHORT", "VOTE", "TERMINATE" };
+#endif
 }
 
 void Voter::reset() {
@@ -29,6 +34,9 @@ void Voter::reset() {
   allVotesAvailable = false;
   numVotesReceived = 0;
   commitVoteCount = 0;
+  commitAbortAvailable = false;
+  doCommit = false;
+  proposeAvailable = false;
 }
 
 void Voter::addNumPendingRays(int n) {
@@ -68,7 +76,6 @@ bool Voter::hasWork() const {
 bool Voter::updateState() {
   pthread_mutex_lock(&votingLock);
 #ifdef DEBUG_VOTER
-  printf("rank %d: fsm begins. numPendingRays %d\n", myRank, numPendingRays);
   int oldState = state;
 #endif
   bool allDone = false;
@@ -123,6 +130,7 @@ bool Voter::updateState() {
   } break;
 
   case TERMINATE: {
+    reset();
   } break;
 
   default: {
@@ -131,7 +139,8 @@ bool Voter::updateState() {
   } // switch (state) {
 
 #ifdef DEBUG_VOTER
-  printf("rank %d: state %d -> state %d\n", myRank, oldState, state);
+  if (oldState != state)
+    std::cout << "rank " << myRank << ": " << stateNames[oldState] << " -> " << stateNames[state] << "\n";
 #endif
   pthread_mutex_unlock(&votingLock);
   return allDone;
