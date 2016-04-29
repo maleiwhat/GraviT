@@ -38,8 +38,8 @@
 #define GVT_RENDER_UNIT_MPI_RENDERER_H
 
 #include "gvt/core/DatabaseNode.h"
-#include "gvt/core/Types.h"
 #include "gvt/core/Math.h"
+#include "gvt/core/Types.h"
 #include "gvt/core/mpi/Application.h"
 #include "gvt/render/data/Primitives.h"
 
@@ -50,11 +50,12 @@
 #include "gvt/render/unit/Voter.h"
 
 #include <chrono>
+#include <cstdint>
 #include <map>
 #include <pthread.h>
 #include <tbb/mutex.h>
 #include <vector>
-#include <cstdint>
+#include <limits>
 
 using namespace gvt::core::mpi;
 using namespace std::chrono;
@@ -90,11 +91,7 @@ namespace gvt {
 namespace render {
 namespace unit {
 namespace rank {
-enum RankType {
-  Server = 0,
-  Display = 1,
-  FirstWorker
-};
+enum RankType { Server = 0, Display = 1, FirstWorker };
 }
 
 class TileLoadBalancer;
@@ -102,13 +99,7 @@ class RayTransferWork;
 class VoteWork;
 
 struct MpiRendererOptions {
-  enum SchedulerType {
-    AsyncImage = 0,
-    AsyncDomain,
-    SyncImage,
-    SyncDomain,
-    NumSchedulers
-  };
+  enum SchedulerType { AsyncImage = 0, AsyncDomain, SyncImage, SyncDomain, NumSchedulers };
   virtual ~MpiRendererOptions() {}
   int schedulerType = AsyncDomain;
   int adapterType = gvt::render::adapter::Embree;
@@ -138,16 +129,16 @@ public:
     Vote,
     Composite,
     WaitComposite,
-    Size
+    NumTimers
   };
   Profiler() {
-    times.resize(Size, 0.0);
-    names.resize(Size);
+    times.resize(NumTimers, 0.0);
+    names.resize(NumTimers);
     names = { "Total",   "GenPrimaryRays", "Filter",  "Schedule", "Adapter",   "Trace",
               "Shuffle", "Send",           "Receive", "Vote",     "Composite", "WaitComposite" };
   }
   void update(int type, double elapsed) {
-    if (type >= Size) {
+    if (type >= NumTimers) {
       printf("error: undefined profiler type %d\n", type);
       exit(1);
     }
@@ -159,27 +150,67 @@ public:
   void addRayCountRecv(uint64_t n) { rays.recv += n; }
 
   void print(int numFrames, int numRanks) {
+    // +1 to account for misc. time
+    std::vector<double> sumTimes(NumTimers + 1, 0.0);
+    RayCounts sumRayCounts;
+    double maxRunTime = std::numeric_limits<double>::min();
     for (int p = 0; p < numRanks; ++p) {
       std::cout << "Process " << p << "\n";
       double aggregated = 0.0;
-      int totalIdx = p * Size + Total;
-      for (int i = 0; i < Size; ++i) {
-        int index = p * Size + i;
+      int totalIdx = p * NumTimers + Total;
+      for (int i = 0; i < NumTimers; ++i) {
+        int timerIndex = p * NumTimers + i;
         if (i != Total) {
-          aggregated += (gtimes[index] / numFrames);
+          aggregated += gtimes[timerIndex];
+        } else {
+          if (gtimes[timerIndex] > maxRunTime) {
+            maxRunTime = gtimes[timerIndex];
+          }
         }
-        double avg = gtimes[index] / numFrames;
-        double percent = (gtimes[index] * 100) / gtimes[totalIdx];
+        double avg = gtimes[timerIndex] / numFrames;
+        double percent = (gtimes[timerIndex] * 100) / gtimes[totalIdx];
         std::cout << names[i] << ": " << avg << " ms (" << percent << " %)\n";
+        sumTimes[i] += avg;
       }
-      double misc = (gtimes[totalIdx] / numFrames) - aggregated;
+      double misc = (gtimes[totalIdx] - aggregated) / numFrames;
       std::cout << "Misc: " << misc << " ms (" << (misc * 100) / (gtimes[totalIdx] / numFrames) << " %)\n";
       if (grays.size() == numRanks) {
-        std::cout << "Processed rays: " << (grays[p].proc / numFrames) << "\n";
-        std::cout << "Sent rays: " << (grays[p].send / numFrames) << "\n";
-        std::cout << "Received rays: " << (grays[p].recv / numFrames) << "\n\n";
+        uint64_t proc = grays[p].proc / numFrames;
+        uint64_t send = grays[p].send / numFrames;
+        uint64_t recv = grays[p].recv / numFrames;
+        std::cout << "Processed rays: " << proc << " (" << (proc * 100.0) / proc  << "%)\n";
+        std::cout << "Sent rays: " << send << " (" << (send * 100.0) / proc  << "%)\n";
+        std::cout << "Received rays: " << recv << " (" << (recv * 100.0) / proc  << "%)\n\n";
+        sumRayCounts.proc += proc;
+        sumRayCounts.send += send;
+        sumRayCounts.recv += recv;
       }
     }
+
+    // display average across all processes
+    std::cout << "Processes (average)\n";
+    double aggregated = 0.0;
+    for (int i = 0; i < NumTimers; ++i) {
+      double percent = (sumTimes[i] * 100) / sumTimes[Total];
+      std::cout << names[i] << ": " << sumTimes[i] / numRanks << " ms (" << percent << " %)\n";
+      if (i != Total) {
+        aggregated += sumTimes[i];
+      }
+    }
+    double misc = sumTimes[Total] - aggregated;
+    std::cout << "Misc: " << misc << " ms (" << (misc * 100) / sumTimes[Total] << " %)\n";
+    if (grays.size() == numRanks) {
+      uint64_t proc = sumRayCounts.proc / numRanks;
+      uint64_t send = sumRayCounts.send / numRanks;
+      uint64_t recv = sumRayCounts.recv / numRanks;
+      std::cout << "Processed rays: " << proc << " (" << (proc * 100.0) / proc << "%)\n";
+      std::cout << "Sent rays: " << send << " (" << (send * 100.0) / proc << "%)\n";
+      std::cout << "Received rays: " << recv << " (" << (recv * 100.0) / proc << "%)\n\n";
+    }
+
+    // max run time
+    std::cout << "Max. run time (average over " << numFrames << " frames): " << maxRunTime / numFrames << " ms ("
+              << numFrames / (maxRunTime * 0.001) << " fps)\n\n";
   }
 
 private:
@@ -192,7 +223,7 @@ private:
     uint64_t send = 0;
     uint64_t recv = 0;
   };
-  RayCounts rays; // ray counts for my rank
+  RayCounts rays;               // ray counts for my rank
   std::vector<RayCounts> grays; // ray counts gathered from all ranks
 };
 
