@@ -120,6 +120,7 @@ struct MpiRendererOptions {
   int instanceCountZ = 1;
   int numFrames = 1;
   int numTbbThreads;
+  std::string infile;
 };
 
 class Profiler {

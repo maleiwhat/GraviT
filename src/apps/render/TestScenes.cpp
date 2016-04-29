@@ -69,7 +69,7 @@ void TestScenes::makePlyDatabase() {
   std::string temp;
   std::string filename, filepath, rootdir;
   // rootdir = "/work/01197/semeraro/maverick/DAVEDATA/EnzoPlyData/";
-  rootdir = "./EnzoPlyData/Enzo8/";
+  rootdir = options.infile;
 
   gvt::core::DBNodeH root = renderContext->getRootNode();
   gvt::core::DBNodeH dataNodes = renderContext->createNodeFromType("Data", "Data", root.UUID());
@@ -195,13 +195,13 @@ void TestScenes::makePlyDatabase() {
 void TestScenes::makeObjDatabase() {
   // create data node
   Uuid dataNodeId = createNode("Data", "Data");
-  std::string objName("bunny"); // TODO: fixed for now
+  std::string objName("obj_name");
 
   // create instances node
   Uuid instancesNodeId = createNode("Instances", "Instances");
 
   // add instances
-  Box3D meshBounds = getMeshBounds("../data/geom/" + objName + ".obj");
+  Box3D meshBounds = getMeshBounds(options.infile);
   glm::vec3 extent = meshBounds.extent();
 
   const float gapX = extent[0] * 0.2f;
@@ -220,7 +220,7 @@ void TestScenes::makeObjDatabase() {
     for (int y = 0; y < instanceCountY; ++y) {
       for (int x = 0; x < instanceCountX; ++x) {
         // add a mesh
-        Uuid meshNodeId = addMesh(dataNodeId, objName + "_mesh", "../data/geom/" + objName + ".obj");
+        Uuid meshNodeId = addMesh(dataNodeId, "mesh_data", options.infile);
         // int instanceId = y * 2 + x;
         glm::mat4 *m = new glm::mat4(1.f);
         *m = glm::translate(*m, glm::vec3(minPos[0] + x * (extent[0] + gapX), minPos[1] + y * (extent[1] + gapY),

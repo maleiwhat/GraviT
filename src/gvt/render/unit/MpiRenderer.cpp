@@ -46,6 +46,7 @@
 #include <algorithm>
 #include <set>
 #include <vector>
+#include <sys/stat.h>
 
 #ifdef GVT_RENDER_ADAPTER_EMBREE
 #include "gvt/render/adapter/embree/Wrapper.h"
@@ -128,6 +129,8 @@ using namespace gvt::render::data::primitives;
 using namespace gvt::render::unit;
 using namespace gvt::render::actor;
 
+
+
 MpiRenderer::MpiRenderer(int *argc, char ***argv)
     : Application(argc, argv), camera(NULL), image(NULL), tileLoadBalancer(NULL), voter(NULL), adapter(NULL),
       acceleration(NULL), rayQMutex(NULL), colorBufMutex(NULL) {}
@@ -144,10 +147,11 @@ MpiRenderer::~MpiRenderer() {
 }
 
 void MpiRenderer::printUsage(const char *argv) {
-  printf("Usage : %s [-h] [-a <adapter>] [-n <x y z>] [-p] [-s <scheduler>] [-W <image_width>] [-H "
+  printf("Usage : %s [-h] [-i <infile>] [-a <adapter>] [-n <x y z>] [-p] [-s <scheduler>] [-W <image_width>] [-H "
          "<image_height>] [-N <num_frames>] [-t <num_tbb_threads>]\n",
          argv);
   printf("  -h, --help\n");
+  printf("  -i, --infile <infile> (default: ../data/geom/bunny.obj for obj and ./EnzoPlyData/Enzo8 for ply)\n");
   printf("  -a, --adapter <embree | manta | optix> (default: embree)\n");
   printf("  -s, --scheduler <0-3> (default: 1)\n");
   printf("      0: AsyncImage (n/a), 1: AysncDomain, 2: SyncImage, 3:SyncDomain\n");
@@ -167,6 +171,13 @@ void MpiRenderer::parseCommandLine(int argc, char **argv) {
     if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
       printUsage(argv[0]);
       exit(1);
+    } else if (strcmp(argv[i], "-i") == 0 || strcmp(argv[i], "--infile") == 0) {
+      options.infile = argv[++i];
+      struct stat buf;
+      if (stat(options.infile.c_str(), &buf) != 0) {
+        printf("error: file not found. %s\n", options.infile.c_str());
+        exit(1);
+      }
     } else if (strcmp(argv[i], "-a") == 0 || strcmp(argv[i], "--adapter") == 0) {
       ++i;
       if (strcmp(argv[i], "embree") == 0) {
@@ -209,6 +220,13 @@ void MpiRenderer::parseCommandLine(int argc, char **argv) {
       options.numTbbThreads = MAX(1, std::thread::hardware_concurrency());
     } else {
       options.numTbbThreads = MAX(1, std::thread::hardware_concurrency() - 2);
+    }
+  }
+  if (options.infile.empty()) {
+    if (options.ply) {
+      options.infile = std::string("./EnzoPlyData/Enzo8/");
+    } else {
+      options.infile = std::string("../data/geom/bunny.obj");
     }
   }
 }
