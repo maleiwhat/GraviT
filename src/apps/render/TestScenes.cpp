@@ -5,6 +5,7 @@
 #include "gvt/render/data/reader/ObjReader.h"
 #include "gvt/render/data/primitives/Mesh.h"
 #include "gvt/render/unit/MpiRenderer.h"
+#include "../Test/iostuff.h"
 
 #include <ply.h>
 
@@ -21,32 +22,32 @@ using namespace gvt::render::data::scene;
 #define MAX(a, b) ((a > b) ? (a) : (b))
 #endif
 
-typedef struct Vertex {
-  float x, y, z;
-  float nx, ny, nz;
-  void *other_props; /* other properties */
-} Vertex;
+// typedef struct Vertex {
+//   float x, y, z;
+//   float nx, ny, nz;
+//   void *other_props; /* other properties */
+// } Vertex;
+// 
+// typedef struct Face {
+//   unsigned char nverts; /* number of vertex indices in list */
+//   int *verts;           /* vertex index list */
+//   void *other_props;    /* other properties */
+// } Face;
 
-typedef struct Face {
-  unsigned char nverts; /* number of vertex indices in list */
-  int *verts;           /* vertex index list */
-  void *other_props;    /* other properties */
-} Face;
+// PlyProperty vert_props[] = {
+//   /* list of property information for a vertex */
+//   { "x", Float32, Float32, offsetof(Vertex, x), 0, 0, 0, 0 },
+//   { "y", Float32, Float32, offsetof(Vertex, y), 0, 0, 0, 0 },
+//   { "z", Float32, Float32, offsetof(Vertex, z), 0, 0, 0, 0 },
+//   { "nx", Float32, Float32, offsetof(Vertex, nx), 0, 0, 0, 0 },
+//   { "ny", Float32, Float32, offsetof(Vertex, ny), 0, 0, 0, 0 },
+//   { "nz", Float32, Float32, offsetof(Vertex, nz), 0, 0, 0, 0 },
+// };
 
-PlyProperty vert_props[] = {
-  /* list of property information for a vertex */
-  { "x", Float32, Float32, offsetof(Vertex, x), 0, 0, 0, 0 },
-  { "y", Float32, Float32, offsetof(Vertex, y), 0, 0, 0, 0 },
-  { "z", Float32, Float32, offsetof(Vertex, z), 0, 0, 0, 0 },
-  { "nx", Float32, Float32, offsetof(Vertex, nx), 0, 0, 0, 0 },
-  { "ny", Float32, Float32, offsetof(Vertex, ny), 0, 0, 0, 0 },
-  { "nz", Float32, Float32, offsetof(Vertex, nz), 0, 0, 0, 0 },
-};
-
-PlyProperty face_props[] = {
-  /* list of property information for a face */
-  { "vertex_indices", Int32, Int32, offsetof(Face, verts), 1, Uint8, Uint8, offsetof(Face, nverts) },
-};
+// PlyProperty face_props[] = {
+//   /* list of property information for a face */
+//   { "vertex_indices", Int32, Int32, offsetof(Face, verts), 1, Uint8, Uint8, offsetof(Face, nverts) },
+// };
 
 static Vertex **vlist;
 static Face **flist;
@@ -70,6 +71,8 @@ void TestScenes::makePlyDatabase() {
   std::string filename, filepath, rootdir;
   // rootdir = "/work/01197/semeraro/maverick/DAVEDATA/EnzoPlyData/";
   rootdir = options.infile;
+  std::vector<std::string> files = findply(options.infile);
+  // printf("path size=%d\n", files.size());
 
   gvt::core::DBNodeH root = renderContext->getRootNode();
   gvt::core::DBNodeH dataNodes = renderContext->createNodeFromType("Data", "Data", root.UUID());
@@ -77,7 +80,7 @@ void TestScenes::makePlyDatabase() {
 
   // Enzo isosurface...
   const int numPlyFiles = 8;
-  for (k = 0; k < numPlyFiles; k++) {
+  for (k = 0; k < files.size(); k++) {
     sprintf(txt, "%d", k);
     filename = "block";
     filename += txt;
