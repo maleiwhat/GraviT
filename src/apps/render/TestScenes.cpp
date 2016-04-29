@@ -71,24 +71,20 @@ void TestScenes::makePlyDatabase() {
   std::string filename, filepath, rootdir;
   // rootdir = "/work/01197/semeraro/maverick/DAVEDATA/EnzoPlyData/";
   rootdir = options.infile;
-  std::vector<std::string> files = findply(options.infile);
+  std::vector<std::string> filenames = findply(options.infile);
   // printf("path size=%d\n", files.size());
+  // for (int i = 0; i < files.size(); ++i) printf("ply name: %s\n", filenames[i].c_str());
 
   gvt::core::DBNodeH root = renderContext->getRootNode();
   gvt::core::DBNodeH dataNodes = renderContext->createNodeFromType("Data", "Data", root.UUID());
   gvt::core::DBNodeH instNodes = renderContext->createNodeFromType("Instances", "Instances", root.UUID());
 
-  // Enzo isosurface...
-  const int numPlyFiles = 8;
-  for (k = 0; k < files.size(); k++) {
+  for (k = 0; k < filenames.size(); k++) {
     sprintf(txt, "%d", k);
-    filename = "block";
-    filename += txt;
+    filename = filenames[k];
     gvt::core::DBNodeH plyMeshNode = renderContext->createNodeFromType("Mesh", filename.c_str(), dataNodes.UUID());
     // read in some ply data and get ready to load it into the mesh
-    // filepath = rootdir + "block" + std::string(txt) + ".ply";
-    filepath = rootdir + filename + ".ply";
-    myfile = fopen(filepath.c_str(), "r");
+    myfile = fopen(filename.c_str(), "r");
     if (!myfile) {
       printf("%s not found\n", filepath.c_str());
       exit(1);
