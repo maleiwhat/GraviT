@@ -972,8 +972,8 @@ void MpiRenderer::domainTracer(RayVector &rays) {
 }
 
 void MpiRenderer::shuffleRays(gvt::render::actor::RayVector &rays, int domID) {
-  GVT_DEBUG(DBG_ALWAYS, "[" << mpi.rank << "] Shuffle: start");
-  GVT_DEBUG(DBG_ALWAYS, "[" << mpi.rank << "] Shuffle: rays: " << rays.size());
+  GVT_DEBUG(DBG_ALWAYS, "[" << myRank << "] Shuffle: start");
+  GVT_DEBUG(DBG_ALWAYS, "[" << myRank << "] Shuffle: rays: " << rays.size());
 
   const size_t chunksize = MAX(2, rays.size() / (std::thread::hardware_concurrency() * 4));
   static gvt::render::data::accel::BVH &acc = *dynamic_cast<gvt::render::data::accel::BVH *>(acceleration);
