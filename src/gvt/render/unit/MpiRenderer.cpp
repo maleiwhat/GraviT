@@ -118,6 +118,7 @@
 // #define DEBUG_RAYTX
 // #define DEBUG_VOTER
 #define PROFILE_RAY_COUNTS
+#define ENABLE_MESSAGE
 
 using namespace std;
 using namespace gvt::render;
@@ -444,7 +445,9 @@ void MpiRenderer::renderAsyncDomain() {
   Timer t_wait_composite;
 
   for (int i = 0; i < options.numFrames; ++i) {
+#ifdef ENABLE_MESSAGE
     printf("[async mpi] Rank %d: frame %d start\n", myRank, i);
+#endif
     runDomainTracer();
 
     t_wait_composite.start();
@@ -522,8 +525,9 @@ void MpiRenderer::renderSyncDomain() {
   gvt::render::algorithm::Tracer<gvt::render::schedule::DomainSchedulerProfiling> tracer(camera->rays, *image,
                                                                                          profiler);
   for (int i = 0; i < options.numFrames; ++i) {
+#ifdef ENABLE_MESSAGE
     printf("[sync mpi] Rank %d: frame %d start\n", myRank, i);
-
+#endif
     Timer t_primary;
     camera->AllocateCameraRays();
     camera->generateRays();
@@ -533,7 +537,7 @@ void MpiRenderer::renderSyncDomain() {
     image->clear();
     tracer();
     if (myRank == 0) image->Write();
-    printf("[sync mpi] Rank %d: frame %d done\n", myRank, i);
+   //  printf("[sync mpi] Rank %d: frame %d done\n", myRank, i);
   }
 
   t_total.stop();
@@ -1105,7 +1109,9 @@ void MpiRenderer::gatherFramebuffers() {
         }
       }
     });
+#ifdef ENABLE_MESSAGE
     printf("[async mpi] Rank %d: writing result to file\n", myRank);
+#endif
     image->Write();
   }
   delete[] bufs;
