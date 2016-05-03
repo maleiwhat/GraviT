@@ -61,11 +61,8 @@ if (GVT_RENDER)
   option(GVT_SIMPLE_APP			"Build the simple application" ON)
   option(GVT_SIMPLE_FILE_LOAD_APP		"Build the simple application (load obj file)" ON)
   option(GVT_PLY_APP "Build the ply reader application (load ply file)" ON)
-<<<<<<< HEAD
   option(GVT_MPI_RENDERER_APP "Build the MPI renderer application (load obj file)" ON)
-=======
   option(GVT_CTEST "Build CTEST Unit and Integration tests" ON)
->>>>>>> origin/GVT-98
   add_definitions(-DGVT_RENDER)
 endif(GVT_RENDER)
 
@@ -463,10 +460,10 @@ endif(GVT_RENDER)
 
 ## CTEST
 if (GVT_CTEST)
-    
+
   enable_testing()
   ## Check if run in mpi
-  
+
   SET(runConfig "" )
   if (GVT_USE_MPI)
     set (no_mpi_proc 2)
@@ -617,7 +614,6 @@ if (GVT_GLRENDER_APP)
   )
 endif(GVT_GLRENDER_APP)
 
-<<<<<<< HEAD
 if (GVT_MPI_RENDERER_APP)
   if (GVT_MPE)
     if (DEFINED ENV{MPEHOME})
@@ -637,8 +633,3 @@ if (GVT_MPI_RENDERER_APP)
   add_executable(gvtMpiRenderer ${GVT_MPI_RENDERER_SRCS})
   target_link_libraries(gvtMpiRenderer gvtCore gvtRender ${GVT_MPI_RENDERER_LIBS})
 endif(GVT_MPI_RENDERER_APP)
-=======
-
-
-
->>>>>>> origin/GVT-98

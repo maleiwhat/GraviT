@@ -5,6 +5,7 @@
 #include "gvt/render/data/reader/ObjReader.h"
 #include "gvt/render/data/primitives/Mesh.h"
 #include "gvt/render/unit/MpiRenderer.h"
+#include "../Test/iostuff.h"
 
 #include <ply.h>
 
@@ -21,32 +22,32 @@ using namespace gvt::render::data::scene;
 #define MAX(a, b) ((a > b) ? (a) : (b))
 #endif
 
-typedef struct Vertex {
-  float x, y, z;
-  float nx, ny, nz;
-  void *other_props; /* other properties */
-} Vertex;
+// typedef struct Vertex {
+//   float x, y, z;
+//   float nx, ny, nz;
+//   void *other_props; /* other properties */
+// } Vertex;
+// 
+// typedef struct Face {
+//   unsigned char nverts; /* number of vertex indices in list */
+//   int *verts;           /* vertex index list */
+//   void *other_props;    /* other properties */
+// } Face;
 
-typedef struct Face {
-  unsigned char nverts; /* number of vertex indices in list */
-  int *verts;           /* vertex index list */
-  void *other_props;    /* other properties */
-} Face;
+// PlyProperty vert_props[] = {
+//   /* list of property information for a vertex */
+//   { "x", Float32, Float32, offsetof(Vertex, x), 0, 0, 0, 0 },
+//   { "y", Float32, Float32, offsetof(Vertex, y), 0, 0, 0, 0 },
+//   { "z", Float32, Float32, offsetof(Vertex, z), 0, 0, 0, 0 },
+//   { "nx", Float32, Float32, offsetof(Vertex, nx), 0, 0, 0, 0 },
+//   { "ny", Float32, Float32, offsetof(Vertex, ny), 0, 0, 0, 0 },
+//   { "nz", Float32, Float32, offsetof(Vertex, nz), 0, 0, 0, 0 },
+// };
 
-PlyProperty vert_props[] = {
-  /* list of property information for a vertex */
-  { "x", Float32, Float32, offsetof(Vertex, x), 0, 0, 0, 0 },
-  { "y", Float32, Float32, offsetof(Vertex, y), 0, 0, 0, 0 },
-  { "z", Float32, Float32, offsetof(Vertex, z), 0, 0, 0, 0 },
-  { "nx", Float32, Float32, offsetof(Vertex, nx), 0, 0, 0, 0 },
-  { "ny", Float32, Float32, offsetof(Vertex, ny), 0, 0, 0, 0 },
-  { "nz", Float32, Float32, offsetof(Vertex, nz), 0, 0, 0, 0 },
-};
-
-PlyProperty face_props[] = {
-  /* list of property information for a face */
-  { "vertex_indices", Int32, Int32, offsetof(Face, verts), 1, Uint8, Uint8, offsetof(Face, nverts) },
-};
+// PlyProperty face_props[] = {
+//   /* list of property information for a face */
+//   { "vertex_indices", Int32, Int32, offsetof(Face, verts), 1, Uint8, Uint8, offsetof(Face, nverts) },
+// };
 
 static Vertex **vlist;
 static Face **flist;
@@ -69,23 +70,21 @@ void TestScenes::makePlyDatabase() {
   std::string temp;
   std::string filename, filepath, rootdir;
   // rootdir = "/work/01197/semeraro/maverick/DAVEDATA/EnzoPlyData/";
-  rootdir = "./EnzoPlyData/Enzo8/";
+  rootdir = options.infile;
+  std::vector<std::string> filenames = findply(options.infile);
+  // printf("path size=%d\n", files.size());
+  // for (int i = 0; i < files.size(); ++i) printf("ply name: %s\n", filenames[i].c_str());
 
   gvt::core::DBNodeH root = renderContext->getRootNode();
   gvt::core::DBNodeH dataNodes = renderContext->createNodeFromType("Data", "Data", root.UUID());
   gvt::core::DBNodeH instNodes = renderContext->createNodeFromType("Instances", "Instances", root.UUID());
 
-  // Enzo isosurface...
-  const int numPlyFiles = 8;
-  for (k = 0; k < numPlyFiles; k++) {
+  for (k = 0; k < filenames.size(); k++) {
     sprintf(txt, "%d", k);
-    filename = "block";
-    filename += txt;
+    filename = filenames[k];
     gvt::core::DBNodeH plyMeshNode = renderContext->createNodeFromType("Mesh", filename.c_str(), dataNodes.UUID());
     // read in some ply data and get ready to load it into the mesh
-    // filepath = rootdir + "block" + std::string(txt) + ".ply";
-    filepath = rootdir + filename + ".ply";
-    myfile = fopen(filepath.c_str(), "r");
+    myfile = fopen(filename.c_str(), "r");
     if (!myfile) {
       printf("%s not found\n", filepath.c_str());
       exit(1);
@@ -195,13 +194,13 @@ void TestScenes::makePlyDatabase() {
 void TestScenes::makeObjDatabase() {
   // create data node
   Uuid dataNodeId = createNode("Data", "Data");
-  std::string objName("bunny"); // TODO: fixed for now
+  std::string objName("obj_name");
 
   // create instances node
   Uuid instancesNodeId = createNode("Instances", "Instances");
 
   // add instances
-  Box3D meshBounds = getMeshBounds("../data/geom/" + objName + ".obj");
+  Box3D meshBounds = getMeshBounds(options.infile);
   glm::vec3 extent = meshBounds.extent();
 
   const float gapX = extent[0] * 0.2f;
@@ -220,7 +219,7 @@ void TestScenes::makeObjDatabase() {
     for (int y = 0; y < instanceCountY; ++y) {
       for (int x = 0; x < instanceCountX; ++x) {
         // add a mesh
-        Uuid meshNodeId = addMesh(dataNodeId, objName + "_mesh", "../data/geom/" + objName + ".obj");
+        Uuid meshNodeId = addMesh(dataNodeId, "mesh_data", options.infile);
         // int instanceId = y * 2 + x;
         glm::mat4 *m = new glm::mat4(1.f);
         *m = glm::translate(*m, glm::vec3(minPos[0] + x * (extent[0] + gapX), minPos[1] + y * (extent[1] + gapY),

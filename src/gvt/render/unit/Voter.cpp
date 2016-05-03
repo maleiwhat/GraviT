@@ -1,25 +1,42 @@
 #include "gvt/render/unit/Voter.h"
 #include "gvt/render/unit/Works.h"
 
+// #define DEBUG_RAYTX
+// #define DEBUG_VOTER
+
 using namespace gvt::render::unit;
 
 Voter::Voter(int numRanks, int myRank, std::map<int, gvt::render::actor::RayVector> *rayQ)
-    : numRanks(numRanks), myRank(myRank), rayQ(rayQ), state(WaitForNoWork), numPendingRays(0), validTimeStamp(0),
-      votesAvailable(false), resignGrant(false), numVotesReceived(0), commitCount(0), numPendingVotes(0) {
+    : numRanks(numRanks), myRank(myRank), rayQ(rayQ), numPendingRays(0), allVotesAvailable(false), numVotesReceived(0),
+      commitVoteCount(0), commitAbortAvailable(false), doCommit(false), proposeAvailable(false) {
 
   pthread_mutex_init(&votingLock, NULL);
   // pthread_mutex_init(&voteWorkBufferLock, NULL);
+  if (myRank == COORDINATOR) {
+    state = PREPARE_COORDINATOR;
+  } else {
+    state = PREPARE_COHORT;
+  }
+
+#ifdef DEBUG_VOTER
+  stateNames.resize(NUM_STATES);
+  stateNames = { "PREPARE_COORDINATOR", "PROPOSE", "PREPARE_COHORT", "VOTE", "TERMINATE" };
+#endif
 }
 
 void Voter::reset() {
-  state = WaitForNoWork;
+  if (myRank == COORDINATOR) {
+    state = PREPARE_COORDINATOR;
+  } else {
+    state = PREPARE_COHORT;
+  }
   numPendingRays = 0;
-  validTimeStamp = 0;
-  votesAvailable = false;
-  resignGrant = false;
+  allVotesAvailable = false;
   numVotesReceived = 0;
-  commitCount = 0;
-  numPendingVotes = 0;
+  commitVoteCount = 0;
+  commitAbortAvailable = false;
+  doCommit = false;
+  proposeAvailable = false;
 }
 
 void Voter::addNumPendingRays(int n) {
@@ -49,171 +66,136 @@ void Voter::bufferVoteWork(VoteWork *work) {
   pthread_mutex_unlock(&voteWorkBufferLock);
 }
 
-void Voter::voteForResign(int senderRank, unsigned int timeStamp) {
-  int vote = (state == WaitForResign || state == Resigned) ? VoteWork::Commit : VoteWork::Abort;
-  VoteWork grant;
-  grant.setup(vote, myRank, timeStamp);
-  grant.Send(senderRank);
-}
-
-void Voter::voteForNoWork(int senderRank, unsigned int timeStamp) {
-  int vote = (state != WaitForNoWork) ? VoteWork::Commit : VoteWork::Abort;
-  VoteWork grant;
-  grant.setup(vote, myRank, timeStamp);
-  grant.Send(senderRank);
-}
-void Voter::applyVoteResult(int voteType, unsigned int timeStamp) {
-  pthread_mutex_lock(&votingLock);
-  --numPendingVotes;
-  assert(numPendingVotes >= 0);
-  if (timeStamp == validTimeStamp) {
-    ++numVotesReceived;
-    commitCount += (voteType == VoteWork::Commit);
-    assert(numVotesReceived < numRanks);
-    if (numVotesReceived == numRanks - 1) {
-      votesAvailable = true;
-#ifdef DEBUG_RAYTX
-      printf("rank %d: Voter::applyVoteResult: votesAvailable %d, numPendingVotes %d, numVotesReceived %d, commitCount "
-             "%d voteType %d\n",
-             myRank, votesAvailable, numPendingVotes, numVotesReceived, commitCount, voteType);
-#endif
-    }
-  }
-  pthread_mutex_unlock(&votingLock);
+bool Voter::hasWork() const {
+  // lock not needed (ray queues are certainly not in use when FSM runs)
+  int notDone = 0;
+  for (auto &q : *rayQ) notDone += q.second.size();
+  return !(notDone == 0 && numPendingRays == 0);
 }
 
 bool Voter::updateState() {
   pthread_mutex_lock(&votingLock);
-
-  bool hasWork = !(rayQ->empty() && numPendingRays == 0);
+#ifdef DEBUG_VOTER
+  int oldState = state;
+#endif
   bool allDone = false;
 
   switch (state) {
-  case WaitForNoWork: { // has work
-    if (!hasWork) {
-      requestForVotes(VoteWork::NoWork, validTimeStamp);
-      state = WaitForVotes;
-#ifdef DEBUG_RAYTX
-      printf("rank %d: WaitForNoWork -> WaitForVotes\n", myRank);
-#endif
+
+  case PREPARE_COORDINATOR: {
+    if (!hasWork()) {
+      broadcast(VoteWork::PROPOSE);
+      state = PROPOSE;
     }
   } break;
-  case WaitForVotes: { // pending votes
-    if (hasWork) {
-      ++validTimeStamp;
-      numVotesReceived = 0;
-      commitCount = 0;
-      votesAvailable = false;
-      state = WaitForNoWork;
-#ifdef DEBUG_RAYTX
-      printf("rank %d: WaitForVotes -> WaitForNoWork\n", myRank);
-#endif
-    } else if (votesAvailable) {
-      bool commit = checkVotes();
 
-      numVotesReceived = 0;
-      commitCount = 0;
-      votesAvailable = false;
-
-      if (commit) {
-        requestForVotes(VoteWork::Resign, validTimeStamp);
-        state = WaitForResign;
-#ifdef DEBUG_RAYTX
-        printf("rank %d: updateState(): WaitForVotes -> WaitForResign\n", myRank);
-#endif
-      } else {
-#ifdef DEBUG_RAYTX
-        printf("rank %d: updateState(): abort message received. retrying requestForVotes.\n", myRank);
-#endif
-        // TODO: hpark adjust request interval based on workloads?
-        requestForVotes(VoteWork::NoWork, validTimeStamp);
-      }
-    }
-  } break;
-  case WaitForResign: {
-    if (hasWork) {   // TODO: hpark possible? can't just think of this case
-      assert(false); // TODO: hpark let's disable this for now
-      ++validTimeStamp;
-      numVotesReceived = 0;
-      commitCount = 0;
-      votesAvailable = false;
-      state = WaitForNoWork;
-
-    } else if (votesAvailable) {
-      bool commit = checkVotes();
-
-      numVotesReceived = 0;
-      commitCount = 0;
-      votesAvailable = false;
-
-      if (commit) {
+  case PROPOSE: {
+    if (allVotesAvailable) {
+      if (achievedConsensus()) {
+        broadcast(VoteWork::DO_COMMIT);
+        state = TERMINATE;
         allDone = true;
-        state = Resigned;
-#ifdef DEBUG_RAYTX
-        printf("rank %d: WaitForResign allDone=true\n", myRank);
-#endif
       } else {
-        requestForVotes(VoteWork::Resign, validTimeStamp);
+        broadcast(VoteWork::DO_ABORT);
+        state = PREPARE_COORDINATOR;
+      }
+      numVotesReceived = 0;
+      commitVoteCount = 0;
+      allVotesAvailable = false;
+    }
+  } break;
+
+  case PREPARE_COHORT: {
+    if (proposeAvailable) {
+      state = VOTE;
+      proposeAvailable = false;
+      if (hasWork()) {
+        sendVote(VoteWork::VOTE_ABORT);
+      } else {
+        sendVote(VoteWork::VOTE_COMMIT);
       }
     }
   } break;
-  case Resigned: {
-    // reset();
-    // state = WaitForNoWork;
+
+  case VOTE: {
+    if (commitAbortAvailable) {
+      if (doCommit) {
+        state = TERMINATE;
+        allDone = true;
+      } else {
+        state = PREPARE_COHORT;
+        commitAbortAvailable = false;
+      }
+    }
   } break;
+
+  case TERMINATE: {
+    reset();
+  } break;
+
   default: {
-    // reset();
-    // state = WaitForNoWork;
   } break;
-  }
-  // vote();
+
+  } // switch (state) {
+
+#ifdef DEBUG_VOTER
+  if (oldState != state)
+    std::cout << "rank " << myRank << ": " << stateNames[oldState] << " -> " << stateNames[state] << "\n";
+#endif
   pthread_mutex_unlock(&votingLock);
   return allDone;
 }
 
-void Voter::vote() {
-  pthread_mutex_lock(&voteWorkBufferLock);
-  for (size_t i = 0; i < voteWorkBuffer.size(); ++i) {
-    VoteWork *request = voteWorkBuffer[i];
-#ifdef DEBUG_RAYTX
-    printf("rank %d: processing vote request type=%d timeStamp=%d\n", myRank, request->getVoteType(),
-           request->getTimeStamp());
-#endif
-    int vote;
-    int type = request->getVoteType();
-    if (type == VoteWork::NoWork) {
-      vote = (state != WaitForNoWork) ? VoteWork::Commit : VoteWork::Abort;
-      // } else if (type == VoteWork::Resign) {
-      //   vote = (state == WaitForResign) ?  VoteWork::Commit : VoteWork::Abort;
-    } else {
-      assert(false);
-    }
-    VoteWork grant;
-    grant.setup(vote, myRank, request->getTimeStamp());
-    grant.Send(request->getSenderRank());
-#ifdef DEBUG_RAYTX
-    printf("rank %d: sent vote voteType %d timeStamp %d to rank %d in response to vote Type %d (state %d "
-           "numPendingVotes %d)\n",
-           myRank, vote, request->getTimeStamp(), request->getSenderRank(), type, state, numPendingVotes);
-#endif
-    delete request;
-  }
-  voteWorkBuffer.clear(); // TODO: avoid this
-  pthread_mutex_unlock(&voteWorkBufferLock);
-}
+bool Voter::achievedConsensus() const { return (commitVoteCount == numRanks - 1); }
 
-bool Voter::checkVotes() { return (commitCount == numRanks - 1); }
-
-void Voter::requestForVotes(int voteType, unsigned int timeStamp) {
-  numPendingVotes += (numRanks - 1);
+void Voter::broadcast(int voteWorkType) const {
   for (int i = 0; i < numRanks; ++i) {
     if (i != myRank) {
       VoteWork work;
-      work.setup(voteType, myRank, timeStamp);
+      work.setup(voteWorkType, myRank);
       work.Send(i);
 #ifdef DEBUG_RAYTX
-      printf("rank %d: sent vote request to rank %d voteType %d timeStamp %d\n", myRank, i, voteType, timeStamp);
+      printf("rank %d: sent vote request to rank %d voteWorkType %d\n", myRank, i, voteWorkType);
 #endif
     }
   }
 }
+
+void Voter::sendVote(int voteWorkType) const {
+  VoteWork work;
+  work.setup(voteWorkType, myRank);
+  work.Send(COORDINATOR);
+}
+
+void Voter::setProposeAvailable() {
+  pthread_mutex_lock(&votingLock);
+  proposeAvailable = true;
+  pthread_mutex_unlock(&votingLock);
+}
+
+void Voter::voteCommit() {
+  pthread_mutex_lock(&votingLock);
+  ++commitVoteCount;
+  ++numVotesReceived;
+  if (numVotesReceived == numRanks - 1) allVotesAvailable = true;
+  pthread_mutex_unlock(&votingLock);
+}
+
+void Voter::voteAbort() {
+  pthread_mutex_lock(&votingLock);
+  ++numVotesReceived;
+  if (numVotesReceived == numRanks - 1) allVotesAvailable = true;
+  pthread_mutex_unlock(&votingLock);
+}
+
+void Voter::commit() {
+  commitAbortAvailable = true;
+  doCommit = true;
+}
+
+void Voter::abort() { commitAbortAvailable = true; }
+
+bool Voter::isCommunicationAllowed() const {
+  return (myRank == COORDINATOR && state == PREPARE_COORDINATOR) || (myRank != COORDINATOR && state == PREPARE_COHORT);
+}
+

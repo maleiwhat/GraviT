@@ -83,22 +83,20 @@ class VoteWork : public Work {
   WORK_CLASS_HEADER(VoteWork)
 
 public:
-  enum VoteType { NoWork, Resign, Commit, Abort };
+  enum Type { PROPOSE, DO_COMMIT, DO_ABORT, VOTE_COMMIT, VOTE_ABORT };
 
   virtual ~VoteWork() {}
   virtual void Serialize(size_t &size, unsigned char *&serialized);
   static Work *Deserialize(size_t size, unsigned char *serialized);
   virtual bool Action();
 
-  void setup(int voteType, int senderRank, unsigned int timeStamp);
+  void setup(int voteType, int senderRank);
   int getSenderRank() const { return senderRank; }
-  unsigned int getTimeStamp() const { return timeStamp; }
   int getVoteType() const { return voteType; }
 
 private:
   int voteType;
   int senderRank;
-  unsigned int timeStamp;
 };
 
 class PixelGatherWork : public Work {
