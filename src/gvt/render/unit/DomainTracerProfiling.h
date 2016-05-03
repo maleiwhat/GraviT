@@ -275,12 +275,12 @@ public:
     do {
 
       do {
+        t_schedule.start();
         // process domain with most rays queued
         instTarget = -1;
         instTargetCount = 0;
 
         // t_sort.resume();
-        t_schedule.start();
         GVT_DEBUG(DBG_ALWAYS, "image scheduler: selecting next instance, num queues: " << this->queue.size());
         // for (std::map<int, gvt::render::actor::RayVector>::iterator q = this->queue.begin(); q != this->queue.end();
         //      ++q) {
@@ -293,12 +293,13 @@ public:
           }
         }
         // t_sort.stop();
-        t_schedule.stop();
         profiler.update(Profiler::Schedule, t_schedule.getElapsed());
 
 #ifdef PROFILE_RAY_COUNTS
         profiler.addRayCountProc(instTargetCount);
 #endif
+        t_schedule.stop();
+
         GVT_DEBUG(DBG_ALWAYS, "image scheduler: next instance: " << instTarget << ", rays: " << instTargetCount);
 
         if (instTarget >= 0) {
