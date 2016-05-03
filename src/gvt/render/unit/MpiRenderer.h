@@ -119,9 +119,6 @@ public:
   enum Type {
     Total = 0,
     GenPrimaryRays,
-    Compute,
-    Communication,
-    ClearFramebuffer,
     Filter,
     Schedule,
     Adapter,
@@ -137,9 +134,8 @@ public:
   Profiler() {
     times.resize(NumTimers, 0.0);
     names.resize(NumTimers);
-    names = { "Total",  "GenPrimaryRays", "Compute", "Communication", "ClearFramebuffer",
-              "Filter", "Schedule",       "Adapter", "Trace",         "Shuffle",
-              "Send",   "Receive",        "Vote",    "Composite",     "WaitComposite" };
+    names = { "Total",   "GenPrimaryRays", "Filter",  "Schedule", "Adapter",   "Trace",
+              "Shuffle", "Send",           "Receive", "Vote",     "Composite", "WaitComposite" };
   }
   void update(int type, double elapsed) {
     if (type >= NumTimers) {
@@ -182,9 +178,9 @@ public:
         uint64_t proc = grays[p].proc / numFrames;
         uint64_t send = grays[p].send / numFrames;
         uint64_t recv = grays[p].recv / numFrames;
-        std::cout << "Processed rays: " << proc << " (" << (proc * 100.0) / proc  << "%)\n";
-        std::cout << "Sent rays: " << send << " (" << (send * 100.0) / proc  << "%)\n";
-        std::cout << "Received rays: " << recv << " (" << (recv * 100.0) / proc  << "%)\n\n";
+        std::cout << "Processed rays: " << proc << "\n";
+        std::cout << "Sent rays: " << send << "\n";
+        std::cout << "Received rays: " << recv << "\n\n";
         sumRayCounts.proc += proc;
         sumRayCounts.send += send;
         sumRayCounts.recv += recv;
@@ -207,9 +203,9 @@ public:
       uint64_t proc = sumRayCounts.proc / numRanks;
       uint64_t send = sumRayCounts.send / numRanks;
       uint64_t recv = sumRayCounts.recv / numRanks;
-      std::cout << "Processed rays: " << proc << " (" << (proc * 100.0) / proc << "%)\n";
-      std::cout << "Sent rays: " << send << " (" << (send * 100.0) / proc << "%)\n";
-      std::cout << "Received rays: " << recv << " (" << (recv * 100.0) / proc << "%)\n\n";
+      std::cout << "Processed rays: " << proc << "\n";
+      std::cout << "Sent rays: " << send << "\n";
+      std::cout << "Received rays: " << recv << "\n\n";
     }
 
     // max run time

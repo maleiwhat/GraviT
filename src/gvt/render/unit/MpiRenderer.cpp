@@ -840,16 +840,12 @@ void MpiRenderer::shuffleDropRays(RayVector &rays) {
 }
 
 void MpiRenderer::domainTracer(RayVector &rays) {
-  Timer t_clearFramebuffer;
   Timer t_filter;
   Timer t_schedule;
   Timer t_adapter;
   Timer t_trace;
   Timer t_shuffle;
   Timer t_composite;
-
-  Timer t_compute;
-  Timer t_communication;
 
   GVT_DEBUG(DBG_ALWAYS, "domain scheduler: starting, num rays: " << rays.size());
   gvt::core::DBNodeH root = gvt::render::RenderContext::instance()->getRootNode();
@@ -858,8 +854,6 @@ void MpiRenderer::domainTracer(RayVector &rays) {
   int adapterType = root["Schedule"]["adapter"].value().toInteger();
 
   long domain_counter = 0;
-  t_clearFramebuffer.stop();
-  profiler.update(Profiler::ClearFramebuffer, t_clearFramebuffer.getElapsed());
 
   // FindNeighbors();
 
@@ -889,7 +883,6 @@ void MpiRenderer::domainTracer(RayVector &rays) {
   profiler.update(Profiler::Filter, t_filter.getElapsed());
 
   do {
-    t_compute.start();
     do {
       t_schedule.start();
       // process domain with most rays queued
@@ -991,13 +984,7 @@ void MpiRenderer::domainTracer(RayVector &rays) {
         profiler.update(Profiler::Shuffle, t_shuffle.getElapsed());
       }
     } while (instTarget != -1);
-    t_compute.stop();
-    profiler.update(Profiler::Compute, t_compute.getElapsed());
-
-    t_communication.start();
     all_done = transferRays();
-    t_communication.stop();
-    profiler.update(Profiler::Communication, t_communication.getElapsed());
   } while (!all_done);
 
   // add colors to the framebuffer
