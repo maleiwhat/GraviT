@@ -119,6 +119,9 @@ public:
   enum Type {
     Total = 0,
     GenPrimaryRays,
+    Compute,
+    Communication,
+    ClearFramebuffer,
     Filter,
     Schedule,
     Adapter,
@@ -134,8 +137,9 @@ public:
   Profiler() {
     times.resize(NumTimers, 0.0);
     names.resize(NumTimers);
-    names = { "Total",   "GenPrimaryRays", "Filter",  "Schedule", "Adapter",   "Trace",
-              "Shuffle", "Send",           "Receive", "Vote",     "Composite", "WaitComposite" };
+    names = { "Total",  "GenPrimaryRays", "Compute", "Communication", "ClearFramebuffer",
+              "Filter", "Schedule",       "Adapter", "Trace",         "Shuffle",
+              "Send",   "Receive",        "Vote",    "Composite",     "WaitComposite" };
   }
   void update(int type, double elapsed) {
     if (type >= NumTimers) {
@@ -358,8 +362,9 @@ private:
   void runDomainTracer();
   void generatePrimaryRays(gvt::render::actor::RayVector &rays);
   void domainTracer(gvt::render::actor::RayVector &rays);
+  void imageTracer(gvt::render::actor::RayVector &rays);
   void filterRaysLocally(gvt::render::actor::RayVector &rays);
-  void shuffleRays(gvt::render::actor::RayVector &rays, gvt::core::DBNodeH instNode);
+  void filterRaysLocallyImageScheduler(gvt::render::actor::RayVector &rays);
   void shuffleRays(gvt::render::actor::RayVector &rays, int domID);
   void shuffleDropRays(gvt::render::actor::RayVector &rays);
   void clearBuffer() { std::memset(&colorBuf[0], 0, sizeof(glm::vec3) * options.width * options.height); }
