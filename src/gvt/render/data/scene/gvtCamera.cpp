@@ -243,7 +243,7 @@ TAU_PROFILE("gvtPerspectiveCamera::generateRays()","",TAU_DEFAULT);
   tbb::parallel_for(tbb::blocked_range<size_t>(0, buffer_height, chunksize),
                     [&](tbb::blocked_range<size_t> &chunk) {
 #ifdef __USE_TAU
-                    TAU_PROFILE("gvtCamera::generateRays  tbb::parallel_for","",TAU_DEFAULT);
+                    //TAU_PROFILE("gvtCamera::generateRays  tbb::parallel_for","",TAU_DEFAULT);
 #endif
                       RandEngine randEngine;
                       randEngine.SetSeed(chunk.begin());
@@ -259,7 +259,7 @@ TAU_PROFILE("gvtPerspectiveCamera::generateRays()","",TAU_DEFAULT);
                           for (int k = 0; k < samples; k++) {
                             for (int w = 0; w < samples; w++) {
 #ifdef __USE_TAU
-                    TAU_PROFILE("gvtCamera::generateRays  tbb::parallel_for w loop","",TAU_DEFAULT);
+                    //TAU_PROFILE("gvtCamera::generateRays  tbb::parallel_for w loop","",TAU_DEFAULT);
 #endif
 
                               // calculate scale factors -1.0 < x,y < 1.0
@@ -273,7 +273,7 @@ TAU_PROFILE("gvtPerspectiveCamera::generateRays()","",TAU_DEFAULT);
                               camera_space_ray_direction[1] = cam2wrld[1][0] * x + cam2wrld[1][1] * y + z[1];
                               camera_space_ray_direction[2] = cam2wrld[2][0] * x + cam2wrld[2][1] * y + z[2];
 #ifdef __USE_TAU
-                              TAU_START("gvtCamera::generateRays tbb::parallel_for Ray methods");
+                              //TAU_START("gvtCamera::generateRays tbb::parallel_for Ray methods");
 #endif
                               Ray &ray = rays[ridx];
                               ray.id = idx;
@@ -285,7 +285,7 @@ TAU_PROFILE("gvtPerspectiveCamera::generateRays()","",TAU_DEFAULT);
                               ray.direction = glm::normalize(camera_space_ray_direction);
                               ray.depth = depth;
 #ifdef __USE_TAU
-                              TAU_STOP("gvtCamera::generateRays tbb::parallel_for Ray methods");
+                              //TAU_STOP("gvtCamera::generateRays tbb::parallel_for Ray methods");
 #endif
 
                             }

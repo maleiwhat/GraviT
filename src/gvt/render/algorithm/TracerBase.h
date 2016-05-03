@@ -125,7 +125,7 @@ public:
   AbstractTrace(gvt::render::actor::RayVector &rays, gvt::render::data::scene::Image &image)
       : rays(rays), image(image) {
 #ifdef __USE_TAU
-TAU_PROFILE("src/gvt/render/algorithm/TracerBase.h:AbstractTrace ","",TAU_DEFAULT);
+//TAU_PROFILE("src/gvt/render/algorithm/TracerBase.h:AbstractTrace ","",TAU_DEFAULT);
 #endif
     GVT_DEBUG(DBG_ALWAYS, "initializing abstract trace: num rays: " << rays.size());
     colorBuf = new glm::vec3[width * height];
@@ -193,7 +193,7 @@ TAU_PROFILE("src/gvt/render/algorithm/TracerBase.h:AbstractTrace ","",TAU_DEFAUL
    */
   inline void shuffleRays(gvt::render::actor::RayVector &rays, const int domID) {
 #ifdef __USE_TAU
- TAU_PROFILE("tracerbase.h::shuffleRays","",TAU_DEFAULT);
+ //TAU_PROFILE("tracerbase.h::shuffleRays","",TAU_DEFAULT);
 #endif
 
 
@@ -206,7 +206,7 @@ TAU_PROFILE("src/gvt/render/algorithm/TracerBase.h:AbstractTrace ","",TAU_DEFAUL
     tbb::parallel_for(tbb::blocked_range<gvt::render::actor::RayVector::iterator>(rays.begin(), rays.end(), chunksize),
                       [&](tbb::blocked_range<gvt::render::actor::RayVector::iterator> raysit) {
 #ifdef __USE_TAU
-  TAU_PROFILE("tracerbase.h::shuffleRays::tbb::parallel_for","",TAU_DEFAULT);
+  //TAU_PROFILE("tracerbase.h::shuffleRays::tbb::parallel_for","",TAU_DEFAULT);
 #endif
                         std::vector<gvt::render::data::accel::BVH::hit> hits =
                             acc.intersect<GVT_SIMD_WIDTH>(raysit.begin(), raysit.end(), domID);
