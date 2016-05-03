@@ -420,7 +420,11 @@ struct embreeParallelTrace {
 #ifdef GVT_USE_DEBUG
     boost::timer::auto_cpu_timer t_functor("EmbreeMeshAdapter: thread trace time: %w\n");
 #endif
+#ifdef __USE_TAU
+//    TAU_PROFILE("EmbreeMeshAdapter::embreeParallelTrace","",TAU_DEFAULT);
+#endif
     GVT_DEBUG(DBG_ALWAYS, "EmbreeMeshAdapter: started thread");
+
 
     GVT_DEBUG(DBG_ALWAYS, "EmbreeMeshAdapter: getting mesh [hack for now]");
     // TODO: don't use gvt mesh. need to figure out way to do per-vertex-normals
@@ -646,6 +650,9 @@ void EmbreeMeshAdapter::trace(gvt::render::actor::RayVector &rayList, gvt::rende
                               std::vector<gvt::render::data::scene::Light *> &lights, size_t _begin, size_t _end) {
 #ifdef GVT_USE_DEBUG
   boost::timer::auto_cpu_timer t_functor("EmbreeMeshAdapter: trace time: %w\n");
+#endif
+#ifdef __USE_TAU
+//  TAU_PROFILE("EmbreeMeshAdapter::trace","",TAU_DEFAULT);
 #endif
 
   if (_end == 0) _end = rayList.size();
