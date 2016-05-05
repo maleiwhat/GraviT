@@ -241,7 +241,7 @@ TAU_PROFILE("MpiRenderer::parseCommandLine","",TAU_DEFAULT);
 
 void MpiRenderer::createDatabase() {
 #ifdef __USE_TAU
-TAU_PROFILE("MpiRenderer::createDatabase","",TAU_DEFAULT);
+  TAU_PROFILE("MpiRenderer::createDatabase","",TAU_DEFAULT);
 #endif
   // create scene
   apps::render::TestScenes scene(options);
@@ -280,7 +280,7 @@ TAU_PROFILE("MpiRenderer::createDatabase","",TAU_DEFAULT);
 
 void MpiRenderer::initInstanceRankMap() {
 #ifdef __USE_TAU
-TAU_PROFILE("MpiRenderer::initInstanceRankMap","",TAU_DEFAULT);
+  TAU_PROFILE("MpiRenderer::initInstanceRankMap","",TAU_DEFAULT);
 #endif
   gvt::core::Vector<gvt::core::DBNodeH> dataNodes = root["Data"].getChildren();
 #ifdef DEBUG_MPI_RENDERER
@@ -378,7 +378,7 @@ void MpiRenderer::setupCommon() {
 
 void MpiRenderer::setupAsyncImage() {
 #ifdef __USE_TAU
-TAU_PROFILE("MpiRenderer::setupAsyncImage","",TAU_DEFAULT);
+  TAU_PROFILE("MpiRenderer::setupAsyncImage","",TAU_DEFAULT);
 #endif
   setupCommon();
   image = new Image(imageWidth, imageHeight, "image");
@@ -388,9 +388,9 @@ TAU_PROFILE("MpiRenderer::setupAsyncImage","",TAU_DEFAULT);
 }
 
 void MpiRenderer::setupAsyncDomain() {
-  #ifdef __USE_TAU
+#ifdef __USE_TAU
   TAU_PROFILE("MpiRenderer::setupAsyncDomain","",TAU_DEFAULT);
-  #endif
+#endif
   setupCommon();
   initInstanceRankMap();
 
@@ -421,6 +421,9 @@ void MpiRenderer::freeRender() {
 }
 
 void MpiRenderer::render() {
+#ifdef __USE_TAU
+  TAU_PROFILE("MpiRenderer::render","",TAU_DEFAULT);
+#endif
   switch (options.schedulerType) {
   case MpiRendererOptions::AsyncImage: {
     renderAsyncImage();
@@ -463,7 +466,7 @@ void MpiRenderer::render() {
 
 void MpiRenderer::renderAsyncImage() {
 #ifdef __USE_TAU
-TAU_PROFILE("MpiRenderer::renderAsyncImage","",TAU_DEFAULT);
+  TAU_PROFILE("MpiRenderer::renderAsyncImage","",TAU_DEFAULT);
 #endif
   setupAsyncImage();
   if (myRank == 0) printf("[async mpi] starting image scheduler using %d processes\n", GetSize());
@@ -483,9 +486,9 @@ TAU_PROFILE("MpiRenderer::renderAsyncImage","",TAU_DEFAULT);
 }
 
 void MpiRenderer::renderAsyncDomain() {
-  #ifdef __USE_TAU
+#ifdef __USE_TAU
   TAU_PROFILE("MpiRenderer::renderAsyncDomain","",TAU_DEFAULT);
-  #endif
+#endif
   setupAsyncDomain();
   if (myRank == 0) printf("[async mpi] starting domain scheduler using %d processes\n", GetSize());
 
@@ -544,7 +547,7 @@ void MpiRenderer::renderAsyncDomain() {
 
 void MpiRenderer::renderSyncImage() {
 #ifdef __USE_TAU
-TAU_PROFILE("MpiRenderer::renderSyncImage","",TAU_DEFAULT);
+  TAU_PROFILE("MpiRenderer::renderSyncImage","",TAU_DEFAULT);
 #endif
   setupSyncImage();
   GVT_ASSERT(numRanks == 1, "multiple nodes not yet supported for the image scheduler");
@@ -573,7 +576,7 @@ TAU_PROFILE("MpiRenderer::renderSyncImage","",TAU_DEFAULT);
 
 void MpiRenderer::renderSyncDomain() {
 #ifdef __USE_TAU
-TAU_PROFILE("MpiRenderer::renderSyncDomain","",TAU_DEFAULT);
+  TAU_PROFILE("MpiRenderer::renderSyncDomain","",TAU_DEFAULT);
 #endif
   setupSyncDomain();
   image = new Image(imageWidth, imageHeight, "image");
@@ -698,7 +701,7 @@ bool MpiRenderer::hasWork() const {
 
 void MpiRenderer::sendRays() {
 #ifdef __USE_TAU
-TAU_PROFILE("MpiRenderer::sendRays","",TAU_DEFAULT);
+  TAU_PROFILE("MpiRenderer::sendRays","",TAU_DEFAULT);
 #endif
 #ifdef PROFILE_RAY_COUNTS
   uint64_t rayCount = 0;
@@ -729,7 +732,7 @@ TAU_PROFILE("MpiRenderer::sendRays","",TAU_DEFAULT);
 
 void MpiRenderer::receiveRays() {
 #ifdef __USE_TAU
-TAU_PROFILE("MpiRenderer::receiveRays","",TAU_DEFAULT);
+  TAU_PROFILE("MpiRenderer::receiveRays","",TAU_DEFAULT);
 #endif
 #ifdef PROFILE_RAY_COUNTS
   uint64_t rayCount = 0;
@@ -759,7 +762,7 @@ TAU_PROFILE("MpiRenderer::receiveRays","",TAU_DEFAULT);
 
 void MpiRenderer::bufferRayTransferWork(RayTransferWork *work) {
 #ifdef __USE_TAU
-TAU_PROFILE("MpiRenderer::bufferRayTransferWork","",TAU_DEFAULT);
+  TAU_PROFILE("MpiRenderer::bufferRayTransferWork","",TAU_DEFAULT);
 #endif
   pthread_mutex_lock(&rayTransferBufferLock);
   rayTransferBuffer.push_back(work); // TODO: avoid resizing
@@ -770,9 +773,9 @@ void MpiRenderer::bufferVoteWork(VoteWork *work) { voter->bufferVoteWork(work); 
 void MpiRenderer::applyRayTransferResult(int numRays) { voter->subtractNumPendingRays(numRays); }
 
 void MpiRenderer::copyIncomingRays(int instanceId, const gvt::render::actor::RayVector *incomingRays) {
-  #ifdef __USE_TAU
+#ifdef __USE_TAU
   TAU_PROFILE("MpiRenderer::copyIncomingRays","",TAU_DEFAULT);
-  #endif
+#endif
 
   pthread_mutex_lock(&rayTransferMutex);
   if (rayQ.find(instanceId) != rayQ.end()) {
@@ -868,6 +871,9 @@ void MpiRenderer::filterRaysLocally(RayVector &rays) {
 }
 
 void MpiRenderer::shuffleDropRays(RayVector &rays) {
+#ifdef __USE_TAU
+  TAU_PROFILE("MpiRenderer::shuffleDropRays","",TAU_DEFAULT);
+#endif
   const size_t chunksize = MAX(2, rays.size() / (std::thread::hardware_concurrency() * 4));
   static gvt::render::data::accel::BVH &acc = *dynamic_cast<gvt::render::data::accel::BVH *>(acceleration);
   static tbb::simple_partitioner ap;
@@ -897,6 +903,9 @@ void MpiRenderer::shuffleDropRays(RayVector &rays) {
 }
 
 void MpiRenderer::domainTracer(RayVector &rays) {
+#ifdef __USE_TAU
+  TAU_PROFILE("MpiRenderer::domainTracer","",TAU_DEFAULT);
+#endif
   Timer t_filter;
   Timer t_schedule;
   Timer t_adapter;
@@ -1055,6 +1064,9 @@ void MpiRenderer::domainTracer(RayVector &rays) {
 }
 
 void MpiRenderer::shuffleRays(gvt::render::actor::RayVector &rays, int domID) {
+#ifdef __USE_TAU
+  TAU_PROFILE("MpiRenderer::shuffleRays");
+#endif
   GVT_DEBUG(DBG_ALWAYS, "[" << myRank << "] Shuffle: start");
   GVT_DEBUG(DBG_ALWAYS, "[" << myRank << "] Shuffle: rays: " << rays.size());
 
@@ -1089,6 +1101,9 @@ void MpiRenderer::shuffleRays(gvt::render::actor::RayVector &rays, int domID) {
 }
 
 void MpiRenderer::localComposite() {
+#ifdef __USE_TAU
+  TAU_PROFILE("MpiRenderer::localComposite","",TAU_DEFAULT);
+#endif
   const size_t size = options.width * options.height;
   const size_t chunksize = MAX(2, size / (std::thread::hardware_concurrency() * 4));
   static tbb::simple_partitioner ap;
@@ -1100,7 +1115,9 @@ void MpiRenderer::localComposite() {
 }
 
 void MpiRenderer::gatherFramebuffers() {
-
+#ifdef __USE_TAU
+  TAU_PROFILE("MpiRenderer::gatherFramebuffers","",TAU_DEFAULT);
+#endif
   localComposite();
   // for (size_t i = 0; i < size; i++) image.Add(i, colorBuf[i]);
 
@@ -1199,6 +1216,9 @@ void MpiRenderer::gatherFramebuffers() {
 // }
 
 void MpiRenderer::gatherTimes() {
+#ifdef __USE_TAU
+  TAU_PROFILE("MpiRenderer::gatherTimes","",TAU_DEFAULT);
+#endif
   pthread_mutex_lock(&gatherTimesStartMutex);
   while (!gatherTimesStart) {
     pthread_cond_wait(&gatherTimesStartCond, &gatherTimesStartMutex);
@@ -1235,6 +1255,9 @@ void MpiRenderer::gatherTimes() {
 // organize the rays into queues
 // if using mpi, only keep the rays for the current rank
 void MpiRenderer::filterRaysLocallyImageScheduler(RayVector &rays) {
+#ifdef __USE_TAU
+  TAU_PROFILE("MpiRenderer::filterRaysLocallyImageScheduler","",TAU_DEFAULT);
+#endif
   int ray_portion = rays.size() / numRanks;
   std::size_t rays_start = myRank * ray_portion;
   std::size_t rays_end =
@@ -1252,6 +1275,9 @@ void MpiRenderer::filterRaysLocallyImageScheduler(RayVector &rays) {
 }
 
 void MpiRenderer::imageTracer(RayVector &rays) {
+#ifdef __USE_TAU
+  TAU("MpiRenderer::imageTracer","",TAU_DEFAULT);
+#endif
   gvt::core::time::timer t_diff(false, "image tracer: diff timers/frame:");
   gvt::core::time::timer t_all(false, "image tracer: all timers:");
   gvt::core::time::timer t_frame(true, "image tracer: frame :");
