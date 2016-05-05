@@ -279,7 +279,7 @@ TAU_PROFILE("MpiRenderer::createDatabase","",TAU_DEFAULT);
 }
 
 void MpiRenderer::initInstanceRankMap() {
-#__USE_TAU
+#ifdef __USE_TAU
 TAU_PROFILE("MpiRenderer::initInstanceRankMap","",TAU_DEFAULT);
 #endif
   gvt::core::Vector<gvt::core::DBNodeH> dataNodes = root["Data"].getChildren();
@@ -770,6 +770,10 @@ void MpiRenderer::bufferVoteWork(VoteWork *work) { voter->bufferVoteWork(work); 
 void MpiRenderer::applyRayTransferResult(int numRays) { voter->subtractNumPendingRays(numRays); }
 
 void MpiRenderer::copyIncomingRays(int instanceId, const gvt::render::actor::RayVector *incomingRays) {
+  #ifdef __USE_TAU
+  TAU_PROFILE("MpiRenderer::copyIncomingRays","",TAU_DEFAULT);
+  #endif
+
   pthread_mutex_lock(&rayTransferMutex);
   if (rayQ.find(instanceId) != rayQ.end()) {
     rayQ[instanceId].insert(rayQ[instanceId].end(), incomingRays->begin(), incomingRays->end());
@@ -780,6 +784,9 @@ void MpiRenderer::copyIncomingRays(int instanceId, const gvt::render::actor::Ray
 }
 
 void MpiRenderer::runDomainTracer() {
+#ifdef __USE_TAU
+  TAU_PROFILE("MpiRenderer::runDomainTracer","",TAU_DEFAULT);
+#endif
   Timer t_primary;
   // RayVector rays;
   // generatePrimaryRays(rays);
@@ -793,6 +800,10 @@ void MpiRenderer::runDomainTracer() {
 }
 
 void MpiRenderer::generatePrimaryRays(RayVector &rays) {
+#ifdef __USE_TAU
+  TAU_PROFILE("MpiRenderer::runDomainTracer","",TAU_DEFAULT);
+#endif
+
   const int imageWidth = options.width;
   const int imageHeight = options.height;
   const int tileW = options.width;
@@ -847,6 +858,9 @@ void MpiRenderer::generatePrimaryRays(RayVector &rays) {
 }
 
 void MpiRenderer::filterRaysLocally(RayVector &rays) {
+#ifdef __USE_TAU
+  TAU_PROFILE("MpiRenderer::filterRaysLocally","",TAU_DEFAULT);
+#endif
   shuffleDropRays(rays);
   // auto nullNode = gvt::core::DBNodeH(); // temporary workaround until shuffleRays is fully replaced
   // GVT_DEBUG(DBG_ALWAYS, "image scheduler: filter locally non mpi: " << rays.size());
