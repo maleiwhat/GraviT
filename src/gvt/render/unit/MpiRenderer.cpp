@@ -1065,7 +1065,7 @@ void MpiRenderer::domainTracer(RayVector &rays) {
 
 void MpiRenderer::shuffleRays(gvt::render::actor::RayVector &rays, int domID) {
 #ifdef __USE_TAU
-  TAU_PROFILE("MpiRenderer::shuffleRays");
+  TAU_PROFILE("MpiRenderer::shuffleRays","",TAU_DEFAULT);
 #endif
   GVT_DEBUG(DBG_ALWAYS, "[" << myRank << "] Shuffle: start");
   GVT_DEBUG(DBG_ALWAYS, "[" << myRank << "] Shuffle: rays: " << rays.size());
@@ -1276,7 +1276,7 @@ void MpiRenderer::filterRaysLocallyImageScheduler(RayVector &rays) {
 
 void MpiRenderer::imageTracer(RayVector &rays) {
 #ifdef __USE_TAU
-  TAU("MpiRenderer::imageTracer","",TAU_DEFAULT);
+  TAU_PROFILE("MpiRenderer::imageTracer","",TAU_DEFAULT);
 #endif
   gvt::core::time::timer t_diff(false, "image tracer: diff timers/frame:");
   gvt::core::time::timer t_all(false, "image tracer: all timers:");
