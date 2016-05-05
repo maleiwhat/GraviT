@@ -420,7 +420,7 @@ struct embreeParallelTrace {
 #ifdef GVT_USE_DEBUG
     boost::timer::auto_cpu_timer t_functor("EmbreeMeshAdapter: thread trace time: %w\n");
 #endif
-#ifdef __USE_TAU
+#ifdef __USE_TAU_TBB
     TAU_PROFILE("EmbreeMeshAdapter::embreeParallelTrace","",TAU_DEFAULT);
 #endif
     GVT_DEBUG(DBG_ALWAYS, "EmbreeMeshAdapter: started thread");
@@ -651,7 +651,7 @@ void EmbreeMeshAdapter::trace(gvt::render::actor::RayVector &rayList, gvt::rende
 #ifdef GVT_USE_DEBUG
   boost::timer::auto_cpu_timer t_functor("EmbreeMeshAdapter: trace time: %w\n");
 #endif
-#ifdef __USE_TAU
+#ifdef __USE_TAU_TBB
   TAU_PROFILE("EmbreeMeshAdapter::trace","",TAU_DEFAULT);
 #endif
 

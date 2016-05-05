@@ -116,6 +116,10 @@
 
 #include <tbb/mutex.h>
 
+#ifdef __USE_TAU
+#include <TAU.h>
+#endif
+
 // #define DEBUG_MPI_RENDERER
 // #define DEBUG_RAYTX
 // #define DEBUG_VOTER
@@ -167,6 +171,9 @@ void MpiRenderer::printUsage(const char *argv) {
 }
 
 void MpiRenderer::parseCommandLine(int argc, char **argv) {
+#ifdef __USE_TAU
+TAU_PROFILE("MpiRenderer::parseCommandLine","",TAU_DEFAULT);
+#endif
   options.numTbbThreads = -1;
   for (int i = 1; i < argc; ++i) {
     if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
@@ -233,6 +240,9 @@ void MpiRenderer::parseCommandLine(int argc, char **argv) {
 }
 
 void MpiRenderer::createDatabase() {
+#ifdef __USE_TAU
+TAU_PROFILE("MpiRenderer::createDatabase","",TAU_DEFAULT);
+#endif
   // create scene
   apps::render::TestScenes scene(options);
   if (options.ply) {
@@ -269,6 +279,9 @@ void MpiRenderer::createDatabase() {
 }
 
 void MpiRenderer::initInstanceRankMap() {
+#__USE_TAU
+TAU_PROFILE("MpiRenderer::initInstanceRankMap","",TAU_DEFAULT);
+#endif
   gvt::core::Vector<gvt::core::DBNodeH> dataNodes = root["Data"].getChildren();
 #ifdef DEBUG_MPI_RENDERER
   std::cout << "instance node size: " << instancenodes.size() << "\ndata node size: " << dataNodes.size() << "\n";
@@ -297,6 +310,9 @@ void MpiRenderer::initInstanceRankMap() {
 }
 
 void MpiRenderer::setupCommon() {
+  #ifdef __USE_TAU
+  TAU_PROFILE("MpiRenderer::setupCommon","",TAU_DEFAULT);
+  #endif
   tbb::task_scheduler_init init(options.numTbbThreads);
   auto renderContext = gvt::render::RenderContext::instance();
   if (renderContext == NULL) {
@@ -361,6 +377,9 @@ void MpiRenderer::setupCommon() {
 // }
 
 void MpiRenderer::setupAsyncImage() {
+#ifdef __USE_TAU
+TAU_PROFILE("MpiRenderer::setupAsyncImage","",TAU_DEFAULT);
+#endif
   setupCommon();
   image = new Image(imageWidth, imageHeight, "image");
   imageReady = false;
@@ -369,6 +388,9 @@ void MpiRenderer::setupAsyncImage() {
 }
 
 void MpiRenderer::setupAsyncDomain() {
+  #ifdef __USE_TAU
+  TAU_PROFILE("MpiRenderer::setupAsyncDomain","",TAU_DEFAULT);
+  #endif
   setupCommon();
   initInstanceRankMap();
 
@@ -440,6 +462,9 @@ void MpiRenderer::render() {
 // }
 
 void MpiRenderer::renderAsyncImage() {
+#ifdef __USE_TAU
+TAU_PROFILE("MpiRenderer::renderAsyncImage","",TAU_DEFAULT);
+#endif
   setupAsyncImage();
   if (myRank == 0) printf("[async mpi] starting image scheduler using %d processes\n", GetSize());
   PixelGatherWork::Register();
@@ -458,6 +483,9 @@ void MpiRenderer::renderAsyncImage() {
 }
 
 void MpiRenderer::renderAsyncDomain() {
+  #ifdef __USE_TAU
+  TAU_PROFILE("MpiRenderer::renderAsyncDomain","",TAU_DEFAULT);
+  #endif
   setupAsyncDomain();
   if (myRank == 0) printf("[async mpi] starting domain scheduler using %d processes\n", GetSize());
 
@@ -515,6 +543,9 @@ void MpiRenderer::renderAsyncDomain() {
 }
 
 void MpiRenderer::renderSyncImage() {
+#ifdef __USE_TAU
+TAU_PROFILE("MpiRenderer::renderSyncImage","",TAU_DEFAULT);
+#endif
   setupSyncImage();
   GVT_ASSERT(numRanks == 1, "multiple nodes not yet supported for the image scheduler");
   image = new Image(imageWidth, imageHeight, "image");
@@ -541,6 +572,9 @@ void MpiRenderer::renderSyncImage() {
 }
 
 void MpiRenderer::renderSyncDomain() {
+#ifdef __USE_TAU
+TAU_PROFILE("MpiRenderer::renderSyncDomain","",TAU_DEFAULT);
+#endif
   setupSyncDomain();
   image = new Image(imageWidth, imageHeight, "image");
 
@@ -663,6 +697,9 @@ bool MpiRenderer::hasWork() const {
 }
 
 void MpiRenderer::sendRays() {
+#ifdef __USE_TAU
+TAU_PROFILE("MpiRenderer::sendRays","",TAU_DEFAULT);
+#endif
 #ifdef PROFILE_RAY_COUNTS
   uint64_t rayCount = 0;
 #endif
@@ -691,6 +728,9 @@ void MpiRenderer::sendRays() {
 }
 
 void MpiRenderer::receiveRays() {
+#ifdef __USE_TAU
+TAU_PROFILE("MpiRenderer::receiveRays","",TAU_DEFAULT);
+#endif
 #ifdef PROFILE_RAY_COUNTS
   uint64_t rayCount = 0;
 #endif
@@ -718,6 +758,9 @@ void MpiRenderer::receiveRays() {
 }
 
 void MpiRenderer::bufferRayTransferWork(RayTransferWork *work) {
+#ifdef __USE_TAU
+TAU_PROFILE("MpiRenderer::bufferRayTransferWork","",TAU_DEFAULT);
+#endif
   pthread_mutex_lock(&rayTransferBufferLock);
   rayTransferBuffer.push_back(work); // TODO: avoid resizing
   pthread_mutex_unlock(&rayTransferBufferLock);
@@ -1332,4 +1375,3 @@ void MpiRenderer::imageTracer(RayVector &rays) {
   // std::cout << "image scheduler: added time: " << a.format() << " { unaccounted time: " << (t_frame - a).format()
   //           << " }" << std::endl;
 }
-

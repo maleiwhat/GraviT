@@ -242,7 +242,7 @@ TAU_PROFILE("gvtPerspectiveCamera::generateRays()","",TAU_DEFAULT);
   static tbb::simple_partitioner ap;
   tbb::parallel_for(tbb::blocked_range<size_t>(0, buffer_height, chunksize),
                     [&](tbb::blocked_range<size_t> &chunk) {
-#ifdef __USE_TAU
+#ifdef __USE_TAU_TBB_p4
                     TAU_PROFILE("gvtCamera::generateRays  tbb::parallel_for","",TAU_DEFAULT);
 #endif
                       RandEngine randEngine;

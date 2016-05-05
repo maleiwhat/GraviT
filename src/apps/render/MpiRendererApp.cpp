@@ -36,10 +36,16 @@
  */
 
 #include "gvt/render/unit/MpiRenderer.h"
+#ifdef __USE_TAU
+#include <TAU.h>
+#endif
 
 using namespace gvt::render::unit;
 
 int main(int argc, char **argv) {
+#ifdef __USE_TAU
+TAU_PROFILE("main","",TAU_DEFAULT);
+#endif
 
   MpiRenderer renderer(&argc, &argv);
   renderer.parseCommandLine(argc, argv);
