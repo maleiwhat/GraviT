@@ -62,6 +62,10 @@
 #include <gvt/render/unit/MpiRenderer.h>
 #include <gvt/core/schedule/SchedulerBase.h>
 
+#ifdef __USE_TAU
+#include <TAU.h>
+#endif
+
 #define RAY_BUF_SIZE 10485760 // 10 MB per neighbor
 
 // #define DEBUG_RAY_TRANSFER
@@ -275,6 +279,9 @@ public:
     do {
 
       do {
+      #ifdef __USE_TAU
+      TAU_START("domainTracer.scheduler");
+      #endif
         t_schedule.start();
         // process domain with most rays queued
         instTarget = -1;
@@ -292,6 +299,9 @@ public:
             instTarget = q.first;
           }
         }
+      #ifdef __USE_TAU
+        TAU_STOP("domainTracer.scheduler");
+      #endif
         // t_sort.stop();
         profiler.update(Profiler::Schedule, t_schedule.getElapsed());
 
