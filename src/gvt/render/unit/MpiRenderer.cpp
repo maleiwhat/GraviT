@@ -950,6 +950,9 @@ void MpiRenderer::domainTracer(RayVector &rays) {
 
   do {
     do {
+  #ifdef __USE_TAU
+    TAU_START("domainTracer.scheduler");
+  #endif
       t_schedule.start();
       // process domain with most rays queued
       instTarget = -1;
@@ -966,6 +969,9 @@ void MpiRenderer::domainTracer(RayVector &rays) {
           instTarget = q.first;
         }
       }
+     #ifdef __USE_TAU
+       TAU_STOP("domainTracer.scheduler");
+     #endif
 #ifdef PROFILE_RAY_COUNTS
       profiler.addRayCountProc(instTargetCount);
 #endif
