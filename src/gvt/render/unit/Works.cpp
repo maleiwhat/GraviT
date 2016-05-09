@@ -53,10 +53,7 @@ void RayTransferWork::Serialize(size_t &size, unsigned char *&serialized) {
   if (transferType == Request) {
     RayVector& rayV = *outgoingRays;
     // assume raySize > 0
-    int raySize = 0;
-    for (int i = 0; i < numRays; ++i) {
-      raySize += rayV[i].packedSize();
-    }
+    int raySize = rayV.size() * sizeof(Ray);
     size = 4 * sizeof(int) + raySize;
     serialized = static_cast<unsigned char *>(malloc(size));
     
@@ -71,17 +68,7 @@ void RayTransferWork::Serialize(size_t &size, unsigned char *&serialized) {
     *reinterpret_cast<int *>(buf) = numRays;
     buf += sizeof(int);
 
-    for (size_t i = 0; i < rayV.size(); ++i) {
-      buf += rayV[i].pack(buf);
-#ifdef DEBUG_RAY_COPY
-      MpiRenderer *renderer = static_cast<MpiRenderer *>(Application::GetApplication());
-      if (renderer->GetRank() == 0) {
-        std::cout<<"Rank "<<renderer->GetRank()<<": RayTransferWork::serialize: size "<<size
-                 <<": senderRank "<<senderRank<<": instanceId "<<instanceId<<": numRays "<<numRays
-                 <<": outgoingRays["<<i<<"]{"<<rayV[i]<<"} buf "<<(void*)buf<<std::endl;
-      }
-#endif
-    }
+    std::memcpy(buf, &rayV[0], raySize);
   } else { // Grant
     size = 3 * sizeof(int);
     serialized = static_cast<unsigned char *>(malloc(size));
@@ -111,13 +98,9 @@ Work *RayTransferWork::Deserialize(size_t size, unsigned char *serialized) {
     buf += sizeof(int);
     work->numRays = rayCount;
     
+    work->incomingRays.reserve(rayCount);
+    std::memmove(&work->incomingRays[0], buf, rayCount * sizeof(Ray));
     work->incomingRays.resize(rayCount);
-    
-    for (int i = 0; i < rayCount; ++i) {
-      Ray ray(buf);
-      work->incomingRays[i] = ray;
-      buf += ray.packedSize();
-    }
   } else { // Grant
     work->senderRank = *reinterpret_cast<int *>(buf);
     buf += sizeof(int);
