@@ -149,6 +149,8 @@ public:
   void addRayCountProc(uint64_t n) { rays.proc += n; }
   void addRayCountSend(uint64_t n) { rays.send += n; }
   void addRayCountRecv(uint64_t n) { rays.recv += n; }
+  void addTotalSchedule() { ++rays.totalSchedules; }
+  void addValidSchedule() { ++rays.validSchedules; }
 
   void print(int numFrames, int numRanks) {
     // +1 to account for misc. time
@@ -182,7 +184,9 @@ public:
         uint64_t recv = grays[p].recv / numFrames;
         std::cout << "Processed rays: " << proc << " (" << (proc * 100.0) / proc  << "%)\n";
         std::cout << "Sent rays: " << send << " (" << (send * 100.0) / proc  << "%)\n";
-        std::cout << "Received rays: " << recv << " (" << (recv * 100.0) / proc  << "%)\n\n";
+        std::cout << "Received rays: " << recv << " (" << (recv * 100.0) / proc  << "%)\n";
+        std::cout << "Total schedules: " << grays[p].totalSchedules << "\n";
+        std::cout << "Valid schedules: " << grays[p].validSchedules << "\n\n";
         sumRayCounts.proc += proc;
         sumRayCounts.send += send;
         sumRayCounts.recv += recv;
@@ -226,6 +230,8 @@ private:
     uint64_t proc = 0;
     uint64_t send = 0;
     uint64_t recv = 0;
+    uint64_t totalSchedules = 0;
+    uint64_t validSchedules = 0;
   };
   RayCounts rays;               // ray counts for my rank
   std::vector<RayCounts> grays; // ray counts gathered from all ranks

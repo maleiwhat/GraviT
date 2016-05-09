@@ -881,6 +881,8 @@ void MpiRenderer::domainTracer(RayVector &rays) {
       profiler.update(Profiler::Schedule, t_schedule.getElapsed());
 
 #ifdef PROFILE_RAY_COUNTS
+      profiler.addTotalSchedule();
+      if (instTarget >= 0) profiler.addValidSchedule();
       profiler.addRayCountProc(instTargetCount);
 #endif
 
