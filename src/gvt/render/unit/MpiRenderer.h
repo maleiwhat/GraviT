@@ -183,9 +183,9 @@ public:
         uint64_t proc = grays[p].proc / numFrames;
         uint64_t send = grays[p].send / numFrames;
         uint64_t recv = grays[p].recv / numFrames;
-        std::cout << "Processed rays: " << proc << " (" << (proc * 100.0) / proc  << "%)\n";
-        std::cout << "Sent rays: " << send << " (" << (send * 100.0) / proc  << "%)\n";
-        std::cout << "Received rays: " << recv << " (" << (recv * 100.0) / proc  << "%)\n";
+        std::cout << "Processed rays: " << proc << "\n";
+        std::cout << "Sent rays: " << send << "\n";
+        std::cout << "Received rays: " << recv << "\n";
         std::cout << "Total schedules: " << grays[p].totalSchedules << "\n";
         std::cout << "Valid schedules: " << grays[p].validSchedules << "\n\n";
         sumRayCounts.proc += proc;
@@ -212,9 +212,9 @@ public:
       uint64_t proc = sumRayCounts.proc / numRanks;
       uint64_t send = sumRayCounts.send / numRanks;
       uint64_t recv = sumRayCounts.recv / numRanks;
-      std::cout << "Processed rays: " << proc << " (" << (proc * 100.0) / proc << "%)\n";
-      std::cout << "Sent rays: " << send << " (" << (send * 100.0) / proc << "%)\n";
-      std::cout << "Received rays: " << recv << " (" << (recv * 100.0) / proc << "%)\n\n";
+      std::cout << "Processed rays: " << proc << "\n";
+      std::cout << "Sent rays: " << send << "\n";
+      std::cout << "Received rays: " << recv << "\n\n";
     }
 
     // max run time
@@ -369,8 +369,9 @@ private:
   void runDomainTracer();
   void generatePrimaryRays(gvt::render::actor::RayVector &rays);
   void domainTracer(gvt::render::actor::RayVector &rays);
+  void imageTracer(gvt::render::actor::RayVector &rays);
   void filterRaysLocally(gvt::render::actor::RayVector &rays);
-  void shuffleRays(gvt::render::actor::RayVector &rays, gvt::core::DBNodeH instNode);
+  void filterRaysLocallyImageScheduler(gvt::render::actor::RayVector &rays);
   void shuffleRays(gvt::render::actor::RayVector &rays, int domID);
   void shuffleDropRays(gvt::render::actor::RayVector &rays);
   void clearBuffer() { std::memset(&colorBuf[0], 0, sizeof(glm::vec3) * options.width * options.height); }
