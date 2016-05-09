@@ -118,6 +118,7 @@ class Profiler {
 public:
   enum Type {
     Total = 0,
+    Allocate,
     GenPrimaryRays,
     Filter,
     Schedule,
@@ -135,7 +136,7 @@ public:
   Profiler() {
     times.resize(NumTimers, 0.0);
     names.resize(NumTimers);
-    names = { "Total",   "GenPrimaryRays", "Filter",  "Schedule", "Adapter",   "Trace",
+    names = { "Total",   "Allocate", "GenPrimaryRays", "Filter",  "Schedule", "Adapter",   "Trace",
               "Shuffle", "Send",           "Receive", "Vote",     "Composite", "WaitComposite", "Unknown" };
   }
   void update(int type, double elapsed) {

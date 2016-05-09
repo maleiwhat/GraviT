@@ -182,9 +182,7 @@ void gvtCameraBase::AllocateCameraRays() {
   boost::timer::auto_cpu_timer t("gvtCameraBase::AllocateCameraRays: time: %w\n");
 #endif
   size_t nrays = filmsize[0] * filmsize[1] * samples * samples;
-  rays.clear();
-  rays.resize(nrays);
-  // return rays;
+  rays.reserve(nrays);
 }
 gvtCameraBase::~gvtCameraBase() {}
 
@@ -231,7 +229,8 @@ void gvtPerspectiveCamera::generateRays() {
   tbb::parallel_for(
       tbb::blocked_range<size_t>(0, buffer_width * buffer_height, chunksize),
       [&](tbb::blocked_range<size_t> &chunk) {
-
+        RandEngine randEngine;
+        randEngine.SetSeed(chunk.begin());
         for (size_t idx = chunk.begin(); idx < chunk.end(); idx++) {
           // multi - jittered samples
           int i = idx % buffer_width, j = idx / buffer_width;
@@ -263,5 +262,7 @@ void gvtPerspectiveCamera::generateRays() {
         }
       },
       ap);
+  size_t nrays = filmsize[0] * filmsize[1] * samples * samples;
+  rays.resize(nrays);
 }
 void gvtPerspectiveCamera::setFOV(const float fov) { field_of_view = fov; }

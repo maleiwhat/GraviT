@@ -710,8 +710,12 @@ void MpiRenderer::copyIncomingRays(int instanceId, const gvt::render::actor::Ray
 }
 
 void MpiRenderer::runDomainTracer() {
-  Timer t_primary;
+  Timer t_allocate;
   camera->AllocateCameraRays();
+  t_allocate.stop();
+  profiler.update(Profiler::Allocate, t_allocate.getElapsed());
+
+  Timer t_primary;
   camera->generateRays();
   t_primary.stop();
   profiler.update(Profiler::GenPrimaryRays, t_primary.getElapsed());
