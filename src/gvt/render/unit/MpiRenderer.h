@@ -129,13 +129,14 @@ public:
     Vote,
     Composite,
     WaitComposite,
+    Unknown,
     NumTimers
   };
   Profiler() {
     times.resize(NumTimers, 0.0);
     names.resize(NumTimers);
     names = { "Total",   "GenPrimaryRays", "Filter",  "Schedule", "Adapter",   "Trace",
-              "Shuffle", "Send",           "Receive", "Vote",     "Composite", "WaitComposite" };
+              "Shuffle", "Send",           "Receive", "Vote",     "Composite", "WaitComposite", "Unknown" };
   }
   void update(int type, double elapsed) {
     if (type >= NumTimers) {
@@ -167,13 +168,14 @@ public:
             maxRunTime = gtimes[timerIndex];
           }
         }
-        double avg = gtimes[timerIndex] / numFrames;
+        // double avg = gtimes[timerIndex] / numFrames;
         double percent = (gtimes[timerIndex] * 100) / gtimes[totalIdx];
-        std::cout << names[i] << ": " << avg << " ms (" << percent << " %)\n";
-        sumTimes[i] += avg;
+        // std::cout << names[i] << ": " << avg << " ms (" << percent << " %)\n";
+        std::cout << names[i] << ": " << gtimes[timerIndex] << " ms (" << percent << " %)\n";
+        sumTimes[i] += gtimes[timerIndex];
       }
-      double misc = (gtimes[totalIdx] - aggregated) / numFrames;
-      std::cout << "Misc: " << misc << " ms (" << (misc * 100) / (gtimes[totalIdx] / numFrames) << " %)\n";
+      double misc = gtimes[totalIdx] - aggregated;
+      std::cout << "Misc: " << misc << " ms (" << (misc * 100) / gtimes[totalIdx] << " %)\n";
       if (grays.size() == numRanks) {
         uint64_t proc = grays[p].proc / numFrames;
         uint64_t send = grays[p].send / numFrames;
@@ -192,13 +194,15 @@ public:
     double aggregated = 0.0;
     for (int i = 0; i < NumTimers; ++i) {
       double percent = (sumTimes[i] * 100) / sumTimes[Total];
-      std::cout << names[i] << ": " << sumTimes[i] / numRanks << " ms (" << percent << " %)\n";
+      double avg = sumTimes[i] / numRanks;
+      std::cout << names[i] << ": " << avg << " ms (" << percent << " %)\n";
       if (i != Total) {
-        aggregated += sumTimes[i];
+        aggregated += avg;
       }
     }
-    double misc = sumTimes[Total] - aggregated;
-    std::cout << "Misc: " << misc << " ms (" << (misc * 100) / sumTimes[Total] << " %)\n";
+    double totalAvg = sumTimes[Total] / numRanks;
+    double misc = totalAvg - aggregated;
+    std::cout << "Misc: " << misc << " ms (" << (misc * 100) / totalAvg << " %)\n";
     if (grays.size() == numRanks) {
       uint64_t proc = sumRayCounts.proc / numRanks;
       uint64_t send = sumRayCounts.send / numRanks;

@@ -130,6 +130,8 @@ using namespace gvt::render::data::primitives;
 using namespace gvt::render::unit;
 using namespace gvt::render::actor;
 
+static Timer t_composite;
+
 MpiRenderer::MpiRenderer(int *argc, char ***argv)
     : Application(argc, argv), camera(NULL), image(NULL), tileLoadBalancer(NULL), voter(NULL), adapter(NULL),
       acceleration(NULL), rayQMutex(NULL), colorBufMutex(NULL) {}
@@ -466,6 +468,8 @@ void MpiRenderer::renderAsyncDomain() {
   t_total.stop();
   profiler.update(Profiler::Total, t_total.getElapsed());
 
+  if (myRank == 0) image->Write();
+
   pthread_mutex_lock(&gatherTimesStartMutex);
   gatherTimesStart = true;
   pthread_cond_signal(&gatherTimesStartCond);
@@ -516,9 +520,6 @@ void MpiRenderer::renderSyncDomain() {
   setupSyncDomain();
   image = new Image(imageWidth, imageHeight, "image");
 
-  camera->AllocateCameraRays();
-  camera->generateRays();
-
   Timer t_total;
 
   if (myRank == 0) printf("[sync mpi] starting domain scheduler without the mpi layer using %d processes\n", GetSize());
@@ -536,14 +537,14 @@ void MpiRenderer::renderSyncDomain() {
 
     image->clear();
     tracer();
-    if (myRank == 0) image->Write();
-   //  printf("[sync mpi] Rank %d: frame %d done\n", myRank, i);
+    //  printf("[sync mpi] Rank %d: frame %d done\n", myRank, i);
   }
 
   t_total.stop();
   profiler.update(Profiler::Total, t_total.getElapsed());
 
   if (myRank == 0) {
+    image->Write();
     profiler.gtimes.resize(numRanks * Profiler::NumTimers);
 #ifdef PROFILE_RAY_COUNTS
     profiler.grays.resize(numRanks);
@@ -710,11 +711,8 @@ void MpiRenderer::copyIncomingRays(int instanceId, const gvt::render::actor::Ray
 
 void MpiRenderer::runDomainTracer() {
   Timer t_primary;
-  // RayVector rays;
-  // generatePrimaryRays(rays);
   camera->AllocateCameraRays();
   camera->generateRays();
-
   t_primary.stop();
   profiler.update(Profiler::GenPrimaryRays, t_primary.getElapsed());
 
@@ -817,8 +815,10 @@ void MpiRenderer::domainTracer(RayVector &rays) {
   Timer t_adapter;
   Timer t_trace;
   Timer t_shuffle;
-  Timer t_composite;
+  Timer t_unknown;
+  // Timer t_composite;
 
+  t_unknown.start();
   GVT_DEBUG(DBG_ALWAYS, "domain scheduler: starting, num rays: " << rays.size());
   gvt::core::DBNodeH root = gvt::render::RenderContext::instance()->getRootNode();
 
@@ -826,6 +826,8 @@ void MpiRenderer::domainTracer(RayVector &rays) {
   int adapterType = root["Schedule"]["adapter"].value().toInteger();
 
   long domain_counter = 0;
+  t_unknown.stop();
+  profiler.update(Profiler::Unknown, t_unknown.getElapsed());
 
   // FindNeighbors();
 
@@ -837,6 +839,7 @@ void MpiRenderer::domainTracer(RayVector &rays) {
   t_filter.stop();
   profiler.update(Profiler::Filter, t_filter.getElapsed());
 
+  t_unknown.start();
   GVT_DEBUG(DBG_LOW, "tracing rays");
 
   // process domains until all rays are terminated
@@ -851,6 +854,8 @@ void MpiRenderer::domainTracer(RayVector &rays) {
 
   int instTarget = -1;
   size_t instTargetCount = 0;
+  t_unknown.stop();
+  profiler.update(Profiler::Unknown, t_unknown.getElapsed());
 
   gvt::render::Adapter *adapter = 0;
   do {
@@ -962,13 +967,13 @@ void MpiRenderer::domainTracer(RayVector &rays) {
   } while (!all_done);
 
   // add colors to the framebuffer
-  t_composite.start();
+  // t_composite.start();
   if (myRank == 0) {
     PixelGatherWork compositePixels;
     compositePixels.Broadcast(true, true);
   }
-  t_composite.stop();
-  profiler.update(Profiler::Composite, t_composite.getElapsed());
+  // t_composite.stop();
+  // profiler.update(Profiler::Composite, t_composite.getElapsed());
 }
 
 void MpiRenderer::shuffleRays(gvt::render::actor::RayVector &rays, int domID) {
@@ -1079,6 +1084,7 @@ void MpiRenderer::localComposite() {
 }
 
 void MpiRenderer::gatherFramebuffers() {
+  Timer t_composite;
 
   localComposite();
   // for (size_t i = 0; i < size; i++) image.Add(i, colorBuf[i]);
@@ -1112,9 +1118,13 @@ void MpiRenderer::gatherFramebuffers() {
 #ifdef ENABLE_MESSAGE
     printf("[async mpi] Rank %d: writing result to file\n", myRank);
 #endif
-    image->Write();
+    // image->Write();
   }
   delete[] bufs;
+
+  t_composite.stop();
+  profiler.update(Profiler::Composite, t_composite.getElapsed());
+
   pthread_mutex_lock(&imageReadyLock);
   imageReady = true;
   pthread_cond_signal(&imageReadyCond);
