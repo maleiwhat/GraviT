@@ -849,7 +849,10 @@ void MpiRenderer::domainTracer(RayVector &rays) {
   Timer t_trace;
   Timer t_shuffle;
   Timer t_unknown;
+  Timer t_wait_schedule;
   // Timer t_composite;
+  
+  bool wait_schedule = false;
 
   t_unknown.start();
   GVT_DEBUG(DBG_ALWAYS, "domain scheduler: starting, num rays: " << rays.size());
@@ -919,6 +922,18 @@ void MpiRenderer::domainTracer(RayVector &rays) {
       profiler.update(Profiler::Schedule, t_schedule.getElapsed());
 
       GVT_DEBUG(DBG_ALWAYS, "image scheduler: next instance: " << instTarget << ", rays: " << instTargetCount);
+
+      // for measurement only
+      if (wait_schedule) {
+        if (instTarget >= 0) {
+          wait_schedule = false;
+          t_wait_schedule.stop();
+          profiler.update(Profiler::WaitSchedule, t_schedule.getElapsed());
+        }
+      } else if (instTarget < 0) {
+        wait_schedule = true;
+        t_wait_schedule.start();
+      }
 
       if (instTarget >= 0) {
         t_adapter.start();

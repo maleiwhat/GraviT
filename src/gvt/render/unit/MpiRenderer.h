@@ -131,13 +131,14 @@ public:
     Composite,
     WaitComposite,
     Unknown,
+    WaitSchedule,
     NumTimers
   };
   Profiler() {
     times.resize(NumTimers, 0.0);
     names.resize(NumTimers);
-    names = { "Total",   "Allocate", "GenPrimaryRays", "Filter",  "Schedule", "Adapter",   "Trace",
-              "Shuffle", "Send",           "Receive", "Vote",     "Composite", "WaitComposite", "Unknown" };
+    names = { "Total", "Allocate", "GenPrimaryRays", "Filter",    "Schedule",      "Adapter", "Trace",       "Shuffle",
+              "Send",  "Receive",  "Vote",           "Composite", "WaitComposite", "Unknown", "WaitSchedule" };
   }
   void update(int type, double elapsed) {
     if (type >= NumTimers) {
