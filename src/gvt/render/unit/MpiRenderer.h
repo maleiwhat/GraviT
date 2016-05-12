@@ -57,6 +57,14 @@
 #include <vector>
 #include <limits>
 
+// #define SCHEDULE_IF_NEEDED // note: using this decreases scheduling time but increases voting time
+// #define DONT_SEND_UNTIL_EMPTY // not so good
+
+#if defined(SCHEDULE_IF_NEEDED) && defined(DONT_SEND_UNTIL_EMPTY)
+#undef SCHEDULE_IF_NEEDED
+#undef DONT_SEND_UNTIL_EMPTY
+#endif
+
 using namespace gvt::core::mpi;
 using namespace std::chrono;
 
@@ -313,7 +321,11 @@ private:
 
   // ray transfer
 public:
+#ifdef SCHEDULE_IF_NEEDED
+  void transferRays(bool* all_done, bool* received_rays);
+#else
   bool transferRays();
+#endif
   void bufferRayTransferWork(RayTransferWork *work);
   void bufferVoteWork(VoteWork *work);
   void voteForResign(int senderRank, unsigned int timeStamp);
@@ -335,7 +347,11 @@ private:
   int numRanks;
 
   void sendRays();
+#ifdef SCHEDULE_IF_NEEDED
+  bool receiveRays();
+#else
   void receiveRays();
+#endif
 
   Voter *voter;
 

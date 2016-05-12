@@ -620,7 +620,11 @@ void MpiRenderer::renderSyncDomain() {
 
 void MpiRenderer::aggregatePixel(int pixelId, const glm::vec3 &addend) { colorBuf[pixelId] += addend; }
 
+#ifdef SCHEDULE_IF_NEEDED
+void MpiRenderer::transferRays(bool* all_done, bool* received_rays) {
+#else
 bool MpiRenderer::transferRays() {
+#endif
 
   Timer t_send;
   Timer t_receive;
@@ -636,7 +640,11 @@ bool MpiRenderer::transferRays() {
       profiler.update(Profiler::Send, t_send.getElapsed());
 
       t_receive.start();
+#ifdef SCHEDULE_IF_NEEDED
+      *received_rays = receiveRays();
+#else
       receiveRays();
+#endif
       t_receive.stop();
       profiler.update(Profiler::Receive, t_receive.getElapsed());
     }
@@ -652,10 +660,12 @@ bool MpiRenderer::transferRays() {
   } else {
     done = !hasWork();
   }
-
   assert(!done || (done && !hasWork()));
-
+#ifdef SCHEDULE_IF_NEEDED
+  *all_done = done;
+#else
   return done;
+#endif
 }
 
 bool MpiRenderer::hasWork() const {
@@ -692,12 +702,20 @@ void MpiRenderer::sendRays() {
 #endif
 }
 
+#ifdef SCHEDULE_IF_NEEDED
+bool MpiRenderer::receiveRays() {
+#else
 void MpiRenderer::receiveRays() {
+#endif
 #ifdef PROFILE_RAY_COUNTS
   uint64_t rayCount = 0;
 #endif
   pthread_mutex_lock(&rayTransferBufferLock);
-  for (size_t i = 0; i < rayTransferBuffer.size(); ++i) {
+  std::size_t size = rayTransferBuffer.size();
+#ifdef SCHEDULE_IF_NEEDED
+  bool received = size > 0;
+#endif
+  for (size_t i = 0; i < size; ++i) {
     RayTransferWork *raytx = rayTransferBuffer[i];
     raytx->copyIncomingRays(&rayQ);
 
@@ -716,6 +734,10 @@ void MpiRenderer::receiveRays() {
   pthread_mutex_unlock(&rayTransferBufferLock);
 #ifdef PROFILE_RAY_COUNTS
   profiler.addRayCountRecv(rayCount);
+#endif
+
+#ifdef SCHEDULE_IF_NEEDED
+  return received;
 #endif
 }
 
@@ -848,13 +870,9 @@ void MpiRenderer::domainTracer(RayVector &rays) {
   Timer t_adapter;
   Timer t_trace;
   Timer t_shuffle;
-  Timer t_unknown;
   Timer t_wait_schedule;
   // Timer t_composite;
   
-  bool wait_schedule = false;
-
-  t_unknown.start();
   GVT_DEBUG(DBG_ALWAYS, "domain scheduler: starting, num rays: " << rays.size());
   gvt::core::DBNodeH root = gvt::render::RenderContext::instance()->getRootNode();
 
@@ -862,8 +880,6 @@ void MpiRenderer::domainTracer(RayVector &rays) {
   int adapterType = root["Schedule"]["adapter"].value().toInteger();
 
   long domain_counter = 0;
-  t_unknown.stop();
-  profiler.update(Profiler::Unknown, t_unknown.getElapsed());
 
   // FindNeighbors();
 
@@ -872,12 +888,17 @@ void MpiRenderer::domainTracer(RayVector &rays) {
   // rank
   t_filter.start();
   filterRaysLocally(rays);
+  t_filter.stop();
+  profiler.update(Profiler::Filter, t_filter.getElapsed());
 
-  t_unknown.start();
   GVT_DEBUG(DBG_LOW, "tracing rays");
 
   // process domains until all rays are terminated
   bool all_done = false;
+#ifdef SCHEDULE_IF_NEEDED
+  bool wait_schedule = false;
+  bool received_rays = false;
+#endif
   int nqueue = 0;
   std::set<int> doms_to_send;
   int lastInstance = -1;
@@ -888,15 +909,23 @@ void MpiRenderer::domainTracer(RayVector &rays) {
 
   int instTarget = -1;
   size_t instTargetCount = 0;
-  t_unknown.stop();
-  profiler.update(Profiler::Unknown, t_unknown.getElapsed());
 
   gvt::render::Adapter *adapter = 0;
-  t_filter.stop();
-  profiler.update(Profiler::Filter, t_filter.getElapsed());
 
+#if defined(DONT_SEND_UNTIL_EMPTY)
   do {
     do {
+#elif defined(SCHEDULE_IF_NEEDED)
+  while (!all_done) {
+    if (wait_schedule && received_rays) {
+      wait_schedule = false;
+      t_wait_schedule.stop();
+      profiler.update(Profiler::WaitSchedule, t_wait_schedule.getElapsed());
+    }
+    if (!wait_schedule) {
+#else
+  while (!all_done) {
+#endif
       t_schedule.start();
       // process domain with most rays queued
       instTarget = -1;
@@ -922,20 +951,14 @@ void MpiRenderer::domainTracer(RayVector &rays) {
       profiler.update(Profiler::Schedule, t_schedule.getElapsed());
 
       GVT_DEBUG(DBG_ALWAYS, "image scheduler: next instance: " << instTarget << ", rays: " << instTargetCount);
-
-      // for measurement only
-      if (wait_schedule) {
-        if (instTarget >= 0) {
-          wait_schedule = false;
-          t_wait_schedule.stop();
-          profiler.update(Profiler::WaitSchedule, t_schedule.getElapsed());
-        }
-      } else if (instTarget < 0) {
+#ifdef SCHEDULE_IF_NEEDED
+      if (instTarget < 0) {
         wait_schedule = true;
         t_wait_schedule.start();
-      }
-
+      } else {
+#else
       if (instTarget >= 0) {
+#endif
         t_adapter.start();
         gvt::render::Adapter *adapter = 0;
         // gvt::core::DBNodeH meshNode = instancenodes[instTarget]["meshRef"].deRef();
@@ -1010,9 +1033,18 @@ void MpiRenderer::domainTracer(RayVector &rays) {
         t_shuffle.stop();
         profiler.update(Profiler::Shuffle, t_shuffle.getElapsed());
       }
+#if defined(DONT_SEND_UNTIL_EMPTY)
     } while (instTarget != -1);
     all_done = transferRays();
   } while (!all_done);
+#elif defined(SCHEDULE_IF_NEEDED)
+    }
+    transferRays(&all_done, &received_rays);
+  }
+#else
+    all_done = transferRays();
+  }
+#endif
 
   // add colors to the framebuffer
   // t_composite.start();
