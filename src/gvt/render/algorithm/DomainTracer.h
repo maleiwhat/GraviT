@@ -333,6 +333,9 @@ public:
       } while (instTarget != -1);
 
       {
+#ifdef __USE_TAU
+  TAU_PROFILE("DomainTracer.h::t_send","",TAU_DEFAULT);
+#endif        
         t_send.resume();
         // done with current domain, send off rays to their proper processors.
         GVT_DEBUG(DBG_ALWAYS, "Rank [ " << mpi.rank << "]  calling SendRays");
