@@ -37,6 +37,8 @@
 #ifndef GVT_RENDER_UNIT_MPI_RENDERER_H
 #define GVT_RENDER_UNIT_MPI_RENDERER_H
 
+#include "gvt/core/mpi/Work.h"
+
 #include "gvt/core/DatabaseNode.h"
 #include "gvt/core/Math.h"
 #include "gvt/core/Types.h"
@@ -102,7 +104,7 @@ namespace rank {
 enum RankType { Server = 0, Display = 1, FirstWorker };
 }
 
-class TileLoadBalancer;
+// class TileLoadBalancer;
 class RayTransferWork;
 class VoteWork;
 
@@ -281,12 +283,12 @@ private:
 public:
   // camera, load balancer, world bvh
   const gvt::render::data::scene::gvtPerspectiveCamera *getCamera() const { return camera; }
-  TileLoadBalancer *getTileLoadBalancer() { return tileLoadBalancer; }
+  // TileLoadBalancer *getTileLoadBalancer() { return tileLoadBalancer; }
   gvt::render::data::accel::AbstractAccel *getAcceleration() { return acceleration; }
 
 private:
   gvt::render::data::scene::gvtPerspectiveCamera *camera;
-  TileLoadBalancer *tileLoadBalancer;
+  // TileLoadBalancer *tileLoadBalancer;
   gvt::render::data::accel::AbstractAccel *acceleration;
 
 private:
@@ -342,6 +344,10 @@ public:
 private:
   bool hasWork() const;
 
+public:
+  void SendWork(Work *w, int dest) { GetTheMessageManager()->SendWork(w, dest); }
+  void BroadcastWork(Work *w, bool blocking) { GetTheMessageManager()->BroadcastWork(w, blocking); }
+
 private:
   int myRank;
   int numRanks;
@@ -381,8 +387,8 @@ private:
   void setupSyncDomain();
   void renderAsyncImage();
   void renderAsyncDomain();
-  void renderSyncImage();
-  void renderSyncDomain();
+  // void renderSyncImage();
+  // void renderSyncDomain();
   void runDomainTracer();
   void generatePrimaryRays(gvt::render::actor::RayVector &rays);
   void domainTracer(gvt::render::actor::RayVector &rays);

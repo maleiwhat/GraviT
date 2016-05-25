@@ -78,7 +78,7 @@ namespace unit {
 class MpiRenderer;
 
 class TileWork : public Work {
-  WORK_CLASS_HEADER(TileWork)
+  WORK_CLASS(TileWork, false)
 public:
   virtual void initialize() { width = -1; } // for validity check
   virtual ~TileWork() {}

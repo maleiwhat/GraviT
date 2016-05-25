@@ -45,7 +45,7 @@ namespace render {
 namespace unit {
 
 class PixelWork : public TileWork {
-  WORK_CLASS_HEADER(PixelWork)
+  WORK_CLASS(PixelWork, false)
 public:
   virtual void intialize() { TileWork::initialize(); }
   virtual ~PixelWork() {}

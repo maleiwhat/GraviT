@@ -212,7 +212,12 @@ set(GVT_CORE_HDRS ${GVT_CORE_HDRS}
   src/gvt/core/mpi/Application.h
   src/gvt/core/mpi/Message.h
   src/gvt/core/mpi/MessageQ.h
+  src/gvt/core/mpi/MessageManager.h
   src/gvt/core/mpi/Work.h
+  src/gvt/core/mpi/smem.h
+  src/gvt/core/mpi/RayQManager.h
+  src/gvt/core/mpi/Rays.h
+  src/gvt/core/mpi/classes.h
 )
 
 set(GVT_CORE_SRCS ${GVT_CORE_SRCS}
@@ -224,7 +229,11 @@ set(GVT_CORE_SRCS ${GVT_CORE_SRCS}
   src/gvt/core/mpi/Application.cpp
   src/gvt/core/mpi/Message.cpp
   src/gvt/core/mpi/MessageQ.cpp
+  src/gvt/core/mpi/MessageManager.cpp
   src/gvt/core/mpi/Work.cpp
+  src/gvt/core/mpi/smem.cpp
+  src/gvt/core/mpi/RayQManager.cpp
+  src/gvt/core/mpi/Rays.cpp
 )
 
 
@@ -266,12 +275,7 @@ set(GVT_RENDER_HDRS ${GVT_RENDER_HDRS}
   src/gvt/render/Schedulers.h
   src/gvt/render/Types.h
   src/gvt/render/unit/Works.h
-  # src/gvt/render/unit/PixelWork.h
-  # src/gvt/render/unit/RequestWork.h
-  # src/gvt/render/unit/TileWork.h
-  # src/gvt/render/unit/ImageTileWork.h
-  # src/gvt/render/unit/DomainTileWork.h
-  src/gvt/render/unit/TileLoadBalancer.h
+  # src/gvt/render/unit/TileLoadBalancer.h
   src/gvt/render/unit/MpiRenderer.h
   src/gvt/render/unit/Voter.h
   src/apps/render/TestScenes.h

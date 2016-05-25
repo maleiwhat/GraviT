@@ -45,7 +45,7 @@ namespace render {
 namespace unit {
 
 class ImageTileWork : public TileWork {
-  WORK_CLASS_HEADER(ImageTileWork)
+  WORK_CLASS_DEEP(ImageTileWork, TileWork, false)
 public:
   virtual ~ImageTileWork() {}
   static Work *Deserialize(std::size_t size, unsigned char *serialized);

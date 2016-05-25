@@ -71,11 +71,11 @@
 #include <boost/range/algorithm.hpp>
 
 #include "gvt/render/unit/DomainTracerProfiling.h"
-#include "gvt/render/unit/ImageTileWork.h"
-#include "gvt/render/unit/PixelWork.h"
-#include "gvt/render/unit/RequestWork.h"
-#include "gvt/render/unit/TileLoadBalancer.h"
-#include "gvt/render/unit/TileWork.h"
+// #include "gvt/render/unit/ImageTileWork.h"
+// #include "gvt/render/unit/PixelWork.h"
+// #include "gvt/render/unit/RequestWork.h"
+// #include "gvt/render/unit/TileLoadBalancer.h"
+// #include "gvt/render/unit/TileWork.h"
 #include "gvt/render/unit/Works.h"
 
 #include "gvt/render/algorithm/DomainTracer.h"
@@ -135,13 +135,17 @@ using namespace gvt::render::actor;
 static Timer t_composite;
 
 MpiRenderer::MpiRenderer(int *argc, char ***argv)
-    : Application(argc, argv), camera(NULL), image(NULL), tileLoadBalancer(NULL), voter(NULL), adapter(NULL),
-      acceleration(NULL), rayQMutex(NULL), colorBufMutex(NULL) {}
+    : Application(argc, argv), camera(NULL), image(NULL), voter(NULL), adapter(NULL), acceleration(NULL),
+      rayQMutex(NULL), colorBufMutex(NULL) {}
+
+// MpiRenderer::MpiRenderer(int *argc, char ***argv)
+//     : Application(argc, argv), camera(NULL), image(NULL), tileLoadBalancer(NULL), voter(NULL), adapter(NULL),
+//       acceleration(NULL), rayQMutex(NULL), colorBufMutex(NULL) {}
 
 MpiRenderer::~MpiRenderer() {
   if (camera != NULL) delete camera;
   if (image != NULL) delete image;
-  if (tileLoadBalancer != NULL) delete tileLoadBalancer;
+  // if (tileLoadBalancer != NULL) delete tileLoadBalancer;
   if (adapter != NULL) delete adapter;
   if (acceleration) delete acceleration;
   if (rayQMutex) delete[] rayQMutex;
@@ -316,6 +320,9 @@ void MpiRenderer::setupCommon() {
   colorBufMutex = new tbb::mutex[imageWidth];
   numRanks = GetSize();
   myRank = GetRank();
+#ifndef NDEBUG
+  printf("num ranks %d my rank %d\n", numRanks, myRank);
+#endif
 
   for (int i = 0; i < instancenodes.size(); i++) {
     meshRef[i] =
@@ -382,7 +389,7 @@ void MpiRenderer::setupAsyncDomain() {
   pthread_cond_init(&imageReadyCond, NULL);
 
   if (numRanks > 1) {
-    voter = new Voter(numRanks, myRank, &rayQ);
+    voter = new Voter(this, numRanks, myRank, &rayQ);
   }
 }
 
@@ -409,12 +416,12 @@ void MpiRenderer::render() {
   case MpiRendererOptions::AsyncDomain: {
     renderAsyncDomain();
   } break;
-  case MpiRendererOptions::SyncImage: {
-    renderSyncImage();
-  } break;
-  case MpiRendererOptions::SyncDomain: {
-    renderSyncDomain();
-  } break;
+  // case MpiRendererOptions::SyncImage: {
+  //   renderSyncImage();
+  // } break;
+  // case MpiRendererOptions::SyncDomain: {
+  //   renderSyncDomain();
+  // } break;
   default: {
     printf("error: unknown scheduler type %d\n", options.schedulerType);
     exit(1);
@@ -461,14 +468,18 @@ void MpiRenderer::renderAsyncImage() {
 }
 
 void MpiRenderer::renderAsyncDomain() {
-  setupAsyncDomain();
-  if (myRank == 0) printf("[async mpi] starting domain scheduler using %d processes\n", GetSize());
+  // setupAsyncDomain();
+  // if (myRank == 0) printf("[async mpi] starting domain scheduler using %d processes\n", GetSize());
 
   RayTransferWork::Register();
   VoteWork::Register();
   PixelGatherWork::Register();
   TimeGatherWork::Register();
-  Application::Start();
+  // Application::Start();
+  Start();
+
+  setupAsyncDomain();
+  if (myRank == 0) printf("[async mpi] starting domain scheduler using %d processes\n", GetSize());
 
   image = new Image(imageWidth, imageHeight, "image");
 
@@ -480,7 +491,9 @@ void MpiRenderer::renderAsyncDomain() {
     printf("[async mpi] Rank %d: frame %d start\n", myRank, i);
 #endif
     runDomainTracer();
-
+#ifndef NDEBUG
+printf("numRanks: %d\n", numRanks);
+#endif
     t_wait_composite.start();
     pthread_mutex_lock(&imageReadyLock);
 
@@ -506,8 +519,13 @@ void MpiRenderer::renderAsyncDomain() {
 
   if (myRank == 0) {
     TimeGatherWork timeGather;
-    timeGather.Broadcast(true, true);
+    // timeGather.Broadcast(true, true);
+    BroadcastWork(&timeGather, true);
   }
+
+#ifndef NDEBUG
+  printf("rank %d timegather broadcast start in %s\n", myRank, __PRETTY_FUNCTION__);
+#endif
 
   pthread_mutex_lock(&gatherTimesDoneMutex);
   while (!gatherTimesDone) {
@@ -516,89 +534,96 @@ void MpiRenderer::renderAsyncDomain() {
   gatherTimesDone = false;
   pthread_mutex_unlock(&gatherTimesDoneMutex);
 
-  Application::Kill();
+#ifndef NDEBUG
+  printf("rank %d timegather broadcast done (attempting to quit the applicaiton) in %s\n", myRank, __PRETTY_FUNCTION__);
+#endif
+  // Application::Kill();
+  if (myRank == 0) {
+    QuitApplication();
+  }
+  Wait();
 }
 
-void MpiRenderer::renderSyncImage() {
-  setupSyncImage();
-  GVT_ASSERT(numRanks == 1, "multiple nodes not yet supported for the image scheduler");
-  image = new Image(imageWidth, imageHeight, "image");
+// void MpiRenderer::renderSyncImage() {
+//   setupSyncImage();
+//   GVT_ASSERT(numRanks == 1, "multiple nodes not yet supported for the image scheduler");
+//   image = new Image(imageWidth, imageHeight, "image");
+// 
+//   if (myRank == 0) printf("[sync mpi] starting image scheduler without the mpi layer using %d processes\n", GetSize());
+// 
+//   gvt::render::algorithm::Tracer<ImageScheduler> tracer(camera->rays, *image);
+// 
+//   for (int i = 0; i < options.numFrames; ++i) {
+//     printf("[sync mpi] Rank %d: frame %d start\n", myRank, i);
+//     camera->AllocateCameraRays();
+//     camera->generateRays();
+//     image->clear();
+//     tracer();
+//     image->Write();
+//   }
+// 
+//   Quit::Register();
+//   Start();
+//   if (myRank == 0) {
+//     Quit quit;
+//     quit.Broadcast(true, true);
+//   }
+// }
 
-  if (myRank == 0) printf("[sync mpi] starting image scheduler without the mpi layer using %d processes\n", GetSize());
-
-  gvt::render::algorithm::Tracer<ImageScheduler> tracer(camera->rays, *image);
-
-  for (int i = 0; i < options.numFrames; ++i) {
-    printf("[sync mpi] Rank %d: frame %d start\n", myRank, i);
-    camera->AllocateCameraRays();
-    camera->generateRays();
-    image->clear();
-    tracer();
-    image->Write();
-  }
-
-  Quit::Register();
-  Start();
-  if (myRank == 0) {
-    Quit quit;
-    quit.Broadcast(true, true);
-  }
-}
-
-void MpiRenderer::renderSyncDomain() {
-  setupSyncDomain();
-  image = new Image(imageWidth, imageHeight, "image");
-
-  Timer t_total;
-
-  if (myRank == 0) printf("[sync mpi] starting domain scheduler without the mpi layer using %d processes\n", GetSize());
-  gvt::render::algorithm::Tracer<gvt::render::schedule::DomainSchedulerProfiling> tracer(camera->rays, *image,
-                                                                                         profiler);
-  for (int i = 0; i < options.numFrames; ++i) {
-#ifdef ENABLE_MESSAGE
-    printf("[sync mpi] Rank %d: frame %d start\n", myRank, i);
-#endif
-    Timer t_primary;
-    camera->AllocateCameraRays();
-    camera->generateRays();
-    t_primary.stop();
-    profiler.update(Profiler::GenPrimaryRays, t_primary.getElapsed());
-
-    image->clear();
-    tracer();
-    //  printf("[sync mpi] Rank %d: frame %d done\n", myRank, i);
-  }
-
-  t_total.stop();
-  profiler.update(Profiler::Total, t_total.getElapsed());
-
-  if (myRank == 0) {
-    image->Write();
-    profiler.gtimes.resize(numRanks * Profiler::NumTimers);
-#ifdef PROFILE_RAY_COUNTS
-    profiler.grays.resize(numRanks);
-#endif
-  }
-
-  MPI_Gather(static_cast<const void *>(&profiler.times[0]), Profiler::NumTimers, MPI_DOUBLE,
-             static_cast<void *>(&profiler.gtimes[0]), Profiler::NumTimers, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-
-#ifdef PROFILE_RAY_COUNTS
-  MPI_Gather(static_cast<const void *>(&profiler.rays), sizeof(Profiler::RayCounts), MPI_BYTE,
-             static_cast<void *>(&profiler.grays[0]), sizeof(Profiler::RayCounts), MPI_BYTE, 0, MPI_COMM_WORLD);
-#endif
-
-  if (myRank == 0) {
-    profiler.print(options.numFrames, numRanks);
-  }
-
-  Quit::Register();
-  Start();
-  if (myRank == 0) {
-    Quit quit;
-    quit.Broadcast(true, true);
-  }
-}
+// void MpiRenderer::renderSyncDomain() {
+//   setupSyncDomain();
+//   image = new Image(imageWidth, imageHeight, "image");
+// 
+//   Timer t_total;
+// 
+//   if (myRank == 0) printf("[sync mpi] starting domain scheduler without the mpi layer using %d processes\n", GetSize());
+//   gvt::render::algorithm::Tracer<gvt::render::schedule::DomainSchedulerProfiling> tracer(camera->rays, *image,
+//                                                                                          profiler);
+//   for (int i = 0; i < options.numFrames; ++i) {
+// #ifdef ENABLE_MESSAGE
+//     printf("[sync mpi] Rank %d: frame %d start\n", myRank, i);
+// #endif
+//     Timer t_primary;
+//     camera->AllocateCameraRays();
+//     camera->generateRays();
+//     t_primary.stop();
+//     profiler.update(Profiler::GenPrimaryRays, t_primary.getElapsed());
+// 
+//     image->clear();
+//     tracer();
+//     //  printf("[sync mpi] Rank %d: frame %d done\n", myRank, i);
+//   }
+// 
+//   t_total.stop();
+//   profiler.update(Profiler::Total, t_total.getElapsed());
+// 
+//   if (myRank == 0) {
+//     image->Write();
+//     profiler.gtimes.resize(numRanks * Profiler::NumTimers);
+// #ifdef PROFILE_RAY_COUNTS
+//     profiler.grays.resize(numRanks);
+// #endif
+//   }
+// 
+//   MPI_Gather(static_cast<const void *>(&profiler.times[0]), Profiler::NumTimers, MPI_DOUBLE,
+//              static_cast<void *>(&profiler.gtimes[0]), Profiler::NumTimers, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+// 
+// #ifdef PROFILE_RAY_COUNTS
+//   MPI_Gather(static_cast<const void *>(&profiler.rays), sizeof(Profiler::RayCounts), MPI_BYTE,
+//              static_cast<void *>(&profiler.grays[0]), sizeof(Profiler::RayCounts), MPI_BYTE, 0, MPI_COMM_WORLD);
+// #endif
+// 
+//   if (myRank == 0) {
+//     profiler.print(options.numFrames, numRanks);
+//   }
+// 
+//   Quit::Register();
+//   Start();
+//   if (myRank == 0) {
+//     Quit quit;
+//     quit.Broadcast(true, true);
+//   }
+// }
 
 // void MpiRenderer::initServer() {
 //   // TODO (hpark): For now, equally divide the image
@@ -621,7 +646,7 @@ void MpiRenderer::renderSyncDomain() {
 void MpiRenderer::aggregatePixel(int pixelId, const glm::vec3 &addend) { colorBuf[pixelId] += addend; }
 
 #ifdef SCHEDULE_IF_NEEDED
-void MpiRenderer::transferRays(bool* all_done, bool* received_rays) {
+void MpiRenderer::transferRays(bool *all_done, bool *received_rays) {
 #else
 bool MpiRenderer::transferRays() {
 #endif
@@ -685,9 +710,10 @@ void MpiRenderer::sendRays() {
     size_t numRaysToSend = rays.size();
     if (ownerRank != myRank && numRaysToSend > 0) {
       voter->addNumPendingRays(numRaysToSend);
-      RayTransferWork work;
-      work.setup(RayTransferWork::Request, myRank, instance, &rays);
-      work.Send(ownerRank);
+      RayTransferWork* work = new RayTransferWork(RayTransferWork::getSize(numRaysToSend * sizeof(gvt::render::actor::Ray)));
+      work->setup(RayTransferWork::Request, myRank, instance, rays);
+      // work.Send(ownerRank);
+      SendWork(work, ownerRank);
       rays.clear();
 #ifdef PROFILE_RAY_COUNTS
       rayCount += numRaysToSend;
@@ -719,9 +745,10 @@ void MpiRenderer::receiveRays() {
     RayTransferWork *raytx = rayTransferBuffer[i];
     raytx->copyIncomingRays(&rayQ);
 
-    RayTransferWork grant;
-    grant.setup(RayTransferWork::Grant, myRank, raytx->getNumRays());
-    grant.Send(raytx->getSenderRank());
+    RayTransferWork* grant = new RayTransferWork(RayTransferWork::getSize(0));
+    grant->setup(RayTransferWork::Grant, myRank, raytx->getNumRays());
+    // grant.Send(raytx->getSenderRank());
+    SendWork(grant, raytx->getSenderRank());
 #ifdef PROFILE_RAY_COUNTS
     rayCount += raytx->getNumRays();
 #endif
@@ -770,7 +797,6 @@ void MpiRenderer::runDomainTracer() {
   camera->generateRays();
   t_primary.stop();
   profiler.update(Profiler::GenPrimaryRays, t_primary.getElapsed());
-
   domainTracer(camera->rays);
 }
 
@@ -805,11 +831,11 @@ void MpiRenderer::generatePrimaryRays(RayVector &rays) {
       // select a ray and load it up
       tilePixelId = (j - startY) * tileW + (i - startX);
       imagePixelId = j * imageWidth + i;
-      Ray &ray = rays[tilePixelId];
+      gvt::render::actor::Ray &ray = rays[tilePixelId];
       ray.id = imagePixelId;
       ray.w = 1.0; // ray weight 1 for no subsamples. mod later
       ray.origin = eye;
-      ray.type = Ray::PRIMARY;
+      ray.type = gvt::render::actor::Ray::PRIMARY;
       // calculate scale factors -1.0 < x,y < 1.0
       x = 2.0 * float(i) / float(imageWidth - 1) - 1.0;
       y = 2.0 * float(j) / float(imageHeight - 1) - 1.0;
@@ -872,7 +898,7 @@ void MpiRenderer::domainTracer(RayVector &rays) {
   Timer t_shuffle;
   Timer t_wait_schedule;
   // Timer t_composite;
-  
+
   GVT_DEBUG(DBG_ALWAYS, "domain scheduler: starting, num rays: " << rays.size());
   gvt::core::DBNodeH root = gvt::render::RenderContext::instance()->getRootNode();
 
@@ -1042,15 +1068,16 @@ void MpiRenderer::domainTracer(RayVector &rays) {
     transferRays(&all_done, &received_rays);
   }
 #else
-    all_done = transferRays();
-  }
+  all_done = transferRays();
+}
 #endif
 
   // add colors to the framebuffer
   // t_composite.start();
   if (myRank == 0) {
     PixelGatherWork compositePixels;
-    compositePixels.Broadcast(true, true);
+    // compositePixels.Broadcast(true, true);
+    BroadcastWork(&compositePixels, true);
   }
   // t_composite.stop();
   // profiler.update(Profiler::Composite, t_composite.getElapsed());
@@ -1102,6 +1129,9 @@ void MpiRenderer::localComposite() {
 }
 
 void MpiRenderer::gatherFramebuffers() {
+#ifndef NDEBUG
+  printf("start of %s\n", __PRETTY_FUNCTION__);
+#endif
   Timer t_composite;
 
   localComposite();
@@ -1377,7 +1407,8 @@ void MpiRenderer::imageTracer(RayVector &rays) {
   t_gather.resume();
   if (myRank == 0) {
     PixelGatherWork compositePixels;
-    compositePixels.Broadcast(true, true);
+    // compositePixels.Broadcast(true, true);
+    BroadcastWork(&compositePixels, true);
   }
   t_gather.stop();
   t_frame.stop();

@@ -43,10 +43,11 @@ namespace render {
 namespace unit {
 
 class VoteWork;
+class MpiRenderer;
 
 class Voter {
 public:
-  Voter(int numRanks, int myRank, std::map<int, gvt::render::actor::RayVector> *rayQ);
+  Voter(MpiRenderer *renderer, int numRanks, int myRank, std::map<int, gvt::render::actor::RayVector> *rayQ);
 
   void reset();
   bool updateState();
@@ -64,6 +65,9 @@ public:
 
 private:
   friend class MpiRenderer;
+
+  MpiRenderer* renderer;
+
   enum State { PREPARE_COORDINATOR = 0, PROPOSE, PREPARE_COHORT, VOTE, TERMINATE, NUM_STATES };
   enum Role { COORDINATOR = 0 };
 

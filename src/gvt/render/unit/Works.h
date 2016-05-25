@@ -52,69 +52,95 @@ namespace unit {
 class MpiRenderer;
 
 class RayTransferWork : public Work {
-  WORK_CLASS_HEADER(RayTransferWork)
+  WORK_CLASS(RayTransferWork, false)
 
 public:
   enum TransferType { Request, Grant };
 
+  struct RayInfo {
+    int transferType;
+    int senderRank;
+    int instanceId;
+    int numRays;
+  };
+
   virtual ~RayTransferWork() {}
-  virtual void Serialize(size_t &size, unsigned char *&serialized);
-  static Work *Deserialize(size_t size, unsigned char *serialized);
+  // virtual void Serialize(size_t &size, unsigned char *&serialized);
+  // static Work *Deserialize(size_t size, unsigned char *serialized);
   virtual bool Action();
   virtual bool deferDeletingThis();
 
-  void setup(int transferType, int senderRank, int instanceId, gvt::render::actor::RayVector *outgoingRays);
+  void setup(int transferType, int senderRank, int instanceId, const gvt::render::actor::RayVector &outgoingRays);
   void setup(int transferType, int senderRank, int numRays);
   void copyIncomingRays(std::map<int, gvt::render::actor::RayVector> *destinationRayQ);
-  int getNumRays() const { return numRays; }
-  int getSenderRank() const { return senderRank; }
-  int getInstanceId() const { return instanceId; }
+  RayInfo getRayInfo() const {
+    RayInfo info;
+    memcpy(&info, contents->get(), sizeof(RayInfo));
+    return info;
+  }
+  int getTransferType() const { return getRayInfo().transferType; }
+  int getSenderRank() const { return getRayInfo().senderRank; }
+  int getInstanceId() const { return getRayInfo().instanceId; }
+  int getNumRays() const { return getRayInfo().numRays; }
+
+  static std::size_t getSize(std::size_t raySize) { return sizeof(RayInfo) + raySize; }
 
 private:
-  int transferType;
-  int senderRank;
-  int instanceId;
-  int numRays;
+  unsigned char *getRays() { return contents->get() + sizeof(RayInfo); }
+
+  // RayInfo rayInfo;
   gvt::render::actor::RayVector *outgoingRays;
   gvt::render::actor::RayVector incomingRays;
 };
 
 class VoteWork : public Work {
-  WORK_CLASS_HEADER(VoteWork)
+  WORK_CLASS(VoteWork, false)
 
 public:
   enum Type { PROPOSE, DO_COMMIT, DO_ABORT, VOTE_COMMIT, VOTE_ABORT };
 
+  struct Info {
+    int voteType;
+    int senderRank;
+  };
+
   virtual ~VoteWork() {}
-  virtual void Serialize(size_t &size, unsigned char *&serialized);
-  static Work *Deserialize(size_t size, unsigned char *serialized);
+  // virtual void Serialize(size_t &size, unsigned char *&serialized);
+  // static Work *Deserialize(size_t size, unsigned char *serialized);
   virtual bool Action();
 
-  void setup(int voteType, int senderRank);
-  int getSenderRank() const { return senderRank; }
-  int getVoteType() const { return voteType; }
+  Info getInfo() const {
+    Info info;
+    memcpy(&info, contents->get(), sizeof(Info));
+    return info;
+  }
 
-private:
-  int voteType;
-  int senderRank;
+  void setup(int voteType, int senderRank);
+  int getSenderRank() const { return getInfo().senderRank; }
+  int getVoteType() const { return getInfo().voteType; }
+
+  static std::size_t getSize() { return sizeof(VoteWork::Info); }
+// private:
+//   int voteType;
+//   int senderRank;
 };
 
 class PixelGatherWork : public Work {
-  WORK_CLASS_HEADER(PixelGatherWork)
+  WORK_CLASS(PixelGatherWork, true)
 public:
   virtual ~PixelGatherWork() {}
-  virtual void Serialize(std::size_t &size, unsigned char *&serialized);
-  static Work *Deserialize(std::size_t size, unsigned char *serialized);
-  virtual bool Action();
+  // virtual void Serialize(std::size_t &size, unsigned char *&serialized);
+  // static Work *Deserialize(std::size_t size, unsigned char *serialized);
+  virtual bool Action(MPI_Comm comm);
 };
 
 class TimeGatherWork : public Work {
-  WORK_CLASS_HEADER(TimeGatherWork)
+  WORK_CLASS(TimeGatherWork, true)
 public:
   virtual ~TimeGatherWork() {}
-  virtual void Serialize(std::size_t &size, unsigned char *&serialized);
-  static Work *Deserialize(std::size_t size, unsigned char *serialized);
-  virtual bool Action();
+  // virtual void Serialize(std::size_t &size, unsigned char *&serialized);
+  // static Work *Deserialize(std::size_t size, unsigned char *serialized);
+  virtual bool Action(MPI_Comm comm);
 };
 }
 }

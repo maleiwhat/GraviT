@@ -1,95 +1,82 @@
-#ifndef GVT_CORE_MPI_APPLICATION_H
-#define GVT_CORE_MPI_APPLICATION_H
+#pragma once
 
-#include "pthread.h"
+#include <pthread.h>
+#include <vector>
+#include <unistd.h>
+#include <sys/types.h>
 #include "vector"
-#include <gvt/core/mpi/Message.h>
-#include <gvt/core/mpi/MessageQ.h>
-#include <gvt/core/mpi/Work.h>
-
+#include "sstream"
+#include "RayQManager.h"
+#include "MessageManager.h"
+#include "MessageQ.h"
+#include "Work.h"
 
 namespace gvt {
 namespace core {
 namespace mpi {
 
 class Application {
+
 public:
   Application(int *argc, char ***argv);
   ~Application();
 
-  static Application *GetApplication();
+  static Application *GetTheApplication() { return Application::theApplication; }
+  MessageManager *GetTheMessageManager() { return theMessageManager; }
+  RayQManager *GetTheRayQManager() { return theRayQManager; }
 
   void QuitApplication();
 
   int *GetPArgC() { return argcp; }
   char ***GetPArgV() { return argvp; }
 
-  int GetSize() { return GetMessageManager()->GetSize(); }
-  int GetRank() { return GetMessageManager()->GetRank(); }
+  int GetSize() { return theMessageManager->GetSize(); }
+  int GetRank() { return theMessageManager->GetRank(); }
 
   void Start();
   void Kill();
   void Wait();
   bool Running() { return !application_done; }
 
-  MessageQ *GetIncomingMessageQueue() { return theIncomingQueue; }
-  MessageQ *GetOutgoingMessageQueue() { return theOutgoingQueue; }
+  void log(std::stringstream &s);
 
-  Work *Deserialize(Message *message) {
-    return deserializers[message->GetType()](message->GetSize(), message->GetBytes());
-  }
+  Work *Deserialize(Message *msg);
 
-  int RegisterWork(Work *(*f)(size_t size, unsigned char *serialized)) {
+  int RegisterWork(Work *(*f)(SharedP)) {
     int n = deserializers.size();
     deserializers.push_back(f);
     return n;
   }
 
-  MessageManager *GetMessageManager() { return &theMessageManager; }
-
   bool IsDoneSet() { return application_done; }
+  pid_t get_pid() { return pid; }
 
 private:
-  vector<Work *(*)(size_t, unsigned char *)> deserializers;
+  static Application *theApplication;
 
-  static void *workThread(void *);
-  pthread_t work_thread_tid;
+  RayQManager *theRayQManager;
+  MessageManager *theMessageManager;
 
-  MessageManager theMessageManager;
-
-  MessageQ *theIncomingQueue;
-  MessageQ *theOutgoingQueue;
+  vector<Work *(*)(SharedP)> deserializers;
 
   bool application_done;
 
   int *argcp;
   char ***argvp;
 
+  pid_t pid;
+
   pthread_mutex_t lock;
   pthread_cond_t cond;
+
+private:
+  class Quit : public Work {
+    WORK_CLASS(Quit, true)
+
+  public:
+    bool Action(MPI_Comm coll_comm);
+  };
 };
-
-class Quit : public Work {
-  WORK_CLASS_HEADER(Quit)
-
-public:
-  static Work *Deserialize(size_t size, unsigned char *serialized) {
-    Quit *bcast = new Quit;
-    return (Work *)bcast;
-  }
-
-  void Serialize(size_t &size, unsigned char *&serialized) {
-    size = 0;
-    serialized = NULL;
-  }
-
-  bool Action() {
-    return true;
-  }
-};
-
-} // ns mpi
-} // ns core
-} // ns gvt
-
-#endif /* GVT_CORE_MPI_APPLICATION_H */
+}
+}
+}

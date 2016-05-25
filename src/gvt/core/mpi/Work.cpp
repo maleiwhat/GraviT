@@ -1,31 +1,30 @@
 #include <iostream>
-#include "gvt/core/mpi/Work.h"
-#include "gvt/core/mpi/Message.h"
+#include "Work.h"
+#include "Application.h"
+#include "Message.h"
+#include "MessageManager.h"
 
+using namespace std;
 using namespace gvt::core::mpi;
 
-void Work::Serialize(size_t &size, unsigned char *&serialized) {
-  size = 0;
-  serialized = NULL;
+Work::Work(bool c) {
+  className = "Work";
+  communicates = c;
 }
 
-Work *Work::Deserialize(size_t size, unsigned char *serialized) {
-  if (size != 0) {
-    std::cerr << "Work class deserialize called with size != 0\n";
-    exit(1);
-  }
-  return new Work;
+Work::Work(bool c, int n) {
+  className = "Work";
+  communicates = c;
+  contents = smem::New(n);
 }
 
-void Work::Send(int i) {
-  Message *m = new Message(this, i);
-  m->Enqueue();
+Work::Work(bool c, SharedP s) {
+  className = "Work";
+  communicates = c;
+  contents = s;
 }
 
-void Work::Broadcast(bool collective, bool block) {
-  Message *m = new Message(this, collective, block);
-  m->Enqueue();
-  if (block) {
-    m->Wait();
-  }
-}
+int Work::RegisterSubclass(Work *(*d)(SharedP)) { return Application::GetTheApplication()->RegisterWork(d); }
+
+Work::~Work() {}
+

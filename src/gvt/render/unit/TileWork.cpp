@@ -95,7 +95,7 @@ using namespace gvt::render::data::primitives;
 #include <cstdlib>
 #endif
 
-WORK_CLASS(TileWork)
+WORK_CLASS_TYPE(TileWork)
 
 void TileWork::Serialize(size_t &size, unsigned char *&serialized) {
 

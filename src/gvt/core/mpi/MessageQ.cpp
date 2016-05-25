@@ -1,9 +1,9 @@
 #include <unistd.h>
 #include "iostream"
 
-#include <gvt/core/mpi/MessageQ.h>
-#include <gvt/core/mpi/Message.h>
-#include <gvt/core/mpi/Application.h>
+#include "MessageQ.h"
+#include "Message.h"
+#include "Application.h"
 
 using namespace std;
 using namespace gvt::core::mpi;
@@ -21,9 +21,7 @@ Message *MessageQ::Dequeue() {
   while (workq.empty() && running) pthread_cond_wait(&signal, &lock);
 
   Message *r;
-  if (workq.empty())
-    r = NULL;
-  else {
+  if (!workq.empty()) {
     r = workq.front();
     workq.pop();
   }
@@ -40,6 +38,9 @@ int MessageQ::IsReady() {
 }
 
 void MessageQ::Kill() {
-  running = false;
-  pthread_cond_broadcast(&signal);
+  pthread_mutex_lock(&lock);
+  running = 0;
+  pthread_cond_signal(&signal);
+  pthread_mutex_unlock(&lock);
 }
+

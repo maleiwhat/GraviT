@@ -1,14 +1,12 @@
 #include "gvt/render/unit/Voter.h"
 #include "gvt/render/unit/Works.h"
-
-// #define DEBUG_RAYTX
-// #define DEBUG_VOTER
+#include "gvt/render/unit/MpiRenderer.h"
 
 using namespace gvt::render::unit;
 
-Voter::Voter(int numRanks, int myRank, std::map<int, gvt::render::actor::RayVector> *rayQ)
-    : numRanks(numRanks), myRank(myRank), rayQ(rayQ), numPendingRays(0), allVotesAvailable(false), numVotesReceived(0),
-      commitVoteCount(0), commitAbortAvailable(false), doCommit(false), proposeAvailable(false) {
+Voter::Voter(MpiRenderer *renderer, int numRanks, int myRank, std::map<int, gvt::render::actor::RayVector> *rayQ)
+    : renderer(renderer), numRanks(numRanks), myRank(myRank), rayQ(rayQ), numPendingRays(0), allVotesAvailable(false),
+      numVotesReceived(0), commitVoteCount(0), commitAbortAvailable(false), doCommit(false), proposeAvailable(false) {
 
   pthread_mutex_init(&votingLock, NULL);
   // pthread_mutex_init(&voteWorkBufferLock, NULL);
@@ -18,7 +16,7 @@ Voter::Voter(int numRanks, int myRank, std::map<int, gvt::render::actor::RayVect
     state = PREPARE_COHORT;
   }
 
-#ifdef DEBUG_VOTER
+#ifndef NDEBUG
   stateNames.resize(NUM_STATES);
   stateNames = { "PREPARE_COORDINATOR", "PROPOSE", "PREPARE_COHORT", "VOTE", "TERMINATE" };
 #endif
@@ -47,9 +45,9 @@ void Voter::addNumPendingRays(int n) {
 
 void Voter::subtractNumPendingRays(int n) {
   pthread_mutex_lock(&votingLock);
-#ifdef DEBUG_RAYTX
-  printf("rank %d: Voter::subtractNumPendingRays: numPendingRays(before) %d numPendingRays(after) %d\n", myRank,
-         numPendingRays, (numPendingRays - n));
+#ifndef NDEBUG
+  printf("rank %d numPendingRays(before) %d. sent %d rays. numPendingRays(after) %d in %s\n", myRank, numPendingRays, n,
+         (numPendingRays - n), __PRETTY_FUNCTION__);
 #endif
   numPendingRays -= n;
   assert(numPendingRays >= 0);
@@ -59,9 +57,9 @@ void Voter::subtractNumPendingRays(int n) {
 void Voter::bufferVoteWork(VoteWork *work) {
   pthread_mutex_lock(&voteWorkBufferLock);
   voteWorkBuffer.push_back(work); // TODO: avoid resizing
-#ifdef DEBUG_RAYTX
-  printf("rank %d: Voter::bufferVoteWork received vote request from rank %d voteType %d timeStamp %d\n", myRank,
-         work->getSenderRank(), work->getVoteType(), work->getTimeStamp());
+#ifndef NDEBUG
+  printf("rank %d received vote request from rank %d voteType %d in %s\n", myRank, work->getSenderRank(),
+         work->getVoteType(), __PRETTY_FUNCTION__);
 #endif
   pthread_mutex_unlock(&voteWorkBufferLock);
 }
@@ -75,7 +73,7 @@ bool Voter::hasWork() const {
 
 bool Voter::updateState() {
   pthread_mutex_lock(&votingLock);
-#ifdef DEBUG_VOTER
+#ifndef NDEBUG
   int oldState = state;
 #endif
   bool allDone = false;
@@ -138,9 +136,11 @@ bool Voter::updateState() {
 
   } // switch (state) {
 
-#ifdef DEBUG_VOTER
+#ifndef NDEBUG
   if (oldState != state)
     std::cout << "rank " << myRank << ": " << stateNames[oldState] << " -> " << stateNames[state] << "\n";
+  else
+    std::cout << "rank " << myRank << ": " << stateNames[state] << "\n";
 #endif
   pthread_mutex_unlock(&votingLock);
   return allDone;
@@ -151,10 +151,11 @@ bool Voter::achievedConsensus() const { return (commitVoteCount == numRanks - 1)
 void Voter::broadcast(int voteWorkType) const {
   for (int i = 0; i < numRanks; ++i) {
     if (i != myRank) {
-      VoteWork work;
-      work.setup(voteWorkType, myRank);
-      work.Send(i);
-#ifdef DEBUG_RAYTX
+      VoteWork* work = new VoteWork(VoteWork::getSize());
+      work->setup(voteWorkType, myRank);
+      // work.Send(i);
+      renderer->SendWork(work, i);
+#ifndef NDEBUG
       printf("rank %d: sent vote request to rank %d voteWorkType %d\n", myRank, i, voteWorkType);
 #endif
     }
@@ -162,9 +163,10 @@ void Voter::broadcast(int voteWorkType) const {
 }
 
 void Voter::sendVote(int voteWorkType) const {
-  VoteWork work;
-  work.setup(voteWorkType, myRank);
-  work.Send(COORDINATOR);
+  VoteWork* work = new VoteWork(VoteWork::getSize());
+  work->setup(voteWorkType, myRank);
+  // work.Send(COORDINATOR);
+  renderer->SendWork(work, COORDINATOR);
 }
 
 void Voter::setProposeAvailable() {

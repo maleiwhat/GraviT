@@ -1,44 +1,12 @@
-/* =======================================================================================
-   This file is released as part of GraviT - scalable, platform independent ray
-   tracing
-   tacc.github.io/GraviT
-
-   Copyright 2013-2015 Texas Advanced Computing Center, The University of Texas
-   at Austin
-   All rights reserved.
-
-   Licensed under the BSD 3-Clause License, (the "License"); you may not use
-   this file
-   except in compliance with the License.
-   A copy of the License is included with this software in the file LICENSE.
-   If your copy does not contain the License, you may obtain a copy of the
-   License at:
-
-       http://opensource.org/licenses/BSD-3-Clause
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under
-   the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-   CONDITIONS OF ANY
-   KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under
-   limitations under the License.
-
-   GraviT is funded in part by the US National Science Foundation under awards
-   ACI-1339863,
-   ACI-1339881 and ACI-1339840
-   =======================================================================================
-   */
-
-//
-// Work.h
-//
-
-#ifndef GVT_CORE_MPI_WORK_H
-#define GVT_CORE_MPI_WORK_H
+#pragma once
 
 #include <iostream>
+#include <memory>
+#include <vector>
+#include <mpi.h>
+#include "smem.h"
+#include "classes.h"
+#include "Message.h"
 
 using namespace std;
 
@@ -46,55 +14,75 @@ namespace gvt {
 namespace core {
 namespace mpi {
 
-// This needs to be in the class definition of the Work subclass object - it'll
-// define the creator and the registererh
+class Work {
+public:
+  Work(bool c);
+  Work(bool c, int n);
+  Work(bool c, SharedP s);
+  ~Work();
 
-#define WORK_CLASS_HEADER(ClassName)                                                                                   \
-  \
+  void *get() { return contents->get(); }
+  int get_size() { return contents->get_size(); }
+
+  virtual void initialize() {};
+  virtual bool Action() {
+    return true;
+  };
+  virtual bool Action(MPI_Comm comm) {
+    return true;
+  };
+
+  // TODO: temporary workaround. this should go away (hpark)
+  virtual bool deferDeletingThis() { return false; }
+
+  void Send(int i);
+  void Broadcast(bool c, bool b);
+
+  string getClassName() {
+    return className;
+  };
+  int GetType() { return type; }
+
+  SharedP get_pointer() { return contents; }
+
+protected:
+  static int RegisterSubclass(Work *(*d)(SharedP));
+
+  void SetCommunicates(bool c) { communicates = c; }
+  bool Communicates() { return communicates; }
+
+  int type;
+  string className;
+  bool communicates;
+  SharedP contents;
+};
+
+#define WORK_CLASS_TYPE(ClassName) int ClassName::class_type = 0;
+
+#define WORK_CLASS(ClassName, communicates)                                                                            \
 public:                                                                                                                \
-  \
-ClassName() {                                                                                                          \
+  ClassName(size_t n = 0) : Work(communicates, n) {                                                                    \
+    className = string(#ClassName);                                                                                    \
     type = ClassName::class_type;                                                                                      \
     initialize();                                                                                                      \
   }                                                                                                                    \
-  \
-static void                                                                                                            \
-  Register() {                                                                                                         \
-    ClassName::class_type = Application::GetApplication()->RegisterWork(Deserialize);                                  \
-  \
-}                                                                                                                 \
-  \
+                                                                                                                       \
+  ClassName(SharedP p) : Work(communicates, p) {                                                                       \
+    className = string(#ClassName);                                                                                    \
+    type = ClassName::class_type;                                                                                      \
+    initialize();                                                                                                      \
+  }                                                                                                                    \
+                                                                                                                       \
+public:                                                                                                                \
+  string getClassName() { return string(#ClassName); }                                                                 \
+  unsigned char *get_contents() { return contents->get(); }                                                            \
+                                                                                                                       \
+  static void Register() { ClassName::class_type = Work::RegisterSubclass(Deserialize); }                              \
+                                                                                                                       \
+  static Work *Deserialize(SharedP ptr) { return (Work *)new ClassName(ptr); }                                         \
+                                                                                                                       \
 private:                                                                                                               \
-  \
-static int class_type;
-
-// This needs to be in a source file somewhere to
-
-#define WORK_CLASS(ClassName) int ClassName::class_type = 0;
-
-class Work {
-public:
-  Work() {}
-  ~Work() {}
-
-  static Work *Deserialize(size_t size, unsigned char *body);
-
-  virtual void initialize(){};
-  virtual void Serialize(size_t &size, unsigned char *&serialized);
-  virtual bool Action() { return true; };
-  virtual void Send(int destination);
-  virtual void Broadcast(bool collective, bool block);
-
-  virtual bool deferDeletingThis() { return false; }
-
-  int GetType() { return type; }
-
-protected:
-  int type;
-};
-
-} // ns mpi
-} // ns core
-} // ns gvt
-
-#endif /* GVT_CORE_MPI_WORK_H */
+  static int class_type;
+}
+}
+}

@@ -40,7 +40,7 @@
 using namespace gvt::core::mpi;
 using namespace gvt::render::unit;
 
-WORK_CLASS(ImageTileWork)
+WORK_CLASS_TYPE(ImageTileWork)
 
 Work *ImageTileWork::Deserialize(size_t size, unsigned char *serialized) {
   if (size != (4 * sizeof(int))) {

@@ -54,7 +54,7 @@ using namespace gvt::render::data::scene;
 // #define DEBUG_PIXEL_WORK
 // #define DEBUG_PIXEL_DESERIALIZE
 
-WORK_CLASS(PixelWork)
+WORK_CLASS_TYPE(PixelWork)
 
 void PixelWork::Serialize(size_t &size, unsigned char *&serialized) {
 
