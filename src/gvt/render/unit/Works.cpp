@@ -140,17 +140,9 @@ void RayTransferWork::setup(int transferType, int senderRank, int instanceId,
 #ifndef NDEBUG
   printf("rank %d tx_type %d sender %d instance %d num_rays %d in %s\n", Application::GetTheApplication()->GetRank(),
          info.transferType, info.senderRank, info.instanceId, info.numRays, __PRETTY_FUNCTION__);
-#endif
 
-#ifdef DEBUG_RAY_COPY
   MpiRenderer *renderer = static_cast<MpiRenderer *>(Application::GetTheApplication());
-  printf("Rank %d: RayTransferWork::setRays: instanceId %d: numRays %d\n", renderer->GetRank(), instanceId, numRays);
-  if (renderer->GetRank() == 0) {
-    std::cout << "setRays: rays[0]{" << (*rays)[0] << "}" << std::endl;
-    std::cout << "setRays: rays[1]{" << (*rays)[1] << "}" << std::endl;
-    std::cout << "setRays: outgoingRays[0]{" << (*rays)[0] << "}" << std::endl;
-    std::cout << "setRays: outgoingRays[1]{" << (*rays)[1] << "}" << std::endl;
-  }
+  std::cout << "setRays: outgoingRays[0]{" << outgoingRays[0] << "}" << std::endl;
 #endif
 }
 
@@ -159,18 +151,18 @@ void RayTransferWork::copyIncomingRays(std::map<int, gvt::render::actor::RayVect
   int instanceId = info.instanceId;
   std::size_t srcSize = info.numRays * sizeof(gvt::render::actor::Ray);
   if (destinationRayQ->find(instanceId) != destinationRayQ->end()) {
-    // (*destinationRayQ)[instanceId]
-    //     .insert((*destinationRayQ)[instanceId].end(), incomingRays.begin(), incomingRays.end());
-    gvt::render::actor::RayVector& rays = (*destinationRayQ)[instanceId];
-    std::size_t destSize = rays.size();
-    rays.resize(srcSize + destSize); // TODO: avoid this
-    memcpy(&rays[destSize], getRays(), srcSize);
+    (*destinationRayQ)[instanceId].insert((*destinationRayQ)[instanceId].end(), incomingRays.begin(),
+                                          incomingRays.end());
+    // gvt::render::actor::RayVector& rays = (*destinationRayQ)[instanceId];
+    // std::size_t destSize = rays.size();
+    // rays.resize(srcSize + destSize); // TODO: avoid this
+    // memcpy(&rays[destSize], getRays(), srcSize);
   } else {
-    // (*destinationRayQ)[instanceId] = incomingRays;
-    (*destinationRayQ)[instanceId] = gvt::render::actor::RayVector();
-    gvt::render::actor::RayVector& rays = (*destinationRayQ)[instanceId];
-    rays.resize(srcSize); // TODO: avoid this
-    memcpy(&rays[0], getRays(), srcSize);
+    (*destinationRayQ)[instanceId] = incomingRays;
+    // (*destinationRayQ)[instanceId] = gvt::render::actor::RayVector();
+    // gvt::render::actor::RayVector& rays = (*destinationRayQ)[instanceId];
+    // rays.resize(srcSize); // TODO: avoid this
+    // memcpy(&rays[0], getRays(), srcSize);
   }
   // // TODO: avoid resizing
   // if (destinationRayQ->find(instanceId) != destinationRayQ->end()) {
@@ -189,6 +181,9 @@ bool RayTransferWork::Action() {
          info.senderRank, info.instanceId, info.numRays, __PRETTY_FUNCTION__);
 #endif
   if (info.transferType == Request) {
+    incomingRays.resize(info.numRays);
+    unsigned char *buf = contents->get();
+    memcpy(&incomingRays[0], buf + sizeof(RayInfo), info.numRays * sizeof(gvt::render::actor::Ray));
     renderer->bufferRayTransferWork(this);
     // renderer->copyIncomingRays(instanceId, &incomingRays);
   } else if (info.transferType == Grant) { // Grant

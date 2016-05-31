@@ -89,7 +89,7 @@ private:
   unsigned char *getRays() { return contents->get() + sizeof(RayInfo); }
 
   // RayInfo rayInfo;
-  gvt::render::actor::RayVector *outgoingRays;
+  // gvt::render::actor::RayVector *outgoingRays;
   gvt::render::actor::RayVector incomingRays;
 };
 

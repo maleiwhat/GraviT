@@ -139,8 +139,8 @@ bool Voter::updateState() {
 #ifndef NDEBUG
   if (oldState != state)
     std::cout << "rank " << myRank << ": " << stateNames[oldState] << " -> " << stateNames[state] << "\n";
-  else
-    std::cout << "rank " << myRank << ": " << stateNames[state] << "\n";
+  // else
+  //   std::cout << "rank " << myRank << ": " << stateNames[state] << "\n";
 #endif
   pthread_mutex_unlock(&votingLock);
   return allDone;
