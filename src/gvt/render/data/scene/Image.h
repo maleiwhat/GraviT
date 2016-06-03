@@ -63,6 +63,8 @@ public:
   }
 
   void Add(int pixel, glm::vec3 &ca) {
+
+    ca = glm::clamp(ca, glm::vec3(0), glm::vec3(1));
     int index = 3 * pixel;
     rgb[index + 0] = (unsigned char)(ca[0] * 255.f);
     rgb[index + 1] = (unsigned char)(ca[1] * 255.f);

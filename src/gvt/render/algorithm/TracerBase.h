@@ -261,6 +261,12 @@ public:
                         for (size_t i = 0; i < hits.size(); i++) {
                           gvt::render::actor::Ray &r = *(raysit.begin() + i);
                           if (hits[i].next != -1) {
+                        	  if (hits[i].t < 0)
+                        		  std::cout << "negative t" << std::endl;
+
+                        	  //if (domID != 1)
+                        	   //   	r.color += glm::vec3(0.2f, 0.f, 0.f);
+
                             r.origin = r.origin + r.direction * (hits[i].t * 0.95f);
                             local_queue[hits[i].next].push_back(r);
                           } else if (r.type == gvt::render::actor::Ray::SHADOW && glm::length(r.color) > 0) {

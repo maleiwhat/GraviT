@@ -59,6 +59,8 @@
 #include <tbb/partitioner.h>
 #include <tbb/tick_count.h>
 
+#define FLAT_SHADING
+
 // TODO: add logic for other packet sizes
 
 #if defined(GVT_AVX_TARGET)
@@ -622,6 +624,7 @@ struct embreeParallelTrace {
               //backface check, requires flat normal
               if (glm::dot(-r.direction, normalflat) <= 0.f ) {
                  manualNormal = -manualNormal;
+                 continue;
                  }
 
              const glm::vec3 &normal = manualNormal;
