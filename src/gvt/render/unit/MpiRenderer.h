@@ -113,8 +113,8 @@ struct MpiRendererOptions {
   virtual ~MpiRendererOptions() {}
   int schedulerType = AsyncDomain;
   int adapterType = gvt::render::adapter::Embree;
-  int width = 1280;
-  int height = 720;
+  int width = 1920;
+  int height = 1080;
   bool ply = false;
   int instanceCountX = 1;
   int instanceCountY = 1;

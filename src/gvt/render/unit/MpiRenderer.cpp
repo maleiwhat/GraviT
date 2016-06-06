@@ -268,6 +268,8 @@ void MpiRenderer::createDatabase() {
   node["focus"] = focus;
   node["upVector"] = upVector;
   node["fov"] = fov;
+  node["rayMaxDepth"] = (int)1;
+  node["raySamples"] = (int)1;
   camera = new gvtPerspectiveCamera();
   camera->lookAt(eye, focus, upVector);
   camera->setFOV(fov);
