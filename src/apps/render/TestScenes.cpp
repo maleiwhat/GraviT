@@ -116,7 +116,21 @@ void TestScenes::makePlyDatabase() {
     close_ply(in_ply);
     // smoosh data into the mesh object
     {
-      Mesh *mesh = new Mesh(new Lambert(glm::vec3(1.0, 1.0, 1.0)));
+      // Mesh *mesh = new Mesh(new Lambert(glm::vec3(1.0, 1.0, 1.0)));
+      Material* m = new Material();
+      m->type = LAMBERT;
+      //m->type = EMBREE_MATERIAL_MATTE;
+      m->kd = glm::vec3(1.0,1.0, 1.0);
+      m->ks = glm::vec3(1.0,1.0,1.0);
+      m->alpha = 0.5;
+
+      //m->type = EMBREE_MATERIAL_METAL;
+      //copper metal
+      m->eta = glm::vec3(.19,1.45, 1.50);
+      m->k = glm::vec3(3.06,2.40, 1.88);
+      m->roughness = 0.05;
+
+      Mesh *mesh = new Mesh(m);
       vert = vlist[0];
       xmin = vert->x;
       ymin = vert->y;
