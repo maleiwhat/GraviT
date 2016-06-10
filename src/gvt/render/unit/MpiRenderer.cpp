@@ -494,7 +494,7 @@ void MpiRenderer::renderAsyncDomain() {
 #endif
     runDomainTracer();
 #ifndef NDEBUG
-printf("numRanks: %d\n", numRanks);
+    printf("numRanks: %d\n", numRanks);
 #endif
     t_wait_composite.start();
     pthread_mutex_lock(&imageReadyLock);
@@ -550,11 +550,12 @@ printf("numRanks: %d\n", numRanks);
 //   setupSyncImage();
 //   GVT_ASSERT(numRanks == 1, "multiple nodes not yet supported for the image scheduler");
 //   image = new Image(imageWidth, imageHeight, "image");
-// 
-//   if (myRank == 0) printf("[sync mpi] starting image scheduler without the mpi layer using %d processes\n", GetSize());
-// 
+//
+//   if (myRank == 0) printf("[sync mpi] starting image scheduler without the mpi layer using %d processes\n",
+//   GetSize());
+//
 //   gvt::render::algorithm::Tracer<ImageScheduler> tracer(camera->rays, *image);
-// 
+//
 //   for (int i = 0; i < options.numFrames; ++i) {
 //     printf("[sync mpi] Rank %d: frame %d start\n", myRank, i);
 //     camera->AllocateCameraRays();
@@ -563,7 +564,7 @@ printf("numRanks: %d\n", numRanks);
 //     tracer();
 //     image->Write();
 //   }
-// 
+//
 //   Quit::Register();
 //   Start();
 //   if (myRank == 0) {
@@ -575,10 +576,11 @@ printf("numRanks: %d\n", numRanks);
 // void MpiRenderer::renderSyncDomain() {
 //   setupSyncDomain();
 //   image = new Image(imageWidth, imageHeight, "image");
-// 
+//
 //   Timer t_total;
-// 
-//   if (myRank == 0) printf("[sync mpi] starting domain scheduler without the mpi layer using %d processes\n", GetSize());
+//
+//   if (myRank == 0) printf("[sync mpi] starting domain scheduler without the mpi layer using %d processes\n",
+//   GetSize());
 //   gvt::render::algorithm::Tracer<gvt::render::schedule::DomainSchedulerProfiling> tracer(camera->rays, *image,
 //                                                                                          profiler);
 //   for (int i = 0; i < options.numFrames; ++i) {
@@ -590,15 +592,15 @@ printf("numRanks: %d\n", numRanks);
 //     camera->generateRays();
 //     t_primary.stop();
 //     profiler.update(Profiler::GenPrimaryRays, t_primary.getElapsed());
-// 
+//
 //     image->clear();
 //     tracer();
 //     //  printf("[sync mpi] Rank %d: frame %d done\n", myRank, i);
 //   }
-// 
+//
 //   t_total.stop();
 //   profiler.update(Profiler::Total, t_total.getElapsed());
-// 
+//
 //   if (myRank == 0) {
 //     image->Write();
 //     profiler.gtimes.resize(numRanks * Profiler::NumTimers);
@@ -606,19 +608,19 @@ printf("numRanks: %d\n", numRanks);
 //     profiler.grays.resize(numRanks);
 // #endif
 //   }
-// 
+//
 //   MPI_Gather(static_cast<const void *>(&profiler.times[0]), Profiler::NumTimers, MPI_DOUBLE,
 //              static_cast<void *>(&profiler.gtimes[0]), Profiler::NumTimers, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-// 
+//
 // #ifdef PROFILE_RAY_COUNTS
 //   MPI_Gather(static_cast<const void *>(&profiler.rays), sizeof(Profiler::RayCounts), MPI_BYTE,
 //              static_cast<void *>(&profiler.grays[0]), sizeof(Profiler::RayCounts), MPI_BYTE, 0, MPI_COMM_WORLD);
 // #endif
-// 
+//
 //   if (myRank == 0) {
 //     profiler.print(options.numFrames, numRanks);
 //   }
-// 
+//
 //   Quit::Register();
 //   Start();
 //   if (myRank == 0) {
@@ -712,7 +714,8 @@ void MpiRenderer::sendRays() {
     size_t numRaysToSend = rays.size();
     if (ownerRank != myRank && numRaysToSend > 0) {
       voter->addNumPendingRays(numRaysToSend);
-      RayTransferWork* work = new RayTransferWork(RayTransferWork::getSize(numRaysToSend * sizeof(gvt::render::actor::Ray)));
+      RayTransferWork *work =
+          new RayTransferWork(RayTransferWork::getSize(numRaysToSend * sizeof(gvt::render::actor::Ray)));
       work->setup(RayTransferWork::Request, myRank, instance, rays);
       // work.Send(ownerRank);
       SendWork(work, ownerRank);
@@ -747,7 +750,7 @@ void MpiRenderer::receiveRays() {
     RayTransferWork *raytx = rayTransferBuffer[i];
     raytx->copyIncomingRays(&rayQ);
 
-    RayTransferWork* grant = new RayTransferWork(RayTransferWork::getSize(0));
+    RayTransferWork *grant = new RayTransferWork(RayTransferWork::getSize(0));
     grant->setup(RayTransferWork::Grant, myRank, raytx->getNumRays());
     // grant.Send(raytx->getSenderRank());
     SendWork(grant, raytx->getSenderRank());

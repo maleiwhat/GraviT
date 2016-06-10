@@ -48,6 +48,10 @@ void *MessageManager::messageThread(void *p) {
 
   int pvd;
   MPI_Init_thread(theApplication->GetPArgC(), theApplication->GetPArgV(), MPI_THREAD_FUNNELED, &pvd);
+  if ((pvd != MPI_THREAD_FUNNELED)) {
+    std::cerr << "error: mpi_thread_funneled not available\n";
+    exit(1);
+  }
 
   MPI_Comm p2p, coll;
   MPI_Comm_dup(MPI_COMM_WORLD, &p2p);

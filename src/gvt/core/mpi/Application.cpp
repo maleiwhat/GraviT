@@ -1,10 +1,10 @@
-#include <mpi.h>
-#include <unistd.h>
-#include <iostream>
-#include <sstream>
-#include <fstream>
 #include "Application.h"
 #include "Rays.h"
+#include <fstream>
+#include <iostream>
+#include <mpi.h>
+#include <sstream>
+#include <unistd.h>
 
 using namespace gvt::core::mpi;
 
@@ -71,8 +71,7 @@ void Application::Kill() {
 
 bool Application::Quit::Action(MPI_Comm coll_comm) {
   Application::GetTheApplication()->GetTheRayQManager()->Kill();
-  int rank = Application::GetTheApplication()->GetRank();
-  MPI_Barrier(coll_comm);
+  // MPI_Barrier(coll_comm);
   return true;
 }
 
