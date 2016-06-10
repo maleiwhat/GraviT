@@ -1168,9 +1168,6 @@ void MpiRenderer::gatherFramebuffers() {
         }
       }
     });
-#ifdef ENABLE_MESSAGE
-    printf("[async mpi] Rank %d: writing result to file\n", myRank);
-#endif
     // image->Write();
   }
   delete[] bufs;
@@ -1183,62 +1180,6 @@ void MpiRenderer::gatherFramebuffers() {
   pthread_cond_signal(&imageReadyCond);
   pthread_mutex_unlock(&imageReadyLock);
 }
-
-// void MpiRenderer::compositePixels() {
-// #ifdef ENABLE_TIMERS
-//   Timer timer_composite;
-// #endif
-//   size_t size = options.width * options.height;
-//   for (size_t i = 0; i < size; i++) image->Add(i, colorBuf[i]);
-//
-//   unsigned char *rgb = image->GetBuffer();
-//   int rgb_buf_size = 3 * size;
-//   unsigned char *bufs = (myRank == 0) ? new unsigned char[numRanks * rgb_buf_size] : NULL;
-//
-//   MPI_Gather(rgb, rgb_buf_size, MPI_UNSIGNED_CHAR, bufs, rgb_buf_size, MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);
-//
-//   if (myRank == 0) {
-//     int nchunks = std::thread::hardware_concurrency() * 2;
-//     int chunk_size = size / nchunks;
-//     std::vector<std::pair<int, int> > chunks(nchunks);
-//     std::vector<std::future<void> > futures;
-//     for (int ii = 0; ii < nchunks - 1; ii++) {
-//       chunks.push_back(std::make_pair(ii * chunk_size, ii * chunk_size + chunk_size));
-//     }
-//     int ii = nchunks - 1;
-//     chunks.push_back(std::make_pair(ii * chunk_size, size));
-//     for (auto &limit : chunks) {
-//       futures.push_back(std::async(std::launch::async, [&]() {
-//         // // std::pair<int,int> limit = std::make_pair(0,size);
-//         // for (size_t i = 1; i < mpi.world_size; ++i) {
-//         for (size_t i = 1; i < numRanks; ++i) {
-//           for (int j = limit.first * 3; j < limit.second * 3; j += 3) {
-//             int p = i * rgb_buf_size + j; // assumes black background, so adding is fine (r==g==b== 0)
-//             rgb[j + 0] += bufs[p + 0];
-//             rgb[j + 1] += bufs[p + 1];
-//             rgb[j + 2] += bufs[p + 2];
-//             // printf("%d (%f %f %f)\n", p, rgb[j], rgb[j+1], rgb[j+2]);
-//           }
-//         }
-//       }));
-//     }
-//     for (std::future<void> &f : futures) {
-//       f.wait();
-//     }
-//     printf("[async mpi] Rank %d: writing result to file\n", myRank);
-//     image->Write(false);
-//   }
-//   delete[] bufs;
-//
-//   pthread_mutex_lock(&imageReadyLock);
-//   imageReady = true;
-//   pthread_cond_signal(&imageReadyCond);
-//   pthread_mutex_unlock(&imageReadyLock);
-// #ifdef ENABLE_TIMERS
-//   timer_composite.stop();
-//   profiler.update(Profiler::Composite, timer_composite.getElapsed());
-// #endif
-// }
 
 void MpiRenderer::gatherTimes() {
   pthread_mutex_lock(&gatherTimesStartMutex);
