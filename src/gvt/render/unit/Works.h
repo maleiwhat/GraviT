@@ -38,8 +38,8 @@
 #ifndef GVT_RENDER_UNIT_WORKS_H
 #define GVT_RENDER_UNIT_WORKS_H
 
-#include "gvt/core/mpi/Work.h"
 #include "gvt/core/mpi/Application.h"
+#include "gvt/core/mpi/Work.h"
 #include "gvt/render/actor/Ray.h"
 
 using namespace std;
@@ -54,7 +54,7 @@ class MpiRenderer;
 class RayTransferWork : public Work {
   WORK_CLASS(RayTransferWork, false)
 
-public:
+ public:
   enum TransferType { Request, Grant };
 
   struct RayInfo {
@@ -70,9 +70,11 @@ public:
   virtual bool Action();
   virtual bool deferDeletingThis();
 
-  void setup(int transferType, int senderRank, int instanceId, const gvt::render::actor::RayVector &outgoingRays);
+  void setup(int transferType, int senderRank, int instanceId,
+             const gvt::render::actor::RayVector &outgoingRays);
   void setup(int transferType, int senderRank, int numRays);
-  void copyIncomingRays(std::map<int, gvt::render::actor::RayVector> *destinationRayQ);
+  void copyIncomingRays(
+      std::map<int, gvt::render::actor::RayVector> *destinationRayQ);
   RayInfo getRayInfo() const {
     RayInfo info;
     memcpy(&info, contents->get(), sizeof(RayInfo));
@@ -83,9 +85,11 @@ public:
   int getInstanceId() const { return getRayInfo().instanceId; }
   int getNumRays() const { return getRayInfo().numRays; }
 
-  static std::size_t getSize(std::size_t raySize) { return sizeof(RayInfo) + raySize; }
+  static std::size_t getSize(std::size_t raySize) {
+    return sizeof(RayInfo) + raySize;
+  }
 
-private:
+ private:
   unsigned char *getRays() { return contents->get() + sizeof(RayInfo); }
 
   // RayInfo rayInfo;
@@ -96,7 +100,7 @@ private:
 class VoteWork : public Work {
   WORK_CLASS(VoteWork, false)
 
-public:
+ public:
   enum Type { PROPOSE, DO_COMMIT, DO_ABORT, VOTE_COMMIT, VOTE_ABORT };
 
   struct Info {
@@ -120,14 +124,14 @@ public:
   int getVoteType() const { return getInfo().voteType; }
 
   static std::size_t getSize() { return sizeof(VoteWork::Info); }
-// private:
-//   int voteType;
-//   int senderRank;
+  // private:
+  //   int voteType;
+  //   int senderRank;
 };
 
 class PixelGatherWork : public Work {
   WORK_CLASS(PixelGatherWork, true)
-public:
+ public:
   virtual ~PixelGatherWork() {}
   // virtual void Serialize(std::size_t &size, unsigned char *&serialized);
   // static Work *Deserialize(std::size_t size, unsigned char *serialized);
@@ -136,7 +140,7 @@ public:
 
 class TimeGatherWork : public Work {
   WORK_CLASS(TimeGatherWork, true)
-public:
+ public:
   virtual ~TimeGatherWork() {}
   // virtual void Serialize(std::size_t &size, unsigned char *&serialized);
   // static Work *Deserialize(std::size_t size, unsigned char *serialized);

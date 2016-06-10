@@ -1,15 +1,15 @@
+#include "MessageManager.h"
 #include <mpi.h>
 #include <pthread.h>
 #include <unistd.h>
+#include <fstream>
 #include <iostream>
+#include <memory>
+#include <sstream>
+#include <string>
 #include "Application.h"
-#include "MessageManager.h"
 #include "Message.h"
 #include "MessageQ.h"
-#include <string>
-#include <fstream>
-#include <sstream>
-#include <memory>
 
 #define LOGGING 0
 
@@ -21,7 +21,8 @@ void *MessageManager::workThread(void *p) {
 
   pthread_mutex_lock(&theMessageManager->lock);
   theMessageManager->wait--;
-  if (theMessageManager->wait == 0) pthread_cond_signal(&theMessageManager->cond);
+  if (theMessageManager->wait == 0)
+    pthread_cond_signal(&theMessageManager->cond);
   pthread_mutex_unlock(&theMessageManager->lock);
 
   MessageP m;
@@ -47,7 +48,8 @@ void *MessageManager::messageThread(void *p) {
   Application *theApplication = Application::GetTheApplication();
 
   int pvd;
-  MPI_Init_thread(theApplication->GetPArgC(), theApplication->GetPArgV(), MPI_THREAD_FUNNELED, &pvd);
+  MPI_Init_thread(theApplication->GetPArgC(), theApplication->GetPArgV(),
+                  MPI_THREAD_FUNNELED, &pvd);
   if ((pvd != MPI_THREAD_FUNNELED)) {
     std::cerr << "error: mpi_thread_funneled not available\n";
     exit(1);
@@ -64,7 +66,8 @@ void *MessageManager::messageThread(void *p) {
 
   pthread_mutex_lock(&theMessageManager->lock);
   theMessageManager->wait--;
-  if (theMessageManager->wait == 0) pthread_cond_signal(&theMessageManager->cond);
+  if (theMessageManager->wait == 0)
+    pthread_cond_signal(&theMessageManager->cond);
 
   pthread_mutex_unlock(&theMessageManager->lock);
 
@@ -73,12 +76,14 @@ void *MessageManager::messageThread(void *p) {
     int read_ready;
     MPI_Status status;
 
-    MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, theMessageManager->getP2PComm(), &read_ready, &status);
+    MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, theMessageManager->getP2PComm(),
+               &read_ready, &status);
 
     if (read_ready) {
       Message *incoming_message = new Message(status);
 
-      if (incoming_message->IsBroadcast()) theMessageManager->Export(incoming_message);
+      if (incoming_message->IsBroadcast())
+        theMessageManager->Export(incoming_message);
 
       if (incoming_message->Communicates()) {
         Work *w = theApplication->Deserialize(incoming_message);
@@ -89,12 +94,14 @@ void *MessageManager::messageThread(void *p) {
     }
 
     if (!kill_me && theMessageManager->GetOutgoingMessageQueue()->IsReady()) {
-      Message *outgoing_message = theMessageManager->GetOutgoingMessageQueue()->Dequeue();
+      Message *outgoing_message =
+          theMessageManager->GetOutgoingMessageQueue()->Dequeue();
       if (outgoing_message) {
         // Send it on
         theMessageManager->Export(outgoing_message);
 
-        // If this message represents a communicating work task, execute its work here in the message thread
+        // If this message represents a communicating work task, execute its
+        // work here in the message thread
         if (outgoing_message->Communicates()) {
           Work *w = theApplication->Deserialize(outgoing_message);
           kill_me = w->Action(theMessageManager->getCollComm());
@@ -176,22 +183,26 @@ void MessageManager::ExportDirect(Message *m) {
 
 #if LOGGING == 1
   std::stringstream s;
-  s << Application::GetTheApplication()->GetRank() << " sending " << m->GetHeaderSize() << " to " << m->GetDestination()
-    << " tag: " << tag << "\n";
+  s << Application::GetTheApplication()->GetRank() << " sending "
+    << m->GetHeaderSize() << " to " << m->GetDestination() << " tag: " << tag
+    << "\n";
   Application::GetTheApplication()->log(s);
 #endif
 
-  int err1 = MPI_Send(m->GetHeader(), m->GetHeaderSize(), MPI_UNSIGNED_CHAR, m->GetDestination(), tag, p2p_comm);
+  int err1 = MPI_Send(m->GetHeader(), m->GetHeaderSize(), MPI_UNSIGNED_CHAR,
+                      m->GetDestination(), tag, p2p_comm);
 
   if (m->HasContent()) {
 #if LOGGING == 1
     std::stringstream s;
-    s << Application::GetTheApplication()->GetRank() << " sending content " << m->GetSize() << " to "
-      << m->GetDestination() << " tag: " << (tag + 1) << "\n";
+    s << Application::GetTheApplication()->GetRank() << " sending content "
+      << m->GetSize() << " to " << m->GetDestination() << " tag: " << (tag + 1)
+      << "\n";
     Application::GetTheApplication()->log(s);
 #endif
 
-    int err2 = MPI_Send(m->GetContent(), m->GetSize(), MPI_UNSIGNED_CHAR, m->GetDestination(), tag + 1, p2p_comm);
+    int err2 = MPI_Send(m->GetContent(), m->GetSize(), MPI_UNSIGNED_CHAR,
+                        m->GetDestination(), tag + 1, p2p_comm);
   }
 }
 

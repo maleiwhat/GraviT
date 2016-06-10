@@ -1,5 +1,5 @@
-#include <iostream>
 #include "Work.h"
+#include <iostream>
 #include "Application.h"
 #include "Message.h"
 #include "MessageManager.h"
@@ -24,7 +24,9 @@ Work::Work(bool c, SharedP s) {
   contents = s;
 }
 
-int Work::RegisterSubclass(Work *(*d)(SharedP)) { return Application::GetTheApplication()->RegisterWork(d); }
+int Work::RegisterSubclass(Work *(*d)(SharedP)) {
+  return Application::GetTheApplication()->RegisterWork(d);
+}
 
 Work::~Work() {}
 

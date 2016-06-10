@@ -12,7 +12,7 @@ namespace core {
 namespace mpi {
 
 class MessageManager {
-public:
+ public:
   MessageManager();
   ~MessageManager();
 
@@ -36,7 +36,7 @@ public:
   void SendWork(Work *w, int dest);
   void BroadcastWork(Work *w, bool blocking);
 
-private:
+ private:
   static void *messageThread(void *);
   static void *workThread(void *);
 

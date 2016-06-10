@@ -36,9 +36,9 @@
 //
 
 #include "gvt/render/unit/Works.h"
-#include "gvt/render/unit/MpiRenderer.h"
 #include "gvt/core/mpi/Work.h"
 #include "gvt/render/actor/Ray.h"
+#include "gvt/render/unit/MpiRenderer.h"
 
 #include <pthread.h>
 
@@ -56,9 +56,9 @@ WORK_CLASS_TYPE(RayTransferWork)
 //     int raySize = rayV.size() * sizeof(gvt::render::actor::Ray);
 //     size = 4 * sizeof(int) + raySize;
 //     serialized = static_cast<unsigned char *>(malloc(size));
-// 
+//
 //     unsigned char *buf = serialized;
-// 
+//
 //     *reinterpret_cast<int *>(buf) = transferType;
 //     buf += sizeof(int);
 //     *reinterpret_cast<int *>(buf) = senderRank;
@@ -67,13 +67,13 @@ WORK_CLASS_TYPE(RayTransferWork)
 //     buf += sizeof(int);
 //     *reinterpret_cast<int *>(buf) = numRays;
 //     buf += sizeof(int);
-// 
+//
 //     std::memcpy(buf, &rayV[0], raySize);
 //   } else { // Grant
 //     size = 3 * sizeof(int);
 //     serialized = static_cast<unsigned char *>(malloc(size));
 //     unsigned char *buf = serialized;
-// 
+//
 //     *reinterpret_cast<int *>(buf) = transferType;
 //     buf += sizeof(int);
 //     *reinterpret_cast<int *>(buf) = senderRank;
@@ -83,12 +83,12 @@ WORK_CLASS_TYPE(RayTransferWork)
 // }
 
 // Work *RayTransferWork::Deserialize(size_t size, unsigned char *serialized) {
-// 
+//
 //   unsigned char *buf = serialized;
 //   RayTransferWork *work = new RayTransferWork;
 //   work->transferType = *reinterpret_cast<int *>(buf);
 //   buf += sizeof(int);
-// 
+//
 //   if (work->transferType == Request) {
 //     work->senderRank = *reinterpret_cast<int *>(buf);
 //     buf += sizeof(int);
@@ -97,9 +97,10 @@ WORK_CLASS_TYPE(RayTransferWork)
 //     int rayCount = *reinterpret_cast<int *>(buf);
 //     buf += sizeof(int);
 //     work->numRays = rayCount;
-// 
+//
 //     work->incomingRays.reserve(rayCount);
-//     std::memmove(&work->incomingRays[0], buf, rayCount * sizeof(gvt::render::actor::Ray));
+//     std::memmove(&work->incomingRays[0], buf, rayCount *
+//     sizeof(gvt::render::actor::Ray));
 //     work->incomingRays.resize(rayCount);
 //   } else { // Grant
 //     work->senderRank = *reinterpret_cast<int *>(buf);
@@ -115,7 +116,7 @@ void RayTransferWork::setup(int transferType, int senderRank, int numRays) {
   RayInfo info;
   info.transferType = transferType;
   info.senderRank = senderRank;
-  info.instanceId = 0; // unused
+  info.instanceId = 0;  // unused
   info.numRays = numRays;
   memcpy(contents->get(), &info, sizeof(RayInfo));
 }
@@ -135,23 +136,29 @@ void RayTransferWork::setup(int transferType, int senderRank, int instanceId,
 
   unsigned char *buf = contents->get();
   memcpy(buf, &info, sizeof(RayInfo));
-  memcpy(buf + sizeof(RayInfo), &outgoingRays[0], info.numRays * sizeof(gvt::render::actor::Ray));
+  memcpy(buf + sizeof(RayInfo), &outgoingRays[0],
+         info.numRays * sizeof(gvt::render::actor::Ray));
 
 #ifndef NDEBUG
-  printf("rank %d tx_type %d sender %d instance %d num_rays %d in %s\n", Application::GetTheApplication()->GetRank(),
-         info.transferType, info.senderRank, info.instanceId, info.numRays, __PRETTY_FUNCTION__);
+  printf("rank %d tx_type %d sender %d instance %d num_rays %d in %s\n",
+         Application::GetTheApplication()->GetRank(), info.transferType,
+         info.senderRank, info.instanceId, info.numRays, __PRETTY_FUNCTION__);
 
-  MpiRenderer *renderer = static_cast<MpiRenderer *>(Application::GetTheApplication());
-  std::cout << "setRays: outgoingRays[0]{" << outgoingRays[0] << "}" << std::endl;
+  MpiRenderer *renderer =
+      static_cast<MpiRenderer *>(Application::GetTheApplication());
+  std::cout << "setRays: outgoingRays[0]{" << outgoingRays[0] << "}"
+            << std::endl;
 #endif
 }
 
-void RayTransferWork::copyIncomingRays(std::map<int, gvt::render::actor::RayVector> *destinationRayQ) {
+void RayTransferWork::copyIncomingRays(
+    std::map<int, gvt::render::actor::RayVector> *destinationRayQ) {
   RayInfo info = getRayInfo();
   int instanceId = info.instanceId;
   std::size_t srcSize = info.numRays * sizeof(gvt::render::actor::Ray);
   if (destinationRayQ->find(instanceId) != destinationRayQ->end()) {
-    (*destinationRayQ)[instanceId].insert((*destinationRayQ)[instanceId].end(), incomingRays.begin(),
+    (*destinationRayQ)[instanceId].insert((*destinationRayQ)[instanceId].end(),
+                                          incomingRays.begin(),
                                           incomingRays.end());
     // gvt::render::actor::RayVector& rays = (*destinationRayQ)[instanceId];
     // std::size_t destSize = rays.size();
@@ -167,26 +174,30 @@ void RayTransferWork::copyIncomingRays(std::map<int, gvt::render::actor::RayVect
   // // TODO: avoid resizing
   // if (destinationRayQ->find(instanceId) != destinationRayQ->end()) {
   //   (*destinationRayQ)[instanceId]
-  //       .insert((*destinationRayQ)[instanceId].end(), incomingRays.begin(), incomingRays.end());
+  //       .insert((*destinationRayQ)[instanceId].end(), incomingRays.begin(),
+  //       incomingRays.end());
   // } else {
   //   (*destinationRayQ)[instanceId] = incomingRays;
   // }
 }
 
 bool RayTransferWork::Action() {
-  MpiRenderer *renderer = static_cast<MpiRenderer *>(Application::GetTheApplication());
+  MpiRenderer *renderer =
+      static_cast<MpiRenderer *>(Application::GetTheApplication());
   RayInfo info = getRayInfo();
 #ifndef NDEBUG
-  printf("ranks %d RayInfo (type %d sender %d instance %d num_rays %d) in %s\n", renderer->GetRank(), info.transferType,
-         info.senderRank, info.instanceId, info.numRays, __PRETTY_FUNCTION__);
+  printf("ranks %d RayInfo (type %d sender %d instance %d num_rays %d) in %s\n",
+         renderer->GetRank(), info.transferType, info.senderRank,
+         info.instanceId, info.numRays, __PRETTY_FUNCTION__);
 #endif
   if (info.transferType == Request) {
     incomingRays.resize(info.numRays);
     unsigned char *buf = contents->get();
-    memcpy(&incomingRays[0], buf + sizeof(RayInfo), info.numRays * sizeof(gvt::render::actor::Ray));
+    memcpy(&incomingRays[0], buf + sizeof(RayInfo),
+           info.numRays * sizeof(gvt::render::actor::Ray));
     renderer->bufferRayTransferWork(this);
     // renderer->copyIncomingRays(instanceId, &incomingRays);
-  } else if (info.transferType == Grant) { // Grant
+  } else if (info.transferType == Grant) {  // Grant
     renderer->applyRayTransferResult(info.numRays);
   } else {
     assert(false);
@@ -205,21 +216,21 @@ WORK_CLASS_TYPE(VoteWork)
 //   size = 3 * sizeof(int);
 //   serialized = static_cast<unsigned char *>(malloc(size));
 //   unsigned char *buf = serialized;
-// 
+//
 //   *reinterpret_cast<int *>(buf) = voteType;
 //   buf += sizeof(int);
 //   *reinterpret_cast<int *>(buf) = senderRank;
 // }
 
 // Work *VoteWork::Deserialize(size_t size, unsigned char *serialized) {
-// 
+//
 //   unsigned char *buf = serialized;
 //   VoteWork *work = new VoteWork;
-// 
+//
 //   work->voteType = *reinterpret_cast<int *>(buf);
 //   buf += sizeof(int);
 //   work->senderRank = *reinterpret_cast<int *>(buf);
-// 
+//
 //   return work;
 // }
 
@@ -233,7 +244,8 @@ void VoteWork::setup(int voteType, int senderRank) {
 }
 
 bool VoteWork::Action() {
-  MpiRenderer *renderer = static_cast<MpiRenderer *>(Application::GetTheApplication());
+  MpiRenderer *renderer =
+      static_cast<MpiRenderer *>(Application::GetTheApplication());
   Info info = getInfo();
   if (info.voteType == PROPOSE) {
     renderer->setProposeAvailable();
@@ -246,7 +258,8 @@ bool VoteWork::Action() {
   } else if (info.voteType == VOTE_ABORT) {
     renderer->voteAbort();
   } else {
-    printf("rank %d: invalid vote type %d\n", renderer->GetRank(), info.voteType);
+    printf("rank %d: invalid vote type %d\n", renderer->GetRank(),
+           info.voteType);
     exit(1);
   }
   return false;
@@ -258,10 +271,11 @@ WORK_CLASS_TYPE(PixelGatherWork)
 //   size = 0;
 //   serialized = NULL;
 // }
-// 
+//
 // Work *PixelGatherWork::Deserialize(size_t size, unsigned char *serialized) {
 //   if (size != 0) {
-//     std::cerr << "PixelGatherWork deserializer call with size != 0 rank " << Application::GetTheApplication()->GetRank()
+//     std::cerr << "PixelGatherWork deserializer call with size != 0 rank " <<
+//     Application::GetTheApplication()->GetRank()
 //               << "\n";
 //     exit(1);
 //   }
@@ -273,7 +287,8 @@ bool PixelGatherWork::Action(MPI_Comm comm) {
 #ifndef NDEBUG
   printf("start of %s\n", __PRETTY_FUNCTION__);
 #endif
-  MpiRenderer *renderer = static_cast<MpiRenderer *>(Application::GetTheApplication());
+  MpiRenderer *renderer =
+      static_cast<MpiRenderer *>(Application::GetTheApplication());
   renderer->gatherFramebuffers();
   return false;
 }
@@ -284,10 +299,11 @@ WORK_CLASS_TYPE(TimeGatherWork)
 //   size = 0;
 //   serialized = NULL;
 // }
-// 
+//
 // Work *TimeGatherWork::Deserialize(size_t size, unsigned char *serialized) {
 //   if (size != 0) {
-//     std::cerr << "TimeGatherWork deserializer call with size != 0 rank " << Application::GetTheApplication()->GetRank()
+//     std::cerr << "TimeGatherWork deserializer call with size != 0 rank " <<
+//     Application::GetTheApplication()->GetRank()
 //               << "\n";
 //     exit(1);
 //   }
@@ -296,7 +312,8 @@ WORK_CLASS_TYPE(TimeGatherWork)
 // }
 
 bool TimeGatherWork::Action(MPI_Comm comm) {
-  MpiRenderer *renderer = static_cast<MpiRenderer *>(Application::GetTheApplication());
+  MpiRenderer *renderer =
+      static_cast<MpiRenderer *>(Application::GetTheApplication());
   renderer->gatherTimes();
   return false;
 }

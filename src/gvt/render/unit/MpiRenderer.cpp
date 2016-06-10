@@ -37,16 +37,16 @@
 
 #include "gvt/render/unit/MpiRenderer.h"
 
+#include <sys/stat.h>
+#include <algorithm>
+#include <set>
+#include <vector>
 #include "gvt/core/Math.h"
 #include "gvt/core/mpi/Wrapper.h"
 #include "gvt/render/RenderContext.h"
 #include "gvt/render/Schedulers.h"
 #include "gvt/render/Types.h"
 #include "gvt/render/data/Domains.h"
-#include <algorithm>
-#include <set>
-#include <sys/stat.h>
-#include <vector>
 
 #ifdef GVT_RENDER_ADAPTER_EMBREE
 #include "gvt/render/adapter/embree/Wrapper.h"
@@ -67,8 +67,8 @@
 // #include "gvt/render/data/domain/reader/ObjReader.h"
 #include "gvt/render/data/accel/BVH.h"
 
-#include "gvt/core/mpi/Application.h"
 #include <boost/range/algorithm.hpp>
+#include "gvt/core/mpi/Application.h"
 
 #include "gvt/render/unit/DomainTracerProfiling.h"
 // #include "gvt/render/unit/ImageTileWork.h"
@@ -83,9 +83,9 @@
 
 #include "gvt/core/utils/timer.h"
 
+#include <mpi.h>
 #include <boost/timer/timer.hpp>
 #include <iostream>
-#include <mpi.h>
 
 #include <tbb/task_scheduler_init.h>
 #include <thread>
@@ -135,11 +135,18 @@ using namespace gvt::render::actor;
 static Timer t_composite;
 
 MpiRenderer::MpiRenderer(int *argc, char ***argv)
-    : Application(argc, argv), camera(NULL), image(NULL), voter(NULL), adapter(NULL), acceleration(NULL),
-      rayQMutex(NULL), colorBufMutex(NULL) {}
+    : Application(argc, argv),
+      camera(NULL),
+      image(NULL),
+      voter(NULL),
+      adapter(NULL),
+      acceleration(NULL),
+      rayQMutex(NULL),
+      colorBufMutex(NULL) {}
 
 // MpiRenderer::MpiRenderer(int *argc, char ***argv)
-//     : Application(argc, argv), camera(NULL), image(NULL), tileLoadBalancer(NULL), voter(NULL), adapter(NULL),
+//     : Application(argc, argv), camera(NULL), image(NULL),
+//     tileLoadBalancer(NULL), voter(NULL), adapter(NULL),
 //       acceleration(NULL), rayQMutex(NULL), colorBufMutex(NULL) {}
 
 MpiRenderer::~MpiRenderer() {
@@ -154,22 +161,30 @@ MpiRenderer::~MpiRenderer() {
 }
 
 void MpiRenderer::printUsage(const char *argv) {
-  printf("Usage : %s [-h] [-i <infile>] [-a <adapter>] [-n <x y z>] [-p] [-s <scheduler>] [-W <image_width>] [-H "
-         "<image_height>] [-N <num_frames>] [-t <num_tbb_threads>]\n",
-         argv);
+  printf(
+      "Usage : %s [-h] [-i <infile>] [-a <adapter>] [-n <x y z>] [-p] [-s "
+      "<scheduler>] [-W <image_width>] [-H "
+      "<image_height>] [-N <num_frames>] [-t <num_tbb_threads>]\n",
+      argv);
   printf("  -h, --help\n");
-  printf("  -i, --infile <infile> (default: ../data/geom/bunny.obj for obj and ./EnzoPlyData/Enzo8 for ply)\n");
+  printf(
+      "  -i, --infile <infile> (default: ../data/geom/bunny.obj for obj and "
+      "./EnzoPlyData/Enzo8 for ply)\n");
   printf("  -a, --adapter <embree | manta | optix> (default: embree)\n");
   printf("  -s, --scheduler <0-3> (default: 1)\n");
   printf("      0: AsyncImage, 1: AysncDomain, 2: SyncImage, 3:SyncDomain\n");
-  printf("  -n, --num-instances <x, y, z> specify the number of instances in each direction (default: 1 1 1). "
-         "effective only with obj.\n");
+  printf(
+      "  -n, --num-instances <x, y, z> specify the number of instances in each "
+      "direction (default: 1 1 1). "
+      "effective only with obj.\n");
   printf("  -p, --ply use ply models\n");
   printf("  -W, --width <image_width> (default: 1280)\n");
   printf("  -H, --height <image_height> (default: 720)\n");
   printf("  -N, --num-frames <num_frames> (default: 1)\n");
   printf("  -t, --tbb <num_tbb_threads>\n");
-  printf("      (default: # cores for sync. schedulers or # cores - 2 for async. schedulers)\n");
+  printf(
+      "      (default: # cores for sync. schedulers or # cores - 2 for async. "
+      "schedulers)\n");
 }
 
 void MpiRenderer::parseCommandLine(int argc, char **argv) {
@@ -185,7 +200,8 @@ void MpiRenderer::parseCommandLine(int argc, char **argv) {
         printf("error: file not found. %s\n", options.infile.c_str());
         exit(1);
       }
-    } else if (strcmp(argv[i], "-a") == 0 || strcmp(argv[i], "--adapter") == 0) {
+    } else if (strcmp(argv[i], "-a") == 0 ||
+               strcmp(argv[i], "--adapter") == 0) {
       ++i;
       if (strcmp(argv[i], "embree") == 0) {
         options.adapterType = gvt::render::adapter::Embree;
@@ -197,13 +213,16 @@ void MpiRenderer::parseCommandLine(int argc, char **argv) {
         printf("error: %s not defined\n", argv[i]);
         exit(1);
       }
-    } else if (strcmp(argv[i], "-s") == 0 || strcmp(argv[i], "--scheduler") == 0) {
+    } else if (strcmp(argv[i], "-s") == 0 ||
+               strcmp(argv[i], "--scheduler") == 0) {
       options.schedulerType = atoi(argv[++i]);
-      if (options.schedulerType < 0 || options.schedulerType >= MpiRendererOptions::NumSchedulers) {
+      if (options.schedulerType < 0 ||
+          options.schedulerType >= MpiRendererOptions::NumSchedulers) {
         printf("error: %s not defined\n", argv[i]);
         exit(1);
       }
-    } else if (strcmp(argv[i], "-n") == 0 || strcmp(argv[i], "--num-instances") == 0) {
+    } else if (strcmp(argv[i], "-n") == 0 ||
+               strcmp(argv[i], "--num-instances") == 0) {
       options.instanceCountX = atoi(argv[++i]);
       options.instanceCountY = atoi(argv[++i]);
       options.instanceCountZ = atoi(argv[++i]);
@@ -213,7 +232,8 @@ void MpiRenderer::parseCommandLine(int argc, char **argv) {
       options.width = atoi(argv[++i]);
     } else if (strcmp(argv[i], "-H") == 0 || strcmp(argv[i], "--height") == 0) {
       options.height = atoi(argv[++i]);
-    } else if (strcmp(argv[i], "-N") == 0 || strcmp(argv[i], "--num-frames") == 0) {
+    } else if (strcmp(argv[i], "-N") == 0 ||
+               strcmp(argv[i], "--num-frames") == 0) {
       options.numFrames = atoi(argv[++i]);
     } else if (strcmp(argv[i], "-t") == 0 || strcmp(argv[i], "--tbb") == 0) {
       options.numTbbThreads = atoi(argv[++i]);
@@ -253,7 +273,8 @@ void MpiRenderer::createDatabase() {
     exit(1);
   }
   gvt::core::DBNodeH root = renderContext->getRootNode();
-  gvt::core::DBNodeH node = renderContext->createNodeFromType("Camera", "cam", root.UUID());
+  gvt::core::DBNodeH node =
+      renderContext->createNodeFromType("Camera", "cam", root.UUID());
   glm::vec3 eye(0.0, 0.5, 1.2);
   glm::vec3 focus(0.0, 0.0, 0.0);
   glm::vec3 upVector(0.0, 1.0, 0.0);
@@ -279,7 +300,8 @@ void MpiRenderer::createDatabase() {
 void MpiRenderer::initInstanceRankMap() {
   gvt::core::Vector<gvt::core::DBNodeH> dataNodes = root["Data"].getChildren();
 #ifdef DEBUG_MPI_RENDERER
-  std::cout << "instance node size: " << instancenodes.size() << "\ndata node size: " << dataNodes.size() << "\n";
+  std::cout << "instance node size: " << instancenodes.size()
+            << "\ndata node size: " << dataNodes.size() << "\n";
 #endif
   // create a map of instances to mpi rank
   for (size_t i = 0; i < instancenodes.size(); i++) {
@@ -296,8 +318,10 @@ void MpiRenderer::initInstanceRankMap() {
     // NOTE: mpi-data(domain) assignment strategy
     size_t mpiNode = dataIdx % GetSize();
 
-    GVT_DEBUG(DBG_ALWAYS, "[" << GetRank() << "] domain scheduler: instId: " << i << ", dataIdx: " << dataIdx
-                              << ", target mpi node: " << mpiNode << ", world size: " << GetSize());
+    GVT_DEBUG(DBG_ALWAYS, "[" << GetRank() << "] domain scheduler: instId: "
+                              << i << ", dataIdx: " << dataIdx
+                              << ", target mpi node: " << mpiNode
+                              << ", world size: " << GetSize());
 
     GVT_ASSERT(dataIdx != -1, "domain scheduler: could not find data node");
     mpiInstanceMap[i] = mpiNode;
@@ -328,7 +352,10 @@ void MpiRenderer::setupCommon() {
 
   for (int i = 0; i < instancenodes.size(); i++) {
     meshRef[i] =
-        (gvt::render::data::primitives::Mesh *)instancenodes[i]["meshRef"].deRef()["ptr"].value().toULongLong();
+        (gvt::render::data::primitives::Mesh *)instancenodes[i]["meshRef"]
+            .deRef()["ptr"]
+            .value()
+            .toULongLong();
     instM[i] = (glm::mat4 *)instancenodes[i]["mat"].value().toULongLong();
     instMinv[i] = (glm::mat4 *)instancenodes[i]["matInv"].value().toULongLong();
     instMinvN[i] = (glm::mat3 *)instancenodes[i]["normi"].value().toULongLong();
@@ -349,7 +376,8 @@ void MpiRenderer::setupCommon() {
       auto normal = lightNode["normal"].value().tovec3();
       auto width = lightNode["width"].value().toFloat();
       auto height = lightNode["height"].value().toFloat();
-      lights.push_back(new gvt::render::data::scene::AreaLight(pos, color, normal, width, height));
+      lights.push_back(new gvt::render::data::scene::AreaLight(
+          pos, color, normal, width, height));
     }
   }
 
@@ -411,30 +439,32 @@ void MpiRenderer::freeRender() {
 
 void MpiRenderer::render() {
   switch (options.schedulerType) {
-  // temporarily disabled image scheduler for testing
-  // case MpiRendererOptions::AsyncImage: {
-  //   renderAsyncImage();
-  // } break;
-  case MpiRendererOptions::AsyncDomain: {
-    renderAsyncDomain();
-  } break;
-  // case MpiRendererOptions::SyncImage: {
-  //   renderSyncImage();
-  // } break;
-  // case MpiRendererOptions::SyncDomain: {
-  //   renderSyncDomain();
-  // } break;
-  default: {
-    printf("error: unknown scheduler type %d\n", options.schedulerType);
-    exit(1);
-  } break;
+    // temporarily disabled image scheduler for testing
+    // case MpiRendererOptions::AsyncImage: {
+    //   renderAsyncImage();
+    // } break;
+    case MpiRendererOptions::AsyncDomain: {
+      renderAsyncDomain();
+    } break;
+    // case MpiRendererOptions::SyncImage: {
+    //   renderSyncImage();
+    // } break;
+    // case MpiRendererOptions::SyncDomain: {
+    //   renderSyncDomain();
+    // } break;
+    default: {
+      printf("error: unknown scheduler type %d\n", options.schedulerType);
+      exit(1);
+    } break;
   }
 }
 
 // void MpiRenderer::renderAsyncImage() {
 //   setupAsyncImage();
-//   GVT_ASSERT(options.numFrames == 1, "multiple frames not supported yet for image scheduler");
-//   if (myRank == 0) printf("[async mpi] starting image scheduler using %d processes\n", GetSize());
+//   GVT_ASSERT(options.numFrames == 1, "multiple frames not supported yet for
+//   image scheduler");
+//   if (myRank == 0) printf("[async mpi] starting image scheduler using %d
+//   processes\n", GetSize());
 //
 //   RequestWork::Register();
 //   TileWork::Register();
@@ -453,7 +483,9 @@ void MpiRenderer::render() {
 
 void MpiRenderer::renderAsyncImage() {
   setupAsyncImage();
-  if (myRank == 0) printf("[async mpi] starting image scheduler using %d processes\n", GetSize());
+  if (myRank == 0)
+    printf("[async mpi] starting image scheduler using %d processes\n",
+           GetSize());
   PixelGatherWork::Register();
   Application::Start();
   for (int i = 0; i < options.numFrames; ++i) {
@@ -471,7 +503,8 @@ void MpiRenderer::renderAsyncImage() {
 
 void MpiRenderer::renderAsyncDomain() {
   // setupAsyncDomain();
-  // if (myRank == 0) printf("[async mpi] starting domain scheduler using %d processes\n", GetSize());
+  // if (myRank == 0) printf("[async mpi] starting domain scheduler using %d
+  // processes\n", GetSize());
 
   RayTransferWork::Register();
   VoteWork::Register();
@@ -481,7 +514,9 @@ void MpiRenderer::renderAsyncDomain() {
   Start();
 
   setupAsyncDomain();
-  if (myRank == 0) printf("[async mpi] starting domain scheduler using %d processes\n", GetSize());
+  if (myRank == 0)
+    printf("[async mpi] starting domain scheduler using %d processes\n",
+           GetSize());
 
   image = new Image(imageWidth, imageHeight, "image");
 
@@ -526,7 +561,8 @@ void MpiRenderer::renderAsyncDomain() {
   }
 
 #ifndef NDEBUG
-  printf("rank %d timegather broadcast start in %s\n", myRank, __PRETTY_FUNCTION__);
+  printf("rank %d timegather broadcast start in %s\n", myRank,
+         __PRETTY_FUNCTION__);
 #endif
 
   pthread_mutex_lock(&gatherTimesDoneMutex);
@@ -537,7 +573,10 @@ void MpiRenderer::renderAsyncDomain() {
   pthread_mutex_unlock(&gatherTimesDoneMutex);
 
 #ifndef NDEBUG
-  printf("rank %d timegather broadcast done (attempting to quit the applicaiton) in %s\n", myRank, __PRETTY_FUNCTION__);
+  printf(
+      "rank %d timegather broadcast done (attempting to quit the applicaiton) "
+      "in %s\n",
+      myRank, __PRETTY_FUNCTION__);
 #endif
   // Application::Kill();
   if (myRank == 0) {
@@ -548,13 +587,16 @@ void MpiRenderer::renderAsyncDomain() {
 
 // void MpiRenderer::renderSyncImage() {
 //   setupSyncImage();
-//   GVT_ASSERT(numRanks == 1, "multiple nodes not yet supported for the image scheduler");
+//   GVT_ASSERT(numRanks == 1, "multiple nodes not yet supported for the image
+//   scheduler");
 //   image = new Image(imageWidth, imageHeight, "image");
 //
-//   if (myRank == 0) printf("[sync mpi] starting image scheduler without the mpi layer using %d processes\n",
+//   if (myRank == 0) printf("[sync mpi] starting image scheduler without the
+//   mpi layer using %d processes\n",
 //   GetSize());
 //
-//   gvt::render::algorithm::Tracer<ImageScheduler> tracer(camera->rays, *image);
+//   gvt::render::algorithm::Tracer<ImageScheduler> tracer(camera->rays,
+//   *image);
 //
 //   for (int i = 0; i < options.numFrames; ++i) {
 //     printf("[sync mpi] Rank %d: frame %d start\n", myRank, i);
@@ -579,9 +621,11 @@ void MpiRenderer::renderAsyncDomain() {
 //
 //   Timer t_total;
 //
-//   if (myRank == 0) printf("[sync mpi] starting domain scheduler without the mpi layer using %d processes\n",
+//   if (myRank == 0) printf("[sync mpi] starting domain scheduler without the
+//   mpi layer using %d processes\n",
 //   GetSize());
-//   gvt::render::algorithm::Tracer<gvt::render::schedule::DomainSchedulerProfiling> tracer(camera->rays, *image,
+//   gvt::render::algorithm::Tracer<gvt::render::schedule::DomainSchedulerProfiling>
+//   tracer(camera->rays, *image,
 //                                                                                          profiler);
 //   for (int i = 0; i < options.numFrames; ++i) {
 // #ifdef ENABLE_MESSAGE
@@ -609,12 +653,16 @@ void MpiRenderer::renderAsyncDomain() {
 // #endif
 //   }
 //
-//   MPI_Gather(static_cast<const void *>(&profiler.times[0]), Profiler::NumTimers, MPI_DOUBLE,
-//              static_cast<void *>(&profiler.gtimes[0]), Profiler::NumTimers, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+//   MPI_Gather(static_cast<const void *>(&profiler.times[0]),
+//   Profiler::NumTimers, MPI_DOUBLE,
+//              static_cast<void *>(&profiler.gtimes[0]), Profiler::NumTimers,
+//              MPI_DOUBLE, 0, MPI_COMM_WORLD);
 //
 // #ifdef PROFILE_RAY_COUNTS
-//   MPI_Gather(static_cast<const void *>(&profiler.rays), sizeof(Profiler::RayCounts), MPI_BYTE,
-//              static_cast<void *>(&profiler.grays[0]), sizeof(Profiler::RayCounts), MPI_BYTE, 0, MPI_COMM_WORLD);
+//   MPI_Gather(static_cast<const void *>(&profiler.rays),
+//   sizeof(Profiler::RayCounts), MPI_BYTE,
+//              static_cast<void *>(&profiler.grays[0]),
+//              sizeof(Profiler::RayCounts), MPI_BYTE, 0, MPI_COMM_WORLD);
 // #endif
 //
 //   if (myRank == 0) {
@@ -637,7 +685,8 @@ void MpiRenderer::renderAsyncDomain() {
 //   int numWorkers = numRanks;
 //   int granularity = numRanks;
 //
-//   tileLoadBalancer = new TileLoadBalancer(schedType, imageWidth, imageHeight, granularity, numWorkers);
+//   tileLoadBalancer = new TileLoadBalancer(schedType, imageWidth, imageHeight,
+//   granularity, numWorkers);
 //   image = new Image(imageWidth, imageHeight, "image");
 //   pendingPixelCount = imageWidth * imageHeight;
 //
@@ -647,7 +696,9 @@ void MpiRenderer::renderAsyncDomain() {
 //   pthread_mutex_unlock(&serverReadyLock);
 // }
 
-void MpiRenderer::aggregatePixel(int pixelId, const glm::vec3 &addend) { colorBuf[pixelId] += addend; }
+void MpiRenderer::aggregatePixel(int pixelId, const glm::vec3 &addend) {
+  colorBuf[pixelId] += addend;
+}
 
 #ifdef SCHEDULE_IF_NEEDED
 void MpiRenderer::transferRays(bool *all_done, bool *received_rays) {
@@ -661,8 +712,7 @@ bool MpiRenderer::transferRays() {
 
   bool done;
   if (numRanks > 1) {
-
-    if (voter->isCommunicationAllowed()) { // TODO: potential improvement
+    if (voter->isCommunicationAllowed()) {  // TODO: potential improvement
       t_send.start();
       sendRays();
       t_send.stop();
@@ -714,8 +764,8 @@ void MpiRenderer::sendRays() {
     size_t numRaysToSend = rays.size();
     if (ownerRank != myRank && numRaysToSend > 0) {
       voter->addNumPendingRays(numRaysToSend);
-      RayTransferWork *work =
-          new RayTransferWork(RayTransferWork::getSize(numRaysToSend * sizeof(gvt::render::actor::Ray)));
+      RayTransferWork *work = new RayTransferWork(RayTransferWork::getSize(
+          numRaysToSend * sizeof(gvt::render::actor::Ray)));
       work->setup(RayTransferWork::Request, myRank, instance, rays);
       // work.Send(ownerRank);
       SendWork(work, ownerRank);
@@ -724,7 +774,8 @@ void MpiRenderer::sendRays() {
       rayCount += numRaysToSend;
 #endif
 #ifdef DEBUG_RAYTX
-      printf("rank %d: sent %lu rays instance %d to rank %d\n", myRank, numRaysToSend, instance, ownerRank);
+      printf("rank %d: sent %lu rays instance %d to rank %d\n", myRank,
+             numRaysToSend, instance, ownerRank);
 #endif
     }
   }
@@ -758,11 +809,12 @@ void MpiRenderer::receiveRays() {
     rayCount += raytx->getNumRays();
 #endif
 #ifdef DEBUG_RAYTX
-    printf("rank %d: recved %d rays instance %d \n", myRank, raytx->getNumRays(), raytx->getInstanceId());
+    printf("rank %d: recved %d rays instance %d \n", myRank,
+           raytx->getNumRays(), raytx->getInstanceId());
 #endif
     delete raytx;
   }
-  rayTransferBuffer.clear(); // TODO: avoid this
+  rayTransferBuffer.clear();  // TODO: avoid this
   pthread_mutex_unlock(&rayTransferBufferLock);
 #ifdef PROFILE_RAY_COUNTS
   profiler.addRayCountRecv(rayCount);
@@ -775,17 +827,23 @@ void MpiRenderer::receiveRays() {
 
 void MpiRenderer::bufferRayTransferWork(RayTransferWork *work) {
   pthread_mutex_lock(&rayTransferBufferLock);
-  rayTransferBuffer.push_back(work); // TODO: avoid resizing
+  rayTransferBuffer.push_back(work);  // TODO: avoid resizing
   pthread_mutex_unlock(&rayTransferBufferLock);
 }
 
-void MpiRenderer::bufferVoteWork(VoteWork *work) { voter->bufferVoteWork(work); }
-void MpiRenderer::applyRayTransferResult(int numRays) { voter->subtractNumPendingRays(numRays); }
+void MpiRenderer::bufferVoteWork(VoteWork *work) {
+  voter->bufferVoteWork(work);
+}
+void MpiRenderer::applyRayTransferResult(int numRays) {
+  voter->subtractNumPendingRays(numRays);
+}
 
-void MpiRenderer::copyIncomingRays(int instanceId, const gvt::render::actor::RayVector *incomingRays) {
+void MpiRenderer::copyIncomingRays(
+    int instanceId, const gvt::render::actor::RayVector *incomingRays) {
   pthread_mutex_lock(&rayTransferMutex);
   if (rayQ.find(instanceId) != rayQ.end()) {
-    rayQ[instanceId].insert(rayQ[instanceId].end(), incomingRays->begin(), incomingRays->end());
+    rayQ[instanceId].insert(rayQ[instanceId].end(), incomingRays->begin(),
+                            incomingRays->end());
   } else {
     rayQ[instanceId] = *incomingRays;
   }
@@ -826,7 +884,8 @@ void MpiRenderer::generatePrimaryRays(RayVector &rays) {
   float x, y;
   // these basis directions are scaled by the aspect ratio and
   // the field of view.
-  // glm::vec3 camera_horiz_basis_vector = glm::vec3(1, 0, 0) * tan(fov * 0.5) * aspectRatio;
+  // glm::vec3 camera_horiz_basis_vector = glm::vec3(1, 0, 0) * tan(fov * 0.5) *
+  // aspectRatio;
   // glm::vec3 camera_vert_basis_vector = glm::vec3(0, 1, 0) * tan(fov * 0.5);
   // glm::vec3 camera_normal_basis_vector = glm::vec3(0, 0, 1);
   const glm::vec3 z(cam2wrld[0][2], cam2wrld[1][2], cam2wrld[2][2]);
@@ -838,7 +897,7 @@ void MpiRenderer::generatePrimaryRays(RayVector &rays) {
       imagePixelId = j * imageWidth + i;
       gvt::render::actor::Ray &ray = rays[tilePixelId];
       ray.id = imagePixelId;
-      ray.w = 1.0; // ray weight 1 for no subsamples. mod later
+      ray.w = 1.0;  // ray weight 1 for no subsamples. mod later
       ray.origin = eye;
       ray.type = gvt::render::actor::Ray::PRIMARY;
       // calculate scale factors -1.0 < x,y < 1.0
@@ -846,13 +905,18 @@ void MpiRenderer::generatePrimaryRays(RayVector &rays) {
       y = 2.0 * float(j) / float(imageHeight - 1) - 1.0;
       // calculate ray direction in camera space;
       glm::vec3 camera_space_ray_direction;
-      camera_space_ray_direction[0] = cam2wrld[0][0] * x + cam2wrld[0][1] * y + z[0];
-      camera_space_ray_direction[1] = cam2wrld[1][0] * x + cam2wrld[1][1] * y + z[1];
-      camera_space_ray_direction[2] = cam2wrld[2][0] * x + cam2wrld[2][1] * y + z[2];
+      camera_space_ray_direction[0] =
+          cam2wrld[0][0] * x + cam2wrld[0][1] * y + z[0];
+      camera_space_ray_direction[1] =
+          cam2wrld[1][0] * x + cam2wrld[1][1] * y + z[1];
+      camera_space_ray_direction[2] =
+          cam2wrld[2][0] * x + cam2wrld[2][1] * y + z[2];
       // camera_space_ray_direction =
-      //     camera_normal_basis_vector + x * camera_horiz_basis_vector + y * camera_vert_basis_vector;
+      //     camera_normal_basis_vector + x * camera_horiz_basis_vector + y *
+      //     camera_vert_basis_vector;
       // transform ray to world coordinate space;
-      // ray.setDirection(cameraToWorld * glm::normalize(camera_space_ray_direction));
+      // ray.setDirection(cameraToWorld *
+      // glm::normalize(camera_space_ray_direction));
       ray.direction = glm::normalize(camera_space_ray_direction);
       ray.depth = 0;
     }
@@ -861,36 +925,44 @@ void MpiRenderer::generatePrimaryRays(RayVector &rays) {
 
 void MpiRenderer::filterRaysLocally(RayVector &rays) {
   shuffleDropRays(rays);
-  // auto nullNode = gvt::core::DBNodeH(); // temporary workaround until shuffleRays is fully replaced
-  // GVT_DEBUG(DBG_ALWAYS, "image scheduler: filter locally non mpi: " << rays.size());
+  // auto nullNode = gvt::core::DBNodeH(); // temporary workaround until
+  // shuffleRays is fully replaced
+  // GVT_DEBUG(DBG_ALWAYS, "image scheduler: filter locally non mpi: " <<
+  // rays.size());
   // shuffleRays(rays, nullNode);
 }
 
 void MpiRenderer::shuffleDropRays(RayVector &rays) {
-  const size_t chunksize = MAX(2, rays.size() / (std::thread::hardware_concurrency() * 4));
-  static gvt::render::data::accel::BVH &acc = *dynamic_cast<gvt::render::data::accel::BVH *>(acceleration);
+  const size_t chunksize =
+      MAX(2, rays.size() / (std::thread::hardware_concurrency() * 4));
+  static gvt::render::data::accel::BVH &acc =
+      *dynamic_cast<gvt::render::data::accel::BVH *>(acceleration);
   static tbb::simple_partitioner ap;
-  tbb::parallel_for(tbb::blocked_range<gvt::render::actor::RayVector::iterator>(rays.begin(), rays.end(), chunksize),
-                    [&](tbb::blocked_range<gvt::render::actor::RayVector::iterator> raysit) {
-                      std::vector<gvt::render::data::accel::BVH::hit> hits =
-                          acc.intersect<GVT_SIMD_WIDTH>(raysit.begin(), raysit.end(), -1);
-                      std::map<int, gvt::render::actor::RayVector> local_queue;
-                      for (size_t i = 0; i < hits.size(); i++) {
-                        gvt::render::actor::Ray &r = *(raysit.begin() + i);
-                        if (hits[i].next != -1) {
-                          r.origin = r.origin + r.direction * (hits[i].t * 0.8f);
-                          const bool inRank = mpiInstanceMap[hits[i].next] == myRank;
-                          if (inRank) local_queue[hits[i].next].push_back(r);
-                        }
-                      }
-                      for (auto &q : local_queue) {
-                        rayQMutex[q.first].lock();
-                        rayQ[q.first].insert(rayQ[q.first].end(), std::make_move_iterator(local_queue[q.first].begin()),
-                                             std::make_move_iterator(local_queue[q.first].end()));
-                        rayQMutex[q.first].unlock();
-                      }
-                    },
-                    ap);
+  tbb::parallel_for(
+      tbb::blocked_range<gvt::render::actor::RayVector::iterator>(
+          rays.begin(), rays.end(), chunksize),
+      [&](tbb::blocked_range<gvt::render::actor::RayVector::iterator> raysit) {
+        std::vector<gvt::render::data::accel::BVH::hit> hits =
+            acc.intersect<GVT_SIMD_WIDTH>(raysit.begin(), raysit.end(), -1);
+        std::map<int, gvt::render::actor::RayVector> local_queue;
+        for (size_t i = 0; i < hits.size(); i++) {
+          gvt::render::actor::Ray &r = *(raysit.begin() + i);
+          if (hits[i].next != -1) {
+            r.origin = r.origin + r.direction * (hits[i].t * 0.8f);
+            const bool inRank = mpiInstanceMap[hits[i].next] == myRank;
+            if (inRank) local_queue[hits[i].next].push_back(r);
+          }
+        }
+        for (auto &q : local_queue) {
+          rayQMutex[q.first].lock();
+          rayQ[q.first].insert(
+              rayQ[q.first].end(),
+              std::make_move_iterator(local_queue[q.first].begin()),
+              std::make_move_iterator(local_queue[q.first].end()));
+          rayQMutex[q.first].unlock();
+        }
+      },
+      ap);
 
   rays.clear();
 }
@@ -904,8 +976,10 @@ void MpiRenderer::domainTracer(RayVector &rays) {
   Timer t_wait_schedule;
   // Timer t_composite;
 
-  GVT_DEBUG(DBG_ALWAYS, "domain scheduler: starting, num rays: " << rays.size());
-  gvt::core::DBNodeH root = gvt::render::RenderContext::instance()->getRootNode();
+  GVT_DEBUG(DBG_ALWAYS,
+            "domain scheduler: starting, num rays: " << rays.size());
+  gvt::core::DBNodeH root =
+      gvt::render::RenderContext::instance()->getRootNode();
 
   clearBuffer();
   int adapterType = root["Schedule"]["adapter"].value().toInteger();
@@ -915,7 +989,8 @@ void MpiRenderer::domainTracer(RayVector &rays) {
   // FindNeighbors();
 
   // sort rays into queues
-  // note: right now throws away rays that do not hit any domain owned by the current
+  // note: right now throws away rays that do not hit any domain owned by the
+  // current
   // rank
   t_filter.start();
   filterRaysLocally(rays);
@@ -962,11 +1037,13 @@ void MpiRenderer::domainTracer(RayVector &rays) {
       instTarget = -1;
       instTargetCount = 0;
 
-      GVT_DEBUG(DBG_ALWAYS, "domain scheduler: selecting next instance, num queues: " << rayQ.size());
-      // for (std::map<int, gvt::render::actor::RayVector>::iterator q = this->queue.begin(); q != this->queue.end();
+      GVT_DEBUG(DBG_ALWAYS,
+                "domain scheduler: selecting next instance, num queues: "
+                    << rayQ.size());
+      // for (std::map<int, gvt::render::actor::RayVector>::iterator q =
+      // this->queue.begin(); q != this->queue.end();
       //      ++q) {
       for (auto &q : rayQ) {
-
         const bool inRank = mpiInstanceMap[q.first] == myRank;
         if (inRank && q.second.size() > instTargetCount) {
           instTargetCount = q.second.size();
@@ -981,7 +1058,8 @@ void MpiRenderer::domainTracer(RayVector &rays) {
       t_schedule.stop();
       profiler.update(Profiler::Schedule, t_schedule.getElapsed());
 
-      GVT_DEBUG(DBG_ALWAYS, "image scheduler: next instance: " << instTarget << ", rays: " << instTargetCount);
+      GVT_DEBUG(DBG_ALWAYS, "image scheduler: next instance: "
+                                << instTarget << ", rays: " << instTargetCount);
 #ifdef SCHEDULE_IF_NEEDED
       if (instTarget < 0) {
         wait_schedule = true;
@@ -992,7 +1070,8 @@ void MpiRenderer::domainTracer(RayVector &rays) {
 #endif
         t_adapter.start();
         gvt::render::Adapter *adapter = 0;
-        // gvt::core::DBNodeH meshNode = instancenodes[instTarget]["meshRef"].deRef();
+        // gvt::core::DBNodeH meshNode =
+        // instancenodes[instTarget]["meshRef"].deRef();
 
         gvt::render::data::primitives::Mesh *mesh = meshRef[instTarget];
 
@@ -1009,28 +1088,34 @@ void MpiRenderer::domainTracer(RayVector &rays) {
           GVT_DEBUG(DBG_ALWAYS, "image scheduler: creating new adapter");
           switch (adapterType) {
 #ifdef GVT_RENDER_ADAPTER_EMBREE
-          case gvt::render::adapter::Embree:
-            adapter = new gvt::render::adapter::embree::data::EmbreeMeshAdapter(mesh);
-            break;
+            case gvt::render::adapter::Embree:
+              adapter =
+                  new gvt::render::adapter::embree::data::EmbreeMeshAdapter(
+                      mesh);
+              break;
 #endif
 #ifdef GVT_RENDER_ADAPTER_MANTA
-          case gvt::render::adapter::Manta:
-            adapter = new gvt::render::adapter::manta::data::MantaMeshAdapter(mesh);
-            break;
+            case gvt::render::adapter::Manta:
+              adapter =
+                  new gvt::render::adapter::manta::data::MantaMeshAdapter(mesh);
+              break;
 #endif
 #ifdef GVT_RENDER_ADAPTER_OPTIX
-          case gvt::render::adapter::Optix:
-            adapter = new gvt::render::adapter::optix::data::OptixMeshAdapter(mesh);
-            break;
+            case gvt::render::adapter::Optix:
+              adapter =
+                  new gvt::render::adapter::optix::data::OptixMeshAdapter(mesh);
+              break;
 #endif
 
 #if defined(GVT_RENDER_ADAPTER_OPTIX) && defined(GVT_RENDER_ADAPTER_EMBREE)
-          case gvt::render::adapter::Heterogeneous:
-            adapter = new gvt::render::adapter::heterogeneous::data::HeterogeneousMeshAdapter(mesh);
-            break;
+            case gvt::render::adapter::Heterogeneous:
+              adapter = new gvt::render::adapter::heterogeneous::data::
+                  HeterogeneousMeshAdapter(mesh);
+              break;
 #endif
-          default:
-            GVT_DEBUG(DBG_SEVERE, "image scheduler: unknown adapter type: " << adapterType);
+            default:
+              GVT_DEBUG(DBG_SEVERE, "image scheduler: unknown adapter type: "
+                                        << adapterType);
           }
 
           adapterCache[mesh] = adapter;
@@ -1047,8 +1132,8 @@ void MpiRenderer::domainTracer(RayVector &rays) {
 #ifdef GVT_USE_DEBUG
           boost::timer::auto_cpu_timer t("Tracing rays in adapter: %w\n");
 #endif
-          adapter->trace(rayQ[instTarget], moved_rays, instM[instTarget], instMinv[instTarget], instMinvN[instTarget],
-                         lights);
+          adapter->trace(rayQ[instTarget], moved_rays, instM[instTarget],
+                         instMinv[instTarget], instMinvN[instTarget], lights);
 
           rayQ[instTarget].clear();
 
@@ -1092,43 +1177,51 @@ void MpiRenderer::shuffleRays(gvt::render::actor::RayVector &rays, int domID) {
   GVT_DEBUG(DBG_ALWAYS, "[" << myRank << "] Shuffle: start");
   GVT_DEBUG(DBG_ALWAYS, "[" << myRank << "] Shuffle: rays: " << rays.size());
 
-  const size_t chunksize = MAX(2, rays.size() / (std::thread::hardware_concurrency() * 4));
-  static gvt::render::data::accel::BVH &acc = *dynamic_cast<gvt::render::data::accel::BVH *>(acceleration);
+  const size_t chunksize =
+      MAX(2, rays.size() / (std::thread::hardware_concurrency() * 4));
+  static gvt::render::data::accel::BVH &acc =
+      *dynamic_cast<gvt::render::data::accel::BVH *>(acceleration);
   static tbb::simple_partitioner ap;
-  tbb::parallel_for(tbb::blocked_range<gvt::render::actor::RayVector::iterator>(rays.begin(), rays.end(), chunksize),
-                    [&](tbb::blocked_range<gvt::render::actor::RayVector::iterator> raysit) {
-                      std::vector<gvt::render::data::accel::BVH::hit> hits =
-                          acc.intersect<GVT_SIMD_WIDTH>(raysit.begin(), raysit.end(), domID);
-                      std::map<int, gvt::render::actor::RayVector> local_queue;
-                      for (size_t i = 0; i < hits.size(); i++) {
-                        gvt::render::actor::Ray &r = *(raysit.begin() + i);
-                        if (hits[i].next != -1) {
-                          r.origin = r.origin + r.direction * (hits[i].t * 0.95f);
-                          local_queue[hits[i].next].push_back(r);
-                        } else if (r.type == gvt::render::actor::Ray::SHADOW && glm::length(r.color) > 0) {
-                          tbb::mutex::scoped_lock fbloc(colorBufMutex[r.id % options.width]);
-                          colorBuf[r.id] += r.color;
-                        }
-                      }
-                      for (auto &q : local_queue) {
-
-                        rayQMutex[q.first].lock();
-                        rayQ[q.first].insert(rayQ[q.first].end(), std::make_move_iterator(local_queue[q.first].begin()),
-                                             std::make_move_iterator(local_queue[q.first].end()));
-                        rayQMutex[q.first].unlock();
-                      }
-                    },
-                    ap);
+  tbb::parallel_for(
+      tbb::blocked_range<gvt::render::actor::RayVector::iterator>(
+          rays.begin(), rays.end(), chunksize),
+      [&](tbb::blocked_range<gvt::render::actor::RayVector::iterator> raysit) {
+        std::vector<gvt::render::data::accel::BVH::hit> hits =
+            acc.intersect<GVT_SIMD_WIDTH>(raysit.begin(), raysit.end(), domID);
+        std::map<int, gvt::render::actor::RayVector> local_queue;
+        for (size_t i = 0; i < hits.size(); i++) {
+          gvt::render::actor::Ray &r = *(raysit.begin() + i);
+          if (hits[i].next != -1) {
+            r.origin = r.origin + r.direction * (hits[i].t * 0.95f);
+            local_queue[hits[i].next].push_back(r);
+          } else if (r.type == gvt::render::actor::Ray::SHADOW &&
+                     glm::length(r.color) > 0) {
+            tbb::mutex::scoped_lock fbloc(colorBufMutex[r.id % options.width]);
+            colorBuf[r.id] += r.color;
+          }
+        }
+        for (auto &q : local_queue) {
+          rayQMutex[q.first].lock();
+          rayQ[q.first].insert(
+              rayQ[q.first].end(),
+              std::make_move_iterator(local_queue[q.first].begin()),
+              std::make_move_iterator(local_queue[q.first].end()));
+          rayQMutex[q.first].unlock();
+        }
+      },
+      ap);
   rays.clear();
 }
 
 void MpiRenderer::localComposite() {
   const size_t size = options.width * options.height;
-  const size_t chunksize = MAX(2, size / (std::thread::hardware_concurrency() * 4));
+  const size_t chunksize =
+      MAX(2, size / (std::thread::hardware_concurrency() * 4));
   static tbb::simple_partitioner ap;
   tbb::parallel_for(tbb::blocked_range<size_t>(0, size, chunksize),
                     [&](tbb::blocked_range<size_t> chunk) {
-                      for (size_t i = chunk.begin(); i < chunk.end(); i++) image->Add(i, colorBuf[i]);
+                      for (size_t i = chunk.begin(); i < chunk.end(); i++)
+                        image->Add(i, colorBuf[i]);
                     },
                     ap);
 }
@@ -1149,25 +1242,31 @@ void MpiRenderer::gatherFramebuffers() {
 
   int rgb_buf_size = 3 * size;
 
-  unsigned char *bufs = (myRank == 0) ? new unsigned char[numRanks * rgb_buf_size] : NULL;
+  unsigned char *bufs =
+      (myRank == 0) ? new unsigned char[numRanks * rgb_buf_size] : NULL;
 
   // MPI_Barrier(MPI_COMM_WORLD);
-  MPI_Gather(rgb, rgb_buf_size, MPI_UNSIGNED_CHAR, bufs, rgb_buf_size, MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);
+  MPI_Gather(rgb, rgb_buf_size, MPI_UNSIGNED_CHAR, bufs, rgb_buf_size,
+             MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);
   if (myRank == 0) {
-    const size_t chunksize = MAX(2, size / (std::thread::hardware_concurrency() * 4));
+    const size_t chunksize =
+        MAX(2, size / (std::thread::hardware_concurrency() * 4));
     static tbb::simple_partitioner ap;
-    tbb::parallel_for(tbb::blocked_range<size_t>(0, size, chunksize), [&](tbb::blocked_range<size_t> chunk) {
+    tbb::parallel_for(tbb::blocked_range<size_t>(0, size, chunksize),
+                      [&](tbb::blocked_range<size_t> chunk) {
 
-      for (int j = chunk.begin() * 3; j < chunk.end() * 3; j += 3) {
-        for (size_t i = 1; i < numRanks; ++i) {
-          int p = i * rgb_buf_size + j;
-          // assumes black background, so adding is fine (r==g==b== 0)
-          rgb[j + 0] += bufs[p + 0];
-          rgb[j + 1] += bufs[p + 1];
-          rgb[j + 2] += bufs[p + 2];
-        }
-      }
-    });
+                        for (int j = chunk.begin() * 3; j < chunk.end() * 3;
+                             j += 3) {
+                          for (size_t i = 1; i < numRanks; ++i) {
+                            int p = i * rgb_buf_size + j;
+                            // assumes black background, so adding is fine
+                            // (r==g==b== 0)
+                            rgb[j + 0] += bufs[p + 0];
+                            rgb[j + 1] += bufs[p + 1];
+                            rgb[j + 2] += bufs[p + 2];
+                          }
+                        }
+                      });
     // image->Write();
   }
   delete[] bufs;
@@ -1196,17 +1295,21 @@ void MpiRenderer::gatherTimes() {
 #endif
   }
 
-  MPI_Gather(static_cast<const void *>(&profiler.times[0]), Profiler::NumTimers, MPI_DOUBLE,
-             static_cast<void *>(&profiler.gtimes[0]), Profiler::NumTimers, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+  MPI_Gather(static_cast<const void *>(&profiler.times[0]), Profiler::NumTimers,
+             MPI_DOUBLE, static_cast<void *>(&profiler.gtimes[0]),
+             Profiler::NumTimers, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
 #ifdef PROFILE_RAY_COUNTS
-  MPI_Gather(static_cast<const void *>(&profiler.rays), sizeof(Profiler::RayCounts), MPI_BYTE,
-             static_cast<void *>(&profiler.grays[0]), sizeof(Profiler::RayCounts), MPI_BYTE, 0, MPI_COMM_WORLD);
+  MPI_Gather(static_cast<const void *>(&profiler.rays),
+             sizeof(Profiler::RayCounts), MPI_BYTE,
+             static_cast<void *>(&profiler.grays[0]),
+             sizeof(Profiler::RayCounts), MPI_BYTE, 0, MPI_COMM_WORLD);
 #endif
 
   if (myRank == 0) {
     profiler.print(options.numFrames, numRanks);
-    // for (int i = 0; i < profiler.gtimes.size(); ++i) printf("[%d]=%f\n", i, profiler.gtimes[i]);
+    // for (int i = 0; i < profiler.gtimes.size(); ++i) printf("[%d]=%f\n", i,
+    // profiler.gtimes[i]);
   }
 
   pthread_mutex_lock(&gatherTimesDoneMutex);
@@ -1221,15 +1324,19 @@ void MpiRenderer::filterRaysLocallyImageScheduler(RayVector &rays) {
   int ray_portion = rays.size() / numRanks;
   std::size_t rays_start = myRank * ray_portion;
   std::size_t rays_end =
-      (myRank + 1) == numRanks ? rays.size() : (myRank + 1) * ray_portion; // tack on any odd rays to last proc
+      (myRank + 1) == numRanks
+          ? rays.size()
+          : (myRank + 1) * ray_portion;  // tack on any odd rays to last proc
   if (numRanks > 1) {
-    GVT_DEBUG(DBG_ALWAYS, "image scheduler: filter locally mpi: [" << rays_start << ", " << rays_end << "]");
+    GVT_DEBUG(DBG_ALWAYS, "image scheduler: filter locally mpi: ["
+                              << rays_start << ", " << rays_end << "]");
     gvt::render::actor::RayVector lrays;
     lrays.assign(rays.begin() + rays_start, rays.begin() + rays_end);
     rays.clear();
     shuffleRays(lrays, -1);
   } else {
-    GVT_DEBUG(DBG_ALWAYS, "image scheduler: filter locally non mpi: " << rays.size());
+    GVT_DEBUG(DBG_ALWAYS,
+              "image scheduler: filter locally non mpi: " << rays.size());
     shuffleRays(rays, -1);
   }
 }
@@ -1246,9 +1353,11 @@ void MpiRenderer::imageTracer(RayVector &rays) {
   gvt::core::time::timer t_filter(false, "image tracer: filter :");
 
   GVT_DEBUG(DBG_ALWAYS, "image scheduler: starting, num rays: " << rays.size());
-  gvt::core::DBNodeH root = gvt::render::RenderContext::instance()->getRootNode();
+  gvt::core::DBNodeH root =
+      gvt::render::RenderContext::instance()->getRootNode();
 
-  GVT_ASSERT((instancenodes.size() > 0), "image scheduler: instance list is null");
+  GVT_ASSERT((instancenodes.size() > 0),
+             "image scheduler: instance list is null");
   int adapterType = root["Schedule"]["adapter"].value().toInteger();
 
   clearBuffer();
@@ -1267,20 +1376,26 @@ void MpiRenderer::imageTracer(RayVector &rays) {
     instTargetCount = 0;
 
     t_sort.resume();
-    GVT_DEBUG(DBG_ALWAYS, "image scheduler: selecting next instance, num queues: " << this->rayQ.size());
-    for (std::map<int, gvt::render::actor::RayVector>::iterator q = this->rayQ.begin(); q != this->rayQ.end(); ++q) {
+    GVT_DEBUG(DBG_ALWAYS,
+              "image scheduler: selecting next instance, num queues: "
+                  << this->rayQ.size());
+    for (std::map<int, gvt::render::actor::RayVector>::iterator q =
+             this->rayQ.begin();
+         q != this->rayQ.end(); ++q) {
       if (q->second.size() > (size_t)instTargetCount) {
         instTargetCount = q->second.size();
         instTarget = q->first;
       }
     }
     t_sort.stop();
-    GVT_DEBUG(DBG_ALWAYS, "image scheduler: next instance: " << instTarget << ", rays: " << instTargetCount);
+    GVT_DEBUG(DBG_ALWAYS, "image scheduler: next instance: "
+                              << instTarget << ", rays: " << instTargetCount);
 
     if (instTarget >= 0) {
       t_adapter.resume();
       gvt::render::Adapter *adapter = 0;
-      // gvt::core::DBNodeH meshNode = instancenodes[instTarget]["meshRef"].deRef();
+      // gvt::core::DBNodeH meshNode =
+      // instancenodes[instTarget]["meshRef"].deRef();
 
       gvt::render::data::primitives::Mesh *mesh = meshRef[instTarget];
 
@@ -1297,28 +1412,33 @@ void MpiRenderer::imageTracer(RayVector &rays) {
         GVT_DEBUG(DBG_ALWAYS, "image scheduler: creating new adapter");
         switch (adapterType) {
 #ifdef GVT_RENDER_ADAPTER_EMBREE
-        case gvt::render::adapter::Embree:
-          adapter = new gvt::render::adapter::embree::data::EmbreeMeshAdapter(mesh);
-          break;
+          case gvt::render::adapter::Embree:
+            adapter =
+                new gvt::render::adapter::embree::data::EmbreeMeshAdapter(mesh);
+            break;
 #endif
 #ifdef GVT_RENDER_ADAPTER_MANTA
-        case gvt::render::adapter::Manta:
-          adapter = new gvt::render::adapter::manta::data::MantaMeshAdapter(mesh);
-          break;
+          case gvt::render::adapter::Manta:
+            adapter =
+                new gvt::render::adapter::manta::data::MantaMeshAdapter(mesh);
+            break;
 #endif
 #ifdef GVT_RENDER_ADAPTER_OPTIX
-        case gvt::render::adapter::Optix:
-          adapter = new gvt::render::adapter::optix::data::OptixMeshAdapter(mesh);
-          break;
+          case gvt::render::adapter::Optix:
+            adapter =
+                new gvt::render::adapter::optix::data::OptixMeshAdapter(mesh);
+            break;
 #endif
 
 #if defined(GVT_RENDER_ADAPTER_OPTIX) && defined(GVT_RENDER_ADAPTER_EMBREE)
-        case gvt::render::adapter::Heterogeneous:
-          adapter = new gvt::render::adapter::heterogeneous::data::HeterogeneousMeshAdapter(mesh);
-          break;
+          case gvt::render::adapter::Heterogeneous:
+            adapter = new gvt::render::adapter::heterogeneous::data::
+                HeterogeneousMeshAdapter(mesh);
+            break;
 #endif
-        default:
-          GVT_DEBUG(DBG_SEVERE, "image scheduler: unknown adapter type: " << adapterType);
+          default:
+            GVT_DEBUG(DBG_SEVERE,
+                      "image scheduler: unknown adapter type: " << adapterType);
         }
 
         adapterCache[mesh] = adapter;
@@ -1334,8 +1454,8 @@ void MpiRenderer::imageTracer(RayVector &rays) {
 #ifdef GVT_USE_DEBUG
         boost::timer::auto_cpu_timer t("Tracing rays in adapter: %w\n");
 #endif
-        adapter->trace(this->rayQ[instTarget], moved_rays, instM[instTarget], instMinv[instTarget],
-                       instMinvN[instTarget], lights);
+        adapter->trace(this->rayQ[instTarget], moved_rays, instM[instTarget],
+                       instMinv[instTarget], instMinvN[instTarget], lights);
 
         this->rayQ[instTarget].clear();
 
@@ -1358,19 +1478,30 @@ void MpiRenderer::imageTracer(RayVector &rays) {
   }
   t_gather.stop();
   t_frame.stop();
-  GVT_DEBUG(DBG_ALWAYS, "image scheduler: adapter cache size: " << adapterCache.size());
-  // std::cout << "Timers ---------------------------------------------------------------" << std::endl;
-  // std::cout << "image scheduler: filter time: " << t_filter.format() << std::endl;
-  // std::cout << "image scheduler: select time: " << t_sort.format() << std::endl;
-  // std::cout << "image scheduler: adapter time: " << t_adapter.format() << std::endl;
-  // std::cout << "image scheduler: trace time: " << t_trace.format() << std::endl;
-  // std::cout << "image scheduler: shuffle time: " << t_shuffle.format() << std::endl;
-  // std::cout << "image scheduler: gather time: " << t_gather.format() << std::endl;
-  // std::cout << "image scheduler: frame time: " << t_frame.format() << std::endl;
+  GVT_DEBUG(DBG_ALWAYS,
+            "image scheduler: adapter cache size: " << adapterCache.size());
+  // std::cout << "Timers
+  // ---------------------------------------------------------------" <<
+  // std::endl;
+  // std::cout << "image scheduler: filter time: " << t_filter.format() <<
+  // std::endl;
+  // std::cout << "image scheduler: select time: " << t_sort.format() <<
+  // std::endl;
+  // std::cout << "image scheduler: adapter time: " << t_adapter.format() <<
+  // std::endl;
+  // std::cout << "image scheduler: trace time: " << t_trace.format() <<
+  // std::endl;
+  // std::cout << "image scheduler: shuffle time: " << t_shuffle.format() <<
+  // std::endl;
+  // std::cout << "image scheduler: gather time: " << t_gather.format() <<
+  // std::endl;
+  // std::cout << "image scheduler: frame time: " << t_frame.format() <<
+  // std::endl;
 
   t_all = t_sort + t_trace + t_shuffle + t_gather + t_adapter + t_filter;
   t_diff = t_frame - t_all;
-  // std::cout << "image scheduler: added time: " << a.format() << " { unaccounted time: " << (t_frame - a).format()
+  // std::cout << "image scheduler: added time: " << a.format() << " {
+  // unaccounted time: " << (t_frame - a).format()
   //           << " }" << std::endl;
 }
 
