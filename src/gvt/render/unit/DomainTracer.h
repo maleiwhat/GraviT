@@ -61,10 +61,34 @@ class Worker;
 
 class DomainTracer : public RayTracer, public AbstractTrace {
  public:
-  DomainTracer(RayVector &rays, Image &image) : AbstractTrace(rays, image) {}
+  DomainTracer(RayVector &rays, Image &image);
   virtual ~DomainTracer() {}
 
   virtual void Trace(Worker *worker);
+
+ private:
+  void shuffleDropRays(gvt::render::actor::RayVector &rays);
+  void FilterRaysLocally();
+  void Render();
+  bool SendRays();
+
+ private:
+  std::set<int> neighbors;
+
+  size_t rays_start, rays_end;
+
+  // caches meshes that are converted into the adapter's format
+  std::map<gvt::render::data::primitives::Mesh *, gvt::render::Adapter *>
+      adapterCache;
+  std::map<int, size_t> mpiInstanceMap;
+#ifdef GVT_USE_MPE
+  int tracestart, traceend;
+  int shufflestart, shuffleend;
+  int framebufferstart, framebufferend;
+  int localrayfilterstart, localrayfilterend;
+  int intersectbvhstart, intersectbvhend;
+  int marchinstart, marchinend;
+#endif
 };
 
 }  // namespace unit

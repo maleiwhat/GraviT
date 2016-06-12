@@ -487,11 +487,10 @@ void Render(int argc, char **argv) {
 
   // create database
   if (options.tracer != Options::PING_TEST) {
+    std::cout << "rank " << rank << " creating database." << std::endl;
     t_database.start();
     CreateDatabase(options);
     t_database.stop();
-    std::cout << "rank " << rank << " created database. " << t_database
-              << std::endl;
   }
 
   // create a ray tracer
@@ -500,7 +499,7 @@ void Render(int argc, char **argv) {
     tracer = new PingTracer;
   } else if (options.tracer == Options::ASYNC_DOMAIN) {
     g_image = new Image(g_camera->getFilmSizeWidth(),
-                        g_camera->getFilmSizeHeight(), "ply");
+                        g_camera->getFilmSizeHeight(), "mpi");
     tracer = new DomainTracer(g_camera->rays, *g_image);
   } else {
     std::cout << "rank " << rank << " error found unsupported tracer type "
@@ -520,8 +519,14 @@ void Render(int argc, char **argv) {
     PingTest::Register(&worker);
     RemoteRays::Register(&worker);
 
+    // gerenate primary rays
+    g_camera->AllocateCameraRays();
+    g_camera->generateRays();
+
     // start the worker
     worker.Start(argc, argv);
+    
+    g_image->Write();
   }
 
   // clean up
