@@ -33,6 +33,7 @@
 
 #include <sys/stat.h>
 #include <tbb/task_scheduler_init.h>
+#include <cstdlib>
 #include <iostream>
 #include <thread>
 
@@ -41,6 +42,7 @@
 #include "gvt/render/unit/CommonWorks.h"
 #include "gvt/render/unit/DomainTracer.h"
 #include "gvt/render/unit/DomainWorks.h"
+#include "gvt/render/unit/TestTracer.h"
 #include "gvt/render/unit/Worker.h"
 
 #ifndef MAX
@@ -53,19 +55,21 @@
 
 namespace apps {
 namespace render {
+namespace mpi {
 
 struct Options {
   enum SchedulerType {
-    ASYNC_IMAGE = 0,
+    PING_TEST = 0,
+    ASYNC_IMAGE,
     ASYNC_DOMAIN,
     SYNC_IMAGE,
     SYNC_DOMAIN,
-    NUM_SCHEDULERS
+    NUM_TRACERS
   };
 
   enum AdapterType { EMBREE, MANTA, OPTIX };
 
-  int schedulerType = ASYNC_DOMAIN;
+  int tracerType = ASYNC_DOMAIN;
   int adapterType = EMBREE;
   int width = 1920;
   int height = 1080;
@@ -89,9 +93,10 @@ void PrintUsage(const char* argv) {
       "  -i, --infile <infile> (default: ../data/geom/bunny.obj for obj and "
       "./EnzoPlyData/Enzo8 for ply)\n");
   printf("  -a, --adapter <embree | manta | optix> (default: embree)\n");
-  printf("  -s, --scheduler <0-3> (default: 1)\n");
+  printf("  -t, --tracer <0-3> (default: 2)\n");
   printf(
-      "      0: ASYNC_IMAGE, 1: ASYNC_DOMAIN, 2: SYNC_IMAGE, 3: SYNC_DOMAIN\n");
+      "      0: PING_TEST, 0: ASYNC_IMAGE, 1: ASYNC_DOMAIN, 2: SYNC_IMAGE, 3: "
+      "SYNC_DOMAIN\n");
   printf(
       "  -n, --num-instances <x, y, z> specify the number of instances in each "
       "direction (default: 1 1 1). "
@@ -100,7 +105,7 @@ void PrintUsage(const char* argv) {
   printf("  -W, --width <image_width> (default: 1920)\n");
   printf("  -H, --height <image_height> (default: 1080)\n");
   printf("  -N, --num-frames <num_frames> (default: 1)\n");
-  printf("  -t, --tbb <num_tbb_threads>\n");
+  printf("  --tbb <num_tbb_threads>\n");
   printf(
       "      (default: # cores for sync. schedulers or # cores - 2 for async. "
       "schedulers)\n");
@@ -132,11 +137,10 @@ void ParseCommandLine(int argc, char** argv, Options* options) {
         printf("error: %s not defined\n", argv[i]);
         exit(1);
       }
-    } else if (strcmp(argv[i], "-s") == 0 ||
-               strcmp(argv[i], "--scheduler") == 0) {
-      options->schedulerType = atoi(argv[++i]);
-      if (options->schedulerType < 0 ||
-          options->schedulerType >= Options::NUM_SCHEDULERS) {
+    } else if (strcmp(argv[i], "-t") == 0 || strcmp(argv[i], "--tracer") == 0) {
+      options->tracerType = atoi(argv[++i]);
+      if (options->tracerType < 0 ||
+          options->tracerType >= Options::NUM_TRACERS) {
         printf("error: %s not defined\n", argv[i]);
         exit(1);
       }
@@ -145,8 +149,9 @@ void ParseCommandLine(int argc, char** argv, Options* options) {
       options->instanceCountX = atoi(argv[++i]);
       options->instanceCountY = atoi(argv[++i]);
       options->instanceCountZ = atoi(argv[++i]);
-    // } else if (strcmp(argv[i], "-p") == 0 || strcmp(argv[i], "--ply") == 0) {
-    //   options->ply = true;
+      // } else if (strcmp(argv[i], "-p") == 0 || strcmp(argv[i], "--ply") == 0)
+      // {
+      //   options->ply = true;
     } else if (strcmp(argv[i], "--obj") == 0) {
       options->obj = true;
     } else if (strcmp(argv[i], "-W") == 0 || strcmp(argv[i], "--width") == 0) {
@@ -156,7 +161,7 @@ void ParseCommandLine(int argc, char** argv, Options* options) {
     } else if (strcmp(argv[i], "-N") == 0 ||
                strcmp(argv[i], "--num-frames") == 0) {
       options->numFrames = atoi(argv[++i]);
-    } else if (strcmp(argv[i], "-t") == 0 || strcmp(argv[i], "--tbb") == 0) {
+    } else if (strcmp(argv[i], "--tbb") == 0) {
       options->numTbbThreads = atoi(argv[++i]);
     } else {
       printf("error: %s not defined\n", argv[i]);
@@ -164,7 +169,7 @@ void ParseCommandLine(int argc, char** argv, Options* options) {
     }
   }
   if (options->numTbbThreads <= 0) {
-    if (options->schedulerType == 2 || options->schedulerType == 3) {
+    if (options->tracerType == 2 || options->tracerType == 3) {
       options->numTbbThreads = MAX(1, std::thread::hardware_concurrency());
     } else {
       options->numTbbThreads = MAX(1, std::thread::hardware_concurrency() - 2);
@@ -179,10 +184,11 @@ void ParseCommandLine(int argc, char** argv, Options* options) {
   }
 }
 
+}  // namespace mpi
 }  // namespace render
 }  // namespace apps
 
-using namespace apps::render;
+using namespace apps::render::mpi;
 using namespace gvt::render::unit;
 
 int main(int argc, char** argv) {
@@ -190,7 +196,14 @@ int main(int argc, char** argv) {
   ParseCommandLine(argc, argv, &options);
 
   // create a ray tracer
-  RayTracer* tracer = new DomainTracer;
+  RayTracer* tracer = NULL;
+  if (options.tracerType == Options::PING_TEST) {
+    tracer = new PingTracer;
+  } else {
+    std::cout << "error found unsupported tracer type " << options.tracerType
+              << "\n";
+    exit(1);
+  }
 
   // create a worker
   Worker worker(tracer);

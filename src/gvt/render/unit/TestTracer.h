@@ -31,21 +31,40 @@
    =======================================================================================
    */
 
-#include "gvt/render/unit/DomainTracer.h"
+#ifndef GVT_RENDER_UNIT_TEST_TRACER_H
+#define GVT_RENDER_UNIT_TEST_TRACER_H
 
-#include <iostream>
-
-#include "gvt/render/unit/Worker.h"
-#include "gvt/render/unit/CommonWorks.h"
+#include "gvt/render/unit/RayTracer.h"
 
 namespace gvt {
 namespace render {
 namespace unit {
 
-void DomainTracer::Trace(Worker* worker) {
-}
+class Worker;
+
+class PingTracer : public RayTracer {
+ public:
+  PingTracer() : RayTracer() {}
+  virtual ~PingTracer() {}
+
+  virtual void Trace(Worker *worker) {
+    Work *work = NULL;
+    if (worker->GetMpiSize() > 1) {
+      int rank = worker->GetRank();
+      if (rank == 0) {
+        work = new PingTest(rank);
+        work->Send(1, worker);
+      }
+    } else {
+      std::cout << "need more than 1 rank to do ping test. Terminating.\n";
+      work = new Command(Command::QUIT);
+      work->SendAll(worker);
+    }
+  }
+};
 
 }  // namespace unit
 }  // namespace render
 }  // namespace gvt
 
+#endif
