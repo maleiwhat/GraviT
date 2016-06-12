@@ -62,7 +62,8 @@ if (GVT_RENDER)
   option(GVT_SIMPLE_FILE_LOAD_APP		"Build the simple application (load obj file)" ON)
   option(GVT_PLY_APP "Build the ply reader application (load ply file)" ON)
   option(GVT_CTEST "Build CTEST Unit and Integration tests" ON)
-  option(GVT_MPI_RENDERER_APP "Build the MPI renderer application (load obj file)" ON)
+  # option(GVT_MPI_RENDERER_APP "Build the MPI renderer application (load obj file)" ON)
+  option(GVT_MPI_APP "Build the MPI renderer application" ON)
   add_definitions(-DGVT_RENDER)
 endif(GVT_RENDER)
 
@@ -314,6 +315,13 @@ set(GVT_RENDER_SRCS ${GVT_RENDER_SRCS}
   src/gvt/render/unit/MpiRenderer.cpp
   src/gvt/render/unit/Voter.cpp
   src/apps/render/TestScenes.cpp
+)
+
+set(GVT_MPI_SRCS
+    src/gvt/render/unit/Worker.cpp
+    src/gvt/render/unit/DomainTracer.cpp
+    src/gvt/render/unit/CommonWorks.cpp
+    src/gvt/render/unit/DomainWorks.cpp
 )
 
 
@@ -652,3 +660,14 @@ if (GVT_MPI_RENDERER_APP)
   #target_link_libraries(gvtMpiRenderer gvtCore gvtRender ${GVT_MPI_RENDERER_LIBS})
   target_link_libraries(gvtMpiRenderer gvtCore gvtRender ${GVT_MPI_RENDERER_LIBS} ${CMAKE_THREAD_LIBS_INIT})
 endif(GVT_MPI_RENDERER_APP)
+
+if (GVT_MPI_APP)
+  find_package(MPI REQUIRED)
+  find_package(Threads REQUIRED)
+  include_directories(${MPI_INCLUDE_PATH} src src/apps/render ${PLYPATH})
+  set(GVT_MPI_LIBS ${GVT_MPI_LIBS} ${MPI_LIBRARIES})
+  set(GVT_MPI_SRCS ${GVT_MPI_SRCS} src/apps/render/MpiApp.cpp ${PLYPATH}/ply.c)
+  add_executable(gvtMpi ${GVT_MPI_SRCS})
+  target_link_libraries(gvtMpi gvtCore gvtRender ${GVT_MPI_LIBS} ${CMAKE_THREAD_LIBS_INIT})
+endif(GVT_MPI_APP)
+

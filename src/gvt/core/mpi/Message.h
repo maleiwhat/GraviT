@@ -1,11 +1,12 @@
 #pragma once
 
-#include <mpi.h>
-#include <stdlib.h>
+#include "gvt/core/mpi/Work.h"
+#include "gvt/core/mpi/classes.h"
+#include "gvt/core/mpi/smem.h"
 #include <iostream>
 #include <memory>
-#include "classes.h"
-#include "Work.h"
+#include <mpi.h>
+#include <stdlib.h>
 
 namespace gvt {
 namespace core {
