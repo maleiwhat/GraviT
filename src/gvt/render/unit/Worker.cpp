@@ -73,12 +73,13 @@ void Worker::Send(Work* work) {
 }
 
 void Worker::InitMpi(int argc, char** argv) {
-  int provided;
-  MPI_Init_thread(&argc, &argv, MPI_THREAD_SINGLE, &provided);
-  if (provided != MPI_THREAD_SINGLE) {
-    std::cout << "error mpi_thread_single not available\n";
-    exit(1);
-  }
+  // warning: this should be in the beginning of main()
+  // int provided;
+  // MPI_Init_thread(&argc, &argv, MPI_THREAD_SINGLE, &provided);
+  // if (provided != MPI_THREAD_SINGLE) {
+  //   std::cout << "error mpi_thread_single not available\n";
+  //   exit(1);
+  // }
 
   // warning: MPI_Comm_dup is causing some problem.
   // directly use MPI_COMM_WORLD for now.
@@ -202,8 +203,6 @@ void Worker::Communicator() {
     exit(1);
   }
   pthread_mutex_unlock(&recvQ_mutex);
-
-  MPI_Finalize();
 }
 
 void Worker::RecvWork(const MPI_Status& status, Work* work) {
@@ -235,6 +234,10 @@ void Worker::RecvWork(const MPI_Status& status, Work* work) {
 
   pthread_mutex_lock(&recvQ_mutex);
   recvQ.push(work);
+#ifndef NDEBUG
+  std::cout << "rank " << mpi.rank << "pushed work tag " << work->GetTag()
+            << " to recvQ (size " << recvQ.size() << ")" << std::endl;
+#endif
   pthread_mutex_unlock(&recvQ_mutex);
 }
 

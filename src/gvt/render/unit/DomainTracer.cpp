@@ -43,6 +43,10 @@ namespace render {
 namespace unit {
 
 void DomainTracer::Trace(Worker* worker) {
+  if (worker->GetRank() == 0) {
+    Work* work = new Command(Command::QUIT);
+    work->SendAll(worker);
+  }
 }
 
 }  // namespace unit
