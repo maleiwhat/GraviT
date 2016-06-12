@@ -31,16 +31,163 @@
    =======================================================================================
    */
 
+#include <sys/stat.h>
+#include <tbb/task_scheduler_init.h>
 #include <iostream>
+#include <thread>
 
-#include "gvt/render/unit/Worker.h"
+#include "gvt/core/Math.h"
+
 #include "gvt/render/unit/CommonWorks.h"
-#include "gvt/render/unit/DomainWorks.h"
 #include "gvt/render/unit/DomainTracer.h"
+#include "gvt/render/unit/DomainWorks.h"
+#include "gvt/render/unit/Worker.h"
 
+#ifndef MAX
+#define MAX(a, b) ((a > b) ? (a) : (b))
+#endif
+
+#ifndef MIN
+#define MIN(a, b) ((a < b) ? (a) : (b))
+#endif
+
+namespace apps {
+namespace render {
+
+struct Options {
+  enum SchedulerType {
+    ASYNC_IMAGE = 0,
+    ASYNC_DOMAIN,
+    SYNC_IMAGE,
+    SYNC_DOMAIN,
+    NUM_SCHEDULERS
+  };
+
+  enum AdapterType { EMBREE, MANTA, OPTIX };
+
+  int schedulerType = ASYNC_DOMAIN;
+  int adapterType = EMBREE;
+  int width = 1920;
+  int height = 1080;
+  bool obj = false;
+  int instanceCountX = 1;
+  int instanceCountY = 1;
+  int instanceCountZ = 1;
+  int numFrames = 1;
+  int numTbbThreads;
+  std::string infile;
+};
+
+void PrintUsage(const char* argv) {
+  printf(
+      "Usage : %s [-h] [-i <infile>] [-a <adapter>] [-n <x y z>] [-p] [-s "
+      "<scheduler>] [-W <image_width>] [-H "
+      "<image_height>] [-N <num_frames>] [-t <num_tbb_threads>]\n",
+      argv);
+  printf("  -h, --help\n");
+  printf(
+      "  -i, --infile <infile> (default: ../data/geom/bunny.obj for obj and "
+      "./EnzoPlyData/Enzo8 for ply)\n");
+  printf("  -a, --adapter <embree | manta | optix> (default: embree)\n");
+  printf("  -s, --scheduler <0-3> (default: 1)\n");
+  printf(
+      "      0: ASYNC_IMAGE, 1: ASYNC_DOMAIN, 2: SYNC_IMAGE, 3: SYNC_DOMAIN\n");
+  printf(
+      "  -n, --num-instances <x, y, z> specify the number of instances in each "
+      "direction (default: 1 1 1). "
+      "effective only with obj.\n");
+  printf("  --obj use obj models (not ply models)\n");
+  printf("  -W, --width <image_width> (default: 1920)\n");
+  printf("  -H, --height <image_height> (default: 1080)\n");
+  printf("  -N, --num-frames <num_frames> (default: 1)\n");
+  printf("  -t, --tbb <num_tbb_threads>\n");
+  printf(
+      "      (default: # cores for sync. schedulers or # cores - 2 for async. "
+      "schedulers)\n");
+}
+
+void ParseCommandLine(int argc, char** argv, Options* options) {
+  options->numTbbThreads = -1;
+  for (int i = 1; i < argc; ++i) {
+    if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
+      PrintUsage(argv[0]);
+      exit(1);
+    } else if (strcmp(argv[i], "-i") == 0 || strcmp(argv[i], "--infile") == 0) {
+      options->infile = argv[++i];
+      struct stat buf;
+      if (stat(options->infile.c_str(), &buf) != 0) {
+        printf("error: file not found. %s\n", options->infile.c_str());
+        exit(1);
+      }
+    } else if (strcmp(argv[i], "-a") == 0 ||
+               strcmp(argv[i], "--adapter") == 0) {
+      ++i;
+      if (strcmp(argv[i], "embree") == 0) {
+        options->adapterType = Options::EMBREE;
+      } else if (strcmp(argv[i], "manta") == 0) {
+        options->adapterType = Options::MANTA;
+      } else if (strcmp(argv[i], "optix") == 0) {
+        options->adapterType = Options::OPTIX;
+      } else {
+        printf("error: %s not defined\n", argv[i]);
+        exit(1);
+      }
+    } else if (strcmp(argv[i], "-s") == 0 ||
+               strcmp(argv[i], "--scheduler") == 0) {
+      options->schedulerType = atoi(argv[++i]);
+      if (options->schedulerType < 0 ||
+          options->schedulerType >= Options::NUM_SCHEDULERS) {
+        printf("error: %s not defined\n", argv[i]);
+        exit(1);
+      }
+    } else if (strcmp(argv[i], "-n") == 0 ||
+               strcmp(argv[i], "--num-instances") == 0) {
+      options->instanceCountX = atoi(argv[++i]);
+      options->instanceCountY = atoi(argv[++i]);
+      options->instanceCountZ = atoi(argv[++i]);
+    // } else if (strcmp(argv[i], "-p") == 0 || strcmp(argv[i], "--ply") == 0) {
+    //   options->ply = true;
+    } else if (strcmp(argv[i], "--obj") == 0) {
+      options->obj = true;
+    } else if (strcmp(argv[i], "-W") == 0 || strcmp(argv[i], "--width") == 0) {
+      options->width = atoi(argv[++i]);
+    } else if (strcmp(argv[i], "-H") == 0 || strcmp(argv[i], "--height") == 0) {
+      options->height = atoi(argv[++i]);
+    } else if (strcmp(argv[i], "-N") == 0 ||
+               strcmp(argv[i], "--num-frames") == 0) {
+      options->numFrames = atoi(argv[++i]);
+    } else if (strcmp(argv[i], "-t") == 0 || strcmp(argv[i], "--tbb") == 0) {
+      options->numTbbThreads = atoi(argv[++i]);
+    } else {
+      printf("error: %s not defined\n", argv[i]);
+      exit(1);
+    }
+  }
+  if (options->numTbbThreads <= 0) {
+    if (options->schedulerType == 2 || options->schedulerType == 3) {
+      options->numTbbThreads = MAX(1, std::thread::hardware_concurrency());
+    } else {
+      options->numTbbThreads = MAX(1, std::thread::hardware_concurrency() - 2);
+    }
+  }
+  if (options->infile.empty()) {
+    if (options->obj) {
+      options->infile = std::string("../data/geom/bunny.obj");
+    } else {
+      options->infile = std::string("./EnzoPlyData/Enzo8/");
+    }
+  }
+}
+
+}  // namespace render
+}  // namespace apps
+
+using namespace apps::render;
 using namespace gvt::render::unit;
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
+  Options options;
+  ParseCommandLine(argc, argv, &options);
 
   // create a ray tracer
   RayTracer* tracer = new DomainTracer;
