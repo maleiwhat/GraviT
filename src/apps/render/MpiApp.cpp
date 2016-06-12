@@ -55,6 +55,9 @@
 #include "gvt/render/unit/TestTracer.h"
 #include "gvt/render/unit/Worker.h"
 
+// sync schedule
+#include "gvt/render/algorithm/DomainTracer.h"
+
 // warning: ply.h must be included after tracer related headers
 #include <ply.h>
 
@@ -74,6 +77,8 @@ using namespace gvt::render::unit;
 using namespace gvt::core::time;
 using namespace gvt::render::data::primitives;
 using namespace gvt::render::data::scene;
+using namespace gvt::render::data::scene;
+using namespace gvt::render::schedule;
 
 // global variables
 gvt::render::data::scene::gvtPerspectiveCamera* g_camera = NULL;
@@ -493,24 +498,33 @@ void Render(int argc, char **argv) {
     t_database.stop();
   }
 
+  // create image
+  if (options.tracer != Options::PING_TEST) {
+    g_image = new Image(g_camera->getFilmSizeWidth(),
+                        g_camera->getFilmSizeHeight(), "mpi");
+  }
+
   // create a ray tracer
   RayTracer *tracer = NULL;
   if (options.tracer == Options::PING_TEST) {
     tracer = new PingTracer;
   } else if (options.tracer == Options::ASYNC_DOMAIN) {
-    g_image = new Image(g_camera->getFilmSizeWidth(),
-                        g_camera->getFilmSizeHeight(), "mpi");
     tracer = new DomainTracer(g_camera->rays, *g_image);
+  } else if (options.tracer == Options::SYNC_DOMAIN) {
+    // do nothing
   } else {
     std::cout << "rank " << rank << " error found unsupported tracer type "
               << options.tracer << std::endl;
     exit(1);
   }
 
+  // render
   bool async = (options.tracer == Options::PING_TEST) ||
                (options.tracer == Options::ASYNC_DOMAIN) ||
                (options.tracer == Options::ASYNC_IMAGE);
-  if (async) {
+
+  if (options.tracer == Options::ASYNC_DOMAIN) {
+    if (rank == 0) std::cout << "start ASYNC_DOMAIN" << std::endl;
     // create a worker
     Worker worker(tracer);
 
@@ -526,6 +540,23 @@ void Render(int argc, char **argv) {
     // start the worker
     worker.Start(argc, argv);
     
+    g_image->Write();
+
+  } else if (options.tracer == Options::SYNC_DOMAIN) {
+    if (rank == 0) std::cout << "start SYNC_DOMAIN" << std::endl;
+
+    g_camera->AllocateCameraRays();
+    g_camera->generateRays();
+
+    gvt::render::algorithm::Tracer<DomainScheduler> tracer(g_camera->rays,
+                                                           *g_image);
+    for (int z = 0; z < 10; z++) {
+      g_camera->AllocateCameraRays();
+      g_camera->generateRays();
+      g_image->clear();
+      tracer();
+    }
+
     g_image->Write();
   }
 
