@@ -36,18 +36,35 @@
 
 #include "gvt/render/unit/RayTracer.h"
 
+#include "gvt/render/algorithm/TracerBase.h"
+#include "gvt/render/actor/Ray.h"
+
+namespace gvt {
+namespace render {
+namespace data {
+namespace scene {
+class Image;
+} // namespace scene
+} // namespace data
+}  // namespace render
+}  // namespace gvt
+
 namespace gvt {
 namespace render {
 namespace unit {
 
+using namespace gvt::render::algorithm;
+using namespace gvt::render::actor;
+using namespace gvt::render::data::scene;
+
 class Worker;
 
-class DomainTracer : public RayTracer {
+class DomainTracer : public RayTracer, public AbstractTrace {
  public:
-  DomainTracer() : RayTracer() {}
+  DomainTracer(RayVector &rays, Image &image) : AbstractTrace(rays, image) {}
   virtual ~DomainTracer() {}
 
-  virtual void Trace(Worker* worker);
+  virtual void Trace(Worker *worker);
 };
 
 }  // namespace unit

@@ -36,16 +36,16 @@
 #include <cstdlib>
 #include <iostream>
 #include <thread>
-#include <ply.h>
 
 // timer
 #include "gvt/core/utils/timer.h"
 
 // database
-#include "gvt/render/Types.h"
 #include "gvt/render/RenderContext.h"
+#include "gvt/render/Types.h"
 #include "gvt/render/data/primitives/Material.h"
 #include "gvt/render/data/primitives/Mesh.h"
+#include "gvt/render/data/scene/Image.h"
 #include "gvt/render/data/scene/gvtCamera.h"
 
 // async schedule
@@ -54,6 +54,9 @@
 #include "gvt/render/unit/DomainWorks.h"
 #include "gvt/render/unit/TestTracer.h"
 #include "gvt/render/unit/Worker.h"
+
+// warning: ply.h must be included after tracer related headers
+#include <ply.h>
 
 #ifndef MAX
 #define MAX(a, b) ((a > b) ? (a) : (b))
@@ -67,7 +70,14 @@ namespace apps {
 namespace render {
 namespace mpi {
 
+using namespace gvt::render::unit;
+using namespace gvt::core::time;
 using namespace gvt::render::data::primitives;
+using namespace gvt::render::data::scene;
+
+// global variables
+gvt::render::data::scene::gvtPerspectiveCamera* g_camera = NULL;
+gvt::render::data::scene::Image *g_image = NULL;
 
 typedef struct Vertex {
   float x, y, z;
@@ -82,18 +92,19 @@ typedef struct Face {
 } Face;
 
 PlyProperty vert_props[] = {
-  /* list of property information for a vertex */
-  { "x", Float32, Float32, offsetof(Vertex, x), 0, 0, 0, 0 },
-  { "y", Float32, Float32, offsetof(Vertex, y), 0, 0, 0, 0 },
-  { "z", Float32, Float32, offsetof(Vertex, z), 0, 0, 0, 0 },
-  { "nx", Float32, Float32, offsetof(Vertex, nx), 0, 0, 0, 0 },
-  { "ny", Float32, Float32, offsetof(Vertex, ny), 0, 0, 0, 0 },
-  { "nz", Float32, Float32, offsetof(Vertex, nz), 0, 0, 0, 0 },
+    /* list of property information for a vertex */
+    {"x", Float32, Float32, offsetof(Vertex, x), 0, 0, 0, 0},
+    {"y", Float32, Float32, offsetof(Vertex, y), 0, 0, 0, 0},
+    {"z", Float32, Float32, offsetof(Vertex, z), 0, 0, 0, 0},
+    {"nx", Float32, Float32, offsetof(Vertex, nx), 0, 0, 0, 0},
+    {"ny", Float32, Float32, offsetof(Vertex, ny), 0, 0, 0, 0},
+    {"nz", Float32, Float32, offsetof(Vertex, nz), 0, 0, 0, 0},
 };
 
 PlyProperty face_props[] = {
-  /* list of property information for a face */
-  { "vertex_indices", Int32, Int32, offsetof(Face, verts), 1, Uint8, Uint8, offsetof(Face, nverts) },
+    /* list of property information for a face */
+    {"vertex_indices", Int32, Int32, offsetof(Face, verts), 1, Uint8, Uint8,
+     offsetof(Face, nverts)},
 };
 static Vertex **vlist;
 static Face **flist;
@@ -241,7 +252,7 @@ void CreateDatabase(const Options &options) {
   std::string temp;
   std::string filename, filepath, rootdir;
   // rootdir = cmd.get<std::string>("file");
-  rootdir = options.infile;  
+  rootdir = options.infile;
   // rootdir = "/work/01197/semeraro/maverick/DAVEDATA/EnzoPlyData/";
   // filename = "/work/01197/semeraro/maverick/DAVEDATA/EnzoPlyData/block0.ply";
   // myfile = fopen(filename.c_str(),"r");
@@ -394,16 +405,16 @@ void CreateDatabase(const Options &options) {
   filmNode["width"] = options.width;
   filmNode["height"] = options.height;
 
-  //if (cmd.isSet("eye")) {
+  // if (cmd.isSet("eye")) {
   //  std::vector<float> eye = cmd.getValue<float>("eye");
   //  camNode["eyePoint"] = glm::vec3(eye[0], eye[1], eye[2]);
   //}
 
-  //if (cmd.isSet("look")) {
+  // if (cmd.isSet("look")) {
   //  std::vector<float> eye = cmd.getValue<float>("look");
   //  camNode["focus"] = glm::vec3(eye[0], eye[1], eye[2]);
   //}
-  //if (cmd.isSet("wsize")) {
+  // if (cmd.isSet("wsize")) {
   //  std::vector<int> wsize = cmd.getValue<int>("wsize");
   //  filmNode["width"] = wsize[0];
   //  filmNode["height"] = wsize[1];
@@ -415,21 +426,22 @@ void CreateDatabase(const Options &options) {
   //   schedNode["type"] = gvt::render::scheduler::Domain;
   // else
   //   schedNode["type"] = gvt::render::scheduler::Image;
-  if (options.tracer == Options::ASYNC_DOMAIN || options.tracer == Options::SYNC_DOMAIN) {
+  if (options.tracer == Options::ASYNC_DOMAIN ||
+      options.tracer == Options::SYNC_DOMAIN) {
     schedNode["type"] = gvt::render::scheduler::Domain;
   } else {
     schedNode["type"] = gvt::render::scheduler::Image;
   }
 
-// #ifdef GVT_RENDER_ADAPTER_EMBREE
-//   int adapterType = gvt::render::adapter::Embree;
-// #elif GVT_RENDER_ADAPTER_MANTA
-//   int adapterType = gvt::render::adapter::Manta;
-// #elif GVT_RENDER_ADAPTER_OPTIX
-//   int adapterType = gvt::render::adapter::Optix;
-// #elif
-//   GVT_DEBUG(DBG_ALWAYS, "ERROR: missing valid adapter");
-// #endif
+  // #ifdef GVT_RENDER_ADAPTER_EMBREE
+  //   int adapterType = gvt::render::adapter::Embree;
+  // #elif GVT_RENDER_ADAPTER_MANTA
+  //   int adapterType = gvt::render::adapter::Manta;
+  // #elif GVT_RENDER_ADAPTER_OPTIX
+  //   int adapterType = gvt::render::adapter::Optix;
+  // #elif
+  //   GVT_DEBUG(DBG_ALWAYS, "ERROR: missing valid adapter");
+  // #endif
 
   // schedNode["adapter"] = gvt::render::adapter::Embree;
   if (options.adapter == Options::EMBREE) {
@@ -447,29 +459,80 @@ void CreateDatabase(const Options &options) {
   // use db to create structs needed by system
 
   // setup gvtCamera from database entries
-  gvt::render::data::scene::gvtPerspectiveCamera mycamera;
+  g_camera = new gvt::render::data::scene::gvtPerspectiveCamera;
   glm::vec3 cameraposition = camNode["eyePoint"].value().tovec3();
   glm::vec3 focus = camNode["focus"].value().tovec3();
   float fov = camNode["fov"].value().toFloat();
   glm::vec3 up = camNode["upVector"].value().tovec3();
   int rayMaxDepth = camNode["rayMaxDepth"].value().toInteger();
   int raySamples = camNode["raySamples"].value().toInteger();
-  mycamera.lookAt(cameraposition, focus, up);
-  mycamera.setMaxDepth(rayMaxDepth);
-  mycamera.setSamples(raySamples);
-  mycamera.setFOV(fov);
-  mycamera.setFilmsize(filmNode["width"].value().toInteger(),
+  g_camera->lookAt(cameraposition, focus, up);
+  g_camera->setMaxDepth(rayMaxDepth);
+  g_camera->setSamples(raySamples);
+  g_camera->setFOV(fov);
+  g_camera->setFilmsize(filmNode["width"].value().toInteger(),
                        filmNode["height"].value().toInteger());
 
 }  // void CreateDatabase(const Options& options) {
 
+void Render(int argc, char **argv) {
+  int rank, size;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+  timer t_database(false, "database timer:");
+
+  Options options;
+  ParseCommandLine(argc, argv, &options);
+
+  // create database
+  if (options.tracer != Options::PING_TEST) {
+    t_database.start();
+    CreateDatabase(options);
+    t_database.stop();
+    std::cout << "rank " << rank << " created database. " << t_database
+              << std::endl;
+  }
+
+  // create a ray tracer
+  RayTracer *tracer = NULL;
+  if (options.tracer == Options::PING_TEST) {
+    tracer = new PingTracer;
+  } else if (options.tracer == Options::ASYNC_DOMAIN) {
+    g_image = new Image(g_camera->getFilmSizeWidth(),
+                        g_camera->getFilmSizeHeight(), "ply");
+    tracer = new DomainTracer(g_camera->rays, *g_image);
+  } else {
+    std::cout << "rank " << rank << " error found unsupported tracer type "
+              << options.tracer << std::endl;
+    exit(1);
+  }
+
+  bool async = (options.tracer == Options::PING_TEST) ||
+               (options.tracer == Options::ASYNC_DOMAIN) ||
+               (options.tracer == Options::ASYNC_IMAGE);
+  if (async) {
+    // create a worker
+    Worker worker(tracer);
+
+    // register works
+    Command::Register(&worker);
+    PingTest::Register(&worker);
+    RemoteRays::Register(&worker);
+
+    // start the worker
+    worker.Start(argc, argv);
+  }
+
+  // clean up
+  if (g_image) delete g_image;
+  if (g_camera) delete g_camera;
+  if (tracer) delete tracer;
+}
+
 }  // namespace mpi
 }  // namespace render
 }  // namespace apps
-
-using namespace apps::render::mpi;
-using namespace gvt::render::unit;
-using namespace gvt::core::time;
 
 int main(int argc, char **argv) {
   int provided;
@@ -478,53 +541,9 @@ int main(int argc, char **argv) {
     std::cout << "error mpi_thread_single not available" << std::endl;
     exit(1);
   }
-  int rank, size;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-  { // warning: do not remove this curly brace
-    timer t_database(false, "database timer:");
 
-    Options options;
-    ParseCommandLine(argc, argv, &options);
+  apps::render::mpi::Render(argc, argv);
 
-    // create a ray tracer
-    RayTracer *tracer = NULL;
-    if (options.tracer == Options::PING_TEST) {
-      tracer = new PingTracer;
-    } else if (options.tracer == Options::ASYNC_DOMAIN) {
-      tracer = new DomainTracer;
-    } else {
-      std::cout << "rank " << rank << " error found unsupported tracer type "
-                << options.tracer << std::endl;
-      exit(1);
-    }
-
-    // create database
-    if (options.tracer != Options::PING_TEST) {
-      t_database.start();
-      CreateDatabase(options);
-      t_database.stop();
-      std::cout << "rank " << rank << " created database. " << t_database << std::endl;
-    }
-
-    bool async = (options.tracer == Options::PING_TEST) ||
-                 (options.tracer == Options::ASYNC_DOMAIN) ||
-                 (options.tracer == Options::ASYNC_IMAGE);
-    if (async) {
-      // create a worker
-      Worker worker(tracer);
-
-      // register works
-      Command::Register(&worker);
-      PingTest::Register(&worker);
-      RemoteRays::Register(&worker);
-
-      // start the worker
-      worker.Start(argc, argv);
-
-      delete tracer;
-    }
-  } // warning: do not remove this curly brace
   MPI_Finalize();
 }
 
