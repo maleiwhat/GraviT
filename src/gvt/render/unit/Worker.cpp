@@ -62,16 +62,8 @@ void Worker::Start(int argc, char** argv) {
   InitMpi(argc, argv);
   InitThreads();
 
-#ifndef NDEBUG
-  std::cout << "Communicator start\n";
-#endif
-
   // run
   Communicator();
-
-#ifndef NDEBUG
-  std::cout << "Communicator done\n";
-#endif
 }
 
 void Worker::Send(Work* work) {
@@ -155,9 +147,6 @@ inline void Worker::WorkThread() {
 }
 
 inline void Worker::TraceThread() {
-#ifndef NDEBUG
-  std::cout << __PRETTY_FUNCTION__ << "\n";
-#endif
   tracer->Trace(this);
 }
 
@@ -213,6 +202,8 @@ void Worker::Communicator() {
     exit(1);
   }
   pthread_mutex_unlock(&recvQ_mutex);
+
+  MPI_Finalize();
 }
 
 void Worker::RecvWork(const MPI_Status& status, Work* work) {

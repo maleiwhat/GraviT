@@ -69,8 +69,8 @@ struct Options {
 
   enum AdapterType { EMBREE, MANTA, OPTIX };
 
-  int tracerType = ASYNC_DOMAIN;
-  int adapterType = EMBREE;
+  int tracer = ASYNC_DOMAIN;
+  int adapter = EMBREE;
   int width = 1920;
   int height = 1080;
   bool obj = false;
@@ -128,19 +128,19 @@ void ParseCommandLine(int argc, char** argv, Options* options) {
                strcmp(argv[i], "--adapter") == 0) {
       ++i;
       if (strcmp(argv[i], "embree") == 0) {
-        options->adapterType = Options::EMBREE;
+        options->adapter = Options::EMBREE;
       } else if (strcmp(argv[i], "manta") == 0) {
-        options->adapterType = Options::MANTA;
+        options->adapter = Options::MANTA;
       } else if (strcmp(argv[i], "optix") == 0) {
-        options->adapterType = Options::OPTIX;
+        options->adapter = Options::OPTIX;
       } else {
         printf("error: %s not defined\n", argv[i]);
         exit(1);
       }
     } else if (strcmp(argv[i], "-t") == 0 || strcmp(argv[i], "--tracer") == 0) {
-      options->tracerType = atoi(argv[++i]);
-      if (options->tracerType < 0 ||
-          options->tracerType >= Options::NUM_TRACERS) {
+      options->tracer = atoi(argv[++i]);
+      if (options->tracer < 0 ||
+          options->tracer >= Options::NUM_TRACERS) {
         printf("error: %s not defined\n", argv[i]);
         exit(1);
       }
@@ -169,7 +169,7 @@ void ParseCommandLine(int argc, char** argv, Options* options) {
     }
   }
   if (options->numTbbThreads <= 0) {
-    if (options->tracerType == 2 || options->tracerType == 3) {
+    if (options->tracer == 2 || options->tracer == 3) {
       options->numTbbThreads = MAX(1, std::thread::hardware_concurrency());
     } else {
       options->numTbbThreads = MAX(1, std::thread::hardware_concurrency() - 2);
@@ -197,38 +197,34 @@ int main(int argc, char** argv) {
 
   // create a ray tracer
   RayTracer* tracer = NULL;
-  if (options.tracerType == Options::PING_TEST) {
+  if (options.tracer == Options::PING_TEST) {
     tracer = new PingTracer;
   } else {
-    std::cout << "error found unsupported tracer type " << options.tracerType
+    std::cout << "error found unsupported tracer type " << options.tracer
               << "\n";
     exit(1);
   }
 
-  // create a worker
-  Worker worker(tracer);
+  bool async = (options.tracer == Options::PING_TEST) ||
+               (options.tracer == Options::ASYNC_DOMAIN) ||
+               (options.tracer == Options::ASYNC_IMAGE);
+  if (async) {
+    // create a worker
+    Worker worker(tracer);
 
-  // register works
-  Command::Register(&worker);
-  PingTest::Register(&worker);
-  RemoteRays::Register(&worker);
+    // register works
+    Command::Register(&worker);
+    PingTest::Register(&worker);
+    RemoteRays::Register(&worker);
 
-#ifndef NDEBUG
-  std::cout << "worker start\n";
-#endif
-  // start the worker
-  worker.Start(argc, argv);
+    // start the worker
+    worker.Start(argc, argv);
 
-#ifndef NDEBUG
-  std::cout << "worker done\n";
-#endif
-  // start the worker
-
-  // delete the tracer
-  delete tracer;
-
-  // renderer.parseCommandLine(argc, argv);
+    delete tracer;
+  } else {
+    MPI_Init(&argc, &argv);
+    MPI_Finalize();
+  }
   // renderer.createDatabase();
-  // renderer.render();
 }
 
