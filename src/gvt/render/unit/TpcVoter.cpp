@@ -5,6 +5,8 @@
 
 #include "gvt/render/unit/DomainWorks.h"
 
+#define DEBUG_VOTER
+
 namespace gvt {
 namespace render {
 namespace unit {
@@ -32,7 +34,7 @@ TpcVoter::TpcVoter(int numRanks, int myRank, const RayTracer &tracer,
     state = PREPARE_COHORT;
   }
 
-#ifndef NDEBUG
+#ifdef DEBUG_VOTER
   stateNames.resize(NUM_STATES);
   stateNames = {"PREPARE_COORDINATOR", "PROPOSE", "PREPARE_COHORT", "VOTE",
                 "TERMINATE"};
@@ -62,7 +64,7 @@ void TpcVoter::addNumPendingRays(int n) {
 
 void TpcVoter::subtractNumPendingRays(int n) {
   pthread_mutex_lock(&votingLock);
-#ifndef NDEBUG
+#ifdef DEBUG_VOTER
   printf(
       "rank %d numPendingRays(before) %d. sent %d rays. numPendingRays(after) "
       "%d in %s\n",
@@ -83,8 +85,8 @@ bool TpcVoter::hasWork() const {
 
 bool TpcVoter::updateState() {
   pthread_mutex_lock(&votingLock);
-#ifndef NDEBUG
-  int oldState = state;
+#ifdef DEBUG_VOTER
+  int old_state = state;
 #endif
   bool allDone = false;
 
@@ -142,9 +144,9 @@ bool TpcVoter::updateState() {
 
     default: { } break; }  // switch (state) {
 
-#ifndef NDEBUG
-  if (oldState != state)
-    std::cout << "rank " << myRank << ": " << stateNames[oldState] << " -> "
+#ifdef DEBUG_VOTER
+  if (old_state != state)
+    std::cout << "rank " << myRank << ": " << stateNames[old_state] << " -> "
               << stateNames[state] << "\n";
 // else
 //   std::cout << "rank " << myRank << ": " << stateNames[state] << "\n";

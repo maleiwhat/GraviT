@@ -72,7 +72,7 @@ class DomainTracer : public RayTracer, public AbstractTrace {
 
   virtual void Trace(Worker *worker);
 
-  virtual void BufferWork(Work* work) { workQ.push(work); }
+  virtual void BufferWork(Work *work);
 
   // called inside voter->updateState()
   // so thread safe without a lock
@@ -91,6 +91,10 @@ class DomainTracer : public RayTracer, public AbstractTrace {
   void shuffleDropRays(gvt::render::actor::RayVector &rays);
   void FilterRaysLocally();
   void Render(Worker* worker);
+
+  // composite
+  void CompositeFrameBuffers();
+  void LocalComposite();
 
   // sending rays
   bool TransferRays(Worker* worker);

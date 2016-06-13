@@ -145,8 +145,8 @@ inline void Worker::WorkThread() {
     pthread_mutex_unlock(&recvQ_mutex);
 
     if (work) {
-      work->Action(this);
-      delete work;
+      bool delete_this = work->Action(this);
+      if (delete_this) delete work;
     }
   }
 }

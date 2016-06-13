@@ -38,6 +38,8 @@
 
 #include "gvt/render/actor/Ray.h"
 
+#define DEBUG_WORK
+
 namespace gvt {
 namespace render {
 namespace unit {
@@ -68,11 +70,13 @@ bool RemoteRays::Action(Worker* worker) {
   int num_rays = GetNumRays();
   int tx_type = GetTransferType();
 
-#ifndef NDEBUG
+// #ifndef NDEBUG
+#ifdef DEBUG_WORK
   printf("ranks %d RayInfo (type %d sender %d instance %d num_rays %d) in %s\n",
          worker->GetRank(), tx_type, GetSender(), GetInstance(), num_rays,
          __PRETTY_FUNCTION__);
 #endif
+// #endif
 
   bool delete_this = true;
 
@@ -91,6 +95,10 @@ bool RemoteRays::Action(Worker* worker) {
 bool Vote::Action(Worker* worker) {
   TpcVoter* voter = worker->GetVoter();
   int type = GetVoteType();
+
+#ifdef DEBUG_WORK
+  printf("rank %d vote_type %d\n", worker->GetRank(), type);
+#endif
 
   if (type == PROPOSE) {
     voter->setProposeAvailable();

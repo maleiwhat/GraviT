@@ -72,6 +72,8 @@
 
 #include <set>
 
+#define DEBUG_TX
+
 namespace gvt {
 namespace render {
 namespace unit {
@@ -361,7 +363,8 @@ inline void DomainTracer::Render(Worker* worker) {
   MPE_Log_event(framebufferstart, 0, NULL);
 #endif
   t_gather.resume();
-  this->gatherFramebuffers(this->rays_end - this->rays_start);
+  //this->gatherFramebuffers(this->rays_end - this->rays_start);
+  CompositeFrameBuffers();
   t_gather.stop();
 #ifdef GVT_USE_MPE
   MPE_Log_event(framebufferend, 0, NULL);
@@ -435,7 +438,7 @@ void DomainTracer::SendRays(Worker* worker) {
 #ifdef PROFILE_RAY_COUNTS
       ray_count += num_rays_to_send;
 #endif
-#ifdef DEBUG_RAYTX
+#ifdef DEBUG_TX
       printf("rank %d: sent %lu rays instance %d to rank %d\n", rank,
              num_rays_to_send, instance, owner_process);
 #endif
@@ -444,6 +447,12 @@ void DomainTracer::SendRays(Worker* worker) {
 #ifdef PROFILE_RAY_COUNTS
   profiler.addRayCountSend(ray_count);
 #endif
+}
+
+inline void DomainTracer::BufferWork(Work *work) {
+  pthread_mutex_lock(&workQ_mutex);
+  workQ.push(work);
+  pthread_mutex_unlock(&workQ_mutex);
 }
 
 void DomainTracer::RecvRays(Worker* worker) {
@@ -459,18 +468,19 @@ void DomainTracer::RecvRays(Worker* worker) {
     RemoteRays::Header header;
     header.transfer_type = RemoteRays::Grant;
     header.sender = worker->GetRank();
-    header.instance = 0; // TODO: unused
-    header.num_rays = rays->GetNumRays(); // TODO: unused
+    header.instance = rays->GetInstance();
+    header.num_rays = rays->GetNumRays();
 
     RemoteRays *grant = new RemoteRays(header);
     grant->Send(rays->GetSender(), worker);
 #ifdef PROFILE_RAY_COUNTS
     ray_count += rays->getNumRays();
 #endif
-#ifdef DEBUG_RAYTX
+#ifdef DEBUG_TX
     printf("rank %d: recved %d rays instance %d \n", worker->GetRank(),
-           rays->GetNumRays(), Gays->getInstance());
+           rays->GetNumRays(), rays->GetInstance());
 #endif
+    workQ.pop();
     delete rays;
   }
   pthread_mutex_unlock(&workQ_mutex);
@@ -487,6 +497,10 @@ void DomainTracer::CopyRays(const RemoteRays &rays) {
   const Ray *begin = reinterpret_cast<const Ray *>(rays.GetRayBuffer());
   const Ray *end = begin + rays.GetNumRays();
 
+#ifdef DEBUG_TX
+  printf("ray copy begin %p end %p instance %d num_rays %d\n", begin, end, instance, num_rays);
+#endif
+
   if (queue.find(instance) != queue.end()) {
     RayVector &r = queue[instance];
     r.insert(r.end(), begin, end);
@@ -495,6 +509,62 @@ void DomainTracer::CopyRays(const RemoteRays &rays) {
     RayVector &r = queue[instance];
     r.insert(r.end(), begin, end);
   }
+}
+
+void DomainTracer::LocalComposite() {
+  const size_t size = width * height;
+  const size_t chunksize =
+      MAX(2, size / (std::thread::hardware_concurrency() * 4));
+  static tbb::simple_partitioner ap;
+  tbb::parallel_for(tbb::blocked_range<size_t>(0, size, chunksize),
+                    [&](tbb::blocked_range<size_t> chunk) {
+                      for (size_t i = chunk.begin(); i < chunk.end(); i++)
+                        image.Add(i, colorBuf[i]);
+                    },
+                    ap);
+}
+
+void DomainTracer::CompositeFrameBuffers() {
+#ifdef DEBUG_TX
+  printf("start of %s\n", __PRETTY_FUNCTION__);
+#endif
+  LocalComposite();
+  // for (size_t i = 0; i < size; i++) image.Add(i, colorBuf[i]);
+
+  // if (!mpi) return;
+
+  size_t size = width * height;
+  unsigned char *rgb = image.GetBuffer();
+
+  int rgb_buf_size = 3 * size;
+
+  unsigned char *bufs =
+      (rank == 0) ? new unsigned char[num_processes * rgb_buf_size] : NULL;
+
+  // MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Gather(rgb, rgb_buf_size, MPI_UNSIGNED_CHAR, bufs, rgb_buf_size,
+             MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);
+  if (rank == 0) {
+    const size_t chunksize =
+        MAX(2, size / (std::thread::hardware_concurrency() * 4));
+    static tbb::simple_partitioner ap;
+    tbb::parallel_for(tbb::blocked_range<size_t>(0, size, chunksize),
+                      [&](tbb::blocked_range<size_t> chunk) {
+
+                        for (int j = chunk.begin() * 3; j < chunk.end() * 3;
+                             j += 3) {
+                          for (size_t i = 1; i < num_processes; ++i) {
+                            int p = i * rgb_buf_size + j;
+                            // assumes black background, so adding is fine
+                            // (r==g==b== 0)
+                            rgb[j + 0] += bufs[p + 0];
+                            rgb[j + 1] += bufs[p + 1];
+                            rgb[j + 2] += bufs[p + 2];
+                          }
+                        }
+                      });
+  }
+  delete[] bufs;
 }
 
 }  // namespace unit

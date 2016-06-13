@@ -582,14 +582,17 @@ void Render(int argc, char **argv) {
 
 int main(int argc, char **argv) {
   int provided;
-  MPI_Init_thread(&argc, &argv, MPI_THREAD_SINGLE, &provided);
-  if (provided != MPI_THREAD_SINGLE) {
-    std::cout << "error mpi_thread_single not available" << std::endl;
+  MPI_Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &provided);
+  if (provided != MPI_THREAD_MULTIPLE) {
+    std::cout << "error mpi_thread_multiple not available" << std::endl;
     exit(1);
   }
+ 
+  {
+    apps::render::mpi::Render(argc, argv);
+  }
 
-  apps::render::mpi::Render(argc, argv);
-
-  MPI_Finalize();
+  // TODO 
+  // MPI_Finalize();
 }
 
