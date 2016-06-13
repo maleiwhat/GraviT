@@ -31,37 +31,76 @@
    =======================================================================================
    */
 
-#ifndef GVT_RENDER_UNIT_RAY_TRACER_H
-#define GVT_RENDER_UNIT_RAY_TRACER_H
+#ifndef GVT_RENDER_UNIT_TPC_VOTER_H
+#define GVT_RENDER_UNIT_TPC_VOTER_H
 
-#include <cassert>
+#include <pthread.h>
+#include <map>
+#include "gvt/render/actor/Ray.h"
 
 namespace gvt {
 namespace render {
 namespace unit {
 
+class VoteWork;
 class Worker;
-class Work;
-// class RayBuffer;
+class RayTracer;
 
-class RayTracer {
+class TpcVoter {
  public:
-  RayTracer() {}
-  virtual ~RayTracer() {}
+  TpcVoter(int numRanks, int myRank, const RayTracer &tracer, Worker *worker);
 
-  virtual void Trace(Worker* worker) = 0;
+  void reset();
+  bool updateState();
+  void addNumPendingRays(int n);
+  void subtractNumPendingRays(int n);
 
-  // helper functions
-  // TODO: avoid this (tbd)
-  // virtual void CopyRays(const RayBuffer& ray_buffer) { assert(false); }
+  void setProposeAvailable();
+  void voteCommit();
+  void voteAbort();
+  void commit();
+  void abort();
+  bool isCommunicationAllowed() const;
 
-  virtual void BufferWork(Work* work) { assert(false); }
+ private:
+  friend class Worker;
 
-  virtual bool IsDone() const { assert(false); return false; }
+  Worker *worker;
+
+  enum State {
+    PREPARE_COORDINATOR = 0,
+    PROPOSE,
+    PREPARE_COHORT,
+    VOTE,
+    TERMINATE,
+    NUM_STATES
+  };
+  enum Role { COORDINATOR = 0 };
+
+  bool hasWork() const;
+  bool achievedConsensus() const;
+  void broadcast(int voteWorkType) const;
+  void sendVote(int voteWorkType) const;
+
+  const int numRanks;
+  const int myRank;
+  const RayTracer& tracer;
+  // const std::map<int, gvt::render::actor::RayVector> *rayQ;
+
+  int state;
+  pthread_mutex_t votingLock;
+  int numPendingRays;
+  bool allVotesAvailable;
+  int numVotesReceived;
+  int commitVoteCount;
+  bool proposeAvailable;
+  bool commitAbortAvailable;
+  bool doCommit;
+
+  std::vector<std::string> stateNames;
 };
-
-}  // namespace unit
-}  // namespace render
-}  // namespace gvt
+}
+}
+}
 
 #endif

@@ -38,7 +38,10 @@
 #include "gvt/render/unit/Work.h"
 
 // tracers
-#include "gvt/render/unit/DomainTracer.h"
+#include "gvt/render/unit/RayTracer.h"
+
+// TPC voter
+#include "gvt/render/unit/TpcVoter.h"
 
 #include <mpi.h>
 #include <iostream>
@@ -47,23 +50,24 @@ namespace gvt {
 namespace render {
 namespace unit {
 
-Worker::Worker(RayTracer* tracer) : tracer(tracer), allWorkDone(false) {}
+Worker::Worker(RayTracer* tracer)
+    : tracer(tracer), allWorkDone(false), voter(NULL) {
+  // initialization
+  InitMpi();
+  InitThreads();
 
-Worker::~Worker() {}
+  // create a voter
+  if (mpi.size > 1) voter = new TpcVoter(mpi.size, mpi.rank, *tracer, this);
+}
+
+Worker::~Worker() {
+  if (voter) delete voter;
+}
 
 int Worker::RegisterWork(Work* (*Deserialize)()) {
   int tag = deserializers.size();
   deserializers.push_back(Deserialize);
   return tag;
-}
-
-void Worker::Start(int argc, char** argv) {
-  // initialization
-  InitMpi(argc, argv);
-  InitThreads();
-
-  // run
-  Communicator();
 }
 
 void Worker::Send(Work* work) {
@@ -72,7 +76,7 @@ void Worker::Send(Work* work) {
   pthread_mutex_unlock(&sendQ_mutex);
 }
 
-void Worker::InitMpi(int argc, char** argv) {
+void Worker::InitMpi() {
   // warning: this should be in the beginning of main()
   // int provided;
   // MPI_Init_thread(&argc, &argv, MPI_THREAD_SINGLE, &provided);

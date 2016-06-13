@@ -9,7 +9,7 @@ namespace unit {
 STATIC_WORK_TAG(Command)
 STATIC_WORK_TAG(PingTest)
 
-void Command::Action(Worker* worker) {
+bool Command::Action(Worker* worker) {
   int type = GetType();
   if (type == QUIT) {
 #ifndef NDEBUG
@@ -18,9 +18,11 @@ void Command::Action(Worker* worker) {
 #endif
     worker->SetDone();
   }
+
+  return true;
 }
 
-void PingTest::Action(Worker* worker) {
+bool PingTest::Action(Worker* worker) {
   Work* work = NULL;
   int rank = worker->GetRank();
 
@@ -33,6 +35,8 @@ void PingTest::Action(Worker* worker) {
     work = new PingTest(rank);
     work->Send(rank + 1, worker);
   }
+
+  return true;
 }
 
 }  // namespace unit

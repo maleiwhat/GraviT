@@ -45,7 +45,7 @@ namespace render {
 namespace unit {
 
 class Command : public Work {
-  REGISTER_WORK(Command);
+  REGISTER_WORK(Command)
 
  public:
   enum Type { QUIT = 0 };
@@ -57,14 +57,14 @@ class Command : public Work {
   Command() : Work() {}
   Command(int type) : Work(sizeof(Data)) { GetBufferPtr<Data>()->type = type; }
 
-  virtual void Action(Worker* worker);
+  virtual bool Action(Worker* worker);
 
   // getters
   int GetType() const { return GetBufferPtr<Data>()->type; }
 };
 
 class PingTest : public Work {
-  REGISTER_WORK(PingTest);
+  REGISTER_WORK(PingTest)
 
  public:
   struct Data {
@@ -73,10 +73,23 @@ class PingTest : public Work {
 
   PingTest() : Work() {}
   PingTest(int value) : Work(sizeof(Data)) { GetBufferPtr<Data>()->value = value; }
-  virtual void Action(Worker* worker);
+
+  virtual bool Action(Worker* worker);
 
   // getters
   int GetValue() const { return GetBufferPtr<Data>()->value; }
+};
+
+class Composite : public Work {
+  REGISTER_WORK(Composite)
+
+ public:
+  Composite() : Work() {}
+
+  virtual bool Action(Worker* worker) {
+    assert(false);
+    return true;
+  }
 };
 
 }  // namespace unit

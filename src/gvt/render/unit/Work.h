@@ -67,7 +67,11 @@ class Work {
 
   virtual ~Work() {}
 
-  virtual void Action(Worker* worker) { assert(false); }
+  // return type: delete this (1), don't delete this (0)
+  virtual bool Action(Worker* worker) {
+    assert(false);
+    return true;
+  }
 
   virtual std::size_t GetSize() const {
     if (!contents) return 0;

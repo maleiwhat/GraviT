@@ -154,7 +154,7 @@ void PrintUsage(const char *argv) {
   printf("  -a, --adapter <embree | manta | optix> (default: embree)\n");
   printf("  -t, --tracer <0-3> (default: 2)\n");
   printf(
-      "      0: PING_TEST, 0: ASYNC_IMAGE, 1: ASYNC_DOMAIN, 2: SYNC_IMAGE, 3: "
+      "      0: PING_TEST, 1: ASYNC_IMAGE, 2: ASYNC_DOMAIN, 3: SYNC_IMAGE, 4: "
       "SYNC_DOMAIN\n");
   printf(
       "  -n, --num-instances <x, y, z> specify the number of instances in each "
@@ -523,22 +523,32 @@ void Render(int argc, char **argv) {
                (options.tracer == Options::ASYNC_DOMAIN) ||
                (options.tracer == Options::ASYNC_IMAGE);
 
-  if (options.tracer == Options::ASYNC_DOMAIN) {
-    if (rank == 0) std::cout << "start ASYNC_DOMAIN" << std::endl;
+  if (options.tracer == Options::PING_TEST) {
     // create a worker
     Worker worker(tracer);
 
     // register works
     Command::Register(&worker);
     PingTest::Register(&worker);
+
+    // start the worker
+    worker.Start();
+  } else if (options.tracer == Options::ASYNC_DOMAIN) {
+    if (rank == 0) std::cout << "start ASYNC_DOMAIN" << std::endl;
+    // create a worker
+    Worker worker(tracer);
+
+    // register works
+    Command::Register(&worker);
     RemoteRays::Register(&worker);
+    Vote::Register(&worker);
 
     // gerenate primary rays
     g_camera->AllocateCameraRays();
     g_camera->generateRays();
 
     // start the worker
-    worker.Start(argc, argv);
+    worker.Start();
     
     g_image->Write();
 

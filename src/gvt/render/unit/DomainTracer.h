@@ -34,6 +34,9 @@
 #ifndef GVT_RENDER_UNIT_DOMAIN_TRACER_H
 #define GVT_RENDER_UNIT_DOMAIN_TRACER_H
 
+#include <queue>
+#include <pthread.h>
+
 #include "gvt/render/unit/RayTracer.h"
 
 #include "gvt/render/algorithm/TracerBase.h"
@@ -58,6 +61,9 @@ using namespace gvt::render::actor;
 using namespace gvt::render::data::scene;
 
 class Worker;
+class Work;
+class RemoteRays;
+class TpcVoter;
 
 class DomainTracer : public RayTracer, public AbstractTrace {
  public:
@@ -66,11 +72,36 @@ class DomainTracer : public RayTracer, public AbstractTrace {
 
   virtual void Trace(Worker *worker);
 
+  virtual void BufferWork(Work* work) { workQ.push(work); }
+
+  // called inside voter->updateState()
+  // so thread safe without a lock
+  virtual bool IsDone() const {
+    int busy = 0;
+    for (auto &q : queue) busy += q.second.size();
+    return (busy == 0);
+  }
+
+ private:
+   // this class is responsible for deleting Work* in the queue
+   pthread_mutex_t workQ_mutex;
+   std::queue<Work*> workQ;
+
  private:
   void shuffleDropRays(gvt::render::actor::RayVector &rays);
   void FilterRaysLocally();
-  void Render();
-  bool SendRays();
+  void Render(Worker* worker);
+
+  // sending rays
+  bool TransferRays(Worker* worker);
+  void SendRays(Worker* worker);
+  void RecvRays(Worker* worker);
+
+  void CopyRays(const RemoteRays &rays); // TODO: avoid this
+
+  TpcVoter* voter;
+  int rank;
+  int num_processes;
 
  private:
   std::set<int> neighbors;

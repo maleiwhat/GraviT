@@ -35,6 +35,7 @@
 #define GVT_RENDER_UNIT_WORKER_H
 
 #include "gvt/render/unit/Contents.h"
+#include "gvt/render/unit/RayTracer.h"
 
 #include <pthread.h>
 #include <queue>
@@ -46,7 +47,8 @@ namespace render {
 namespace unit {
 
 class Work;
-class RayTracer;
+// class RayBuffer;
+class TpcVoter;
 
 struct MpiComm {
   int rank;
@@ -60,7 +62,7 @@ class Worker {
   ~Worker();
 
   int RegisterWork(Work* (*Deserialize)());
-  void Start(int argc, char** argv);
+  void Start() { Communicator(); }
 
   // helper functions for communication
   void Send(Work* work);
@@ -73,11 +75,18 @@ class Worker {
   int GetMpiSize() { return mpi.size; }
   MPI_Comm GetMpiComm() { return mpi.comm; }
 
+  // helper functions for voter
+  TpcVoter* GetVoter() { return voter; }
+
+  // helper functions for ray transfer
+  // void CopyRays(const RayBuffer& ray_buffer) { tracer->CopyRays(ray_buffer); }
+  void BufferWork(Work* work) { tracer->BufferWork(work); }
+
  private:
   enum ThreadId { WORK_THREAD = 0, TRACE_THREAD, NUM_PTHREADS };
 
   // intializers
-  void InitMpi(int argc, char** argv);
+  void InitMpi();
   void InitThreads();
   void InitMutexes();
 
@@ -119,6 +128,9 @@ class Worker {
 
   // ray tracer
   RayTracer* tracer;
+
+  // voter
+  TpcVoter* voter;
 };
 
 }  // namespace unit

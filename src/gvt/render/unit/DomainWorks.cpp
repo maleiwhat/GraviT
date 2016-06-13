@@ -31,16 +31,85 @@
    =======================================================================================
    */
 
-#include "gvt/render/unit/Work.h"
 #include "gvt/render/unit/DomainWorks.h"
+#include "gvt/render/unit/Work.h"
+
+#include "gvt/render/unit/TpcVoter.h"
+
+#include "gvt/render/actor/Ray.h"
 
 namespace gvt {
 namespace render {
 namespace unit {
 
-STATIC_WORK_TAG(RemoteRays)
+using namespace gvt::render::actor;
 
-void RemoteRays::Action(Worker* worker) {} 
+STATIC_WORK_TAG(RemoteRays)
+STATIC_WORK_TAG(Vote)
+
+RemoteRays::RemoteRays(const Header& header) : Work(sizeof(Header)) {
+  memcpy(GetBuffer(), &header, sizeof(Header));
+}
+
+// TODO: avoid this copy
+RemoteRays::RemoteRays(const Header& header, const std::vector<Ray>& rays)
+    : Work() {
+  std::size_t header_size = sizeof(Header);
+  std::size_t rays_size = header.num_rays * sizeof(Ray);
+  Allocate(header_size + rays_size);
+
+  unsigned char* buf = GetBuffer();
+  memcpy(buf, &header, header_size);
+  memcpy(buf + header_size, &rays[0], rays_size);
+}
+
+bool RemoteRays::Action(Worker* worker) {
+  TpcVoter* voter = worker->GetVoter();
+  int num_rays = GetNumRays();
+  int tx_type = GetTransferType();
+
+#ifndef NDEBUG
+  printf("ranks %d RayInfo (type %d sender %d instance %d num_rays %d) in %s\n",
+         worker->GetRank(), tx_type, GetSender(), GetInstance(), num_rays,
+         __PRETTY_FUNCTION__);
+#endif
+
+  bool delete_this = true;
+
+  if (tx_type == Request) {
+    worker->BufferWork(this);
+    delete_this = false;
+  } else if (tx_type == Grant) {  // Grant
+    voter->subtractNumPendingRays(num_rays);
+  } else {
+    assert(false);
+  }
+
+  return delete_this;
+}
+
+bool Vote::Action(Worker* worker) {
+  TpcVoter* voter = worker->GetVoter();
+  int type = GetVoteType();
+
+  if (type == PROPOSE) {
+    voter->setProposeAvailable();
+  } else if (type == DO_COMMIT) {
+    voter->commit();
+  } else if (type == DO_ABORT) {
+    voter->abort();
+  } else if (type == VOTE_COMMIT) {
+    voter->voteCommit();
+  } else if (type == VOTE_ABORT) {
+    voter->voteAbort();
+  } else {
+    std::cout << "rank " << worker->GetRank() << " invalid vote type " << type
+              << std::endl;
+    exit(1);
+  }
+
+  return true;
+}
 
 }  // namespace unit
 }  // namespace render

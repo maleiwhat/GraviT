@@ -322,6 +322,7 @@ set(GVT_MPI_SRCS
     src/gvt/render/unit/DomainTracer.cpp
     src/gvt/render/unit/CommonWorks.cpp
     src/gvt/render/unit/DomainWorks.cpp
+    src/gvt/render/unit/TpcVoter.cpp
 )
 
 

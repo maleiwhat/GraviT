@@ -40,19 +40,85 @@
 
 #include <cassert>
 #include <memory>
+#include <vector>
+
+namespace gvt {
+namespace render {
+namespace actor {
+
+class Ray;
+
+}  // namespace actor
+}  // namespace render
+}  // namespace gvt
 
 namespace gvt {
 namespace render {
 namespace unit {
 
+using namespace gvt::render::actor;
+
 class RemoteRays : public Work {
-  REGISTER_WORK(RemoteRays);
+  REGISTER_WORK(RemoteRays)
 
  public:
-  RemoteRays() : Work() {}
-  // RemoteRays(std::size_t size) : Work() {}
+  enum TransferType { Request, Grant };
 
-  virtual void Action(Worker* worker);
+  struct Header {
+    int transfer_type;
+    int sender;
+    int instance;
+    int num_rays;
+  };
+
+  struct Data {
+    Header header;
+    Ray* rays;
+  };
+
+  RemoteRays() : Work() {}
+
+  RemoteRays(const Header& header);
+
+  // TODO: avoid this copy
+  RemoteRays(const Header& header, const std::vector<Ray>& rays);
+
+  virtual bool Action(Worker* worker);
+
+  int GetTransferType() const {
+    return GetBufferPtr<Header>()->transfer_type;
+  }
+  int GetSender() const { return GetBufferPtr<Header>()->sender; }
+  int GetInstance() const { return GetBufferPtr<Header>()->instance; }
+  int GetNumRays() const { return GetBufferPtr<Header>()->num_rays; }
+  const unsigned char* GetRayBuffer() const {
+    return GetBufferPtr<unsigned char>() + sizeof(Header);
+  }
+};
+
+class Vote : public Work {
+  REGISTER_WORK(Vote)
+
+ public:
+  enum Type { PROPOSE, DO_COMMIT, DO_ABORT, VOTE_COMMIT, VOTE_ABORT };
+
+  struct Data {
+    int vote_type;
+    int sender;
+  };
+
+  Vote() : Work() {}
+
+  Vote(int vote_type, int sender) : Work(sizeof(Data)) {
+    GetBufferPtr<Data>()->vote_type = vote_type;
+    GetBufferPtr<Data>()->sender = sender;
+  }
+
+  virtual bool Action(Worker* worker);
+
+  // getters
+  int GetVoteType() const { return GetBufferPtr<Data>()->vote_type; }
+  int GetSender() const { return GetBufferPtr<Data>()->sender; }
 };
 
 }  // namespace unit
