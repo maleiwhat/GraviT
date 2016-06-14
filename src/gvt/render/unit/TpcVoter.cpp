@@ -210,11 +210,17 @@ void TpcVoter::voteAbort() {
 }
 
 void TpcVoter::commit() {
+  pthread_mutex_lock(&votingLock);
   commitAbortAvailable = true;
   doCommit = true;
+  pthread_mutex_unlock(&votingLock);
 }
 
-void TpcVoter::abort() { commitAbortAvailable = true; }
+void TpcVoter::abort() {
+  pthread_mutex_lock(&votingLock);
+  commitAbortAvailable = true;
+  pthread_mutex_unlock(&votingLock);
+}
 
 bool TpcVoter::isCommunicationAllowed() const {
   return (mpi.rank == COORDINATOR && state == PREPARE_COORDINATOR) ||
