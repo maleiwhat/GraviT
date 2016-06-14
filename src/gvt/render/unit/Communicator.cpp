@@ -139,17 +139,19 @@ void Communicator::MessageThread() {
   bool done = false;
   MPI_Status mpi_status;
 
-  int pvd;
-  MPI_Init_thread(argcp, argvp, MPI_THREAD_FUNNELED, &pvd);
-  if ((pvd != MPI_THREAD_FUNNELED)) {
-    std::cerr << "error: mpi_thread_funneled not available\n";
-    exit(1);
-  }
+  // int pvd;
+  // MPI_Init_thread(argcp, argvp, MPI_THREAD_FUNNELED, &pvd);
+  // MPI_Init_thread(argcp, argvp, MPI_THREAD_FUNNELED, &pvd);
+  // if ((pvd != MPI_THREAD_FUNNELED)) {
+  //   std::cerr << "error: mpi_thread_funneled not available\n";
+  //   exit(1);
+  // }
+  // MPI_Init(argcp, argvp);
 
-  MPI_Comm_rank(MPI_COMM_WORLD, &mpi.rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &mpi.size);
+  // MPI_Comm_rank(MPI_COMM_WORLD, &mpi.rank);
+  // MPI_Comm_size(MPI_COMM_WORLD, &mpi.size);
   
-  worker->SignalMpiReady();
+  // worker->SignalMpiReady();
 
   while (!allWorkDone) {
     // serve incoming message

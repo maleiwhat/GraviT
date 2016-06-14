@@ -119,7 +119,7 @@ void Parse(int argc, char **argv, Options *options) {
   for (int i = 1; i < argc; ++i) {
     if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
       PrintUsage(argv[0]);
-      // MPI_Finalize();
+      MPI_Finalize();
       exit(0);
     } else if (strcmp(argv[i], "-i") == 0 || strcmp(argv[i], "--infile") == 0) {
       options->infile = argv[++i];
@@ -476,8 +476,8 @@ void CreateDatabase(const commandline::Options &options) {
 
 void Render(int argc, char **argv) {
   MpiInfo mpi;
-  // MPI_Comm_rank(MPI_COMM_WORLD, &mpi.rank);
-  // MPI_Comm_size(MPI_COMM_WORLD, &mpi.size);
+  MPI_Comm_rank(MPI_COMM_WORLD, &mpi.rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &mpi.size);
   timer t_database(false, "database timer:");
 
   commandline::Options options;
@@ -488,28 +488,25 @@ void Render(int argc, char **argv) {
 
   switch (options.tracer) {
     case commandline::Options::PING_TEST: {
-      Worker worker(&argc, &argv, options, g_camera, g_image);
-      mpi = worker.GetMpiInfo();
-
       if (mpi.rank == 0) std::cout << "start PING_TEST" << std::endl;
 
+      Worker worker(&argc, &argv, mpi, options, g_camera, g_image);
+      // mpi = worker.GetMpiInfo();
       worker.Render();
-
       worker.Wait();
     } break;
 
     case commandline::Options::ASYNC_DOMAIN: {
-      Worker worker(&argc, &argv, options, g_camera, g_image);
-      mpi = worker.GetMpiInfo();
-
       if (mpi.rank == 0) std::cout << "start ASYNC_DOMAIN" << std::endl;
+
+      Worker worker(&argc, &argv, mpi, options, g_camera, g_image);
+      // mpi = worker.GetMpiInfo();
 
       std::cout << "rank " << mpi.rank << " creating database." << std::endl;
       t_database.start();
       CreateDatabase(options);
       t_database.stop();
 
-printf("5\n");
       g_image = new Image(g_camera->getFilmSizeWidth(),
                           g_camera->getFilmSizeHeight(), "mpi");
 
@@ -524,9 +521,9 @@ printf("5\n");
     } break;
 
     case commandline::Options::SYNC_DOMAIN: {
-      MPI_Init(&argc, &argv);
-      MPI_Comm_rank(MPI_COMM_WORLD, &mpi.rank);
-      MPI_Comm_size(MPI_COMM_WORLD, &mpi.size);
+      // MPI_Init(&argc, &argv);
+      // MPI_Comm_rank(MPI_COMM_WORLD, &mpi.rank);
+      // MPI_Comm_size(MPI_COMM_WORLD, &mpi.size);
 
       if (mpi.rank == 0) std::cout << "start SYNC_DOMAIN" << std::endl;
 
@@ -551,7 +548,7 @@ printf("5\n");
       }
 
       g_image->Write();
-      MPI_Finalize();
+      // MPI_Finalize();
     } break;
 
     default: {
@@ -571,10 +568,8 @@ printf("5\n");
 }  // namespace apps
 
 int main(int argc, char **argv) {
-  // MPI_Init(&argc, &argv);
-  // {
+  MPI_Init(&argc, &argv);
   apps::render::mpi::Render(argc, argv);
-  ///}
-  // MPI_Finalize();
+  MPI_Finalize();
 }
 

@@ -19,9 +19,10 @@ namespace unit {
 using namespace apps::render::mpi;
 using namespace gvt::render::data::scene;
 
-Worker::Worker(int* argc, char*** argv, const commandline::Options& options,
-               gvtPerspectiveCamera* camera, Image* image)
-    : camera(camera), image(image), quit(false), mpiReady(false) {
+Worker::Worker(int *argc, char ***argv, const MpiInfo &mpi,
+               const commandline::Options &options,
+               gvtPerspectiveCamera *camera, Image *image)
+    : mpi(mpi), camera(camera), image(image), quit(false), mpiReady(false) {
   // init mutex
   pthread_mutex_init(&quit_mutex, NULL);
   pthread_cond_init(&quit_cond, NULL);
@@ -29,16 +30,16 @@ Worker::Worker(int* argc, char*** argv, const commandline::Options& options,
   // create communicator
   comm = new Communicator(argc, argv, mpi, this);
 
-  // wait until mpi gets initialized
-  pthread_mutex_lock(&mpiReady_mutex);
-  while (!mpiReady) {
-    pthread_cond_wait(&mpiReady_cond, &mpiReady_mutex);
-  }
-  mpiReady = false;
-  pthread_mutex_unlock(&mpiReady_mutex);
+  // // wait until mpi gets initialized
+  // pthread_mutex_lock(&mpiReady_mutex);
+  // while (!mpiReady) {
+  //   pthread_cond_wait(&mpiReady_cond, &mpiReady_mutex);
+  // }
+  // mpiReady = false;
+  // pthread_mutex_unlock(&mpiReady_mutex);
 
   // mpi info is available from the communicator
-  mpi = comm->GetMpiInfo();
+  // mpi = comm->GetMpiInfo();
 
   // all applications require this for quitting the worker
   Command::Register(comm);
