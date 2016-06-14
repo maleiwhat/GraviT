@@ -76,12 +76,12 @@ bool RemoteRays::Action(Worker* worker) {
          worker->GetRank(), tx_type, GetSender(), GetInstance(), num_rays,
          __PRETTY_FUNCTION__);
 #endif
-// #endif
+  // #endif
 
   bool delete_this = true;
 
   if (tx_type == Request) {
-    worker->BufferWork(this);
+    worker->GetTracer()->BufferWork(this);
     delete_this = false;
   } else if (tx_type == Grant) {  // Grant
     voter->subtractNumPendingRays(num_rays);

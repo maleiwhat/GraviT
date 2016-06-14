@@ -37,18 +37,22 @@
 #include <pthread.h>
 #include <map>
 #include "gvt/render/actor/Ray.h"
+#include "gvt/render/unit/Types.h"
 
 namespace gvt {
 namespace render {
 namespace unit {
 
-class VoteWork;
 class Worker;
+class Communicator;
+
+class VoteWork;
 class RayTracer;
 
 class TpcVoter {
  public:
-  TpcVoter(int numRanks, int myRank, const RayTracer &tracer, Worker *worker);
+  TpcVoter(const MpiInfo& mpi, const RayTracer& tracer, Communicator* comm,
+           Worker* worker);
 
   void reset();
   bool updateState();
@@ -63,8 +67,9 @@ class TpcVoter {
   bool isCommunicationAllowed() const;
 
  private:
-  friend class Worker;
+  // friend class Worker;
 
+  Communicator *comm;
   Worker *worker;
 
   enum State {
@@ -82,8 +87,9 @@ class TpcVoter {
   void broadcast(int voteWorkType) const;
   void sendVote(int voteWorkType) const;
 
-  const int numRanks;
-  const int myRank;
+  // const int numRanks;
+  // const int myRank;
+  const MpiInfo mpi;
   const RayTracer& tracer;
   // const std::map<int, gvt::render::actor::RayVector> *rayQ;
 

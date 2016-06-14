@@ -1,140 +1,92 @@
-/* =======================================================================================
-   This file is released as part of GraviT - scalable, platform independent ray
-   tracing
-   tacc.github.io/GraviT
-
-   Copyright 2013-2015 Texas Advanced Computing Center, The University of Texas
-   at Austin
-   All rights reserved.
-
-   Licensed under the BSD 3-Clause License, (the "License"); you may not use
-   this file
-   except in compliance with the License.
-   A copy of the License is included with this software in the file LICENSE.
-   If your copy does not contain the License, you may obtain a copy of the
-   License at:
-
-       http://opensource.org/licenses/BSD-3-Clause
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under
-   the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-   CONDITIONS OF ANY
-   KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under
-   limitations under the License.
-
-   GraviT is funded in part by the US National Science Foundation under awards
-   ACI-1339863,
-   ACI-1339881 and ACI-1339840
-   =======================================================================================
-   */
-
 #ifndef GVT_RENDER_UNIT_WORKER_H
 #define GVT_RENDER_UNIT_WORKER_H
 
-#include "gvt/render/unit/Contents.h"
+#include <pthread.h>
+
+#include "gvt/render/unit/Types.h"
 #include "gvt/render/unit/RayTracer.h"
 
-#include <pthread.h>
-#include <queue>
-#include <memory>
-#include <mpi.h>
+namespace apps {
+namespace render {
+namespace mpi {
+namespace commandline {
+
+struct Options;
+}
+}
+}
+}
+
+namespace gvt {
+namespace render {
+namespace data {
+namespace scene {
+
+class gvtPerspectiveCamera;
+class Image;
+
+}
+}
+}
+}
 
 namespace gvt {
 namespace render {
 namespace unit {
 
-class Work;
-// class RayBuffer;
-class TpcVoter;
+using namespace apps::render::mpi;
+using namespace gvt::render::data::scene;
 
-struct MpiComm {
-  int rank;
-  int size;
-  MPI_Comm comm;
-};
+class Communicator;
+// class RayTracer;
+class TpcVoter;
 
 class Worker {
  public:
-  Worker(RayTracer* tracer);
+  Worker(const MpiInfo& mpi, const commandline::Options& options,
+         gvtPerspectiveCamera* camera, Image* image);
+
   ~Worker();
 
-  int RegisterWork(Work* (*Deserialize)());
-  void Start() { Communicator(); }
+  void Render();
 
-  // helper functions for communication
-  void Send(Work* work);
+  void Quit();
+  void Wait();
 
-  // helper functions
-  void SetDone() { allWorkDone = true; }
+  // get units
+  Communicator* GetCommunicator() const { return comm; }
   RayTracer* GetTracer() { return tracer; }
-  int GetRank() { return mpi.rank; }
-  int GetMpiRank() { return mpi.rank; }
-  int GetMpiSize() { return mpi.size; }
-  MPI_Comm GetMpiComm() { return mpi.comm; }
-
-  // helper functions for voter
   TpcVoter* GetVoter() { return voter; }
 
-  // helper functions for ray transfer
-  // void CopyRays(const RayBuffer& ray_buffer) { tracer->CopyRays(ray_buffer); }
-  void BufferWork(Work* work) { tracer->BufferWork(work); }
+  // get mpi info
+  int GetRank() const { return mpi.rank; }
+  int GetMpiSize() const { return mpi.size; }
 
  private:
-  enum ThreadId { WORK_THREAD = 0, TRACE_THREAD, NUM_PTHREADS };
+  friend class Command;
+  void QuitCommunicator();
 
-  // intializers
-  void InitMpi();
-  void InitThreads();
-  void InitMutexes();
+ private:
+  // communication
+  const MpiInfo mpi;
+  Communicator* comm;
 
-  // p-threads start routines
-  static void* StartWorkThread(void* This);
-  static void* StartTraceThread(void* This);
+  // scene
+  gvtPerspectiveCamera* camera;
+  Image* image;
 
-  // p-threads
-  void WorkThread();
-  void TraceThread();
-
-  // main thread for communication
-  void Communicator();
-
-  // mpi send/recv
-  void RecvWork(const MPI_Status& status, Work* work);
-  void SendWork(Work* work);
-  void SendWorkAllOther(Work* work);
-
-  void IsendWork(Work* work);
-
-  // work queues
-  std::queue<Work*> sendQ;
-  std::queue<Work*> recvQ;
-  pthread_mutex_t sendQ_mutex;
-  pthread_mutex_t recvQ_mutex;
-
-  // flag to indicate there is no more work
-  bool allWorkDone;
-
-  // mpi communicator
-  MpiComm mpi;
-
-  // pthreads
-  std::vector<pthread_t> threads;
-
-  // deserializers used upon receiving a new MPI message
-  std::vector<Work* (*)()> deserializers;
-
-  // ray tracer
+  // processors 
   RayTracer* tracer;
-
-  // voter
   TpcVoter* voter;
+
+  bool quit;
+  pthread_mutex_t quit_mutex;
+  pthread_cond_t quit_cond;
 };
 
-}  // namespace unit
-}  // namespace render
-}  // namespace gvt
+} // using namespace unit
+} // using namespace render
+} // using namespace gvt
 
 #endif
+

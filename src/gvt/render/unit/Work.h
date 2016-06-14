@@ -36,21 +36,21 @@
 #define GVT_RENDER_UNIT_WORK_H
 
 #include "gvt/render/unit/Contents.h"
-#include "gvt/render/unit/Worker.h"
+#include "gvt/render/unit/Communicator.h"
 
 #include <cassert>
 #include <memory>
 
-#define REGISTER_WORK(ClassName)                                   \
- public:                                                           \
-  static void Register(Worker* worker) {                           \
-    ClassName::tag = worker->RegisterWork(ClassName::Deserialize); \
-  }                                                                \
-  static Work* Deserialize() { return new ClassName; }             \
-                                                                   \
-  virtual int GetTag() const { return ClassName::tag; }            \
-                                                                   \
- private:                                                          \
+#define REGISTER_WORK(ClassName)                                 \
+ public:                                                         \
+  static void Register(Communicator* comm) {                     \
+    ClassName::tag = comm->RegisterWork(ClassName::Deserialize); \
+  }                                                              \
+  static Work* Deserialize() { return new ClassName; }           \
+                                                                 \
+  virtual int GetTag() const { return ClassName::tag; }          \
+                                                                 \
+ private:                                                        \
   static int tag;
 
 #define STATIC_WORK_TAG(ClassName) int ClassName::tag;
@@ -58,6 +58,8 @@
 namespace gvt {
 namespace render {
 namespace unit {
+
+class Worker;
 
 class Work {
  public:
@@ -86,24 +88,24 @@ class Work {
   int GetDestination() const { return dest; }
   int GetCommType() const { return commType; }
 
-  void Send(int dest, Worker* worker) {
+  void Send(int dest, Communicator* comm) {
     commType = P2P;
     this->dest = dest;
-    worker->Send(this);
+    comm->Send(this);
   }
 
-  void SendAll(Worker* worker) {
+  void SendAll(Communicator* comm) {
     commType = SEND_ALL;
-    worker->Send(this);
+    comm->Send(this);
   }
 
-  void SendAllOther(Worker* worker) {
+  void SendAllOther(Communicator* comm) {
     commType = SEND_ALL_OTHER;
-    worker->Send(this);
+    comm->Send(this);
   }
 
  protected:
-  friend class Worker;
+  friend class Communicator;
 
   unsigned char* GetBuffer() {
     if (!contents) return NULL;

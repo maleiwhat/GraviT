@@ -48,6 +48,9 @@
 #include "gvt/render/data/scene/Image.h"
 #include "gvt/render/data/scene/gvtCamera.h"
 
+// common
+#include "gvt/render/unit/Types.h"
+
 // async schedule
 #include "gvt/render/unit/CommonWorks.h"
 #include "gvt/render/unit/DomainTracer.h"
@@ -57,6 +60,8 @@
 
 // sync schedule
 #include "gvt/render/algorithm/DomainTracer.h"
+
+#include "apps/render/MpiApp.h"
 
 // warning: ply.h must be included after tracer related headers
 #include <ply.h>
@@ -72,74 +77,7 @@
 namespace apps {
 namespace render {
 namespace mpi {
-
-using namespace gvt::render::unit;
-using namespace gvt::core::time;
-using namespace gvt::render::data::primitives;
-using namespace gvt::render::data::scene;
-using namespace gvt::render::data::scene;
-using namespace gvt::render::schedule;
-
-// global variables
-gvt::render::data::scene::gvtPerspectiveCamera* g_camera = NULL;
-gvt::render::data::scene::Image *g_image = NULL;
-
-typedef struct Vertex {
-  float x, y, z;
-  float nx, ny, nz;
-  void *other_props; /* other properties */
-} Vertex;
-
-typedef struct Face {
-  unsigned char nverts; /* number of vertex indices in list */
-  int *verts;           /* vertex index list */
-  void *other_props;    /* other properties */
-} Face;
-
-PlyProperty vert_props[] = {
-    /* list of property information for a vertex */
-    {"x", Float32, Float32, offsetof(Vertex, x), 0, 0, 0, 0},
-    {"y", Float32, Float32, offsetof(Vertex, y), 0, 0, 0, 0},
-    {"z", Float32, Float32, offsetof(Vertex, z), 0, 0, 0, 0},
-    {"nx", Float32, Float32, offsetof(Vertex, nx), 0, 0, 0, 0},
-    {"ny", Float32, Float32, offsetof(Vertex, ny), 0, 0, 0, 0},
-    {"nz", Float32, Float32, offsetof(Vertex, nz), 0, 0, 0, 0},
-};
-
-PlyProperty face_props[] = {
-    /* list of property information for a face */
-    {"vertex_indices", Int32, Int32, offsetof(Face, verts), 1, Uint8, Uint8,
-     offsetof(Face, nverts)},
-};
-static Vertex **vlist;
-static Face **flist;
-
-struct Options {
-  enum TracerType {
-    PING_TEST = 0,
-    ASYNC_IMAGE,
-    ASYNC_DOMAIN,
-    SYNC_IMAGE,
-    SYNC_DOMAIN,
-    NUM_TRACERS
-  };
-
-  enum AdapterType { EMBREE, MANTA, OPTIX };
-
-  int tracer = ASYNC_DOMAIN;
-  int adapter = EMBREE;
-  int width = 1920;
-  int height = 1080;
-  bool obj = false;
-  int instanceCountX = 1;
-  int instanceCountY = 1;
-  int instanceCountZ = 1;
-  int numFrames = 1;
-  int numTbbThreads;
-  std::string infile;
-  glm::vec3 eye;
-  glm::vec3 look;
-};
+namespace commandline {
 
 void PrintUsage(const char *argv) {
   printf(
@@ -170,7 +108,7 @@ void PrintUsage(const char *argv) {
       "schedulers)\n");
 }
 
-void ParseCommandLine(int argc, char **argv, Options *options) {
+void Parse(int argc, char **argv, Options *options) {
   options->numTbbThreads = -1;
   for (int i = 1; i < argc; ++i) {
     if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
@@ -242,7 +180,56 @@ void ParseCommandLine(int argc, char **argv, Options *options) {
   }
 }
 
-void CreateDatabase(const Options &options) {
+} // namespace commandline
+} // namespace mpi
+} // namespace render
+} // namespace apps
+
+namespace apps {
+namespace render {
+namespace mpi {
+
+using namespace gvt::render::unit;
+using namespace gvt::core::time;
+using namespace gvt::render::data::primitives;
+using namespace gvt::render::data::scene;
+using namespace gvt::render::schedule;
+
+// global variables
+gvt::render::data::scene::gvtPerspectiveCamera* g_camera = NULL;
+gvt::render::data::scene::Image *g_image = NULL;
+
+typedef struct Vertex {
+  float x, y, z;
+  float nx, ny, nz;
+  void *other_props; /* other properties */
+} Vertex;
+
+typedef struct Face {
+  unsigned char nverts; /* number of vertex indices in list */
+  int *verts;           /* vertex index list */
+  void *other_props;    /* other properties */
+} Face;
+
+PlyProperty vert_props[] = {
+    /* list of property information for a vertex */
+    {"x", Float32, Float32, offsetof(Vertex, x), 0, 0, 0, 0},
+    {"y", Float32, Float32, offsetof(Vertex, y), 0, 0, 0, 0},
+    {"z", Float32, Float32, offsetof(Vertex, z), 0, 0, 0, 0},
+    {"nx", Float32, Float32, offsetof(Vertex, nx), 0, 0, 0, 0},
+    {"ny", Float32, Float32, offsetof(Vertex, ny), 0, 0, 0, 0},
+    {"nz", Float32, Float32, offsetof(Vertex, nz), 0, 0, 0, 0},
+};
+
+PlyProperty face_props[] = {
+    /* list of property information for a face */
+    {"vertex_indices", Int32, Int32, offsetof(Face, verts), 1, Uint8, Uint8,
+     offsetof(Face, nverts)},
+};
+static Vertex **vlist;
+static Face **flist;
+
+void CreateDatabase(const commandline::Options &options) {
   // mess I use to open and read the ply file with the c utils I found.
   PlyFile *in_ply;
   Vertex *vert;
@@ -431,8 +418,8 @@ void CreateDatabase(const Options &options) {
   //   schedNode["type"] = gvt::render::scheduler::Domain;
   // else
   //   schedNode["type"] = gvt::render::scheduler::Image;
-  if (options.tracer == Options::ASYNC_DOMAIN ||
-      options.tracer == Options::SYNC_DOMAIN) {
+  if (options.tracer == commandline::Options::ASYNC_DOMAIN ||
+      options.tracer == commandline::Options::SYNC_DOMAIN) {
     schedNode["type"] = gvt::render::scheduler::Domain;
   } else {
     schedNode["type"] = gvt::render::scheduler::Image;
@@ -449,11 +436,11 @@ void CreateDatabase(const Options &options) {
   // #endif
 
   // schedNode["adapter"] = gvt::render::adapter::Embree;
-  if (options.adapter == Options::EMBREE) {
+  if (options.adapter == commandline::Options::EMBREE) {
     schedNode["adapter"] = gvt::render::adapter::Embree;
-  } else if (options.adapter == Options::MANTA) {
+  } else if (options.adapter == commandline::Options::MANTA) {
     schedNode["adapter"] = gvt::render::adapter::Manta;
-  } else if (options.adapter == Options::OPTIX) {
+  } else if (options.adapter == commandline::Options::OPTIX) {
     schedNode["adapter"] = gvt::render::adapter::Optix;
   } else {
     schedNode["adapter"] = gvt::render::adapter::Embree;
@@ -478,102 +465,96 @@ void CreateDatabase(const Options &options) {
   g_camera->setFilmsize(filmNode["width"].value().toInteger(),
                        filmNode["height"].value().toInteger());
 
-}  // void CreateDatabase(const Options& options) {
+}  // void CreateDatabase(const commandline::Options& options) {
 
 void Render(int argc, char **argv) {
-  int rank, size;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
+  MpiInfo mpi;
+  MPI_Comm_rank(MPI_COMM_WORLD, &mpi.rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &mpi.size);
 
   timer t_database(false, "database timer:");
 
-  Options options;
-  ParseCommandLine(argc, argv, &options);
-
-  // create database
-  if (options.tracer != Options::PING_TEST) {
-    std::cout << "rank " << rank << " creating database." << std::endl;
-    t_database.start();
-    CreateDatabase(options);
-    t_database.stop();
-  }
+  commandline::Options options;
+  commandline::Parse(argc, argv, &options);
 
   // create image
-  if (options.tracer != Options::PING_TEST) {
-    g_image = new Image(g_camera->getFilmSizeWidth(),
-                        g_camera->getFilmSizeHeight(), "mpi");
-  }
-
-  // create a ray tracer
-  RayTracer *tracer = NULL;
-  if (options.tracer == Options::PING_TEST) {
-    tracer = new PingTracer;
-  } else if (options.tracer == Options::ASYNC_DOMAIN) {
-    tracer = new DomainTracer(g_camera->rays, *g_image);
-  } else if (options.tracer == Options::SYNC_DOMAIN) {
-    // do nothing
-  } else {
-    std::cout << "rank " << rank << " error found unsupported tracer type "
-              << options.tracer << std::endl;
-    exit(1);
+  if (options.tracer != commandline::Options::PING_TEST) {
   }
 
   // render
-  bool async = (options.tracer == Options::PING_TEST) ||
-               (options.tracer == Options::ASYNC_DOMAIN) ||
-               (options.tracer == Options::ASYNC_IMAGE);
+  bool async = (options.tracer == commandline::Options::PING_TEST) ||
+               (options.tracer == commandline::Options::ASYNC_DOMAIN) ||
+               (options.tracer == commandline::Options::ASYNC_IMAGE);
 
-  if (options.tracer == Options::PING_TEST) {
-    // create a worker
-    Worker worker(tracer);
+  switch (options.tracer) {
+    case commandline::Options::PING_TEST: {
+      if (mpi.rank == 0) std::cout << "start PING_TEST" << std::endl;
 
-    // register works
-    Command::Register(&worker);
-    PingTest::Register(&worker);
+      Worker worker(mpi, options, g_camera, g_image);
+      worker.Render();
 
-    // start the worker
-    worker.Start();
-  } else if (options.tracer == Options::ASYNC_DOMAIN) {
-    if (rank == 0) std::cout << "start ASYNC_DOMAIN" << std::endl;
-    // create a worker
-    Worker worker(tracer);
+      worker.Wait();
+    } break;
 
-    // register works
-    Command::Register(&worker);
-    RemoteRays::Register(&worker);
-    Vote::Register(&worker);
+    case commandline::Options::ASYNC_DOMAIN: {
+      if (mpi.rank == 0) std::cout << "start ASYNC_DOMAIN" << std::endl;
 
-    // gerenate primary rays
-    g_camera->AllocateCameraRays();
-    g_camera->generateRays();
+      std::cout << "rank " << mpi.rank << " creating database." << std::endl;
+      t_database.start();
+      CreateDatabase(options);
+      t_database.stop();
 
-    // start the worker
-    worker.Start();
-    
-    g_image->Write();
+      g_image = new Image(g_camera->getFilmSizeWidth(),
+                          g_camera->getFilmSizeHeight(), "mpi");
 
-  } else if (options.tracer == Options::SYNC_DOMAIN) {
-    if (rank == 0) std::cout << "start SYNC_DOMAIN" << std::endl;
+      Worker worker(mpi, options, g_camera, g_image);
 
-    g_camera->AllocateCameraRays();
-    g_camera->generateRays();
-
-    gvt::render::algorithm::Tracer<DomainScheduler> tracer(g_camera->rays,
-                                                           *g_image);
-    for (int z = 0; z < 10; z++) {
       g_camera->AllocateCameraRays();
       g_camera->generateRays();
-      g_image->clear();
-      tracer();
-    }
+      worker.Render();
 
-    g_image->Write();
+      if (mpi.rank == 0) worker.Quit();
+      worker.Wait();
+
+      g_image->Write();
+    } break;
+
+    case commandline::Options::SYNC_DOMAIN: {
+      if (mpi.rank == 0) std::cout << "start SYNC_DOMAIN" << std::endl;
+
+      std::cout << "rank " << mpi.rank << " creating database." << std::endl;
+      t_database.start();
+      CreateDatabase(options);
+      t_database.stop();
+
+      g_image = new Image(g_camera->getFilmSizeWidth(),
+                          g_camera->getFilmSizeHeight(), "mpi");
+
+      g_camera->AllocateCameraRays();
+      g_camera->generateRays();
+
+      gvt::render::algorithm::Tracer<DomainScheduler> tracer(g_camera->rays,
+                                                             *g_image);
+      for (int z = 0; z < 10; z++) {
+        g_camera->AllocateCameraRays();
+        g_camera->generateRays();
+        g_image->clear();
+        tracer();
+      }
+
+      g_image->Write();
+    } break;
+
+    default: {
+      std::cout << "rank " << mpi.rank
+                << " error found unsupported tracer type " << options.tracer
+                << std::endl;
+      exit(1);
+    } break;
   }
-
   // clean up
   if (g_image) delete g_image;
   if (g_camera) delete g_camera;
-  if (tracer) delete tracer;
 }
 
 }  // namespace mpi
@@ -581,18 +562,10 @@ void Render(int argc, char **argv) {
 }  // namespace apps
 
 int main(int argc, char **argv) {
-  int provided;
-  MPI_Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &provided);
-  if (provided != MPI_THREAD_MULTIPLE) {
-    std::cout << "error mpi_thread_multiple not available" << std::endl;
-    exit(1);
-  }
- 
+  MPI_Init(&argc, &argv);
   {
     apps::render::mpi::Render(argc, argv);
   }
-
-  // TODO 
-  // MPI_Finalize();
+  MPI_Finalize();
 }
 

@@ -1,45 +1,13 @@
-/* =======================================================================================
-   This file is released as part of GraviT - scalable, platform independent ray
-   tracing
-   tacc.github.io/GraviT
-
-   Copyright 2013-2015 Texas Advanced Computing Center, The University of Texas
-   at Austin
-   All rights reserved.
-
-   Licensed under the BSD 3-Clause License, (the "License"); you may not use
-   this file
-   except in compliance with the License.
-   A copy of the License is included with this software in the file LICENSE.
-   If your copy does not contain the License, you may obtain a copy of the
-   License at:
-
-       http://opensource.org/licenses/BSD-3-Clause
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under
-   the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-   CONDITIONS OF ANY
-   KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under
-   limitations under the License.
-
-   GraviT is funded in part by the US National Science Foundation under awards
-   ACI-1339863,
-   ACI-1339881 and ACI-1339840
-   =======================================================================================
-   */
-
 #include "gvt/render/unit/DomainTracer.h"
 
 #include <pthread.h>
 #include <iostream>
 #include <cstring>
 
+#include "gvt/render/unit/Communicator.h"
+
 #include "gvt/render/unit/CommonWorks.h"
 #include "gvt/render/unit/DomainWorks.h"
-#include "gvt/render/unit/Worker.h"
 #include "gvt/render/unit/TpcVoter.h"
 
 #include "gvt/render/actor/Ray.h"
@@ -79,13 +47,19 @@ namespace render {
 namespace unit {
 
 using namespace gvt::render::actor;
+using namespace gvt::render::data::scene;
 
 gvt::core::time::timer t_send(false, "domain tracer: send :");
 gvt::core::time::timer t_recv(false, "domain tracer: recv :");
 gvt::core::time::timer t_vote(false, "domain tracer: vote :");
 
-DomainTracer::DomainTracer(RayVector &rays, Image &image)
-    : AbstractTrace(rays, image) {
+DomainTracer::DomainTracer(const MpiInfo &mpiInfo, Worker *worker,
+                           Communicator *comm, RayVector &rays,
+                           gvt::render::data::scene::Image &image)
+    : RayTracer(mpiInfo, worker, comm), AbstractTrace(rays, image) {
+  voter = NULL;
+  if (mpiInfo.size > 1) voter = new TpcVoter(mpiInfo, *this, comm, worker);
+
   pthread_mutex_init(&workQ_mutex, NULL);
 
 #ifdef GVT_USE_MPE
@@ -96,8 +70,7 @@ DomainTracer::DomainTracer(RayVector &rays, Image &image)
   MPE_Log_get_state_eventIDs(&localrayfilterstart, &localrayfilterend);
   MPE_Log_get_state_eventIDs(&intersectbvhstart, &intersectbvhend);
   MPE_Log_get_state_eventIDs(&marchinstart, &marchinend);
-  // if (mpi.rank == 0) {
-  if (rank == 0) {
+  if (mpiInfo.rank == 0) {
     MPE_Describe_state(tracestart, traceend, "Process Queue", "blue");
     MPE_Describe_state(shufflestart, shuffleend, "Shuffle Rays", "green");
     MPE_Describe_state(framebufferstart, framebufferend, "Gather Framebuffer",
@@ -125,29 +98,25 @@ DomainTracer::DomainTracer(RayVector &rays, Image &image)
     }
 
     // NOTE: mpi-data(domain) assignment strategy
-    size_t mpiNode = dataIdx % mpi.world_size;
+    size_t mpiNode = dataIdx % mpiInfo.size;
 
-    // GVT_DEBUG(DBG_ALWAYS, "[" << mpi.rank << "] domain scheduler: instId: " << i
-    GVT_DEBUG(DBG_ALWAYS, "[" << rank << "] domain scheduler: instId: " << i
+    GVT_DEBUG(DBG_ALWAYS, "[" << mpiInfo.rank << "] domain scheduler: instId: " << i
                               << ", dataIdx: " << dataIdx
                               << ", target mpi node: " << mpiNode
-                              << ", world size: " << mpi.world_size);
+                              << ", world size: " << mpiInfo.size);
 
     GVT_ASSERT(dataIdx != -1, "domain scheduler: could not find data node");
     mpiInstanceMap[i] = mpiNode;
   }
 }
 
-void DomainTracer::Trace(Worker *worker) {
+void DomainTracer::Render() {
   // TODO: set these variables only once in the constructor
-  voter = worker->GetVoter();
-  num_processes = worker->GetMpiSize();
-  rank = worker->GetRank();
+  Trace();
 
-  Render(worker);
-  if (worker->GetRank() == 0) {
+  if (mpiInfo.rank == 0) {
     Work *work = new Command(Command::QUIT);
-    work->SendAll(worker);
+    work->SendAll(comm);
   }
 }
 
@@ -168,8 +137,7 @@ void DomainTracer::shuffleDropRays(gvt::render::actor::RayVector &rays) {
           gvt::render::actor::Ray &r = *(raysit.begin() + i);
           if (hits[i].next != -1) {
             r.origin = r.origin + r.direction * (hits[i].t * 0.8f);
-            // const bool inRank = mpiInstanceMap[hits[i].next] == mpi.rank;
-            const bool inRank = mpiInstanceMap[hits[i].next] == rank;
+            const bool inRank = mpiInstanceMap[hits[i].next] == mpiInfo.rank;
             if (inRank) local_queue[hits[i].next].push_back(r);
           }
         }
@@ -189,7 +157,7 @@ void DomainTracer::shuffleDropRays(gvt::render::actor::RayVector &rays) {
 
 inline void DomainTracer::FilterRaysLocally() { shuffleDropRays(rays); }
 
-inline void DomainTracer::Render(Worker* worker) {
+inline void DomainTracer::Trace() {
   gvt::core::time::timer t_diff(false, "domain tracer: diff timers/frame:");
   gvt::core::time::timer t_all(false, "domain tracer: all timers:");
   gvt::core::time::timer t_frame(true, "domain tracer: frame :");
@@ -262,8 +230,7 @@ inline void DomainTracer::Render(Worker* worker) {
     // this->queue.begin(); q != this->queue.end();
     //      ++q) {
     for (auto &q : queue) {
-      // const bool inRank = mpiInstanceMap[q.first] == mpi.rank;
-      const bool inRank = mpiInstanceMap[q.first] == rank;
+      const bool inRank = mpiInstanceMap[q.first] == mpiInfo.rank;
       if (inRank && q.second.size() > instTargetCount) {
         instTargetCount = q.second.size();
         instTarget = q.first;
@@ -350,7 +317,7 @@ inline void DomainTracer::Render(Worker* worker) {
       moved_rays.clear();
       t_shuffle.stop();
     }
-    all_done = TransferRays(worker);
+    all_done = TransferRays();
   }
 
 // std::cout << "domain scheduler: select time: " << t_sort.format();
@@ -375,17 +342,17 @@ inline void DomainTracer::Render(Worker* worker) {
   t_diff = t_frame - t_all;
 }
 
-bool DomainTracer::TransferRays(Worker* worker) {
+bool DomainTracer::TransferRays() {
   bool done;
-  if (num_processes > 1) {
+  if (mpiInfo.size > 1) {
     if (voter->isCommunicationAllowed()) {  // TODO: potential improvement
       t_send.resume();
-      SendRays(worker);
+      SendRays();
       t_send.stop();
       // profiler.update(Profiler::Send, t_send.getElapsed());
 
       t_recv.resume();
-      RecvRays(worker);
+      RecvRays();
       t_recv.stop();
       // profiler.update(Profiler::Receive, t_receive.getElapsed());
     }
@@ -394,8 +361,8 @@ bool DomainTracer::TransferRays(Worker* worker) {
     done = voter->updateState();
     t_vote.stop();
 #ifdef DEBUG_VOTER
-    if (worker->GetRank() == 0)
-      printf("rank %d: voter state %d\n", worker->GetRank(), voter->state);
+    if (mpiInfo.rank == 0)
+      printf("rank %d: voter state %d\n", mpiInfo.rank, voter->state);
 #endif
     // profiler.update(Profiler::Vote, t_vote.getElapsed());
 
@@ -407,7 +374,7 @@ bool DomainTracer::TransferRays(Worker* worker) {
   return done;
 }
 
-void DomainTracer::SendRays(Worker* worker) {
+void DomainTracer::SendRays() {
 #ifdef PROFILE_RAY_COUNTS
   uint64_t ray_count = 0;
 #endif
@@ -417,17 +384,17 @@ void DomainTracer::SendRays(Worker* worker) {
     int owner_process = mpiInstanceMap[instance];
     size_t num_rays_to_send = rays.size();
 
-    if (owner_process != rank && num_rays_to_send > 0) {
+    if (owner_process != mpiInfo.rank && num_rays_to_send > 0) {
       voter->addNumPendingRays(num_rays_to_send);
 
       RemoteRays::Header header;
       header.transfer_type = RemoteRays::Request;
-      header.sender = rank;
+      header.sender = mpiInfo.rank;
       header.instance = instance;
       header.num_rays = num_rays_to_send;
 
       RemoteRays *work = new RemoteRays(header, rays);
-      work->Send(owner_process, worker);
+      work->Send(owner_process, comm);
       // RemoteRays *work = new RemoteRays(RemoteRays::getSize(
       //     num_rays_to_send * sizeof(gvt::render::actor::Ray)));
       // work->setup(RemoteRays::Request, rank, instance, rays);
@@ -439,7 +406,7 @@ void DomainTracer::SendRays(Worker* worker) {
       ray_count += num_rays_to_send;
 #endif
 #ifdef DEBUG_TX
-      printf("rank %d: sent %lu rays instance %d to rank %d\n", rank,
+      printf("rank %d: sent %lu rays instance %d to rank %d\n", mpiInfo.rank,
              num_rays_to_send, instance, owner_process);
 #endif
     }
@@ -455,7 +422,7 @@ inline void DomainTracer::BufferWork(Work *work) {
   pthread_mutex_unlock(&workQ_mutex);
 }
 
-void DomainTracer::RecvRays(Worker* worker) {
+void DomainTracer::RecvRays() {
 #ifdef PROFILE_RAY_COUNTS
   uint64_t ray_count = 0;
 #endif
@@ -467,17 +434,17 @@ void DomainTracer::RecvRays(Worker* worker) {
 
     RemoteRays::Header header;
     header.transfer_type = RemoteRays::Grant;
-    header.sender = worker->GetRank();
+    header.sender = mpiInfo.rank;
     header.instance = rays->GetInstance();
     header.num_rays = rays->GetNumRays();
 
     RemoteRays *grant = new RemoteRays(header);
-    grant->Send(rays->GetSender(), worker);
+    grant->Send(rays->GetSender(), comm);
 #ifdef PROFILE_RAY_COUNTS
     ray_count += rays->getNumRays();
 #endif
 #ifdef DEBUG_TX
-    printf("rank %d: recved %d rays instance %d \n", worker->GetRank(),
+    printf("rank %d: recved %d rays instance %d \n", mpiInfo.rank,
            rays->GetNumRays(), rays->GetInstance());
 #endif
     workQ.pop();
@@ -531,7 +498,7 @@ void DomainTracer::CompositeFrameBuffers() {
   LocalComposite();
   // for (size_t i = 0; i < size; i++) image.Add(i, colorBuf[i]);
 
-  // if (!mpi) return;
+  // if (!mpiInfo) return;
 
   size_t size = width * height;
   unsigned char *rgb = image.GetBuffer();
@@ -539,12 +506,12 @@ void DomainTracer::CompositeFrameBuffers() {
   int rgb_buf_size = 3 * size;
 
   unsigned char *bufs =
-      (rank == 0) ? new unsigned char[num_processes * rgb_buf_size] : NULL;
+      (mpiInfo.rank == 0) ? new unsigned char[mpiInfo.size * rgb_buf_size] : NULL;
 
   // MPI_Barrier(MPI_COMM_WORLD);
   MPI_Gather(rgb, rgb_buf_size, MPI_UNSIGNED_CHAR, bufs, rgb_buf_size,
              MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);
-  if (rank == 0) {
+  if (mpiInfo.rank == 0) {
     const size_t chunksize =
         MAX(2, size / (std::thread::hardware_concurrency() * 4));
     static tbb::simple_partitioner ap;
@@ -553,7 +520,7 @@ void DomainTracer::CompositeFrameBuffers() {
 
                         for (int j = chunk.begin() * 3; j < chunk.end() * 3;
                              j += 3) {
-                          for (size_t i = 1; i < num_processes; ++i) {
+                          for (size_t i = 1; i < mpiInfo.size; ++i) {
                             int p = i * rgb_buf_size + j;
                             // assumes black background, so adding is fine
                             // (r==g==b== 0)

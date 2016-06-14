@@ -318,6 +318,7 @@ set(GVT_RENDER_SRCS ${GVT_RENDER_SRCS}
 )
 
 set(GVT_MPI_SRCS
+    src/gvt/render/unit/Communicator.cpp
     src/gvt/render/unit/Worker.cpp
     src/gvt/render/unit/DomainTracer.cpp
     src/gvt/render/unit/CommonWorks.cpp

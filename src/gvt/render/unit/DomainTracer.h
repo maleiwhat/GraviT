@@ -37,6 +37,7 @@
 #include <queue>
 #include <pthread.h>
 
+#include "gvt/render/unit/Types.h"
 #include "gvt/render/unit/RayTracer.h"
 
 #include "gvt/render/algorithm/TracerBase.h"
@@ -64,13 +65,17 @@ class Worker;
 class Work;
 class RemoteRays;
 class TpcVoter;
+class Communicator;
 
 class DomainTracer : public RayTracer, public AbstractTrace {
  public:
-  DomainTracer(RayVector &rays, Image &image);
+  DomainTracer(const MpiInfo &mpiInfo, Worker *worker, Communicator *comm,
+               RayVector &rays, gvt::render::data::scene::Image &image);
   virtual ~DomainTracer() {}
 
-  virtual void Trace(Worker *worker);
+  virtual void Render();
+
+  virtual TpcVoter *GetVoter() { return voter; }
 
   virtual void BufferWork(Work *work);
 
@@ -83,29 +88,27 @@ class DomainTracer : public RayTracer, public AbstractTrace {
   }
 
  private:
-   // this class is responsible for deleting Work* in the queue
-   pthread_mutex_t workQ_mutex;
-   std::queue<Work*> workQ;
+  void Trace();
 
- private:
   void shuffleDropRays(gvt::render::actor::RayVector &rays);
   void FilterRaysLocally();
-  void Render(Worker* worker);
 
   // composite
   void CompositeFrameBuffers();
   void LocalComposite();
 
   // sending rays
-  bool TransferRays(Worker* worker);
-  void SendRays(Worker* worker);
-  void RecvRays(Worker* worker);
+  bool TransferRays();
+  void SendRays();
+  void RecvRays();
 
   void CopyRays(const RemoteRays &rays); // TODO: avoid this
 
-  TpcVoter* voter;
-  int rank;
-  int num_processes;
+  TpcVoter *voter;
+
+  // this class is responsible for deleting Work* in the queue
+  pthread_mutex_t workQ_mutex;
+  std::queue<Work *> workQ;
 
  private:
   std::set<int> neighbors;
