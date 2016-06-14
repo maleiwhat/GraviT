@@ -318,10 +318,11 @@ inline void DomainTracer::Trace() {
 #endif
   t_gather.resume();
   // this->gatherFramebuffers(this->rays_end - this->rays_start);
-  if (mpiInfo.rank == 0) {
-    Work *work = new Composite(0);  // 0 is a dummy value
-    work->SendAll(comm);
-  }
+  // if (mpiInfo.rank == 0) {
+  //   Work *work = new Composite(0);  // 0 is a dummy value
+  //   work->SendAll(comm);
+  // }
+  CompositeFrameBuffers();
   t_gather.stop();
 #ifdef GVT_USE_MPE
   MPE_Log_event(framebufferend, 0, NULL);
