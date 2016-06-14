@@ -171,7 +171,7 @@ void Worker::WaitMpiReady() {
 
 void Worker::WaitTracerReady() {
   pthread_mutex_lock(&tracerReady_mutex);
-  while (!mpiReady) {
+  while (!tracerReady) {
     pthread_cond_wait(&tracerReady_cond, &tracerReady_mutex);
   }
   tracerReady = false;
