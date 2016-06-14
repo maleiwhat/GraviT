@@ -42,6 +42,7 @@
 #include "gvt/render/unit/RayTracer.h"
 
 #include "gvt/render/algorithm/TracerBase.h"
+// #include "gvt/render/unit/AbstractTrace.h"
 #include "gvt/render/actor/Ray.h"
 
 namespace gvt {

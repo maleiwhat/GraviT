@@ -55,7 +55,6 @@ DomainTracer::DomainTracer(const MpiInfo &mpiInfo, Worker *worker,
                            Communicator *comm, RayVector &rays,
                            gvt::render::data::scene::Image &image)
     : RayTracer(mpiInfo, worker, comm), AbstractTrace(rays, image) {
-printf("1000\n");
   voter = NULL;
   if (mpiInfo.size > 1) voter = new TpcVoter(mpiInfo, *this, comm, worker);
 
@@ -319,10 +318,10 @@ inline void DomainTracer::Trace() {
 #endif
   t_gather.resume();
   // this->gatherFramebuffers(this->rays_end - this->rays_start);
-  // if (mpiInfo.rank == 0) {
-  //   Work *work = new Composite(0);  // 0 is a dummy value
-  //   work->SendAll(comm);
-  // }
+  if (mpiInfo.rank == 0) {
+    Work *work = new Composite(0);  // 0 is a dummy value
+    work->SendAll(comm);
+  }
   t_gather.stop();
 #ifdef GVT_USE_MPE
   MPE_Log_event(framebufferend, 0, NULL);

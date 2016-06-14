@@ -19,9 +19,8 @@ namespace unit {
 
 // Communicator::Communicator() { Initialize(); }
 
-Communicator::Communicator(int* argc, char*** argv, const MpiInfo& mpi,
-                           Worker* worker)
-    : argcp(argc), argvp(argv), mpi(mpi), worker(worker), allWorkDone(false) {
+Communicator::Communicator(int* argc, char*** argv, Worker* worker)
+    : argcp(argc), argvp(argv), worker(worker), allWorkDone(false) {
   InitThreads();
 }
 
@@ -80,17 +79,17 @@ void Communicator::InitThreads() {
 
   threads.resize(NUM_PTHREADS);
 
-  int error = pthread_create(&threads[MESSAGE_THREAD], NULL,
-                             &Communicator::StartMessageThread, this);
-  if (error) {
-    std::cout << "error " << error << " failed to create message thread.\n";
-    exit(error);
-  }
-
-  error = pthread_create(&threads[WORK_THREAD], NULL,
+  int error = pthread_create(&threads[WORK_THREAD], NULL,
                          &Communicator::StartWorkThread, this);
   if (error) {
     std::cout << "error " << error << " failed to create worker thread.\n";
+    exit(error);
+  }
+
+  error = pthread_create(&threads[MESSAGE_THREAD], NULL,
+                         &Communicator::StartMessageThread, this);
+  if (error) {
+    std::cout << "error " << error << " failed to create message thread.\n";
     exit(error);
   }
 }
@@ -139,19 +138,18 @@ void Communicator::MessageThread() {
   bool done = false;
   MPI_Status mpi_status;
 
-  // int pvd;
-  // MPI_Init_thread(argcp, argvp, MPI_THREAD_FUNNELED, &pvd);
-  // MPI_Init_thread(argcp, argvp, MPI_THREAD_FUNNELED, &pvd);
-  // if ((pvd != MPI_THREAD_FUNNELED)) {
-  //   std::cerr << "error: mpi_thread_funneled not available\n";
-  //   exit(1);
-  // }
+  int pvd;
+  MPI_Init_thread(argcp, argvp, MPI_THREAD_FUNNELED, &pvd);
+  if ((pvd != MPI_THREAD_FUNNELED)) {
+    std::cerr << "error: mpi_thread_funneled not available\n";
+    exit(1);
+  }
   // MPI_Init(argcp, argvp);
 
-  // MPI_Comm_rank(MPI_COMM_WORLD, &mpi.rank);
-  // MPI_Comm_size(MPI_COMM_WORLD, &mpi.size);
+  MPI_Comm_rank(MPI_COMM_WORLD, &mpi.rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &mpi.size);
   
-  // worker->SignalMpiReady();
+  worker->SignalMpiReady();
 
   while (!allWorkDone) {
     // serve incoming message
@@ -181,6 +179,8 @@ void Communicator::MessageThread() {
 
     if (outgoing_work) SendWork(outgoing_work);
   }
+
+  // MPI_Finalize();
 }
 
 void Communicator::Quit() {

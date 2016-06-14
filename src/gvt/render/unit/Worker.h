@@ -43,12 +43,13 @@ class TpcVoter;
 
 class Worker {
  public:
-  Worker(int* argc, char*** argv, const MpiInfo& mpi,
-         const commandline::Options& options, gvtPerspectiveCamera* camera,
-         Image* image);
+  Worker(int* argc, char*** argv, const commandline::Options& options,
+         gvtPerspectiveCamera* camera, Image* image);
 
   ~Worker();
 
+  void InitTracer(const commandline::Options& options,
+                  gvtPerspectiveCamera* camera, Image* image);
   void Render();
 
   // sync
