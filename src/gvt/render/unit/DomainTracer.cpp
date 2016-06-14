@@ -1,8 +1,8 @@
 #include "gvt/render/unit/DomainTracer.h"
 
 #include <pthread.h>
-#include <iostream>
 #include <cstring>
+#include <iostream>
 
 #include "gvt/render/unit/Communicator.h"
 
@@ -36,11 +36,9 @@
 #include <gvt/render/adapter/heterogeneous/Wrapper.h>
 #endif
 
-#include <boost/foreach.hpp>
+// #include <boost/foreach.hpp>
 
 #include <set>
-
-#define DEBUG_TX
 
 namespace gvt {
 namespace render {
@@ -57,11 +55,11 @@ DomainTracer::DomainTracer(const MpiInfo &mpiInfo, Worker *worker,
                            Communicator *comm, RayVector &rays,
                            gvt::render::data::scene::Image &image)
     : RayTracer(mpiInfo, worker, comm), AbstractTrace(rays, image) {
+printf("1000\n");
   voter = NULL;
   if (mpiInfo.size > 1) voter = new TpcVoter(mpiInfo, *this, comm, worker);
 
   pthread_mutex_init(&workQ_mutex, NULL);
-
 #ifdef GVT_USE_MPE
   // MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPE_Log_get_state_eventIDs(&tracestart, &traceend);
@@ -100,23 +98,13 @@ DomainTracer::DomainTracer(const MpiInfo &mpiInfo, Worker *worker,
     // NOTE: mpi-data(domain) assignment strategy
     size_t mpiNode = dataIdx % mpiInfo.size;
 
-    GVT_DEBUG(DBG_ALWAYS, "[" << mpiInfo.rank << "] domain scheduler: instId: " << i
-                              << ", dataIdx: " << dataIdx
+    GVT_DEBUG(DBG_ALWAYS, "[" << mpiInfo.rank << "] domain scheduler: instId: "
+                              << i << ", dataIdx: " << dataIdx
                               << ", target mpi node: " << mpiNode
                               << ", world size: " << mpiInfo.size);
 
     GVT_ASSERT(dataIdx != -1, "domain scheduler: could not find data node");
     mpiInstanceMap[i] = mpiNode;
-  }
-}
-
-void DomainTracer::Render() {
-  // TODO: set these variables only once in the constructor
-  Trace();
-
-  if (mpiInfo.rank == 0) {
-    Work *work = new Command(Command::QUIT);
-    work->SendAll(comm);
   }
 }
 
@@ -300,9 +288,9 @@ inline void DomainTracer::Trace() {
       {
         t_trace.resume();
         moved_rays.reserve(this->queue[instTarget].size() * 10);
-#ifdef GVT_USE_DEBUG
-        boost::timer::auto_cpu_timer t("Tracing rays in adapter: %w\n");
-#endif
+// #ifdef GVT_USE_DEBUG
+//         boost::timer::auto_cpu_timer t("Tracing rays in adapter: %w\n");
+// #endif
         adapter->trace(this->queue[instTarget], moved_rays, instM[instTarget],
                        instMinv[instTarget], instMinvN[instTarget], lights);
 
@@ -330,8 +318,11 @@ inline void DomainTracer::Trace() {
   MPE_Log_event(framebufferstart, 0, NULL);
 #endif
   t_gather.resume();
-  //this->gatherFramebuffers(this->rays_end - this->rays_start);
-  CompositeFrameBuffers();
+  // this->gatherFramebuffers(this->rays_end - this->rays_start);
+  // if (mpiInfo.rank == 0) {
+  //   Work *work = new Composite(0);  // 0 is a dummy value
+  //   work->SendAll(comm);
+  // }
   t_gather.stop();
 #ifdef GVT_USE_MPE
   MPE_Log_event(framebufferend, 0, NULL);
@@ -360,10 +351,6 @@ bool DomainTracer::TransferRays() {
     t_vote.resume();
     done = voter->updateState();
     t_vote.stop();
-#ifdef DEBUG_VOTER
-    if (mpiInfo.rank == 0)
-      printf("rank %d: voter state %d\n", mpiInfo.rank, voter->state);
-#endif
     // profiler.update(Profiler::Vote, t_vote.getElapsed());
 
   } else {
@@ -405,7 +392,7 @@ void DomainTracer::SendRays() {
 #ifdef PROFILE_RAY_COUNTS
       ray_count += num_rays_to_send;
 #endif
-#ifdef DEBUG_TX
+#ifndef NDEBUG
       printf("rank %d: sent %lu rays instance %d to rank %d\n", mpiInfo.rank,
              num_rays_to_send, instance, owner_process);
 #endif
@@ -443,7 +430,7 @@ void DomainTracer::RecvRays() {
 #ifdef PROFILE_RAY_COUNTS
     ray_count += rays->getNumRays();
 #endif
-#ifdef DEBUG_TX
+#ifndef NDEBUG
     printf("rank %d: recved %d rays instance %d \n", mpiInfo.rank,
            rays->GetNumRays(), rays->GetInstance());
 #endif
@@ -464,8 +451,9 @@ void DomainTracer::CopyRays(const RemoteRays &rays) {
   const Ray *begin = reinterpret_cast<const Ray *>(rays.GetRayBuffer());
   const Ray *end = begin + rays.GetNumRays();
 
-#ifdef DEBUG_TX
-  printf("ray copy begin %p end %p instance %d num_rays %d\n", begin, end, instance, num_rays);
+#ifndef NDEBUG
+  printf("ray copy begin %p end %p instance %d num_rays %d\n", begin, end,
+         instance, num_rays);
 #endif
 
   if (queue.find(instance) != queue.end()) {
@@ -492,8 +480,9 @@ void DomainTracer::LocalComposite() {
 }
 
 void DomainTracer::CompositeFrameBuffers() {
-#ifdef DEBUG_TX
-  printf("start of %s\n", __PRETTY_FUNCTION__);
+#ifndef NDEBUG
+  std::cout << "rank " << mpiInfo.rank << " start " << __PRETTY_FUNCTION__
+            << std::endl;
 #endif
   LocalComposite();
   // for (size_t i = 0; i < size; i++) image.Add(i, colorBuf[i]);
@@ -505,8 +494,9 @@ void DomainTracer::CompositeFrameBuffers() {
 
   int rgb_buf_size = 3 * size;
 
-  unsigned char *bufs =
-      (mpiInfo.rank == 0) ? new unsigned char[mpiInfo.size * rgb_buf_size] : NULL;
+  unsigned char *bufs = (mpiInfo.rank == 0)
+                            ? new unsigned char[mpiInfo.size * rgb_buf_size]
+                            : NULL;
 
   // MPI_Barrier(MPI_COMM_WORLD);
   MPI_Gather(rgb, rgb_buf_size, MPI_UNSIGNED_CHAR, bufs, rgb_buf_size,
@@ -532,6 +522,10 @@ void DomainTracer::CompositeFrameBuffers() {
                       });
   }
   delete[] bufs;
+#ifndef NDEBUG
+  std::cout << "rank " << mpiInfo.rank << " done " << __PRETTY_FUNCTION__
+            << std::endl;
+#endif
 }
 
 }  // namespace unit

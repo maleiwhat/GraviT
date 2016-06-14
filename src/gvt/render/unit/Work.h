@@ -53,7 +53,7 @@
  private:                                                        \
   static int tag;
 
-#define STATIC_WORK_TAG(ClassName) int ClassName::tag;
+#define STATIC_WORK_TAG(ClassName) int ClassName::tag = -1;
 
 namespace gvt {
 namespace render {

@@ -7,6 +7,7 @@ namespace render {
 namespace unit {
 
 STATIC_WORK_TAG(Command)
+STATIC_WORK_TAG(Composite)
 STATIC_WORK_TAG(PingTest)
 
 bool Command::Action(Worker* worker) {
@@ -19,6 +20,15 @@ bool Command::Action(Worker* worker) {
     worker->QuitCommunicator();
   }
 
+  return true;
+}
+
+bool Composite::Action(Worker* worker) {
+#ifndef NDEBUG
+  std::cout << "rank " << worker->GetRank() << " " << __PRETTY_FUNCTION__
+            << std::endl;
+#endif
+  worker->GetTracer()->CompositeFrameBuffers();
   return true;
 }
 

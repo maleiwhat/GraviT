@@ -19,8 +19,9 @@ namespace unit {
 
 // Communicator::Communicator() { Initialize(); }
 
-Communicator::Communicator(const MpiInfo& mpi, Worker* worker)
-    : mpi(mpi), worker(worker), allWorkDone(false) {
+Communicator::Communicator(int* argc, char*** argv, const MpiInfo& mpi,
+                           Worker* worker)
+    : argcp(argc), argvp(argv), mpi(mpi), worker(worker), allWorkDone(false) {
   InitThreads();
 }
 
@@ -134,8 +135,21 @@ inline void Communicator::WorkThread() {
 }
 
 void Communicator::MessageThread() {
+
   bool done = false;
   MPI_Status mpi_status;
+
+  int pvd;
+  MPI_Init_thread(argcp, argvp, MPI_THREAD_FUNNELED, &pvd);
+  if ((pvd != MPI_THREAD_FUNNELED)) {
+    std::cerr << "error: mpi_thread_funneled not available\n";
+    exit(1);
+  }
+
+  MPI_Comm_rank(MPI_COMM_WORLD, &mpi.rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &mpi.size);
+  
+  worker->SignalMpiReady();
 
   while (!allWorkDone) {
     // serve incoming message
@@ -143,6 +157,8 @@ void Communicator::MessageThread() {
     MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &flag, &mpi_status);
 
     if (flag) {
+      assert(mpi_status.MPI_TAG >= 0 &&
+             mpi_status.MPI_TAG < deserializers.size());
       Work* incoming_work = deserializers[mpi_status.MPI_TAG]();
       RecvWork(mpi_status, incoming_work);
     }
@@ -166,12 +182,16 @@ void Communicator::MessageThread() {
 }
 
 void Communicator::Quit() {
+#ifndef NDEBUG
+  std::cout << "rank " << mpi.rank << " seting allWorkDOne = 1 "
+            << __PRETTY_FUNCTION__ << std::endl;
+#endif
   allWorkDone = true;
   for (std::size_t i = 0; i < threads.size(); ++i) {
     pthread_join(threads[i], NULL);
 #ifndef NDEBUG
     std::cout << "rank " << mpi.rank << " thread " << i << " / "
-              << threads.size() << " joined.\n";
+              << threads.size() << " joined." << std::endl;
 #endif
   }
   // error checking code
@@ -202,12 +222,13 @@ void Communicator::RecvWork(const MPI_Status& status, Work* work) {
             << __PRETTY_FUNCTION__ << "\n";
 #endif
 
-  // TODO
+#ifdef DONT_ALLOW_ZERO_BYTE
   if (count < 1) {
     std::cout << "error unable to receive " << count << " bytes. tag "
               << status.MPI_TAG << " source " << status.MPI_SOURCE << "\n";
     exit(1);
   }
+#endif
 
   work->Allocate(count);
   MPI_Status status_out;
@@ -244,10 +265,12 @@ void Communicator::SendWork(Work* work) {
   } else {  // P2P
     // TODO
     int count = work->GetSize();
+#ifdef DONT_ALLOW_ZERO_BYTE
     if (count < 1) {
       std::cout << "error unable to send " << count << " bytes.\n";
       exit(1);
     }
+#endif
     MPI_Send(work->GetBuffer(), count, MPI_UNSIGNED_CHAR,
              work->GetDestination(), work->GetTag(), MPI_COMM_WORLD);
     delete work;

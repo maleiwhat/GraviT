@@ -83,13 +83,19 @@ class PingTest : public Work {
 class Composite : public Work {
   REGISTER_WORK(Composite)
 
+  struct Data {
+    int value;
+  };
+
  public:
   Composite() : Work() {}
-
-  virtual bool Action(Worker* worker) {
-    assert(false);
-    return true;
+  Composite(int value) : Work(sizeof(Data)) {
+    GetBufferPtr<Data>()->value = value;
   }
+
+  virtual bool Action(Worker* worker);
+
+  int GetValue() const { return GetBufferPtr<Data>()->value; }
 };
 
 }  // namespace unit

@@ -18,7 +18,7 @@ class PingTracer : public RayTracer {
       : RayTracer(mpi, worker, comm) {}
   virtual ~PingTracer() {}
 
-  virtual void Render() {
+  virtual void Trace() {
     Work* work = NULL;
     if (mpiInfo.size > 1) {
       int rank = mpiInfo.rank;

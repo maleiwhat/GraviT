@@ -20,8 +20,9 @@ class RayTracer {
       : mpiInfo(mpi), worker(worker), comm(comm) {}
   virtual ~RayTracer() {}
 
-  virtual void Render() = 0;
+  virtual void Trace() = 0;
   virtual TpcVoter* GetVoter() { return NULL; }
+  virtual void CompositeFrameBuffers() { assert(false); }
 
   // helper functions
   // TODO: avoid this (tbd)

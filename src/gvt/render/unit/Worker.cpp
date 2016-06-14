@@ -19,35 +19,45 @@ namespace unit {
 using namespace apps::render::mpi;
 using namespace gvt::render::data::scene;
 
-Worker::Worker(const MpiInfo& mpi, const commandline::Options& options,
+Worker::Worker(int* argc, char*** argv, const commandline::Options& options,
                gvtPerspectiveCamera* camera, Image* image)
-    : mpi(mpi), camera(camera), image(image), quit(false) {
+    : camera(camera), image(image), quit(false), mpiReady(false) {
   // init mutex
   pthread_mutex_init(&quit_mutex, NULL);
   pthread_cond_init(&quit_cond, NULL);
 
   // create communicator
-  comm = new Communicator(mpi, this);
+  comm = new Communicator(argc, argv, mpi, this);
 
+  // wait until mpi gets initialized
+  pthread_mutex_lock(&mpiReady_mutex);
+  while (!mpiReady) {
+    pthread_cond_wait(&mpiReady_cond, &mpiReady_mutex);
+  }
+  mpiReady = false;
+  pthread_mutex_unlock(&mpiReady_mutex);
+
+  // mpi info is available from the communicator
+  mpi = comm->GetMpiInfo();
+
+  // all applications require this for quitting the worker
   Command::Register(comm);
 
   // create tracer and register required works
   tracer = NULL;
   switch (options.tracer) {
-    case commandline::Options::PING_TEST: {
-      tracer = new PingTracer(mpi, this, comm);
-      // register works
-      PingTest::Register(comm);
-
-    } break;
     case commandline::Options::ASYNC_DOMAIN: {
       tracer = new DomainTracer(mpi, this, comm, camera->rays, *image);
-
-      // register works
       RemoteRays::Register(comm);
       Vote::Register(comm);
-
+      Composite::Register(comm);
     } break;
+
+    case commandline::Options::PING_TEST: {
+      tracer = new PingTracer(mpi, this, comm);
+      PingTest::Register(comm);
+    } break;
+
     default: {
       std::cout << "rank " << mpi.rank
                 << " error found unsupported tracer type " << options.tracer
@@ -65,7 +75,7 @@ Worker::~Worker() {
   if (tracer) delete tracer;
 }
 
-void Worker::Render() { tracer->Render(); }
+void Worker::Render() { tracer->Trace(); }
 
 void Worker::Quit() {
   if (mpi.rank == 0) {
@@ -89,6 +99,13 @@ void Worker::Wait() {
   }
   quit = false;
   pthread_mutex_unlock(&quit_mutex);
+}
+
+void Worker::SignalMpiReady() {
+  pthread_mutex_lock(&mpiReady_mutex);
+  mpiReady = true;
+  pthread_cond_signal(&mpiReady_cond);
+  pthread_mutex_unlock(&mpiReady_mutex);
 }
 
 }  // using namespace unit

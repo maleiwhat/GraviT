@@ -10,11 +10,11 @@ namespace commandline {
 
 struct Options {
   enum TracerType {
-    PING_TEST = 0,
+    ASYNC_DOMAIN = 0,
     ASYNC_IMAGE,
-    ASYNC_DOMAIN,
-    SYNC_IMAGE,
     SYNC_DOMAIN,
+    SYNC_IMAGE,
+    PING_TEST,
     NUM_TRACERS
   };
 

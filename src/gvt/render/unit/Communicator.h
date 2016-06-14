@@ -20,7 +20,8 @@ class TpcVoter;
 
 class Communicator {
  public:
-  Communicator(const MpiInfo& mpi, Worker* worker);
+  Communicator(int* argc, char*** argv, const MpiInfo& mpi, Worker* worker);
+  ~Communicator() { MPI_Finalize(); }
 
   // register deserializers
   int RegisterWork(Work* (*Deserialize)());
@@ -31,6 +32,8 @@ class Communicator {
 
   // mpi
   void Send(Work* work);
+
+  MpiInfo GetMpiInfo() const { return mpi; }
   int GetRank() { return mpi.rank; }
   int GetMpiSize() { return mpi.size; }
   // MPI_Comm GetMpiComm() { return mpi.comm; }
@@ -40,6 +43,8 @@ class Communicator {
 
   Worker* worker;
 
+  int* argcp;
+  char*** argvp;
   // intializers
   // void Initialize();
   // void InitMpi();

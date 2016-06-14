@@ -79,6 +79,8 @@ namespace render {
 namespace mpi {
 namespace commandline {
 
+using namespace gvt::render::unit;
+
 void PrintUsage(const char *argv) {
   printf(
       "Usage : %s [-h] [-i <infile>] [-a <adapter>] [-n <x y z>] [-p] [-s "
@@ -90,10 +92,10 @@ void PrintUsage(const char *argv) {
       "  -i, --infile <infile> (default: ../data/geom/bunny.obj for obj and "
       "./EnzoPlyData/Enzo8 for ply)\n");
   printf("  -a, --adapter <embree | manta | optix> (default: embree)\n");
-  printf("  -t, --tracer <0-3> (default: 2)\n");
+  printf("  -t, --tracer <0-3> (default: 0)\n");
   printf(
-      "      0: PING_TEST, 1: ASYNC_IMAGE, 2: ASYNC_DOMAIN, 3: SYNC_IMAGE, 4: "
-      "SYNC_DOMAIN\n");
+      "      0: ASYNC_DOMAIN, 1: ASYNC_IMAGE, 2: SYNC_DOMAIN, 3: SYNC_IMAGE, "
+      "4: PING_TEST\n");
   printf(
       "  -n, --num-instances <x, y, z> specify the number of instances in each "
       "direction (default: 1 1 1). "
@@ -109,11 +111,16 @@ void PrintUsage(const char *argv) {
 }
 
 void Parse(int argc, char **argv, Options *options) {
+  MpiInfo mpi;
+  // MPI_Comm_rank(MPI_COMM_WORLD, &mpi.rank);
+  // MPI_Comm_size(MPI_COMM_WORLD, &mpi.size);
+
   options->numTbbThreads = -1;
   for (int i = 1; i < argc; ++i) {
     if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
       PrintUsage(argv[0]);
-      exit(1);
+      // MPI_Finalize();
+      exit(0);
     } else if (strcmp(argv[i], "-i") == 0 || strcmp(argv[i], "--infile") == 0) {
       options->infile = argv[++i];
       struct stat buf;
@@ -469,34 +476,32 @@ void CreateDatabase(const commandline::Options &options) {
 
 void Render(int argc, char **argv) {
   MpiInfo mpi;
-  MPI_Comm_rank(MPI_COMM_WORLD, &mpi.rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &mpi.size);
-
+  // MPI_Comm_rank(MPI_COMM_WORLD, &mpi.rank);
+  // MPI_Comm_size(MPI_COMM_WORLD, &mpi.size);
   timer t_database(false, "database timer:");
 
   commandline::Options options;
   commandline::Parse(argc, argv, &options);
 
-  // create image
-  if (options.tracer != commandline::Options::PING_TEST) {
-  }
-
-  // render
-  bool async = (options.tracer == commandline::Options::PING_TEST) ||
-               (options.tracer == commandline::Options::ASYNC_DOMAIN) ||
-               (options.tracer == commandline::Options::ASYNC_IMAGE);
+  // initialize tbb
+  tbb::task_scheduler_init init(options.numTbbThreads);
 
   switch (options.tracer) {
     case commandline::Options::PING_TEST: {
+      Worker worker(&argc, &argv, options, g_camera, g_image);
+      mpi = worker.GetMpiInfo();
+
       if (mpi.rank == 0) std::cout << "start PING_TEST" << std::endl;
 
-      Worker worker(mpi, options, g_camera, g_image);
       worker.Render();
 
       worker.Wait();
     } break;
 
     case commandline::Options::ASYNC_DOMAIN: {
+      Worker worker(&argc, &argv, options, g_camera, g_image);
+      mpi = worker.GetMpiInfo();
+
       if (mpi.rank == 0) std::cout << "start ASYNC_DOMAIN" << std::endl;
 
       std::cout << "rank " << mpi.rank << " creating database." << std::endl;
@@ -504,10 +509,9 @@ void Render(int argc, char **argv) {
       CreateDatabase(options);
       t_database.stop();
 
+printf("5\n");
       g_image = new Image(g_camera->getFilmSizeWidth(),
                           g_camera->getFilmSizeHeight(), "mpi");
-
-      Worker worker(mpi, options, g_camera, g_image);
 
       g_camera->AllocateCameraRays();
       g_camera->generateRays();
@@ -520,6 +524,10 @@ void Render(int argc, char **argv) {
     } break;
 
     case commandline::Options::SYNC_DOMAIN: {
+      MPI_Init(&argc, &argv);
+      MPI_Comm_rank(MPI_COMM_WORLD, &mpi.rank);
+      MPI_Comm_size(MPI_COMM_WORLD, &mpi.size);
+
       if (mpi.rank == 0) std::cout << "start SYNC_DOMAIN" << std::endl;
 
       std::cout << "rank " << mpi.rank << " creating database." << std::endl;
@@ -543,6 +551,7 @@ void Render(int argc, char **argv) {
       }
 
       g_image->Write();
+      MPI_Finalize();
     } break;
 
     default: {
@@ -562,10 +571,10 @@ void Render(int argc, char **argv) {
 }  // namespace apps
 
 int main(int argc, char **argv) {
-  MPI_Init(&argc, &argv);
-  {
-    apps::render::mpi::Render(argc, argv);
-  }
-  MPI_Finalize();
+  // MPI_Init(&argc, &argv);
+  // {
+  apps::render::mpi::Render(argc, argv);
+  ///}
+  // MPI_Finalize();
 }
 

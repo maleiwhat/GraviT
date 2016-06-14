@@ -67,7 +67,7 @@ class TpcVoter {
   bool isCommunicationAllowed() const;
 
  private:
-  // friend class Worker;
+  friend class DomainTracer;
 
   Communicator *comm;
   Worker *worker;

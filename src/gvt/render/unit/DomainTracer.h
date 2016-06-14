@@ -36,6 +36,7 @@
 
 #include <queue>
 #include <pthread.h>
+#include <set>
 
 #include "gvt/render/unit/Types.h"
 #include "gvt/render/unit/RayTracer.h"
@@ -73,7 +74,7 @@ class DomainTracer : public RayTracer, public AbstractTrace {
                RayVector &rays, gvt::render::data::scene::Image &image);
   virtual ~DomainTracer() {}
 
-  virtual void Render();
+  virtual void Trace();
 
   virtual TpcVoter *GetVoter() { return voter; }
 
@@ -87,14 +88,13 @@ class DomainTracer : public RayTracer, public AbstractTrace {
     return (busy == 0);
   }
 
- private:
-  void Trace();
+  virtual void CompositeFrameBuffers();
 
+ private:
   void shuffleDropRays(gvt::render::actor::RayVector &rays);
   void FilterRaysLocally();
 
   // composite
-  void CompositeFrameBuffers();
   void LocalComposite();
 
   // sending rays
