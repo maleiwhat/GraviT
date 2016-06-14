@@ -19,8 +19,10 @@ namespace unit {
 
 // Communicator::Communicator() { Initialize(); }
 
-Communicator::Communicator(int* argc, char*** argv, Worker* worker)
-    : argcp(argc), argvp(argv), worker(worker), allWorkDone(false) {
+// Communicator::Communicator(int* argc, char*** argv, Worker* worker)
+//     : argcp(argc), argvp(argv), worker(worker), allWorkDone(false) {
+Communicator::Communicator(const MpiInfo& mpi, Worker* worker)
+    : mpi(mpi), worker(worker), allWorkDone(false) {
   InitThreads();
 }
 
@@ -138,18 +140,18 @@ void Communicator::MessageThread() {
   bool done = false;
   MPI_Status mpi_status;
 
-  int pvd;
-  MPI_Init_thread(argcp, argvp, MPI_THREAD_MULTIPLE, &pvd);
-  if ((pvd != MPI_THREAD_MULTIPLE)) {
-    std::cerr << "error: mpi_thread_multiple not available\n";
-    exit(1);
-  }
-  // MPI_Init(argcp, argvp);
+  // int pvd;
+  // MPI_Init_thread(argcp, argvp, MPI_THREAD_MULTIPLE, &pvd);
+  // if ((pvd != MPI_THREAD_MULTIPLE)) {
+  //   std::cerr << "error: mpi_thread_multiple not available\n";
+  //   exit(1);
+  // }
+  // // MPI_Init(argcp, argvp);
 
-  MPI_Comm_rank(MPI_COMM_WORLD, &mpi.rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &mpi.size);
+  // MPI_Comm_rank(MPI_COMM_WORLD, &mpi.rank);
+  // MPI_Comm_size(MPI_COMM_WORLD, &mpi.size);
   
-  worker->SignalMpiReady();
+  // worker->SignalMpiReady();
   worker->WaitTracerReady();
 
   while (!allWorkDone) {

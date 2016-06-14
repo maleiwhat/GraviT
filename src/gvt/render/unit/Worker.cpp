@@ -19,9 +19,11 @@ namespace unit {
 using namespace apps::render::mpi;
 using namespace gvt::render::data::scene;
 
-Worker::Worker(int *argc, char ***argv, const commandline::Options &options,
+// Worker::Worker(int *argc, char ***argv, const commandline::Options &options,
+Worker::Worker(const MpiInfo &mpi, const commandline::Options &options,
                gvtPerspectiveCamera *camera, Image *image)
-    : camera(NULL),
+    : mpi(mpi),
+      camera(NULL),
       image(NULL),
       quit(false),
       mpiReady(false),
@@ -37,13 +39,14 @@ Worker::Worker(int *argc, char ***argv, const commandline::Options &options,
   pthread_cond_init(&tracerReady_cond, NULL);
 
   // create communicator
-  comm = new Communicator(argc, argv, this);
+  // comm = new Communicator(argc, argv, this);
+  comm = new Communicator(mpi, this);
 
   // wait until mpi gets initialized
-  WaitMpiReady();
+  // WaitMpiReady();
 
   // mpi info is available from the communicator
-  mpi = comm->GetMpiInfo();
+  // mpi = comm->GetMpiInfo();
 
   // all applications require this for quitting the worker
   Command::Register(comm);

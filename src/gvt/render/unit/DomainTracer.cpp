@@ -317,12 +317,12 @@ inline void DomainTracer::Trace() {
   MPE_Log_event(framebufferstart, 0, NULL);
 #endif
   t_gather.resume();
-  // this->gatherFramebuffers(this->rays_end - this->rays_start);
-  // if (mpiInfo.rank == 0) {
-  //   Work *work = new Composite(0);  // 0 is a dummy value
-  //   work->SendAll(comm);
-  // }
-  CompositeFrameBuffers();
+  this->gatherFramebuffers(this->rays_end - this->rays_start);
+  if (mpiInfo.rank == 0) {
+    Work *work = new Composite(0);  // 0 is a dummy value
+    work->SendAll(comm);
+  }
+  // CompositeFrameBuffers();
   t_gather.stop();
 #ifdef GVT_USE_MPE
   MPE_Log_event(framebufferend, 0, NULL);
@@ -497,11 +497,9 @@ void DomainTracer::CompositeFrameBuffers() {
   unsigned char *bufs = (mpiInfo.rank == 0)
                             ? new unsigned char[mpiInfo.size * rgb_buf_size]
                             : NULL;
-printf("composite 0\n");
   // MPI_Barrier(MPI_COMM_WORLD);
   MPI_Gather(rgb, rgb_buf_size, MPI_UNSIGNED_CHAR, bufs, rgb_buf_size,
              MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);
-printf("composite 1\n");
   if (mpiInfo.rank == 0) {
     const size_t chunksize =
         MAX(2, size / (std::thread::hardware_concurrency() * 4));

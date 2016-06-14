@@ -476,8 +476,8 @@ void CreateDatabase(const commandline::Options &options) {
 
 void Render(int argc, char **argv) {
   MpiInfo mpi;
-  // MPI_Comm_rank(MPI_COMM_WORLD, &mpi.rank);
-  // MPI_Comm_size(MPI_COMM_WORLD, &mpi.size);
+  MPI_Comm_rank(MPI_COMM_WORLD, &mpi.rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &mpi.size);
   timer t_database(false, "database timer:");
 
   commandline::Options options;
@@ -488,20 +488,21 @@ void Render(int argc, char **argv) {
 
   switch (options.tracer) {
     case commandline::Options::PING_TEST: {
-      Worker worker(&argc, &argv, options, NULL, NULL);
-      mpi = worker.GetMpiInfo();
-
-      // worker.InitTracer(options, NULL, NULL);
-
       if (mpi.rank == 0) std::cout << "start PING_TEST" << std::endl;
+
+      Worker worker(mpi, options, NULL, NULL);
+      // mpi = worker.GetMpiInfo();
+      // worker.InitTracer(options, NULL, NULL);
 
       worker.Render();
       worker.Wait();
     } break;
 
     case commandline::Options::ASYNC_DOMAIN: {
-      // std::cout << "rank " << mpi.rank << " creating database." << std::endl;
-      std::cout << " creating database." << std::endl;
+      if (mpi.rank == 0) std::cout << "start ASYNC_DOMAIN" << std::endl;
+
+      std::cout << "rank " << mpi.rank << " creating database." << std::endl;
+      // std::cout << " creating database." << std::endl;
       t_database.start();
       CreateDatabase(options);
       t_database.stop();
@@ -509,11 +510,9 @@ void Render(int argc, char **argv) {
       g_image = new Image(g_camera->getFilmSizeWidth(),
                           g_camera->getFilmSizeHeight(), "mpi");
 
-      Worker worker(&argc, &argv, options, g_camera, g_image);
+      Worker worker(mpi, options, g_camera, g_image);
 
-      mpi = worker.GetMpiInfo();
-
-      if (mpi.rank == 0) std::cout << "start ASYNC_DOMAIN" << std::endl;
+      // mpi = worker.GetMpiInfo();
 
       // worker.InitTracer(options, g_camera, g_image);
 
@@ -577,7 +576,15 @@ void Render(int argc, char **argv) {
 
 int main(int argc, char **argv) {
   // MPI_Init(&argc, &argv);
+  int pvd;
+  MPI_Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &pvd);
+  if ((pvd != MPI_THREAD_MULTIPLE)) {
+    std::cerr << "error: mpi_thread_multiple not available\n";
+    exit(1);
+  }
+
   apps::render::mpi::Render(argc, argv);
-  // MPI_Finalize();
+
+  MPI_Finalize();
 }
 

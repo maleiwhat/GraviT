@@ -43,7 +43,8 @@ class TpcVoter;
 
 class Worker {
  public:
-  Worker(int* argc, char*** argv, const commandline::Options& options,
+  // Worker(int* argc, char*** argv, const commandline::Options& options,
+  Worker(const MpiInfo& mpi, const commandline::Options& options,
          gvtPerspectiveCamera* camera, Image* image);
 
   ~Worker();

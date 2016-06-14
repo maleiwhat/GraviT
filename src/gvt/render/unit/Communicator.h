@@ -20,7 +20,8 @@ class TpcVoter;
 
 class Communicator {
  public:
-  Communicator(int* argc, char*** argv, Worker* worker);
+  // Communicator(int* argc, char*** argv, Worker* worker);
+  Communicator(const MpiInfo& mpi, Worker* worker);
   ~Communicator() { MPI_Finalize(); }
 
   // register deserializers
