@@ -139,9 +139,9 @@ void Communicator::MessageThread() {
   MPI_Status mpi_status;
 
   int pvd;
-  MPI_Init_thread(argcp, argvp, MPI_THREAD_FUNNELED, &pvd);
-  if ((pvd != MPI_THREAD_FUNNELED)) {
-    std::cerr << "error: mpi_thread_funneled not available\n";
+  MPI_Init_thread(argcp, argvp, MPI_THREAD_MULTIPLE, &pvd);
+  if ((pvd != MPI_THREAD_MULTIPLE)) {
+    std::cerr << "error: mpi_thread_multiple not available\n";
     exit(1);
   }
   // MPI_Init(argcp, argvp);

@@ -496,10 +496,11 @@ void DomainTracer::CompositeFrameBuffers() {
   unsigned char *bufs = (mpiInfo.rank == 0)
                             ? new unsigned char[mpiInfo.size * rgb_buf_size]
                             : NULL;
-
+printf("composite 0\n");
   // MPI_Barrier(MPI_COMM_WORLD);
   MPI_Gather(rgb, rgb_buf_size, MPI_UNSIGNED_CHAR, bufs, rgb_buf_size,
              MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);
+printf("composite 1\n");
   if (mpiInfo.rank == 0) {
     const size_t chunksize =
         MAX(2, size / (std::thread::hardware_concurrency() * 4));
@@ -520,7 +521,9 @@ void DomainTracer::CompositeFrameBuffers() {
                         }
                       });
   }
+printf("composite 2\n");
   delete[] bufs;
+printf("composite 3\n");
 #ifndef NDEBUG
   std::cout << "rank " << mpiInfo.rank << " done " << __PRETTY_FUNCTION__
             << std::endl;
