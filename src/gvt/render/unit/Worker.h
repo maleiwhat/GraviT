@@ -48,8 +48,8 @@ class Worker {
 
   ~Worker();
 
-  void InitTracer(const commandline::Options& options,
-                  gvtPerspectiveCamera* camera, Image* image);
+  // void InitTracer(const commandline::Options& options,
+  //                 gvtPerspectiveCamera* camera, Image* image);
   void Render();
 
   // sync
@@ -72,7 +72,12 @@ class Worker {
   void QuitCommunicator();
 
   friend class Communicator;
+
   void SignalMpiReady();
+  void SignalTracerReady();
+
+  void WaitMpiReady();
+  void WaitTracerReady();
 
  private:
   // communication
@@ -90,6 +95,10 @@ class Worker {
   bool mpiReady;
   pthread_mutex_t mpiReady_mutex;
   pthread_cond_t mpiReady_cond;
+
+  bool tracerReady;
+  pthread_mutex_t tracerReady_mutex;
+  pthread_cond_t tracerReady_cond;
 
   bool quit;
   pthread_mutex_t quit_mutex;

@@ -491,7 +491,7 @@ void Render(int argc, char **argv) {
       Worker worker(&argc, &argv, options, NULL, NULL);
       mpi = worker.GetMpiInfo();
 
-      worker.InitTracer(options, NULL, NULL);
+      // worker.InitTracer(options, NULL, NULL);
 
       if (mpi.rank == 0) std::cout << "start PING_TEST" << std::endl;
 
@@ -500,13 +500,8 @@ void Render(int argc, char **argv) {
     } break;
 
     case commandline::Options::ASYNC_DOMAIN: {
-      Worker worker(&argc, &argv, options, g_camera, g_image);
-
-      mpi = worker.GetMpiInfo();
-
-      if (mpi.rank == 0) std::cout << "start ASYNC_DOMAIN" << std::endl;
-
-      std::cout << "rank " << mpi.rank << " creating database." << std::endl;
+      // std::cout << "rank " << mpi.rank << " creating database." << std::endl;
+      std::cout << " creating database." << std::endl;
       t_database.start();
       CreateDatabase(options);
       t_database.stop();
@@ -514,8 +509,13 @@ void Render(int argc, char **argv) {
       g_image = new Image(g_camera->getFilmSizeWidth(),
                           g_camera->getFilmSizeHeight(), "mpi");
 
-      worker.InitTracer(options, g_camera, g_image);
+      Worker worker(&argc, &argv, options, g_camera, g_image);
 
+      mpi = worker.GetMpiInfo();
+
+      if (mpi.rank == 0) std::cout << "start ASYNC_DOMAIN" << std::endl;
+
+      // worker.InitTracer(options, g_camera, g_image);
 
       g_camera->AllocateCameraRays();
       g_camera->generateRays();

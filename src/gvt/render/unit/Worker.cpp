@@ -21,25 +21,30 @@ using namespace gvt::render::data::scene;
 
 Worker::Worker(int *argc, char ***argv, const commandline::Options &options,
                gvtPerspectiveCamera *camera, Image *image)
-    : camera(NULL), image(NULL), quit(false), mpiReady(false) {
+    : camera(NULL),
+      image(NULL),
+      quit(false),
+      mpiReady(false),
+      tracerReady(false) {
   // init mutex
   pthread_mutex_init(&quit_mutex, NULL);
   pthread_cond_init(&quit_cond, NULL);
+
+  pthread_mutex_init(&mpiReady_mutex, NULL);
+  pthread_cond_init(&mpiReady_cond, NULL);
+
+  pthread_mutex_init(&tracerReady_mutex, NULL);
+  pthread_cond_init(&tracerReady_cond, NULL);
 
   // create communicator
   comm = new Communicator(argc, argv, this);
 
   // wait until mpi gets initialized
-  pthread_mutex_lock(&mpiReady_mutex);
-  while (!mpiReady) {
-    pthread_cond_wait(&mpiReady_cond, &mpiReady_mutex);
-  }
-  mpiReady = false;
-  pthread_mutex_unlock(&mpiReady_mutex);
+  WaitMpiReady();
 
   // mpi info is available from the communicator
   mpi = comm->GetMpiInfo();
-#if 0
+
   // all applications require this for quitting the worker
   Command::Register(comm);
 
@@ -68,7 +73,9 @@ Worker::Worker(int *argc, char ***argv, const commandline::Options &options,
 
   // voter owned by tracer
   voter = tracer->GetVoter();
-#endif
+
+  // finally let the communicator serve incoming message
+  SignalTracerReady();
 }
 
 Worker::~Worker() {
@@ -76,42 +83,42 @@ Worker::~Worker() {
   if (tracer) delete tracer;
 }
 
-void Worker::InitTracer(const commandline::Options &options,
-                        gvtPerspectiveCamera *camera, Image *image) {
-  this->camera = camera;
-  this->image = image;
-
-  // all applications require this for quitting the worker
-  Command::Register(comm);
-
-  // create tracer and register required works
-  tracer = NULL;
-  switch (options.tracer) {
-    case commandline::Options::ASYNC_DOMAIN: {
-      std::cout << "rank " << mpi.rank << " creating domain tracer"
-                << std::endl;
-      tracer = new DomainTracer(mpi, this, comm, this->camera->rays, *this->image);
-      RemoteRays::Register(comm);
-      Vote::Register(comm);
-      Composite::Register(comm);
-    } break;
-
-    case commandline::Options::PING_TEST: {
-      tracer = new PingTracer(mpi, this, comm);
-      PingTest::Register(comm);
-    } break;
-
-    default: {
-      std::cout << "rank " << mpi.rank
-                << " error found unsupported tracer type " << options.tracer
-                << std::endl;
-      exit(1);
-    } break;
-  }
-
-  // voter owned by tracer
-  voter = tracer->GetVoter();
-}
+// void Worker::InitTracer(const commandline::Options &options,
+//                         gvtPerspectiveCamera *camera, Image *image) {
+//   this->camera = camera;
+//   this->image = image;
+// 
+//   // all applications require this for quitting the worker
+//   Command::Register(comm);
+// 
+//   // create tracer and register required works
+//   tracer = NULL;
+//   switch (options.tracer) {
+//     case commandline::Options::ASYNC_DOMAIN: {
+//       std::cout << "rank " << mpi.rank << " creating domain tracer"
+//                 << std::endl;
+//       tracer = new DomainTracer(mpi, this, comm, this->camera->rays, *this->image);
+//       RemoteRays::Register(comm);
+//       Vote::Register(comm);
+//       Composite::Register(comm);
+//     } break;
+// 
+//     case commandline::Options::PING_TEST: {
+//       tracer = new PingTracer(mpi, this, comm);
+//       PingTest::Register(comm);
+//     } break;
+// 
+//     default: {
+//       std::cout << "rank " << mpi.rank
+//                 << " error found unsupported tracer type " << options.tracer
+//                 << std::endl;
+//       exit(1);
+//     } break;
+//   }
+// 
+//   // voter owned by tracer
+//   voter = tracer->GetVoter();
+// }
 
 void Worker::Render() { tracer->Trace(); }
 
@@ -144,6 +151,31 @@ void Worker::SignalMpiReady() {
   mpiReady = true;
   pthread_cond_signal(&mpiReady_cond);
   pthread_mutex_unlock(&mpiReady_mutex);
+}
+
+void Worker::SignalTracerReady() {
+  pthread_mutex_lock(&tracerReady_mutex);
+  tracerReady = true;
+  pthread_cond_signal(&tracerReady_cond);
+  pthread_mutex_unlock(&tracerReady_mutex);
+}
+
+void Worker::WaitMpiReady() {
+  pthread_mutex_lock(&mpiReady_mutex);
+  while (!mpiReady) {
+    pthread_cond_wait(&mpiReady_cond, &mpiReady_mutex);
+  }
+  mpiReady = false;
+  pthread_mutex_unlock(&mpiReady_mutex);
+}
+
+void Worker::WaitTracerReady() {
+  pthread_mutex_lock(&tracerReady_mutex);
+  while (!mpiReady) {
+    pthread_cond_wait(&tracerReady_cond, &tracerReady_mutex);
+  }
+  tracerReady = false;
+  pthread_mutex_unlock(&tracerReady_mutex);
 }
 
 }  // using namespace unit

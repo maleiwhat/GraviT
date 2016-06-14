@@ -150,6 +150,7 @@ void Communicator::MessageThread() {
   MPI_Comm_size(MPI_COMM_WORLD, &mpi.size);
   
   worker->SignalMpiReady();
+  worker->WaitTracerReady();
 
   while (!allWorkDone) {
     // serve incoming message
