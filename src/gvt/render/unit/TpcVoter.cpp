@@ -5,7 +5,7 @@
 
 #include "gvt/render/unit/DomainWorks.h"
 
-#define DEBUG_VOTER
+// #define DEBUG_VOTER
 
 namespace gvt {
 namespace render {
