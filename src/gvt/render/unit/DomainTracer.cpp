@@ -40,6 +40,8 @@
 
 #include <set>
 
+#define VERIFY
+
 namespace gvt {
 namespace render {
 namespace unit {
@@ -312,12 +314,27 @@ inline void DomainTracer::Trace() {
 // std::cout << "domain scheduler: shuffle time: " << t_shuffle.format();
 // std::cout << "domain scheduler: send time: " << t_send.format();
 
+#ifdef VERIFY
+  for (auto &smap : send_map) {
+    int dest = smap.first;
+    size_t num_rays = smap.second;
+    std::cout << "rank " << mpiInfo.rank << " send (dest, count): " << dest
+              << " , " << num_rays << std::endl;
+  }
+  for (auto &rmap : recv_map) {
+    int src = rmap.first;
+    size_t num_rays = rmap.second;
+    std::cout << "rank " << mpiInfo.rank << " recv (src, count): " << src
+              << " , " << num_rays << std::endl;
+  }
+#endif
+
 // add colors to the framebuffer
 #ifdef GVT_USE_MPE
   MPE_Log_event(framebufferstart, 0, NULL);
 #endif
   t_gather.resume();
-  this->gatherFramebuffers(this->rays_end - this->rays_start);
+  // this->gatherFramebuffers(this->rays_end - this->rays_start);
   if (mpiInfo.rank == 0) {
     Work *work = new Composite(0);  // 0 is a dummy value
     work->SendAll(comm);
@@ -396,6 +413,14 @@ void DomainTracer::SendRays() {
       printf("rank %d: sent %lu rays instance %d to rank %d\n", mpiInfo.rank,
              num_rays_to_send, instance, owner_process);
 #endif
+#ifdef VERIFY
+       if (send_map.empty()) {
+         for (int i=0; i<mpiInfo.size; ++i) {
+           send_map[i] = 0;
+         }
+       }
+       send_map[owner_process] += num_rays_to_send; 
+#endif
     }
   }
 #ifdef PROFILE_RAY_COUNTS
@@ -416,7 +441,14 @@ void DomainTracer::RecvRays() {
   pthread_mutex_lock(&workQ_mutex);
   while (!workQ.empty()) {
     RemoteRays *rays = static_cast<RemoteRays *>(workQ.front());
-
+#ifdef VERIFY
+    if (recv_map.empty()) {
+      for (int i = 0; i < mpiInfo.size; ++i) {
+        recv_map[i] = 0;
+      }
+    }
+    recv_map[rays->GetSender()] += rays->GetNumRays();
+#endif
     CopyRays(*rays);
 
     RemoteRays::Header header;

@@ -45,6 +45,9 @@
 // #include "gvt/render/unit/AbstractTrace.h"
 #include "gvt/render/actor/Ray.h"
 
+#define VERIFY
+
+
 namespace gvt {
 namespace render {
 namespace data {
@@ -127,6 +130,10 @@ class DomainTracer : public RayTracer, public AbstractTrace {
   int localrayfilterstart, localrayfilterend;
   int intersectbvhstart, intersectbvhend;
   int marchinstart, marchinend;
+#endif
+#ifdef VERIFY
+  std::map<int, size_t> send_map; // dest, num_rays
+  std::map<int, size_t> recv_map; // src, num_rays
 #endif
 };
 
