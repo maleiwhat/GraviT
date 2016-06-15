@@ -30,6 +30,7 @@ struct Options {
   int instanceCountZ = 1;
   int numFrames = 1;
   int numTbbThreads;
+  int ply_count = 8;
   std::string infile;
   // glm::vec3 eye;
   // glm::vec3 look;

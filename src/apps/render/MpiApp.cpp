@@ -36,6 +36,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <thread>
+#include <map>
 
 // timer
 #include "gvt/core/utils/timer.h"
@@ -91,6 +92,7 @@ void PrintUsage(const char *argv) {
   printf(
       "  -i, --infile <infile> (default: ../data/geom/bunny.obj for obj and "
       "./EnzoPlyData/Enzo8 for ply)\n");
+  printf("  -p, --ply-count <ply_count> (default: 8)");
   printf("  -a, --adapter <embree | manta | optix> (default: embree)\n");
   printf("  -t, --tracer <0-3> (default: 0)\n");
   printf(
@@ -128,6 +130,8 @@ void Parse(int argc, char **argv, Options *options) {
         printf("error: file not found. %s\n", options->infile.c_str());
         exit(1);
       }
+    } else if (strcmp(argv[i], "-p") == 0 || strcmp(argv[i], "--ply-count") == 0) {
+      options->ply_count = atoi(argv[++i]);
     } else if (strcmp(argv[i], "-a") == 0 ||
                strcmp(argv[i], "--adapter") == 0) {
       ++i;
@@ -172,10 +176,10 @@ void Parse(int argc, char **argv, Options *options) {
     }
   }
   if (options->numTbbThreads <= 0) {
-    if (options->tracer == 2 || options->tracer == 3) {
-      options->numTbbThreads = MAX(1, std::thread::hardware_concurrency());
-    } else {
+    if (options->tracer == Options::ASYNC_DOMAIN || options->tracer == Options::ASYNC_IMAGE) {
       options->numTbbThreads = MAX(1, std::thread::hardware_concurrency() - 2);
+    } else {
+      options->numTbbThreads = MAX(1, std::thread::hardware_concurrency());
     }
   }
   if (options->infile.empty()) {
@@ -236,7 +240,21 @@ PlyProperty face_props[] = {
 static Vertex **vlist;
 static Face **flist;
 
-void CreateDatabase(const commandline::Options &options) {
+template <class T>
+void DeallocatePly(std::map<T **, std::queue<T *>> &ply_mem_map) {
+  for (auto &m : ply_mem_map) {
+    T **pp = m.first;
+    std::queue<T *> &q = m.second;
+    while (!q.empty()) {
+      T *p = q.front();
+      q.pop();
+      free(p);
+    }
+    free(pp);
+  }
+}
+
+void CreateDatabase(const MpiInfo &mpi, const commandline::Options &options) {
   // mess I use to open and read the ply file with the c utils I found.
   PlyFile *in_ply;
   Vertex *vert;
@@ -245,7 +263,6 @@ void CreateDatabase(const commandline::Options &options) {
   int i, j, k;
   float xmin, ymin, zmin, xmax, ymax, zmax;
   char *elem_name;
-  ;
   FILE *myfile;
   char txt[16];
   std::string temp;
@@ -260,6 +277,9 @@ void CreateDatabase(const commandline::Options &options) {
   // int rank = -1;
   // MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
+  std::map<Vertex **, std::queue<Vertex *>> vlists_map;
+  std::map<Face **, std::queue<Face *>> flists_map;
+
   gvt::render::RenderContext *cntxt = gvt::render::RenderContext::instance();
   if (cntxt == NULL) {
     std::cout << "Something went wrong initializing the context" << std::endl;
@@ -272,7 +292,9 @@ void CreateDatabase(const commandline::Options &options) {
       cntxt->createNodeFromType("Instances", "Instances", root.UUID());
 
   // Enzo isosurface...
-  for (k = 0; k < 8; k++) {
+  for (k = 0; k < options.ply_count; k++) {
+    int owner_process = k % mpi.size;
+
     sprintf(txt, "%d", k);
     filename = "block";
     filename += txt;
@@ -280,7 +302,8 @@ void CreateDatabase(const commandline::Options &options) {
         cntxt->createNodeFromType("Mesh", filename.c_str(), dataNodes.UUID());
     // read in some ply data and get ready to load it into the mesh
     // filepath = rootdir + "block" + std::string(txt) + ".ply";
-    filepath = rootdir + filename + ".ply";
+    filepath = rootdir + "/" + filename + ".ply";
+
     myfile = fopen(filepath.c_str(), "r");
     in_ply = read_ply(myfile);
     for (i = 0; i < in_ply->num_elem_types; i++) {
@@ -306,23 +329,27 @@ void CreateDatabase(const commandline::Options &options) {
         }
       }
     }
-    close_ply(in_ply);
+    // close_ply(in_ply);
     // smoosh data into the mesh object
     {
-      Material *m = new Material();
-      m->type = LAMBERT;
-      // m->type = EMBREE_MATERIAL_MATTE;
-      m->kd = glm::vec3(1.0, 1.0, 1.0);
-      m->ks = glm::vec3(1.0, 1.0, 1.0);
-      m->alpha = 0.5;
+      Mesh *mesh = NULL;
+      if (mpi.rank == owner_process) {
+        Material *m = new Material();
+        m->type = LAMBERT;
+        // m->type = EMBREE_MATERIAL_MATTE;
+        m->kd = glm::vec3(1.0, 1.0, 1.0);
+        m->ks = glm::vec3(1.0, 1.0, 1.0);
+        m->alpha = 0.5;
 
-      // m->type = EMBREE_MATERIAL_METAL;
-      // copper metal
-      m->eta = glm::vec3(.19, 1.45, 1.50);
-      m->k = glm::vec3(3.06, 2.40, 1.88);
-      m->roughness = 0.05;
+        // m->type = EMBREE_MATERIAL_METAL;
+        // copper metal
+        m->eta = glm::vec3(.19, 1.45, 1.50);
+        m->k = glm::vec3(3.06, 2.40, 1.88);
+        m->roughness = 0.05;
 
-      Mesh *mesh = new Mesh(m);
+        mesh = new Mesh(m);
+      }
+
       vert = vlist[0];
       xmin = vert->x;
       ymin = vert->y;
@@ -339,25 +366,35 @@ void CreateDatabase(const commandline::Options &options) {
         xmax = MAX(vert->x, xmax);
         ymax = MAX(vert->y, ymax);
         zmax = MAX(vert->z, zmax);
-        mesh->addVertex(glm::vec3(vert->x, vert->y, vert->z));
+
+        if (mesh) {
+          mesh->addVertex(glm::vec3(vert->x, vert->y, vert->z));
+        }
       }
       glm::vec3 lower(xmin, ymin, zmin);
       glm::vec3 upper(xmax, ymax, zmax);
       Box3D *meshbbox = new gvt::render::data::primitives::Box3D(lower, upper);
-      // add faces to mesh
-      for (i = 0; i < nfaces; i++) {
-        face = flist[i];
-        mesh->addFace(face->verts[0] + 1, face->verts[1] + 1,
-                      face->verts[2] + 1);
-      }
-      mesh->generateNormals();
-      // add Enzo mesh to the database
-      // EnzoMeshNode["file"] =
-      // string("/work/01197/semeraro/maverick/DAVEDATA/EnzoPlyDATA/Block0.ply");
+
       EnzoMeshNode["file"] = std::string(filepath);
       EnzoMeshNode["bbox"] = (unsigned long long)meshbbox;
-      EnzoMeshNode["ptr"] = (unsigned long long)mesh;
+
+      if (mesh) {
+        // add faces to mesh
+        for (i = 0; i < nfaces; i++) {
+          face = flist[i];
+          mesh->addFace(face->verts[0] + 1, face->verts[1] + 1,
+                        face->verts[2] + 1);
+        }
+        mesh->generateNormals();
+        // add Enzo mesh to the database
+        // EnzoMeshNode["file"] =
+        // string("/work/01197/semeraro/maverick/DAVEDATA/EnzoPlyDATA/Block0.ply");
+        EnzoMeshNode["ptr"] = (unsigned long long)mesh;
+      } else {
+        EnzoMeshNode["ptr"] = (unsigned long long)0;
+      }
     }
+
     // add instance
     gvt::core::DBNodeH instnode =
         cntxt->createNodeFromType("Instance", "inst", instNodes.UUID());
@@ -378,6 +415,12 @@ void CreateDatabase(const commandline::Options &options) {
     Box3D *ibox = new gvt::render::data::primitives::Box3D(il, ih);
     instnode["bbox"] = (unsigned long long)ibox;
     instnode["centroid"] = ibox->centroid();
+
+    // free memory
+    DeallocatePly<Vertex>(vlists_map);
+    DeallocatePly<Face>(flists_map);
+
+    close_ply(in_ply);
   }
 
   // add lights, camera, and film to the database
@@ -504,7 +547,7 @@ void Render(int argc, char **argv) {
       std::cout << "rank " << mpi.rank << " creating database." << std::endl;
       // std::cout << " creating database." << std::endl;
       t_database.start();
-      CreateDatabase(options);
+      CreateDatabase(mpi, options);
       t_database.stop();
 
       g_image = new Image(g_camera->getFilmSizeWidth(),
@@ -536,7 +579,7 @@ void Render(int argc, char **argv) {
 
       std::cout << "rank " << mpi.rank << " creating database." << std::endl;
       t_database.start();
-      CreateDatabase(options);
+      CreateDatabase(mpi, options);
       t_database.stop();
 
       g_image = new Image(g_camera->getFilmSizeWidth(),
@@ -585,6 +628,6 @@ int main(int argc, char **argv) {
 
   apps::render::mpi::Render(argc, argv);
 
-  MPI_Finalize();
+  // MPI_Finalize();
 }
 
