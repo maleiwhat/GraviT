@@ -121,7 +121,6 @@ void Parse(int argc, char **argv, Options *options) {
   for (int i = 1; i < argc; ++i) {
     if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
       PrintUsage(argv[0]);
-      MPI_Finalize();
       exit(0);
     } else if (strcmp(argv[i], "-i") == 0 || strcmp(argv[i], "--infile") == 0) {
       options->infile = argv[++i];
@@ -598,7 +597,6 @@ void Render(int argc, char **argv) {
       }
 
       g_image->Write();
-      MPI_Finalize();
     } break;
 
     default: {
@@ -628,6 +626,6 @@ int main(int argc, char **argv) {
 
   apps::render::mpi::Render(argc, argv);
 
-  // MPI_Finalize();
+  MPI_Finalize();
 }
 

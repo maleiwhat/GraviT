@@ -40,7 +40,7 @@
 
 #include <set>
 
-#define VERIFY
+// #define VERIFY
 
 namespace gvt {
 namespace render {
@@ -49,9 +49,9 @@ namespace unit {
 using namespace gvt::render::actor;
 using namespace gvt::render::data::scene;
 
-gvt::core::time::timer t_send(false, "domain tracer: send :");
-gvt::core::time::timer t_recv(false, "domain tracer: recv :");
-gvt::core::time::timer t_vote(false, "domain tracer: vote :");
+//gvt::core::time::timer t_send(false, "domain tracer: send :");
+//gvt::core::time::timer t_recv(false, "domain tracer: recv :");
+//gvt::core::time::timer t_vote(false, "domain tracer: vote :");
 
 DomainTracer::DomainTracer(const MpiInfo &mpiInfo, Worker *worker,
                            Communicator *comm, RayVector &rays,
@@ -345,8 +345,8 @@ inline void DomainTracer::Trace() {
   MPE_Log_event(framebufferend, 0, NULL);
 #endif
   t_frame.stop();
-  t_all = t_sort + t_trace + t_shuffle + t_gather + t_adapter + t_filter +
-          t_send + t_recv + t_vote;
+  t_all = t_sort + t_trace + t_shuffle + t_gather + t_adapter + t_filter;
+          // t_send + t_recv + t_vote;
   t_diff = t_frame - t_all;
 }
 
@@ -354,20 +354,20 @@ bool DomainTracer::TransferRays() {
   bool done;
   if (mpiInfo.size > 1) {
     if (voter->isCommunicationAllowed()) {  // TODO: potential improvement
-      t_send.resume();
+      // t_send.resume();
       SendRays();
-      t_send.stop();
+      // t_send.stop();
       // profiler.update(Profiler::Send, t_send.getElapsed());
 
-      t_recv.resume();
+      // t_recv.resume();
       RecvRays();
-      t_recv.stop();
+      // t_recv.stop();
       // profiler.update(Profiler::Receive, t_receive.getElapsed());
     }
 
-    t_vote.resume();
+    // t_vote.resume();
     done = voter->updateState();
-    t_vote.stop();
+    // t_vote.stop();
     // profiler.update(Profiler::Vote, t_vote.getElapsed());
 
   } else {

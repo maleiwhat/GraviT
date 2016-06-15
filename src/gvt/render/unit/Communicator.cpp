@@ -182,8 +182,6 @@ void Communicator::MessageThread() {
 
     if (outgoing_work) SendWork(outgoing_work);
   }
-
-  // MPI_Finalize();
 }
 
 void Communicator::Quit() {

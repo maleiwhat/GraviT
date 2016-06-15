@@ -45,7 +45,7 @@
 // #include "gvt/render/unit/AbstractTrace.h"
 #include "gvt/render/actor/Ray.h"
 
-#define VERIFY
+// #define VERIFY
 
 
 namespace gvt {
