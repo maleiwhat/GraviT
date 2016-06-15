@@ -603,7 +603,7 @@ void Render(int argc, char **argv) {
     } break;
 
     case commandline::Options::SYNC_DOMAIN: {
-      MPI_Init(&argc, &argv);
+      // MPI_Init(&argc, &argv);
       MPI_Comm_rank(MPI_COMM_WORLD, &mpi.rank);
       MPI_Comm_size(MPI_COMM_WORLD, &mpi.size);
 
@@ -622,6 +622,8 @@ void Render(int argc, char **argv) {
 
       gvt::render::algorithm::Tracer<DomainScheduler> tracer(g_camera->rays,
                                                              *g_image);
+      Profiler profiler;
+
       for (int z = 0; z < 10; z++) {
         g_camera->AllocateCameraRays();
         g_camera->generateRays();
@@ -629,7 +631,29 @@ void Render(int argc, char **argv) {
         tracer();
       }
 
+      profiler.Start(Profiler::TOTAL_TIME);
+      for (int z = 0; z < 100; z++) {
+        profiler.Start(Profiler::CAMERA_RAY);
+        g_camera->AllocateCameraRays();
+        g_camera->generateRays();
+        g_image->clear();
+        profiler.Stop(Profiler::CAMERA_RAY);
+
+        profiler.Start(Profiler::TRACE);
+        tracer();
+        profiler.Stop(Profiler::TRACE);
+      }
+      profiler.Stop(Profiler::TOTAL_TIME);
+
       g_image->Write();
+
+      std::ostringstream rank_ss;
+      rank_ss << mpi.rank;
+      std::string rank_str = rank_ss.str();
+      std::string filename("prof_sync_domain_rank_" + rank_str + ".txt");
+
+      profiler.WriteToFile(filename, mpi.rank);
+
     } break;
 
     default: {
