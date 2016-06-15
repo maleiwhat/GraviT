@@ -35,6 +35,7 @@
 #include <tbb/task_scheduler_init.h>
 #include <cstdlib>
 #include <iostream>
+#include <sstream>
 #include <thread>
 #include <map>
 
@@ -58,6 +59,7 @@
 #include "gvt/render/unit/DomainWorks.h"
 #include "gvt/render/unit/TestTracer.h"
 #include "gvt/render/unit/Worker.h"
+#include "gvt/render/unit/Profiler.h"
 
 // sync schedule
 #include "gvt/render/algorithm/DomainTracer.h"
@@ -204,6 +206,7 @@ using namespace gvt::core::time;
 using namespace gvt::render::data::primitives;
 using namespace gvt::render::data::scene;
 using namespace gvt::render::schedule;
+using namespace gvt::render::unit::profiler;
 
 // global variables
 gvt::render::data::scene::gvtPerspectiveCamera* g_camera = NULL;
@@ -558,15 +561,45 @@ void Render(int argc, char **argv) {
 
       // worker.InitTracer(options, g_camera, g_image);
 
-      g_camera->AllocateCameraRays();
-      g_camera->generateRays();
-      worker.Render();
+      DomainTracer *domain_tracer =
+          static_cast<DomainTracer *>(worker.GetTracer());
+      Profiler& profiler = domain_tracer->GetProfiler();
+
+      // warm up
+      for (int z = 0; z < 10; z++) {
+        g_camera->AllocateCameraRays();
+        g_camera->generateRays();
+        g_image->clear();
+        worker.Render();
+      }
+
+      profiler.Start(Profiler::TOTAL_TIME);
+
+      for (int z = 0; z < 100; z++) {
+        profiler.Start(Profiler::CAMERA_RAY);
+        g_camera->AllocateCameraRays();
+        g_camera->generateRays();
+        g_image->clear();
+        profiler.Stop(Profiler::CAMERA_RAY);
+
+        worker.Render();
+      }
+
+      profiler.Stop(Profiler::TOTAL_TIME);
 
       if (mpi.rank == 0) {
         g_image->Write();
         worker.Quit();
       }
       worker.Wait();
+
+      std::ostringstream rank_ss;
+      rank_ss << mpi.rank;
+      std::string rank_str = rank_ss.str();
+      std::string filename("prof_async_domain_rank_" + rank_str + ".txt");
+
+      profiler.WriteToFile(filename, mpi.rank);
+
     } break;
 
     case commandline::Options::SYNC_DOMAIN: {

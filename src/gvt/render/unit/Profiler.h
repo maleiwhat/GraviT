@@ -35,8 +35,8 @@ class Timer {
 class Profiler {
  public:
   enum Timers {
-    ALL = 0,
-    CAMRAYS,
+    TOTAL_TIME = 0,
+    CAMERA_RAY,
     SCHEDULE,
     ADAPTER,
     TRACE,
@@ -46,17 +46,21 @@ class Profiler {
     VOTE,
     COMPOSITE,
     WAIT,
+    NOT_MEASURED,
     NUM_TIMERS
   };
 
   enum Counters {
     // rays
-    PROCESSED_RAYS = 0,
-    SENT_RAYS,
-    RECVED_RAYS,
+    PROCESS_RAY = 0,
+    SEND_RAY,
+    RECV_RAY,
     // schedule
     VALID_SCHEDULE,
     INVALID_SCHEDULE,
+    // adapter
+    ADAPTER_HIT,
+    ADAPTER_MISS,
     NUM_COUNTERS
   };
 
@@ -67,7 +71,11 @@ class Profiler {
 
   void AddCounter(int type, int count);
 
+  void WriteToFile(const std::string& filename, int rank);
+
  private:
+  friend std::ostream &operator<<(std::ostream &os, const Profiler &p);
+
   std::vector<Timer> timers;
   std::vector<double> times;
   std::vector<std::string> timerNames;

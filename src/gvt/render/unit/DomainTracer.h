@@ -40,6 +40,7 @@
 
 #include "gvt/render/unit/Types.h"
 #include "gvt/render/unit/RayTracer.h"
+#include "gvt/render/unit/Profiler.h"
 
 #include "gvt/render/algorithm/TracerBase.h"
 // #include "gvt/render/unit/AbstractTrace.h"
@@ -94,6 +95,8 @@ class DomainTracer : public RayTracer, public AbstractTrace {
 
   virtual void CompositeFrameBuffers();
 
+  profiler::Profiler &GetProfiler() { return profiler; }
+
  private:
   void shuffleDropRays(gvt::render::actor::RayVector &rays);
   void FilterRaysLocally();
@@ -135,6 +138,8 @@ class DomainTracer : public RayTracer, public AbstractTrace {
   std::map<int, size_t> send_map; // dest, num_rays
   std::map<int, size_t> recv_map; // src, num_rays
 #endif
+
+  profiler::Profiler profiler;
 };
 
 }  // namespace unit

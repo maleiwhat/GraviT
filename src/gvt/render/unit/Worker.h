@@ -67,7 +67,6 @@ class Worker {
   RayTracer* GetTracer() { return tracer; }
   TpcVoter* GetVoter() { return voter; }
 
-
  private:
   friend class Command;
   void QuitCommunicator();

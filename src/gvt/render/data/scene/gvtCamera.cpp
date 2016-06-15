@@ -198,7 +198,7 @@ void gvtPerspectiveCamera::generateRays() {
 #ifdef GVT_USE_DEBUG
   boost::timer::auto_cpu_timer t("gvtPerspectiveCamera::generateRays: time: %w\n");
 #endif
-  gvt::core::time::timer t(true, "generate camera rays");
+  // gvt::core::time::timer t(true, "generate camera rays");
   // Generate rays direction in camera space and transform to world space.
   int buffer_width = filmsize[0];
   int buffer_height = filmsize[1];
