@@ -529,10 +529,10 @@ void DomainTracer::LocalComposite() {
 }
 
 void DomainTracer::CompositeFrameBuffers() {
-#ifndef NDEBUG
-  std::cout << "rank " << mpiInfo.rank << " start " << __PRETTY_FUNCTION__
-            << std::endl;
-#endif
+// #ifndef NDEBUG
+//   std::cout << "rank " << mpiInfo.rank << " start " << __PRETTY_FUNCTION__
+//             << std::endl;
+// #endif
   LocalComposite();
   // for (size_t i = 0; i < size; i++) image.Add(i, colorBuf[i]);
 
@@ -570,10 +570,10 @@ void DomainTracer::CompositeFrameBuffers() {
                       });
   }
   delete[] bufs;
-#ifndef NDEBUG
-  std::cout << "rank " << mpiInfo.rank << " done " << __PRETTY_FUNCTION__
-            << std::endl;
-#endif
+// #ifndef NDEBUG
+//   std::cout << "rank " << mpiInfo.rank << " done " << __PRETTY_FUNCTION__
+//             << std::endl;
+// #endif
 }
 
 }  // namespace unit

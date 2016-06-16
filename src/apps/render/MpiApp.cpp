@@ -112,6 +112,7 @@ void PrintUsage(const char *argv) {
   printf(
       "      (default: # cores for sync. schedulers or # cores - 2 for async. "
       "schedulers)\n");
+  printf("  -m, --model-name <model_name>\n");
 }
 
 void Parse(int argc, char **argv, Options *options) {
@@ -171,6 +172,9 @@ void Parse(int argc, char **argv, Options *options) {
       options->numFrames = atoi(argv[++i]);
     } else if (strcmp(argv[i], "--tbb") == 0) {
       options->numTbbThreads = atoi(argv[++i]);
+    } else if (strcmp(argv[i], "-m") == 0 ||
+               strcmp(argv[i], "--model-name") == 0) {
+      options->model_name = argv[++i];
     } else {
       printf("error: %s not defined\n", argv[i]);
       exit(1);
@@ -566,13 +570,16 @@ void Render(int argc, char **argv) {
       Profiler& profiler = domain_tracer->GetProfiler();
 
       // warm up
+      // std::cout << "rank " << mpi.rank << " start warming up" << std::endl;
       for (int z = 0; z < 10; z++) {
         g_camera->AllocateCameraRays();
         g_camera->generateRays();
         g_image->clear();
         worker.Render();
+        // std::cout << "rank " << mpi.rank << " warm up frame " << z << " done" << std::endl;
       }
 
+      // std::cout << "rank " << mpi.rank << " start active frames" << std::endl;
       profiler.Start(Profiler::TOTAL_TIME);
 
       for (int z = 0; z < 100; z++) {
@@ -583,6 +590,7 @@ void Render(int argc, char **argv) {
         profiler.Stop(Profiler::CAMERA_RAY);
 
         worker.Render();
+        // std::cout << "rank " << mpi.rank << " active frame " << z << " done" << std::endl;
       }
 
       profiler.Stop(Profiler::TOTAL_TIME);
@@ -596,7 +604,14 @@ void Render(int argc, char **argv) {
       std::ostringstream rank_ss;
       rank_ss << mpi.rank;
       std::string rank_str = rank_ss.str();
-      std::string filename("prof_async_domain_rank_" + rank_str + ".txt");
+
+      std::ostringstream mpi_size_ss;
+      mpi_size_ss << mpi.size;
+      std::string mpi_size_str = mpi_size_ss.str();
+
+      std::string filename("prof_" + options.model_name +
+                           "_async_domain_size_" + mpi_size_str + "_rank_" +
+                           rank_str + ".txt");
 
       profiler.WriteToFile(filename, mpi.rank);
 
@@ -622,7 +637,7 @@ void Render(int argc, char **argv) {
 
       gvt::render::algorithm::Tracer<DomainScheduler> tracer(g_camera->rays,
                                                              *g_image);
-      Profiler profiler;
+      Profiler& profiler = tracer.GetProfiler();
 
       for (int z = 0; z < 10; z++) {
         g_camera->AllocateCameraRays();
@@ -639,9 +654,7 @@ void Render(int argc, char **argv) {
         g_image->clear();
         profiler.Stop(Profiler::CAMERA_RAY);
 
-        profiler.Start(Profiler::TRACE);
         tracer();
-        profiler.Stop(Profiler::TRACE);
       }
       profiler.Stop(Profiler::TOTAL_TIME);
 
@@ -650,7 +663,13 @@ void Render(int argc, char **argv) {
       std::ostringstream rank_ss;
       rank_ss << mpi.rank;
       std::string rank_str = rank_ss.str();
-      std::string filename("prof_sync_domain_rank_" + rank_str + ".txt");
+
+      std::ostringstream mpi_size_ss;
+      mpi_size_ss << mpi.size;
+      std::string mpi_size_str = mpi_size_ss.str();
+
+      std::string filename("prof_" + options.model_name + "_sync_domain_size_" +
+                           mpi_size_str + "_rank_" + rank_str + ".txt");
 
       profiler.WriteToFile(filename, mpi.rank);
 

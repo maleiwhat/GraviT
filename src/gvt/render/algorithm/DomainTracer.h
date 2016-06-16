@@ -60,6 +60,8 @@
 
 #include <set>
 
+#include "gvt/render/unit/Profiler.h"
+
 #define RAY_BUF_SIZE 10485760 // 10 MB per neighbor
 
 // #define DEBUG_RAY_TRANSFER
@@ -68,6 +70,9 @@ using namespace gvt::core::mpi;
 namespace gvt {
 namespace render {
 namespace algorithm {
+
+using namespace gvt::render::unit;
+using namespace gvt::render::unit::profiler;
 
 /// work scheduler that strives to keep domains loaded and send rays
 /**
@@ -88,6 +93,8 @@ namespace algorithm {
    */
 template <> class Tracer<gvt::render::schedule::DomainScheduler> : public AbstractTrace {
 public:
+  gvt::render::unit::profiler::Profiler profiler;
+
   std::set<int> neighbors;
 
   size_t rays_start, rays_end;
@@ -149,6 +156,8 @@ public:
 
   virtual ~Tracer() {}
 
+  gvt::render::unit::profiler::Profiler &GetProfiler() { return profiler; }
+
   void shuffleDropRays(gvt::render::actor::RayVector &rays) {
     const size_t chunksize = MAX(2, rays.size() / (std::thread::hardware_concurrency() * 4));
     static gvt::render::data::accel::BVH &acc = *dynamic_cast<gvt::render::data::accel::BVH *>(acceleration);
@@ -183,16 +192,16 @@ public:
 
   inline void operator()() {
 
-    gvt::core::time::timer t_diff(false, "domain tracer: diff timers/frame:");
-    gvt::core::time::timer t_all(false, "domain tracer: all timers:");
-    gvt::core::time::timer t_frame(true, "domain tracer: frame :");
-    gvt::core::time::timer t_gather(false, "domain tracer: gather :");
-    gvt::core::time::timer t_send(false, "domain tracer: send :");
-    gvt::core::time::timer t_shuffle(false, "domain tracer: shuffle :");
-    gvt::core::time::timer t_trace(false, "domain tracer: trace :");
-    gvt::core::time::timer t_sort(false, "domain tracer: select :");
-    gvt::core::time::timer t_adapter(false, "domain tracer: adapter :");
-    gvt::core::time::timer t_filter(false, "domain tracer: filter :");
+    // gvt::core::time::timer t_diff(false, "domain tracer: diff timers/frame:");
+    // gvt::core::time::timer t_all(false, "domain tracer: all timers:");
+    // gvt::core::time::timer t_frame(true, "domain tracer: frame :");
+    // gvt::core::time::timer t_gather(false, "domain tracer: gather :");
+    // gvt::core::time::timer t_send(false, "domain tracer: send :");
+    // gvt::core::time::timer t_shuffle(false, "domain tracer: shuffle :");
+    // gvt::core::time::timer t_trace(false, "domain tracer: trace :");
+    // gvt::core::time::timer t_sort(false, "domain tracer: select :");
+    // gvt::core::time::timer t_adapter(false, "domain tracer: adapter :");
+    // gvt::core::time::timer t_filter(false, "domain tracer: filter :");
 
     // gvt::core::time::timer t_trace(false);
     // gvt::core::time::timer t_sort(false);
@@ -216,9 +225,11 @@ public:
 #ifdef GVT_USE_MPE
     MPE_Log_event(localrayfilterstart, 0, NULL);
 #endif
-    t_filter.resume();
+    // t_filter.resume();
+    profiler.Start(gvt::render::unit::profiler::Profiler::SHUFFLE);
     FilterRaysLocally();
-    t_filter.stop();
+    profiler.Stop(gvt::render::unit::profiler::Profiler::SHUFFLE);
+    // t_filter.stop();
 #ifdef GVT_USE_MPE
     MPE_Log_event(localrayfilterend, 0, NULL);
 #endif
@@ -242,11 +253,12 @@ public:
     do {
 
       do {
+        profiler.Start(gvt::render::unit::profiler::Profiler::SCHEDULE);
         // process domain with most rays queued
         instTarget = -1;
         instTargetCount = 0;
 
-        t_sort.resume();
+        // t_sort.resume();
         GVT_DEBUG(DBG_ALWAYS, "image scheduler: selecting next instance, num queues: " << this->queue.size());
         // for (std::map<int, gvt::render::actor::RayVector>::iterator q = this->queue.begin(); q != this->queue.end();
         //      ++q) {
@@ -258,11 +270,16 @@ public:
             instTarget = q.first;
           }
         }
-        t_sort.stop();
+        // t_sort.stop();
+        profiler.Stop(gvt::render::unit::profiler::Profiler::SCHEDULE);
         GVT_DEBUG(DBG_ALWAYS, "image scheduler: next instance: " << instTarget << ", rays: " << instTargetCount);
 
         if (instTarget >= 0) {
-          t_adapter.resume();
+          // t_adapter.resume();
+          profiler.Start(gvt::render::unit::profiler::Profiler::ADAPTER);
+          profiler.AddCounter(gvt::render::unit::profiler::Profiler::PROCESS_RAY, instTargetCount);
+          profiler.AddCounter(gvt::render::unit::profiler::Profiler::VALID_SCHEDULE, 1);
+
           gvt::render::Adapter *adapter = 0;
           // gvt::core::DBNodeH meshNode = instancenodes[instTarget]["meshRef"].deRef();
 
@@ -274,8 +291,10 @@ public:
           auto it = adapterCache.find(mesh);
           if (it != adapterCache.end()) {
             adapter = it->second;
+            profiler.AddCounter(gvt::render::unit::profiler::Profiler::ADAPTER_HIT, 1);
           } else {
             adapter = 0;
+            profiler.AddCounter(gvt::render::unit::profiler::Profiler::ADAPTER_MISS, 1);
           }
           if (!adapter) {
             GVT_DEBUG(DBG_ALWAYS, "image scheduler: creating new adapter");
@@ -307,13 +326,15 @@ public:
 
             adapterCache[mesh] = adapter;
           }
-          t_adapter.stop();
+          profiler.Stop(gvt::render::unit::profiler::Profiler::ADAPTER);
+          // t_adapter.stop();
           GVT_ASSERT(adapter != nullptr, "image scheduler: adapter not set");
           // end getAdapterFromCache concept
 
           GVT_DEBUG(DBG_ALWAYS, "image scheduler: calling process queue");
           {
-            t_trace.resume();
+            profiler.Start(gvt::render::unit::profiler::Profiler::TRACE);
+            // t_trace.resume();
             moved_rays.reserve(this->queue[instTarget].size() * 10);
 #ifdef GVT_USE_DEBUG
             boost::timer::auto_cpu_timer t("Tracing rays in adapter: %w\n");
@@ -323,22 +344,29 @@ public:
 
             this->queue[instTarget].clear();
 
-            t_trace.stop();
+            profiler.Stop(gvt::render::unit::profiler::Profiler::TRACE);
+            // t_trace.stop();
           }
 
           GVT_DEBUG(DBG_ALWAYS, "image scheduler: marching rays");
-          t_shuffle.resume();
+          // t_shuffle.resume();
+          profiler.Start(gvt::render::unit::profiler::Profiler::SHUFFLE);
           shuffleRays(moved_rays, instTarget);
           moved_rays.clear();
-          t_shuffle.stop();
+          profiler.Stop(gvt::render::unit::profiler::Profiler::SHUFFLE);
+          // t_shuffle.stop();
+        } else {
+          profiler.AddCounter(gvt::render::unit::profiler::Profiler::INVALID_SCHEDULE, 1);
         }
       } while (instTarget != -1);
 
       {
-        t_send.resume();
+        // t_send.resume();
         // done with current domain, send off rays to their proper processors.
         GVT_DEBUG(DBG_ALWAYS, "Rank [ " << mpi.rank << "]  calling SendRays");
         SendRays();
+
+        profiler.Start(gvt::render::unit::profiler::Profiler::VOTE);
         // are we done?
 
         // root proc takes empty flag from all procs
@@ -363,8 +391,9 @@ public:
                                                         << " (my q:" << queue.size() << ")");
 
         all_done = (not_done == 0);
-        t_send.stop();
+        // t_send.stop();
         delete[] empties;
+        profiler.Stop(gvt::render::unit::profiler::Profiler::VOTE);
       }
     } while (!all_done);
 
@@ -377,18 +406,21 @@ public:
 #ifdef GVT_USE_MPE
     MPE_Log_event(framebufferstart, 0, NULL);
 #endif
-    t_gather.resume();
+    // t_gather.resume();
+    profiler.Start(gvt::render::unit::profiler::Profiler::COMPOSITE);
     this->gatherFramebuffers(this->rays_end - this->rays_start);
-    t_gather.stop();
+    profiler.Stop(gvt::render::unit::profiler::Profiler::COMPOSITE);
+    // t_gather.stop();
 #ifdef GVT_USE_MPE
     MPE_Log_event(framebufferend, 0, NULL);
 #endif
-    t_frame.stop();
-    t_all = t_sort + t_trace + t_shuffle + t_gather + t_adapter + t_filter + t_send;
-    t_diff = t_frame - t_all;
+    // t_frame.stop();
+    // t_all = t_sort + t_trace + t_shuffle + t_gather + t_adapter + t_filter + t_send;
+    // t_diff = t_frame - t_all;
   }
 
   inline bool SendRays() {
+    profiler.Start(gvt::render::unit::profiler::Profiler::SEND);
     int *outbound = new int[2 * mpi.world_size];
     int *inbound = new int[2 * mpi.world_size];
     MPI_Request *reqs = new MPI_Request[2 * mpi.world_size];
@@ -405,6 +437,8 @@ public:
       reqs[i] = MPI_REQUEST_NULL;
     }
 
+    std::size_t ray_count = 0;
+
     // count how many rays are to be sent to each neighbor
     // for (std::map<int, gvt::render::actor::RayVector>::iterator q = queue.begin(); q != queue.end(); ++q) {
     for (auto &q : queue) {
@@ -416,6 +450,9 @@ public:
         int buf_size = 0;
 
         outbound[n_ptr] += q.second.size(); // outbound[n_ptr] has number of rays going
+
+        ray_count += q.second.size();
+
         for (size_t r = 0; r < q.second.size(); ++r) {
           buf_size += (q.second)[r].packedSize(); // rays can have diff packed sizes
         }
@@ -426,6 +463,8 @@ public:
                                                   << std::endl);
       }
     }
+
+    if (ray_count > 0) profiler.AddCounter(gvt::render::unit::profiler::Profiler::SEND_RAY, ray_count);
 
     // let the neighbors know what's coming
     // and find out what's coming here
@@ -492,12 +531,19 @@ public:
         q.second.clear();
       }
     }
+
+    ray_count = 0;
+
     for (size_t n = 0; n < mpi.world_size; ++n) { // bds loop over all
       if (outbound[2 * n] > 0) {
         MPI_Isend(send_buf[n], outbound[2 * n + 1], MPI_UNSIGNED_CHAR, n, tag, MPI_COMM_WORLD, &reqs[2 * n + 1]);
         GVT_DEBUG(DBG_ALWAYS, "[" << mpi.rank << "]: send done to " << n << std::endl);
       }
     }
+
+    profiler.Stop(gvt::render::unit::profiler::Profiler::SEND);
+
+    profiler.Start(gvt::render::unit::profiler::Profiler::RECV);
 
     // GVT_DEBUG(DBG_ALWAYS, "[" << mpi.rank << ": q(" << queue.size()
     //                            << ") erasing " << to_del.size());
@@ -527,9 +573,13 @@ public:
             queue[q_number].push_back(r);
             ptr += r.packedSize();
           }
+          ray_count += raysinqueue;
         }
       }
     }
+
+    if (ray_count > 0) profiler.AddCounter(gvt::render::unit::profiler::Profiler::RECV_RAY, ray_count);
+
     GVT_DEBUG(DBG_ALWAYS, "[" << mpi.rank << "]: sent and received rays" << std::endl);
 
     // clean up
@@ -545,6 +595,9 @@ public:
     delete[] reqs;
     delete[] stat;
     GVT_DEBUG(DBG_ALWAYS, "[" << mpi.rank << "] done with DomainSendRays");
+
+    profiler.Stop(gvt::render::unit::profiler::Profiler::RECV);
+
     return false;
   }
 };

@@ -315,6 +315,7 @@ set(GVT_RENDER_SRCS ${GVT_RENDER_SRCS}
   src/gvt/render/unit/MpiRenderer.cpp
   src/gvt/render/unit/Voter.cpp
   src/apps/render/TestScenes.cpp
+  src/gvt/render/unit/Profiler.cpp
 )
 
 set(GVT_MPI_SRCS

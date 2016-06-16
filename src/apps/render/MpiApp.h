@@ -32,6 +32,7 @@ struct Options {
   int numTbbThreads;
   int ply_count = 8;
   std::string infile;
+  std::string model_name = std::string("model");
   // glm::vec3 eye;
   // glm::vec3 look;
 };

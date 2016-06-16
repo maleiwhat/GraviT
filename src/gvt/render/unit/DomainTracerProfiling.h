@@ -218,12 +218,12 @@ public:
     // gvt::core::time::timer t_adapter(false, "domain tracer: adapter :");
     // gvt::core::time::timer t_filter(false, "domain tracer: filter :");
 
-    Timer t_filter;
-    Timer t_schedule;
-    Timer t_adapter;
-    Timer t_trace;
-    Timer t_shuffle;
-    Timer t_composite;
+    gvt::render::unit::Timer t_filter;
+    gvt::render::unit::Timer t_schedule;
+    gvt::render::unit::Timer t_adapter;
+    gvt::render::unit::Timer t_trace;
+    gvt::render::unit::Timer t_shuffle;
+    gvt::render::unit::Timer t_composite;
 
     // gvt::core::time::timer t_trace(false);
     // gvt::core::time::timer t_sort(false);
@@ -251,7 +251,7 @@ public:
     t_filter.start();
     FilterRaysLocally();
     t_filter.stop();
-    profiler.update(Profiler::Filter, t_filter.getElapsed());
+    profiler.update(gvt::render::unit::Profiler::Filter, t_filter.getElapsed());
 #ifdef GVT_USE_MPE
     MPE_Log_event(localrayfilterend, 0, NULL);
 #endif
@@ -293,7 +293,7 @@ public:
           }
         }
         // t_sort.stop();
-        profiler.update(Profiler::Schedule, t_schedule.getElapsed());
+        profiler.update(gvt::render::unit::Profiler::Schedule, t_schedule.getElapsed());
 
 #ifdef PROFILE_RAY_COUNTS
         profiler.addRayCountProc(instTargetCount);
@@ -350,7 +350,7 @@ public:
             adapterCache[mesh] = adapter;
           }
           t_adapter.stop();
-          profiler.update(Profiler::Adapter, t_adapter.getElapsed());
+          profiler.update(gvt::render::unit::Profiler::Adapter, t_adapter.getElapsed());
 
           GVT_ASSERT(adapter != nullptr, "image scheduler: adapter not set");
           // end getAdapterFromCache concept
@@ -369,7 +369,7 @@ public:
             this->queue[instTarget].clear();
 
             t_trace.stop();
-            profiler.update(Profiler::Trace, t_trace.getElapsed());
+            profiler.update(gvt::render::unit::Profiler::Trace, t_trace.getElapsed());
           }
 
           GVT_DEBUG(DBG_ALWAYS, "image scheduler: marching rays");
@@ -378,7 +378,7 @@ public:
           shuffleRays(moved_rays, instTarget);
           moved_rays.clear();
           t_shuffle.stop();
-          profiler.update(Profiler::Shuffle, t_shuffle.getElapsed());
+          profiler.update(gvt::render::unit::Profiler::Shuffle, t_shuffle.getElapsed());
         }
       } while (instTarget != -1);
 
@@ -429,7 +429,7 @@ public:
     t_composite.start();
     this->gatherFramebuffers(this->rays_end - this->rays_start);
     t_composite.stop();
-    profiler.update(Profiler::Composite, t_composite.getElapsed());
+    profiler.update(gvt::render::unit::Profiler::Composite, t_composite.getElapsed());
     // t_gather.stop();
 #ifdef GVT_USE_MPE
     MPE_Log_event(framebufferend, 0, NULL);
@@ -440,8 +440,8 @@ public:
   }
 
   inline bool SendRays() {
-    Timer t_send;
-    Timer t_receive;
+    gvt::render::unit::Timer t_send;
+    gvt::render::unit::Timer t_receive;
 
     int *outbound = new int[2 * mpi.world_size];
     int *inbound = new int[2 * mpi.world_size];
@@ -569,7 +569,7 @@ public:
     // GVT_DEBUG(DBG_ALWAYS,  " q(" << queue.size() << ")" << std::endl);
 
     t_send.stop();
-    profiler.update(Profiler::Send, t_send.getElapsed());
+    profiler.update(gvt::render::unit::Profiler::Send, t_send.getElapsed());
 
     t_receive.start();
 
@@ -626,7 +626,7 @@ public:
     GVT_DEBUG(DBG_ALWAYS, "[" << mpi.rank << "] done with DomainSendRays");
 
     t_receive.stop();
-    profiler.update(Profiler::Receive, t_receive.getElapsed());
+    profiler.update(gvt::render::unit::Profiler::Receive, t_receive.getElapsed());
 
     return false;
   }
