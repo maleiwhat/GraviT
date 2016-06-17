@@ -570,16 +570,22 @@ void Render(int argc, char **argv) {
       Profiler& profiler = domain_tracer->GetProfiler();
 
       // warm up
-      // std::cout << "rank " << mpi.rank << " start warming up" << std::endl;
+#ifndef NDEBUG
+      std::cout << "rank " << mpi.rank << " start warming up\n\n";
+#endif
       for (int z = 0; z < 10; z++) {
         g_camera->AllocateCameraRays();
         g_camera->generateRays();
         g_image->clear();
         worker.Render();
-        // std::cout << "rank " << mpi.rank << " warm up frame " << z << " done" << std::endl;
+#ifndef NDEBUG
+        std::cout << "rank " << mpi.rank << " warm up frame " << z << " done\n\n";
+#endif
       }
 
-      // std::cout << "rank " << mpi.rank << " start active frames" << std::endl;
+#ifndef NDEBUG
+      std::cout << "rank " << mpi.rank << " start active frames" << std::endl;
+#endif
       profiler.Start(Profiler::TOTAL_TIME);
 
       for (int z = 0; z < 100; z++) {
@@ -590,7 +596,9 @@ void Render(int argc, char **argv) {
         profiler.Stop(Profiler::CAMERA_RAY);
 
         worker.Render();
-        // std::cout << "rank " << mpi.rank << " active frame " << z << " done" << std::endl;
+#ifndef NDEBUG
+        std::cout << "rank " << mpi.rank << " active frame " << z << " done\n\n";
+#endif
       }
 
       profiler.Stop(Profiler::TOTAL_TIME);

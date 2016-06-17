@@ -234,6 +234,10 @@ void Communicator::RecvWork(const MPI_Status& status, Work* work) {
 #endif
 
   work->Allocate(count);
+#ifndef NDEBUG
+  printf("[MPI_Recv] buf %p count %d src %d tag %d\n", work->GetBuffer(), count,
+         status.MPI_SOURCE, status.MPI_TAG);
+#endif
   MPI_Status status_out;
   MPI_Recv(work->GetBuffer(), count, MPI_UNSIGNED_CHAR, status.MPI_SOURCE,
            status.MPI_TAG, MPI_COMM_WORLD, &status_out);
@@ -273,6 +277,14 @@ void Communicator::SendWork(Work* work) {
       std::cout << "error unable to send " << count << " bytes.\n";
       exit(1);
     }
+#endif
+    if (work->GetBuffer() == NULL) {
+      std::cout << "NULL detected\n";
+      exit(1);
+    } 
+#ifndef NDEBUG
+    printf("[MPI_Send] buf %p count %d dest %d tag %d\n", work->GetBuffer(), count,
+           work->GetDestination(), work->GetTag());
 #endif
     MPI_Send(work->GetBuffer(), count, MPI_UNSIGNED_CHAR,
              work->GetDestination(), work->GetTag(), MPI_COMM_WORLD);

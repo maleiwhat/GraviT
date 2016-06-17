@@ -433,8 +433,9 @@ void DomainTracer::SendRays() {
 
       rays.clear();
 #ifndef NDEBUG
-      printf("rank %d: sent %lu rays instance %d to rank %d\n", mpiInfo.rank,
-             num_rays_to_send, instance, owner_process);
+      printf("rank %d: sent %lu rays (%d bytes) instance %d to rank %d\n",
+             mpiInfo.rank, num_rays_to_send, work->GetSize(), instance,
+             owner_process);
 #endif
 #ifdef VERIFY
        if (send_map.empty()) {
