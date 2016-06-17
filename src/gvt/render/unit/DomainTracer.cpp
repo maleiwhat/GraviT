@@ -350,12 +350,6 @@ inline void DomainTracer::Trace() {
   MPE_Log_event(framebufferend, 0, NULL);
 #endif
 
-  profiler.Start(Profiler::VOTE);
-  if (voter) {
-    voter->reset();
-  }
-  profiler.Stop(Profiler::VOTE);
-
   // t_frame.stop();
   // t_all = t_sort + t_trace + t_shuffle + t_gather + t_adapter + t_filter;
   //         // t_send + t_recv + t_vote;
@@ -388,6 +382,7 @@ bool DomainTracer::TransferRays() {
     // t_vote.resume();
     profiler.Start(Profiler::VOTE);
     done = voter->updateState();
+    if (done) voter->reset();
     profiler.Stop(Profiler::VOTE);
     // t_vote.stop();
     // profiler.update(Profiler::Vote, t_vote.getElapsed());

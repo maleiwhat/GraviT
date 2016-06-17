@@ -141,7 +141,8 @@ bool TpcVoter::updateState() {
       reset();
     } break;
 
-    default: { } break; }  // switch (state) {
+    default: { break; }
+  }  // switch (state) {
 
 #ifdef DEBUG_VOTER
   if (old_state != state)
