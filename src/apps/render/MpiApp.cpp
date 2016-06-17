@@ -573,7 +573,7 @@ void Render(int argc, char **argv) {
 #ifndef NDEBUG
       std::cout << "rank " << mpi.rank << " start warming up\n\n";
 #endif
-      for (int z = 0; z < 10; z++) {
+      for (int z = 0; z < 2; z++) {
         g_camera->AllocateCameraRays();
         g_camera->generateRays();
         g_image->clear();
@@ -588,18 +588,18 @@ void Render(int argc, char **argv) {
 #endif
       profiler.Start(Profiler::TOTAL_TIME);
 
-      for (int z = 0; z < 100; z++) {
-        profiler.Start(Profiler::CAMERA_RAY);
-        g_camera->AllocateCameraRays();
-        g_camera->generateRays();
-        g_image->clear();
-        profiler.Stop(Profiler::CAMERA_RAY);
-
-        worker.Render();
-#ifndef NDEBUG
-        std::cout << "rank " << mpi.rank << " active frame " << z << " done\n\n";
-#endif
-      }
+//       for (int z = 0; z < 100; z++) {
+//         profiler.Start(Profiler::CAMERA_RAY);
+//         g_camera->AllocateCameraRays();
+//         g_camera->generateRays();
+//         g_image->clear();
+//         profiler.Stop(Profiler::CAMERA_RAY);
+// 
+//         worker.Render();
+// #ifndef NDEBUG
+//         std::cout << "rank " << mpi.rank << " active frame " << z << " done\n\n";
+// #endif
+//       }
 
       profiler.Stop(Profiler::TOTAL_TIME);
 
