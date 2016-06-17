@@ -52,6 +52,10 @@ public:
   BVH(gvt::core::Vector<gvt::core::DBNodeH> &instanceSet);
   ~BVH();
 
+  float DiagonalLength(){
+    return root->bbox.diagonalDistance();
+  }
+
   virtual void intersect(const gvt::render::actor::Ray &ray, gvt::render::actor::isecDomList &isect);
   inline int intersect(const gvt::render::actor::Ray &ray, int from, float &t) {
     const glm::vec3 &origin = ray.origin;

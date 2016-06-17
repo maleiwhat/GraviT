@@ -58,6 +58,7 @@ public:
   }
   LightType LightT;
   glm::vec3 position;
+  float relativeDistance; // light distance is relative to this relative distance
 };
 /// general lighting factor added to each successful ray intersection
 class AmbientLight : public Light {

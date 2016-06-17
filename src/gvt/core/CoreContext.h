@@ -67,6 +67,12 @@ public:
   /// return a handle to the node with matching UUID
   DBNodeH getNode(Uuid);
 
+  DBNodeH findChildNodeByName(String childName, Uuid parent);
+
+  DBNodeH findChildNodeByNameAndVariant(String childName, Uuid parent, Variant val);
+
+  void deleteChildren(Uuid node);
+
   /// create a node in the database
   /** \param name the node name
       \param val the node value

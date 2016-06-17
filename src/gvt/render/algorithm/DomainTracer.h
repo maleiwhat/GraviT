@@ -147,6 +147,92 @@ public:
 
   virtual ~Tracer() {}
 
+  void RegisterCurrentDomains(int * instanceIds, int * mpiInstanceIds, int count, int totalInstances)
+  {
+
+    if(mpi.world_size == 1)
+    {
+      // just use the default block assignment since there is only 1 rank
+      return;
+    }
+
+    int * sendBuff = new int[count *2];
+
+    for(int i = 0;i<count;i++)
+    {
+      sendBuff[i*2] =  instanceIds[i];
+      sendBuff[i*2+1] = mpiInstanceIds[i];
+    }
+
+    // send information on number of instanceIds-mpiinstanceids
+
+    int countSendBuf[2];
+    countSendBuf[0] = mpi.rank;
+    countSendBuf[1] = count;
+
+    int * countRecvBuf = new int[2*mpi.world_size];
+    MPI_Allgather(countSendBuf, 2,MPI_INT,countRecvBuf, 2, MPI_INT, MPI_COMM_WORLD);
+
+    int * countHashBuf = new int[mpi.world_size];
+    // sorted table
+
+    for(int i = 0; i<mpi.world_size;i++)
+    {
+      int mpiId = countRecvBuf[i*2];
+      countHashBuf[mpiId] = countRecvBuf[i*2+1];
+    }
+
+    delete [] countRecvBuf;
+
+    // now send the data
+    MPI_Request *reqs = new MPI_Request[mpi.world_size];
+    for(int n = 0;n<mpi.world_size;n++)
+    {
+      if( n == mpi.rank) continue;
+      MPI_Isend(sendBuff, count*2, MPI_INT, n, 0, MPI_COMM_WORLD, &reqs[n]);
+    }
+
+    delete [] sendBuff;
+
+    // now recieve the data
+    MPI_Status * reqsRecieve = new MPI_Status[mpi.world_size];
+
+    int * recvBuff = new int[totalInstances*2];
+    int * tRecvBuff = recvBuff;
+
+    for(int n = 0;n<mpi.world_size;n++)
+    {
+      if( n == mpi.rank)
+      {
+        for(int kk = 0;kk<count;kk++)
+        {
+          recvBuff[kk*2] = instanceIds[kk];
+          recvBuff[kk*2+1] = mpiInstanceIds[kk];
+        }
+      }
+      else
+      {
+        MPI_Recv(recvBuff,countHashBuf[n] * 2, MPI_INT, n, 0,MPI_COMM_WORLD,&reqsRecieve[n] );
+      }
+      recvBuff += (countHashBuf[n] * 2);
+    }
+
+    recvBuff = tRecvBuff;
+
+    delete [] reqs;
+    delete [] reqsRecieve;
+
+    for(int i = 0; i<totalInstances;i++)
+    {
+      int gInstanceId = recvBuff[i*2];
+      int gMPIInstanceId = recvBuff[i*2+1];
+
+      mpiInstanceMap[gInstanceId] = gMPIInstanceId;
+    }
+    // communicate with other mpi instance to relay id's
+    delete [] recvBuff; 
+  }
+
   void shuffleDropRays(gvt::render::actor::RayVector &rays) {
     const size_t chunksize = MAX(2, rays.size() / (std::thread::hardware_concurrency() * 4));
     static gvt::render::data::accel::BVH &acc = *dynamic_cast<gvt::render::data::accel::BVH *>(acceleration);
@@ -315,7 +401,8 @@ public:
             moved_rays.reserve(this->queue[instTarget].size() * 10);
 #ifdef GVT_USE_DEBUG
             boost::timer::auto_cpu_timer t("Tracing rays in adapter: %w\n");
-#endif
+#endif  
+            adapter->enableShadows = enableShadows;
             adapter->trace(this->queue[instTarget], moved_rays, instM[instTarget], instMinv[instTarget],
                            instMinvN[instTarget], lights);
 
@@ -332,6 +419,7 @@ public:
         }
       } while (instTarget != -1);
 
+      if(mpi.world_size != 1)
       {
         t_send.resume();
         // done with current domain, send off rays to their proper processors.
@@ -363,6 +451,10 @@ public:
         all_done = (not_done == 0);
         t_send.stop();
         delete[] empties;
+      }
+      else
+      {
+        all_done = true;
       }
     } while (!all_done);
 

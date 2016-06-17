@@ -64,12 +64,31 @@ public:
 
   void Add(int pixel, glm::vec3 &ca) {
     int index = 3 * pixel;
-    rgb[index + 0] = (unsigned char)(ca[0] * 255.f);
-    rgb[index + 1] = (unsigned char)(ca[1] * 255.f);
-    rgb[index + 2] = (unsigned char)(ca[2] * 255.f);
-    if (rgb[index + 0] > 255.f) rgb[index + 0] = 255;
-    if (rgb[index + 1] > 255.f) rgb[index + 1] = 255;
-    if (rgb[index + 2] > 255.f) rgb[index + 2] = 255;
+    
+    if(ca[0] * 255.f + (float)rgb[index + 0] < 255.0)
+    {
+        rgb[index + 0] += (unsigned char)(ca[0] * 255.f);
+    }
+    else
+    {
+        rgb[index+0] = 255;
+    }
+    if(ca[1] * 255.f + (float)rgb[index + 1] < 255.0)
+    {
+        rgb[index + 1] += (unsigned char)(ca[1] * 255.f);
+    }
+    else
+    {
+        rgb[index+1] = 255;
+    }
+    if(ca[2] * 255.f + (float)rgb[index + 2] < 255.0)
+    {
+        rgb[index + 2] += (unsigned char)(ca[2] * 255.f);
+    }
+    else
+    {
+        rgb[index+2] = 255;
+    }
   }
 
   void Add(int pixel, glm::vec3 &ca, float w) {
@@ -82,6 +101,7 @@ public:
   unsigned char *GetBuffer() { return rgb; }
 
   void Write();
+  void WriteChar(unsigned char * image);
   void clear() { std::memset(rgb, 0, sizeof(char) * 3 * width * height); }
 
   ~Image() { delete[] rgb; }

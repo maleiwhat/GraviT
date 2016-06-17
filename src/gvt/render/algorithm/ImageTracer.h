@@ -168,6 +168,55 @@ public:
           adapter = 0;
         }
         if (!adapter) {
+          if(loadBlockFunc)
+          {
+            std::cerr<<"Image:calling load block func from visit."<<std::endl;
+            double * points;
+            int numPoints = -1;
+            int numEdges = -1;
+            int * edges;
+
+            //std::cerr<<"calling loadBlock"<<std::endl;
+            int rtr = loadBlockFunc(loadBlockObj,instTarget, &points, numPoints, &edges, numEdges); 
+            if(rtr == -1)
+            {
+              //throw some kind of error here
+              //TODO: throw some kind of error here
+            }
+            // add these edges and points to the current mesh
+
+            //clear the mesh
+
+            mesh->vertices.clear();
+            mesh->haveNormals = false;
+
+            double * point = points;
+            for(int i =0;i< numPoints;i++)
+            {
+              glm::vec3 newPoint(*point,*(point+1),*(point+2));
+              //std::cerr<<*point<<":"<<*point+1<<":"<<*point+2<<std::endl;
+              mesh->addVertex(newPoint);
+              point +=3;
+
+            }
+
+            int * edge = edges;
+            for(int i =0;i< numEdges;i++)
+            {
+              mesh->addFace(*(edge), *(edge+1), *(edge+2));
+              //std::cerr<<*edge<<":"<<*edge+1<<":"<<*edge+2<<std::endl;
+              edge+=3;
+            }
+            delete [] points;
+            delete [] edges;
+
+            mesh->generateNormals();
+          }
+          else
+          {
+            std::cerr<<"NO load block fun"<<std::endl;
+          }
+
           GVT_DEBUG(DBG_ALWAYS, "image scheduler: creating new adapter");
           switch (adapterType) {
 #ifdef GVT_RENDER_ADAPTER_EMBREE
@@ -208,6 +257,7 @@ public:
 #ifdef GVT_USE_DEBUG
           boost::timer::auto_cpu_timer t("Tracing rays in adapter: %w\n");
 #endif
+          adapter->enableShadows = enableShadows;
           adapter->trace(this->queue[instTarget], moved_rays, instM[instTarget], instMinv[instTarget],
                          instMinvN[instTarget], lights);
 

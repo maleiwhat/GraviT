@@ -68,6 +68,7 @@ public:
 
   std::mutex _inqueue;
   std::mutex _outqueue;
+  bool enableShadows = true;
 
 };
 

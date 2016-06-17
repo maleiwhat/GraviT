@@ -51,12 +51,12 @@ PointLight::PointLight(const glm::vec3 position, const glm::vec3 color) : Light(
   LightT = Point;
 }
 
-PointLight::PointLight(const PointLight &orig) : Light(orig), color(orig.color) { LightT = Point; }
+PointLight::PointLight(const PointLight &orig) : Light(orig), color(orig.color) { relativeDistance = 1.0; LightT = Point; }
 
 PointLight::~PointLight() {}
 
 glm::vec3 PointLight::contribution(const glm::vec3 &hitpoint, const glm::vec3 &samplePos) const {
-  float distance = 1.f / glm::length(position - hitpoint);
+  float distance = 1.f / (glm::length(position - hitpoint)*relativeDistance);
   distance = (distance > 1.f) ? 1.f : distance;
   return color * distance;
 }

@@ -74,8 +74,27 @@ struct GVT_COMM {
   size_t world_size;
 
   GVT_COMM() {
-    rank = MPI::COMM_WORLD.Get_rank();
-    world_size = MPI::COMM_WORLD.Get_size();
+
+    int flag;
+    flag = 0;
+    MPI_Initialized(&flag);
+
+    int arank,asize;
+    if(flag)
+    {
+      std::cerr<<"mpi init called"<<std::endl;
+      MPI_Comm_rank (MPI_COMM_WORLD, &arank);  /* get current process id */
+      MPI_Comm_size (MPI_COMM_WORLD, &asize);    /* get number of processes */
+    }
+    else
+    {
+      std::cerr<<"mpi init not called"<<std::endl;
+      arank = 0;
+      asize = 1;
+    }
+
+    rank = arank;
+    world_size = asize;
   }
 
   operator bool() { return (world_size > 1); }
@@ -113,15 +132,23 @@ public:
 
   float sample_ratio = 1.f;
 
+  bool enableShadows = true;
+  float relativeDistance = 1.0;
+
   tbb::mutex *queue_mutex;                            // array of mutexes - one per instance
   std::map<int, gvt::render::actor::RayVector> queue; ///< Node rays working
   tbb::mutex *colorBuf_mutex;                         ///< buffer for color accumulation
   glm::vec3 *colorBuf;
 
+  int (*loadBlockFunc)(void *, int ,double ** , int& , int ** , int& );
+  void * loadBlockObj;
+
   AbstractTrace(gvt::render::actor::RayVector &rays, gvt::render::data::scene::Image &image)
       : rays(rays), image(image) {
     GVT_DEBUG(DBG_ALWAYS, "initializing abstract trace: num rays: " << rays.size());
     colorBuf = new glm::vec3[width * height];
+
+    loadBlockFunc = NULL;
 
     // TODO: alim: this queue is on the number of domains in the dataset
     // if this is on the number of domains, then it will be equivalent to the
@@ -134,6 +161,10 @@ public:
     queue_mutex = new tbb::mutex[numInst];
     colorBuf_mutex = new tbb::mutex[width];
     acceleration = new gvt::render::data::accel::BVH(instancenodes);
+
+    //calculate the diagonal size of the entire mesh
+    //gvt::render::data::accel::BVH * accel = (gvt::render::data::accel::BVH *)acceleration;
+    //float dataDiagDistance = accel->DiagonalLength();
 
     for (int i = 0; i < instancenodes.size(); i++) {
       meshRef[i] =
@@ -152,6 +183,7 @@ public:
       if (lightNode.name() == std::string("PointLight")) {
         auto pos = lightNode["position"].value().tovec3();
         lights.push_back(new gvt::render::data::scene::PointLight(pos, color));
+        lights.back()->relativeDistance = relativeDistance;
       } else if (lightNode.name() == std::string("AmbientLight")) {
         lights.push_back(new gvt::render::data::scene::AmbientLight(color));
       } else if (lightNode.name() == std::string("AreaLight")) {
@@ -164,6 +196,12 @@ public:
     }
 
     GVT_DEBUG(DBG_ALWAYS, "abstract trace: constructor end");
+  }
+
+  void setLightRelativeDistance(float relativeDistance){
+    for (auto light : lights) {
+        light->relativeDistance = relativeDistance;
+    }
   }
 
   void clearBuffer() { std::memset(colorBuf, 0, sizeof(glm::vec3) * width * height); }
@@ -200,8 +238,17 @@ public:
                         for (size_t i = 0; i < hits.size(); i++) {
                           gvt::render::actor::Ray &r = *(raysit.begin() + i);
                           if (hits[i].next != -1) {
-                            r.origin = r.origin + r.direction * (hits[i].t * 0.95f);
-                            local_queue[hits[i].next].push_back(r);
+
+                            if(!enableShadows && r.type == gvt::render::actor::Ray::SHADOW )
+                            {
+                              tbb::mutex::scoped_lock fbloc(colorBuf_mutex[r.id % width]);
+                             colorBuf[r.id] += r.color;
+                            }
+                            else
+                            {
+                              r.origin = r.origin + r.direction * (hits[i].t * 0.95f);
+                              local_queue[hits[i].next].push_back(r);
+                            }
                           } else if (r.type == gvt::render::actor::Ray::SHADOW && glm::length(r.color) > 0) {
                             tbb::mutex::scoped_lock fbloc(colorBuf_mutex[r.id % width]);
                             colorBuf[r.id] += r.color;

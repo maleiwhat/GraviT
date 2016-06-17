@@ -52,6 +52,45 @@ DBNodeH CoreContext::getNode(Uuid node) {
     return DBNodeH();
 }
 
+DBNodeH CoreContext::findChildNodeByName(String childName, Uuid parent)
+{
+  DatabaseNode *np= __database->getChildByName(parent, childName);
+  if(np)
+  {
+    return DBNodeH(np->UUID());
+  }
+  else
+  {
+    return DBNodeH();
+  }
+}
+
+
+void CoreContext::deleteChildren(Uuid node)
+{
+  DatabaseNode *n = __database->getItem(node);
+  Vector<DatabaseNode *> children = n->getChildren();
+  for( int i = 0; i< children.size();i++)
+  {
+    Uuid childUUID = children[i]->UUID();
+    __database->removeItem(childUUID);
+
+  }
+}
+
+DBNodeH CoreContext::findChildNodeByNameAndVariant(String childName, Uuid parent, Variant val)
+{
+  DatabaseNode *np= __database->getChildByNameAndVariant(parent, childName, val);
+  if(np)
+  {
+    return DBNodeH(np->UUID());
+  }
+  else
+  {
+    return DBNodeH();
+  }
+}
+
 DBNodeH CoreContext::createNode(String name, Variant val, Uuid parent) {
   DatabaseNode *np = new DatabaseNode(name, val, Uuid(), parent);
   __database->setItem(np);

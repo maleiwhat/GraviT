@@ -131,3 +131,13 @@ float Box3D::surfaceArea() const {
   glm::vec3 diag = bounds_max - bounds_min;
   return (2.f * (diag.x * diag.y + diag.y * diag.z + diag.z * diag.x));
 }
+
+float Box3D::diagonalDistance(){
+  float length = bounds_max.x -bounds_min.x;
+  float width = bounds_max.y -bounds_min.y;
+  float height = bounds_max.z -bounds_min.z;
+
+  float twoDimDiag = sqrtf(powf(length,2)+powf(width,2));
+  float threeDimDiag =   sqrtf(powf(twoDimDiag,2)+powf(height,2));
+  return threeDimDiag;
+}

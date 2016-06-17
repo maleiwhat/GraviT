@@ -71,6 +71,8 @@ public:
   /// that is a child of the parent with the given uuid
   DatabaseNode *getChildByName(Uuid, String);
 
+  DatabaseNode *getChildByNameAndVariant(Uuid , String , Variant );
+
   /// return the value of the node with the given uuid
   Variant getValue(Uuid);
   /// set the value of the node with the given uuid

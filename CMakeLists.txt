@@ -32,6 +32,7 @@ option(GVT_DEBUG 		 "Build GraviT use debug prmimitives" OFF)
 option(GVT_TIMING 		 "Build GraviT use timing prmimitives" OFF)
 option(GVT_MPE "Use MPE Profileing" OFF)
 option(GVT_TESTING "Create testing and benchmark programs" OFF)
+option(GVT_VISIT "Build Gravit Visit Adapter")
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
   SET(HOST_NAME $ENV{HOSTNAME})
@@ -418,7 +419,7 @@ if (GVT_RENDER)
         include_directories(${GVT_THIRDPARTY_EMBREESHADERS})
 
 
-
+        include_directories(${GVT_THIRDPARTY_EMBREESHADERS})
 	if (GVT_RENDER_ADAPTER_EMBREE)
 		find_package(Embree REQUIRED)
 		set(GVT_RENDER_LIBS ${GVT_RENDER_LIBS} ${EMBREE_TARGET_LINK_LIBRARIES})
@@ -438,7 +439,6 @@ if (GVT_RENDER)
 		ARCHIVE DESTINATION lib
 		)
 endif(GVT_RENDER)
-
 
 ## CTEST
 if (GVT_CTEST)
@@ -558,6 +558,22 @@ if (GVT_SIMPLE_FILE_LOAD_APP)
   add_executable(gvtFileLoad ${GVTSIMPLEFILE_RENDER_SRCS})
   target_link_libraries(gvtFileLoad gvtCore gvtRender ${GVTSIMPLEFILE_RENDER_LIBS} )
 endif(GVT_SIMPLE_FILE_LOAD_APP)
+
+if(GVT_VISIT)
+  find_package(MPI REQUIRED)
+  include_directories(${MPI_INCLUDE_PATH})
+  set(API_RENDER_LIBS ${API_RENDER_LIBS}  ${MPI_LIBRARIES} ${MPE_LIB2} ${GVT_CORE_LIBS})
+  set(API_SRCS ${API_SRCS} src/apps/render/RenderAPI.h src/apps/render/RenderAPI.cpp)
+
+  add_library(APICode STATIC ${API_SRCS} ${API_RENDER_LIBS} ${gvtCore} ${gvtRender})
+
+  target_link_libraries(APICode  ${API_RENDER_LIBS})
+
+  install(TARGETS APICode
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+  )
+endif(GVT_VISIT)
 
 if (GVT_GLRENDER_APP)
   find_package(MPI REQUIRED)

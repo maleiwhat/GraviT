@@ -95,6 +95,14 @@ DatabaseNode *Database::getChildByName(Uuid parent, String name) {
   return NULL;
 }
 
+DatabaseNode *Database::getChildByNameAndVariant(Uuid parent, String name, Variant val) {
+  ChildList children = __tree[parent];
+  for (ChildList::iterator it = children.begin(); it != children.end(); ++it) {
+    if ((*it)->name() == name) return (*it);
+  }
+  return NULL;
+}
+
 void Database::print(const Uuid &parent, const int depth, std::ostream &os) {
 
   DatabaseNode *pnode = this->getItem(parent);

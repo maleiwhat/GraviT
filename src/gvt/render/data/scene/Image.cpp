@@ -36,10 +36,30 @@
 
 using namespace gvt::render::data::scene;
 
+void Image::WriteChar( unsigned char * img )
+{   
+    int totalPixels = width * height* 3;
+    int outIndex = 0;
+    for (int j = 0; j <height; j++) { 
+        int offset = j * width;
+        for (int i = 0; i < width; ++i) {
+          int index = 3 * (offset + i);
+           img[outIndex] = rgb[index];
+           img[outIndex +1] = rgb[index+1];
+           img[outIndex +2] = rgb[index+2];
+           outIndex +=3;
+          //file << rgb[index + 0] << rgb[index + 1] << rgb[index + 2];
+        }
+    } 
+}  
+
 void Image::Write() {
 
-  if (MPI::COMM_WORLD.Get_rank() != 0) return;
-
+  int flag;
+  flag = 0;
+  MPI_Initialized(&flag);
+  if(flag) {if (MPI::COMM_WORLD.Get_rank() != 0) return;}
+  
   std::string ext;
   switch (format) {
   case PPM:

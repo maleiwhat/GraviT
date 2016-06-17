@@ -227,6 +227,11 @@ struct embreeParallelTrace {
   gvt::render::actor::RayVector shadowRays;
 
   /**
+   * Specify if shadow be considered 
+   */
+  bool enableShadows;
+
+  /**
    * Size of Embree packet
    */
   // const size_t packetSize; // TODO: later make this configurable
@@ -243,9 +248,9 @@ struct embreeParallelTrace {
                       gvt::render::actor::RayVector &rayList, gvt::render::actor::RayVector &moved_rays,
                       const size_t workSize, glm::mat4 *m, glm::mat4 *minv, glm::mat3 *normi,
                       std::vector<gvt::render::data::scene::Light *> &lights, gvt::render::data::primitives::Mesh *mesh,
-                      std::atomic<size_t> &counter, const size_t begin, const size_t end)
+                      std::atomic<size_t> &counter, const size_t begin, const size_t end, bool enableShadows)
       : adapter(adapter), rayList(rayList), moved_rays(moved_rays), workSize(workSize), m(m), minv(minv), normi(normi),
-        lights(lights), counter(counter), begin(begin), end(end), mesh(mesh) {}
+        lights(lights), counter(counter), begin(begin), end(end), mesh(mesh), enableShadows(enableShadows) {}
   /**
    * Convert a set of rays from a vector into a GVT_EMBREE_PACKET_TYPE ray packet.
    *
@@ -405,7 +410,11 @@ struct embreeParallelTrace {
       GVT_EMBREE_OCCULUSION(valid, scene, ray4);
 
       for (size_t pi = 0; pi < localPacketSize; pi++) {
-        if (valid[pi] && ray4.geomID[pi] == (int)RTC_INVALID_GEOMETRY_ID) {
+        if(!enableShadows)
+        {
+          localDispatch.push_back(shadowRays[idx + pi]);
+        }
+        else if (valid[pi] && ray4.geomID[pi] == (int)RTC_INVALID_GEOMETRY_ID) {
           // ray is valid, but did not hit anything, so add to dispatch queue
           localDispatch.push_back(shadowRays[idx + pi]);
         }
@@ -721,7 +730,7 @@ void EmbreeMeshAdapter::trace(gvt::render::actor::RayVector &rayList, gvt::rende
                     [&](tbb::blocked_range<size_t> chunk) {
                       // for (size_t i = chunk.begin(); i < chunk.end(); i++) image.Add(i, colorBuf[i]);
                       embreeParallelTrace(this, rayList, moved_rays, chunk.end() - chunk.begin(), m, minv, normi,
-                                          lights, mesh, counter, chunk.begin(), chunk.end())();
+                                          lights, mesh, counter, chunk.begin(), chunk.end(), enableShadows)();
                     },
                     ap);
 
