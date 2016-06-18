@@ -436,11 +436,14 @@ void DomainTracer::SendRays() {
       header.num_rays = num_rays_to_send;
 
       RemoteRays *work = new RemoteRays(header, rays);
+
+#ifndef NDEBUG
       printf(
           "[SEND_RAYS] rank %d: sending %lu rays (%d bytes) instance %d to "
           "rank %d\n",
           mpiInfo.rank, num_rays_to_send, work->GetSize(), instance,
           owner_process);
+#endif
 
       work->Send(owner_process, comm);
 

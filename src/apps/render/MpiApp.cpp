@@ -527,7 +527,8 @@ void Render(int argc, char **argv) {
   MpiInfo mpi;
   MPI_Comm_rank(MPI_COMM_WORLD, &mpi.rank);
   MPI_Comm_size(MPI_COMM_WORLD, &mpi.size);
-  timer t_database(false, "database timer:");
+  // timer t_database(false, "database timer:");
+  if (mpi.rank == 0) std::cout << "mpi size: " << mpi.size << std::endl;
 
   commandline::Options options;
   commandline::Parse(argc, argv, &options);
@@ -552,9 +553,9 @@ void Render(int argc, char **argv) {
 
       std::cout << "rank " << mpi.rank << " creating database." << std::endl;
       // std::cout << " creating database." << std::endl;
-      t_database.start();
+      // t_database.start();
       CreateDatabase(mpi, options);
-      t_database.stop();
+      // t_database.stop();
 
       g_image = new Image(g_camera->getFilmSizeWidth(),
                           g_camera->getFilmSizeHeight(), "mpi");
@@ -573,7 +574,7 @@ void Render(int argc, char **argv) {
 #ifndef NDEBUG
       std::cout << "rank " << mpi.rank << " start warming up\n\n";
 #endif
-      for (int i = 0; i < 2; i++) {
+      for (int i = 0; i < 10; i++) {
         g_camera->AllocateCameraRays();
         g_camera->generateRays();
         g_image->clear();
@@ -583,26 +584,26 @@ void Render(int argc, char **argv) {
 #endif
       }
 
-// #ifndef NDEBUG
-//       std::cout << "rank " << mpi.rank << " start active frames" << std::endl;
-// #endif
-//       profiler.Start(Profiler::TOTAL_TIME);
-// 
-//       for (int i = 0; i < 100; i++) {
-//         profiler.Start(Profiler::CAMERA_RAY);
-//         g_camera->AllocateCameraRays();
-//         g_camera->generateRays();
-//         g_image->clear();
-//         profiler.Stop(Profiler::CAMERA_RAY);
-// 
-//         worker.Render();
-// #ifndef NDEBUG
-//         std::cout << "rank " << mpi.rank << " active frame " << i
-//                   << " done\n\n";
-// #endif
-//       }
-// 
-//       profiler.Stop(Profiler::TOTAL_TIME);
+#ifndef NDEBUG
+      std::cout << "rank " << mpi.rank << " start active frames" << std::endl;
+#endif
+      profiler.Start(Profiler::TOTAL_TIME);
+
+      for (int i = 0; i < 100; i++) {
+        profiler.Start(Profiler::CAMERA_RAY);
+        g_camera->AllocateCameraRays();
+        g_camera->generateRays();
+        g_image->clear();
+        profiler.Stop(Profiler::CAMERA_RAY);
+
+        worker.Render();
+#ifndef NDEBUG
+        std::cout << "rank " << mpi.rank << " active frame " << i
+                  << " done\n\n";
+#endif
+      }
+
+      profiler.Stop(Profiler::TOTAL_TIME);
 
       if (mpi.rank == 0) {
         g_image->Write();
@@ -634,9 +635,9 @@ void Render(int argc, char **argv) {
       if (mpi.rank == 0) std::cout << "start SYNC_DOMAIN" << std::endl;
 
       std::cout << "rank " << mpi.rank << " creating database." << std::endl;
-      t_database.start();
+      // t_database.start();
       CreateDatabase(mpi, options);
-      t_database.stop();
+      // t_database.stop();
 
       g_image = new Image(g_camera->getFilmSizeWidth(),
                           g_camera->getFilmSizeHeight(), "mpi");
