@@ -49,7 +49,7 @@ STATIC_WORK_TAG(Vote)
 
 RemoteRays::RemoteRays(const Header& header) : Work() {
   Allocate(sizeof(Header));
-  memcpy(GetBuffer(), &header, sizeof(Header));
+  memcpy(GetBufferPtr<void>(), &header, sizeof(Header));
 }
 
 // TODO: avoid this copy
@@ -59,7 +59,7 @@ RemoteRays::RemoteRays(const Header& header, const std::vector<Ray>& rays)
   std::size_t rays_size = header.num_rays * sizeof(Ray);
   Allocate(header_size + rays_size);
 
-  unsigned char* buf = GetBuffer();
+  unsigned char* buf = GetBufferPtr<unsigned char>();
   memcpy(buf, &header, header_size);
   memcpy(buf + header_size, &rays[0], rays_size);
 }

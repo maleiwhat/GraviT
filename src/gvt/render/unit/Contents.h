@@ -42,9 +42,12 @@ namespace unit {
 
 class Contents {
  public:
+  Contents() : buffer(NULL), size(0) {}
+
   Contents(std::size_t size) : size(size) {
     buffer = reinterpret_cast<unsigned char*>(malloc(size));
   }
+
   ~Contents() { free(buffer); }
 
   unsigned char* Get() { return buffer; }

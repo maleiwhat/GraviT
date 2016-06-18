@@ -31,7 +31,9 @@ class Communicator {
   void Quit();
 
   // mpi
-  void Send(Work* work);
+  void Send(int dest, Work* work);
+  void SendAll(Work* work);
+  void SendAllOther(Work* work);
 
   MpiInfo GetMpiInfo() const { return mpi; }
   int GetRank() { return mpi.rank; }
@@ -64,10 +66,7 @@ class Communicator {
 
   // mpi send/recv
   void RecvWork(const MPI_Status& status, Work* work);
-  void SendWork(Work* work);
-  void SendWorkAllOther(Work* work);
-
-  void IsendWork(Work* work);
+  void SendWorkCopiesToAllOther(Work* work);
 
   // work queues for communication
   std::queue<Work*> sendQ;

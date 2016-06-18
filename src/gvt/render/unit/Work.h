@@ -35,7 +35,7 @@
 #ifndef GVT_RENDER_UNIT_WORK_H
 #define GVT_RENDER_UNIT_WORK_H
 
-// #include "gvt/render/unit/Contents.h"
+#include "gvt/render/unit/Contents.h"
 #include "gvt/render/unit/Communicator.h"
 
 #include <cassert>
@@ -65,11 +65,13 @@ class Worker;
 class Work {
  public:
   enum CommunicationType { P2P = 0, SEND_ALL, SEND_ALL_OTHER };
-  Work() : buffer(NULL), bufferSize(0) {}
-  // Work(std::size_t size) { Allocate(size); }
+  Work() {}
 
-  virtual ~Work() {
-    if (buffer) delete[] buffer;
+  virtual ~Work() {}
+
+  virtual int GetTag() const {
+    assert(false);
+    return -1;
   }
 
   // return type: delete this (1), don't delete this (0)
@@ -78,33 +80,25 @@ class Work {
     return true;
   }
 
-  virtual std::size_t GetSize() const {
-    if (!buffer) return 0;
-    return bufferSize;
-  }
+  std::shared_ptr<Contents> GetContents() { return contents; }
 
-  virtual int GetTag() const {
-    assert(false);
-    return -1;
-  }
+  void Clone(Work* work) { contents = work->GetContents(); }
 
-  int GetDestination() const { return dest; }
-  int GetCommType() const { return commType; }
+  int GetSize() const {
+    if (!contents) return 0;
+    return contents->GetSize();
+  }
 
   void Send(int dest, Communicator* comm) {
-    commType = P2P;
-    this->dest = dest;
-    comm->Send(this);
+    comm->Send(dest, this);
   }
 
   void SendAll(Communicator* comm) {
-    commType = SEND_ALL;
-    comm->Send(this);
+    comm->SendAll(this);
   }
 
   void SendAllOther(Communicator* comm) {
-    commType = SEND_ALL_OTHER;
-    comm->Send(this);
+    comm->SendAllOther(this);
   }
 
  protected:
@@ -118,39 +112,25 @@ class Work {
     return flag;
   }
 
-  unsigned char* GetBuffer() {
-    assert(buffer);
-    // if (!contents) return NULL;
-    // return contents->Get();
-    return buffer;
-  }
-
   template <class T>
   const T* GetBufferPtr() const {
-    assert(buffer);
-    return reinterpret_cast<const T*>(buffer);
+    assert(contents);
+    return reinterpret_cast<const T*>(contents->Get());
   }
 
   template <class T>
   T* GetBufferPtr() {
-    assert(buffer);
-    return reinterpret_cast<T*>(buffer);
+    assert(contents);
+    return reinterpret_cast<T*>(contents->Get());
   }
 
   void Allocate(std::size_t n) {
-    assert(buffer == NULL);
-    if (n > 0) {
-      // contents.reset(new Contents(n));
-      bufferSize = n;
-      buffer = new unsigned char[n];
-    }
+    assert(!contents);
+    assert(n > 0);
+    contents.reset(new Contents(n));
   }
 
-  // std::shared_ptr<Contents> contents;
-  unsigned char* buffer;
-  std::size_t bufferSize;
-  int dest;
-  int commType;
+  std::shared_ptr<Contents> contents;
 
   MPI_Request mpiRequest; // for mpi_isend
   MPI_Status mpiStatus;

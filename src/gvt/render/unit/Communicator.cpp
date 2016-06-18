@@ -165,10 +165,12 @@ void Communicator::MessageThread() {
       Work* outgoing_work = sendQ.front();
       if (!outgoing_work->IsSent()) break;
 #ifndef NDEBUG
+      int tag = outgoing_work->GetTag();
+      std::size_t size = outgoing_work->GetSize();
+      std::size_t qsize = sendQ.size();
       std::cout << "[COMM SENDQ] rank " << mpi.rank << " popped work tag "
-                << outgoing_work->GetTag()
-                << "(size: " << outgoing_work->GetSize()
-                << ") from sendQ (size " << sendQ.size() << ")" << std::endl;
+                << tag << "(size: " << size << ") from sendQ (size " << qsize
+                << ")" << std::endl;
 #endif
       sendQ.pop();
       delete outgoing_work;
@@ -229,12 +231,13 @@ void Communicator::RecvWork(const MPI_Status& status, Work* work) {
 
   work->Allocate(count);
 #ifndef NDEBUG
-  printf("[COMM MPI_Recv] buf %p count %d src %d tag %d\n", work->GetBuffer(),
-         count, status.MPI_SOURCE, status.MPI_TAG);
+  printf("[COMM MPI_Recv] buf %p count %d src %d tag %d\n",
+         work->GetBufferPtr<unsigned char>(), count, status.MPI_SOURCE,
+         status.MPI_TAG);
 #endif
   MPI_Status status_out;
-  MPI_Recv(work->GetBuffer(), count, MPI_UNSIGNED_CHAR, status.MPI_SOURCE,
-           status.MPI_TAG, MPI_COMM_WORLD, &status_out);
+  MPI_Recv(work->GetBufferPtr<unsigned char>(), count, MPI_UNSIGNED_CHAR,
+           status.MPI_SOURCE, status.MPI_TAG, MPI_COMM_WORLD, &status_out);
 
 #ifndef NDEBUG
   int count_recved = 0;
@@ -255,46 +258,70 @@ void Communicator::RecvWork(const MPI_Status& status, Work* work) {
   pthread_mutex_unlock(&recvQ_mutex);
 }
 
-void Communicator::Send(Work* work) {
-  int comm_type = work->GetCommType();
-  if (comm_type == Work::SEND_ALL_OTHER) {
-    SendWorkAllOther(work);
-  } else if (comm_type == Work::SEND_ALL) {
-    work->Action(worker);  // TODO: inefficient (i.e. have to defer sendWOrkAllOther)
-    SendWorkAllOther(work);
+void Communicator::Send(int dest, Work* work) {
+  int count = work->GetSize();
 
-    // pthread_mutex_lock(&recvQ_mutex);
-    // recvQ.push(work);
-    // pthread_mutex_unlock(&recvQ_mutex);
-  } else {  // P2P
-    int count = work->GetSize();
+  assert(count > 0);
+  assert(work->GetContents());
 
-    assert(count > 0);
-    assert(work->GetBuffer());
+#ifndef NDEBUG
+  printf("[MPI_Isend] rank %d buf %p count %d dest %d tag %d rqst %p\n",
+         mpi.rank, work->GetBufferPtr<unsigned char>(), count, dest,
+         work->GetTag(), &work->GetMpiRequest());
+#endif
 
-    MPI_Isend(work->GetBuffer(), count, MPI_UNSIGNED_CHAR, work->GetDestination(),
-              work->GetTag(), MPI_COMM_WORLD, &work->GetMpiRequest());
+  MPI_Isend(work->GetBufferPtr<unsigned char>(), count, MPI_UNSIGNED_CHAR, dest,
+            work->GetTag(), MPI_COMM_WORLD, &work->GetMpiRequest());
 
-    pthread_mutex_lock(&sendQ_mutex);
-    sendQ.push(work);
-    pthread_mutex_unlock(&sendQ_mutex);
-  }
-}
+#ifndef NDEBUG
+  printf("MPI_Isend done\n");
+#endif
 
-void Communicator::SendWorkAllOther(Work* work) {
   pthread_mutex_lock(&sendQ_mutex);
-  for (int dest = 0; dest < mpi.size; ++dest) {
-    if (dest != mpi.rank) {
-      MPI_Isend(work->GetBuffer(), work->GetSize(), MPI_UNSIGNED_CHAR, dest,
-               work->GetTag(), MPI_COMM_WORLD, &work->GetMpiRequest());
-      sendQ.push(work);
-    }
-  }
+  sendQ.push(work);
   pthread_mutex_unlock(&sendQ_mutex);
 }
 
-void Communicator::IsendWork(Work* work) {
-  // TBD
+void Communicator::SendAll(Work* work) {
+  SendWorkCopiesToAllOther(work);
+
+  // push the original copy to recvQ
+  pthread_mutex_lock(&recvQ_mutex);
+  recvQ.push(work);
+  pthread_mutex_unlock(&recvQ_mutex);
+}
+
+void Communicator::SendAllOther(Work* work) {
+  SendWorkCopiesToAllOther(work);
+
+  // we don't need the original copy any more
+  delete work;
+}
+
+void Communicator::SendWorkCopiesToAllOther(Work* work) {
+  pthread_mutex_lock(&sendQ_mutex);
+  for (int dest = 0; dest < mpi.size; ++dest) {
+    if (dest != mpi.rank) {
+      Work* work_copy = deserializers[work->GetTag()]();
+      work_copy->Clone(work);
+
+#ifndef NDEBUG
+      printf("[MPI_Isend] rank %d buf %p count %d dest %d tag %d rqst %p\n",
+             mpi.rank, work_copy->GetBufferPtr<unsigned char>(),
+             work_copy->GetSize(), dest, work_copy->GetTag(),
+             &work_copy->GetMpiRequest());
+#endif
+
+      MPI_Isend(work_copy->GetBufferPtr<unsigned char>(), work_copy->GetSize(),
+                MPI_UNSIGNED_CHAR, dest, work_copy->GetTag(), MPI_COMM_WORLD,
+                &work_copy->GetMpiRequest());
+#ifndef NDEBUG
+  printf("MPI_Isend done\n");
+#endif
+      sendQ.push(work_copy);
+    }
+  }
+  pthread_mutex_unlock(&sendQ_mutex);
 }
 
 }  // namespace unit
