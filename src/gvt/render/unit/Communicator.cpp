@@ -45,16 +45,6 @@ int Communicator::RegisterWork(Work* (*Deserialize)()) {
   return tag;
 }
 
-void Communicator::Send(Work* work) {
-  pthread_mutex_lock(&sendQ_mutex);
-  sendQ.push(work);
-#ifndef NDEBUG
-  std::cout << "rank " << mpi.rank << " pushed work tag " << work->GetTag()
-            << " to sendQ (size " << sendQ.size() << ")" << std::endl;
-#endif
-  pthread_mutex_unlock(&sendQ_mutex);
-}
-
 // void Communicator::InitMpi() {
 //   // warning: this should be in the beginning of main()
 //   // int provided;
@@ -121,9 +111,11 @@ inline void Communicator::WorkThread() {
     if (!recvQ.empty()) {
       work = recvQ.front();
       recvQ.pop();
+      assert(work);
 #ifndef NDEBUG
-      std::cout << "rank " << mpi.rank << " popped work tag " << work->GetTag()
-                << " from recvQ (size " << recvQ.size() << ")" << std::endl;
+      std::cout << "[COMM RECVQ] rank " << mpi.rank << " popped work tag "
+                << work->GetTag() << " from recvQ (size " << recvQ.size() << ")"
+                << std::endl;
 #endif
     }
     pthread_mutex_unlock(&recvQ_mutex);
@@ -133,13 +125,13 @@ inline void Communicator::WorkThread() {
       if (delete_this) delete work;
     }
   }
+#ifndef NDEBUG
+  std::cout << "[COMM] rank " << mpi.rank
+            << " workThread broke out of the loop." << std::endl;
+#endif
 }
 
 void Communicator::MessageThread() {
-
-  bool done = false;
-  MPI_Status mpi_status;
-
   // int pvd;
   // MPI_Init_thread(argcp, argvp, MPI_THREAD_MULTIPLE, &pvd);
   // if ((pvd != MPI_THREAD_MULTIPLE)) {
@@ -157,6 +149,7 @@ void Communicator::MessageThread() {
   while (!allWorkDone) {
     // serve incoming message
     int flag;
+    MPI_Status mpi_status;
     MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &flag, &mpi_status);
 
     if (flag) {
@@ -167,46 +160,53 @@ void Communicator::MessageThread() {
     }
 
     // serve outgoing message
-    Work* outgoing_work = NULL;
     pthread_mutex_lock(&sendQ_mutex);
-    if (!sendQ.empty()) {
-      outgoing_work = sendQ.front();
-      sendQ.pop();
+    while (!sendQ.empty()) {
+      Work* outgoing_work = sendQ.front();
+      if (!outgoing_work->IsSent()) break;
 #ifndef NDEBUG
-      std::cout << "rank " << mpi.rank << " popped work tag "
-                << outgoing_work->GetTag() << " from sendQ (size "
-                << sendQ.size() << ")" << std::endl;
+      std::cout << "[COMM SENDQ] rank " << mpi.rank << " popped work tag "
+                << outgoing_work->GetTag()
+                << "(size: " << outgoing_work->GetSize()
+                << ") from sendQ (size " << sendQ.size() << ")" << std::endl;
 #endif
+      sendQ.pop();
+      delete outgoing_work;
     }
     pthread_mutex_unlock(&sendQ_mutex);
-
-    if (outgoing_work) SendWork(outgoing_work);
   }
+#ifndef NDEBUG
+  std::cout << "[COMM] rank " << mpi.rank
+            << " messageThread broke out of the loop." << std::endl;
+#endif
 }
 
 void Communicator::Quit() {
 #ifndef NDEBUG
-  std::cout << "rank " << mpi.rank << " seting allWorkDOne = 1 "
+  std::cout << "[COMM QUIT] rank " << mpi.rank << " seting allWorkDOne = 1 "
             << __PRETTY_FUNCTION__ << std::endl;
 #endif
   allWorkDone = true;
   for (std::size_t i = 0; i < threads.size(); ++i) {
     pthread_join(threads[i], NULL);
 #ifndef NDEBUG
-    std::cout << "rank " << mpi.rank << " thread " << i << " / "
+    std::cout << "[COMM] rank " << mpi.rank << " thread " << i << " / "
               << threads.size() << " joined." << std::endl;
 #endif
   }
-  // error checking code
   // we don't need lock/unlock but just in case
   pthread_mutex_lock(&sendQ_mutex);
   if (!sendQ.empty()) {
+    // Work* work = sendQ.front();
+    // sendQ.pop();
+    // delete work;
     std::cout << "error rank " << mpi.rank << " send queue not empty. size "
               << sendQ.size() << "\n";
     exit(1);
   }
   pthread_mutex_unlock(&sendQ_mutex);
 
+  // error checking code
   pthread_mutex_lock(&recvQ_mutex);
   if (!recvQ.empty()) {
     std::cout << "error rank " << mpi.rank << " recv queue not empty. size "
@@ -220,85 +220,77 @@ void Communicator::RecvWork(const MPI_Status& status, Work* work) {
   int count = 0;
   MPI_Get_count(&status, MPI_UNSIGNED_CHAR, &count);
 
-#ifndef NDEBUG
-  std::cout << "rank " << mpi.rank << " count " << count << " "
-            << __PRETTY_FUNCTION__ << "\n";
-#endif
+// #ifndef NDEBUG
+//   std::cout << "rank " << mpi.rank << " count " << count << " "
+//             << __PRETTY_FUNCTION__ << "\n";
+// #endif
 
-#ifdef DONT_ALLOW_ZERO_BYTE
-  if (count < 1) {
-    std::cout << "error unable to receive " << count << " bytes. tag "
-              << status.MPI_TAG << " source " << status.MPI_SOURCE << "\n";
-    exit(1);
-  }
-#endif
+  assert(count > 0);
 
   work->Allocate(count);
 #ifndef NDEBUG
-  printf("[MPI_Recv] buf %p count %d src %d tag %d\n", work->GetBuffer(), count,
-         status.MPI_SOURCE, status.MPI_TAG);
+  printf("[COMM MPI_Recv] buf %p count %d src %d tag %d\n", work->GetBuffer(),
+         count, status.MPI_SOURCE, status.MPI_TAG);
 #endif
   MPI_Status status_out;
   MPI_Recv(work->GetBuffer(), count, MPI_UNSIGNED_CHAR, status.MPI_SOURCE,
            status.MPI_TAG, MPI_COMM_WORLD, &status_out);
 
+#ifndef NDEBUG
   int count_recved = 0;
   MPI_Get_count(&status_out, MPI_UNSIGNED_CHAR, &count_recved);
   if (count_recved != count) {
     std::cout << "error count mismatch!\n";
-    exit(1);
   }
+  assert(count_recved == count);
+#endif
 
   pthread_mutex_lock(&recvQ_mutex);
   recvQ.push(work);
 #ifndef NDEBUG
-  std::cout << "rank " << mpi.rank << " pushed work tag " << work->GetTag()
-            << " to recvQ (size " << recvQ.size() << ")" << std::endl;
+  std::cout << "[COMM RECVQ] rank " << mpi.rank << " pushed work tag "
+            << work->GetTag() << " to recvQ (size " << recvQ.size() << ")"
+            << std::endl;
 #endif
   pthread_mutex_unlock(&recvQ_mutex);
 }
 
-void Communicator::SendWork(Work* work) {
+void Communicator::Send(Work* work) {
   int comm_type = work->GetCommType();
   if (comm_type == Work::SEND_ALL_OTHER) {
     SendWorkAllOther(work);
-    delete work;
   } else if (comm_type == Work::SEND_ALL) {
+    work->Action(worker);  // TODO: inefficient (i.e. have to defer sendWOrkAllOther)
     SendWorkAllOther(work);
 
-    pthread_mutex_lock(&recvQ_mutex);
-    recvQ.push(work);
-    pthread_mutex_unlock(&recvQ_mutex);
+    // pthread_mutex_lock(&recvQ_mutex);
+    // recvQ.push(work);
+    // pthread_mutex_unlock(&recvQ_mutex);
   } else {  // P2P
-    // TODO
     int count = work->GetSize();
-#ifdef DONT_ALLOW_ZERO_BYTE
-    if (count < 1) {
-      std::cout << "error unable to send " << count << " bytes.\n";
-      exit(1);
-    }
-#endif
-    if (work->GetBuffer() == NULL) {
-      std::cout << "NULL detected\n";
-      exit(1);
-    } 
-#ifndef NDEBUG
-    printf("[MPI_Send] buf %p count %d dest %d tag %d\n", work->GetBuffer(), count,
-           work->GetDestination(), work->GetTag());
-#endif
-    MPI_Send(work->GetBuffer(), count, MPI_UNSIGNED_CHAR,
-             work->GetDestination(), work->GetTag(), MPI_COMM_WORLD);
-    delete work;
+
+    assert(count > 0);
+    assert(work->GetBuffer());
+
+    MPI_Isend(work->GetBuffer(), count, MPI_UNSIGNED_CHAR, work->GetDestination(),
+              work->GetTag(), MPI_COMM_WORLD, &work->GetMpiRequest());
+
+    pthread_mutex_lock(&sendQ_mutex);
+    sendQ.push(work);
+    pthread_mutex_unlock(&sendQ_mutex);
   }
 }
 
 void Communicator::SendWorkAllOther(Work* work) {
+  pthread_mutex_lock(&sendQ_mutex);
   for (int dest = 0; dest < mpi.size; ++dest) {
     if (dest != mpi.rank) {
-      MPI_Send(work->GetBuffer(), work->GetSize(), MPI_UNSIGNED_CHAR, dest,
-               work->GetTag(), MPI_COMM_WORLD);
+      MPI_Isend(work->GetBuffer(), work->GetSize(), MPI_UNSIGNED_CHAR, dest,
+               work->GetTag(), MPI_COMM_WORLD, &work->GetMpiRequest());
+      sendQ.push(work);
     }
   }
+  pthread_mutex_unlock(&sendQ_mutex);
 }
 
 void Communicator::IsendWork(Work* work) {

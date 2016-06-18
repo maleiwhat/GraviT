@@ -35,11 +35,12 @@
 #ifndef GVT_RENDER_UNIT_WORK_H
 #define GVT_RENDER_UNIT_WORK_H
 
-#include "gvt/render/unit/Contents.h"
+// #include "gvt/render/unit/Contents.h"
 #include "gvt/render/unit/Communicator.h"
 
 #include <cassert>
 #include <memory>
+#include <mpi.h>
 
 #define REGISTER_WORK(ClassName)                                 \
  public:                                                         \
@@ -64,10 +65,12 @@ class Worker;
 class Work {
  public:
   enum CommunicationType { P2P = 0, SEND_ALL, SEND_ALL_OTHER };
-  Work() {}
-  Work(std::size_t size) { Allocate(size); }
+  Work() : buffer(NULL), bufferSize(0) {}
+  // Work(std::size_t size) { Allocate(size); }
 
-  virtual ~Work() {}
+  virtual ~Work() {
+    if (buffer) delete[] buffer;
+  }
 
   // return type: delete this (1), don't delete this (0)
   virtual bool Action(Worker* worker) {
@@ -76,8 +79,8 @@ class Work {
   }
 
   virtual std::size_t GetSize() const {
-    if (!contents) return 0;
-    return contents->GetSize();
+    if (!buffer) return 0;
+    return bufferSize;
   }
 
   virtual int GetTag() const {
@@ -107,31 +110,50 @@ class Work {
  protected:
   friend class Communicator;
 
+  MPI_Request& GetMpiRequest() { return mpiRequest; }
+
+  bool IsSent() {
+    int flag;
+    MPI_Test(&mpiRequest, &flag, &mpiStatus);
+    return flag;
+  }
+
   unsigned char* GetBuffer() {
-    if (!contents) return NULL;
-    return contents->Get();
+    assert(buffer);
+    // if (!contents) return NULL;
+    // return contents->Get();
+    return buffer;
   }
 
   template <class T>
   const T* GetBufferPtr() const {
-    return reinterpret_cast<const T*>(contents->Get());
+    assert(buffer);
+    return reinterpret_cast<const T*>(buffer);
   }
 
   template <class T>
   T* GetBufferPtr() {
-    return reinterpret_cast<T*>(contents->Get());
+    assert(buffer);
+    return reinterpret_cast<T*>(buffer);
   }
 
   void Allocate(std::size_t n) {
-    assert(!contents);
+    assert(buffer == NULL);
     if (n > 0) {
-      contents.reset(new Contents(n));
+      // contents.reset(new Contents(n));
+      bufferSize = n;
+      buffer = new unsigned char[n];
     }
   }
 
-  std::shared_ptr<Contents> contents;
+  // std::shared_ptr<Contents> contents;
+  unsigned char* buffer;
+  std::size_t bufferSize;
   int dest;
   int commType;
+
+  MPI_Request mpiRequest; // for mpi_isend
+  MPI_Status mpiStatus;
 };
 
 }  // namespace unit

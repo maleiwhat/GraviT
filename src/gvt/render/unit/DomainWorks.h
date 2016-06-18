@@ -109,7 +109,8 @@ class Vote : public Work {
 
   Vote() : Work() {}
 
-  Vote(int vote_type, int sender) : Work(sizeof(Data)) {
+  Vote(int vote_type, int sender) : Work() {
+    Allocate(sizeof(Data));
     GetBufferPtr<Data>()->vote_type = vote_type;
     GetBufferPtr<Data>()->sender = sender;
   }

@@ -104,7 +104,11 @@ DomainTracer::DomainTracer(const MpiInfo &mpiInfo, Worker *worker,
                               << i << ", dataIdx: " << dataIdx
                               << ", target mpi node: " << mpiNode
                               << ", world size: " << mpiInfo.size);
-
+#ifndef NDEBUG
+    std::cout << "[" << mpiInfo.rank << "] domain scheduler: instId: " << i
+              << ", dataIdx: " << dataIdx << ", target mpi node: " << mpiNode
+              << ", world size: " << mpiInfo.size << std::endl;
+#endif
     GVT_ASSERT(dataIdx != -1, "domain scheduler: could not find data node");
     mpiInstanceMap[i] = mpiNode;
   }
@@ -310,6 +314,11 @@ inline void DomainTracer::Trace() {
     }
    
     all_done = TransferRays();
+// #ifndef NDEBUG
+//     if (IsDone())
+//       std::cout << "rank " << mpiInfo.rank << " ray queue is empty"
+//                 << std::endl;
+// #endif
   } // while (!all_done)
 
 // std::cout << "domain scheduler: select time: " << t_sort.format();
@@ -345,6 +354,9 @@ inline void DomainTracer::Trace() {
   profiler.Start(Profiler::COMPOSITE);
   CompositeFrameBuffers();
   profiler.Stop(Profiler::COMPOSITE);
+#ifndef NDEBUG
+  std::cout << "rank " << mpiInfo.rank << " composite done" << std::endl;
+#endif
   // t_gather.stop();
 #ifdef GVT_USE_MPE
   MPE_Log_event(framebufferend, 0, NULL);
@@ -382,7 +394,12 @@ bool DomainTracer::TransferRays() {
     // t_vote.resume();
     profiler.Start(Profiler::VOTE);
     done = voter->updateState();
-    if (done) voter->reset();
+    if (done) {
+      voter->reset();
+#ifndef NDEBUG
+      std::cout << "rank " << mpiInfo.rank << " voter says empty" << std::endl;
+#endif
+    }
     profiler.Stop(Profiler::VOTE);
     // t_vote.stop();
     // profiler.update(Profiler::Vote, t_vote.getElapsed());
@@ -403,6 +420,7 @@ void DomainTracer::SendRays() {
   for (auto &q : queue) {
     int instance = q.first;
     RayVector &rays = q.second;
+    assert(instance > -1 && instance < mpiInstanceMap.size());
     int owner_process = mpiInstanceMap[instance];
     size_t num_rays_to_send = rays.size();
 
@@ -427,7 +445,7 @@ void DomainTracer::SendRays() {
       // SendWork(work, owner_process);
 
       rays.clear();
-#ifndef NDEBUG
+#ifdef DEBUG_TX
       printf("rank %d: sent %lu rays (%d bytes) instance %d to rank %d\n",
              mpiInfo.rank, num_rays_to_send, work->GetSize(), instance,
              owner_process);
@@ -477,7 +495,7 @@ void DomainTracer::RecvRays() {
     grant->Send(rays->GetSender(), comm);
 
     ray_count += header.num_rays;
-#ifndef NDEBUG
+#ifdef DEBUG_TX
     printf("rank %d: recved %d rays instance %d \n", mpiInfo.rank,
            rays->GetNumRays(), rays->GetInstance());
 #endif
@@ -496,7 +514,7 @@ void DomainTracer::CopyRays(const RemoteRays &rays) {
   const Ray *begin = reinterpret_cast<const Ray *>(rays.GetRayBuffer());
   const Ray *end = begin + rays.GetNumRays();
 
-#ifndef NDEBUG
+#ifdef DEBUG_TX
   printf("ray copy begin %p end %p instance %d num_rays %d\n", begin, end,
          instance, num_rays);
 #endif

@@ -5,7 +5,7 @@
 
 #include "gvt/render/unit/DomainWorks.h"
 
-#define DEBUG_VOTER
+// #define DEBUG_VOTER
 
 namespace gvt {
 namespace render {
@@ -141,13 +141,14 @@ bool TpcVoter::updateState() {
       reset();
     } break;
 
-    default: { break; }
-  }  // switch (state) {
+    default:
+      break;
+    } // switch (state) {
 
 #ifdef DEBUG_VOTER
-  if (old_state != state)
-    std::cout << "rank " << mpi.rank << ": " << stateNames[old_state] << " -> "
-              << stateNames[state] << "\n";
+    if (old_state != state)
+      std::cout << "[VOTER] rank " << mpi.rank << ": " << stateNames[old_state]
+                << " -> " << stateNames[state] << "\n";
 // else
 //   std::cout << "rank " << mpi.rank << ": " << stateNames[state] << "\n";
 #endif

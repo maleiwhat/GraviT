@@ -47,7 +47,8 @@ using namespace gvt::render::actor;
 STATIC_WORK_TAG(RemoteRays)
 STATIC_WORK_TAG(Vote)
 
-RemoteRays::RemoteRays(const Header& header) : Work(sizeof(Header)) {
+RemoteRays::RemoteRays(const Header& header) : Work() {
+  Allocate(sizeof(Header));
   memcpy(GetBuffer(), &header, sizeof(Header));
 }
 
@@ -68,7 +69,7 @@ bool RemoteRays::Action(Worker* worker) {
   int num_rays = GetNumRays();
   int tx_type = GetTransferType();
 
-#ifndef NDEBUG
+#ifdef DEBUG_TX
   printf(
       "ranks %d RayHeader (type %d sender %d instance %d num_rays %d) in %s\n",
       worker->GetRank(), tx_type, GetSender(), GetInstance(), num_rays,
@@ -95,7 +96,20 @@ bool Vote::Action(Worker* worker) {
   int type = GetVoteType();
 
 #ifndef NDEBUG
-  printf("rank %d vote_type %d\n", worker->GetRank(), type);
+  std::string name;
+  if (type == PROPOSE) {
+    name = "PROPOSE";
+  } else if (type == DO_COMMIT) {
+    name = "DO_COMMIT";
+  } else if (type == DO_ABORT) {
+    name = "DO_ABORT";
+  } else if (type == VOTE_COMMIT) {
+    name = "VOTE_COMMIT";
+  } else if (type == VOTE_ABORT) {
+    name = "VOTE_ABORT";
+  }
+  std::cout << "[VOTER] rank " << worker->GetRank() << " got vote_type " << name
+            << std::endl;
 #endif
 
   if (type == PROPOSE) {
