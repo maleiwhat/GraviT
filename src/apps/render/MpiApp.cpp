@@ -767,6 +767,7 @@ void Render(int argc, char **argv) {
         tracer();
       }
 
+      profiler.Reset();
       profiler.Start(Profiler::TOTAL_TIME);
       for (int z = 0; z < 100; z++) {
         profiler.Start(Profiler::CAMERA_RAY);
