@@ -85,6 +85,7 @@ class Profiler {
 
   Profiler();
 
+  void Reset();
   void Start(int timer);
   void Stop(int timer);
 

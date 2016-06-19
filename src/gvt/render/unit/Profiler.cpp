@@ -23,6 +23,11 @@ Profiler::Profiler() {
                   "ADAPTER_MISS"};
 }
 
+void Profiler::Reset() {
+  for (std::size_t i = 0; i < times.size(); ++i) times[i] = 0.0;
+  for (std::size_t i = 0; i < counters.size(); ++i) counters[i] = 0;
+}
+
 void Profiler::Start(int timer) { timers[timer].Start(); }
 
 void Profiler::Stop(int timer) {

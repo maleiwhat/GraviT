@@ -95,7 +95,6 @@ void PrintUsage(const char *argv) {
   printf(
       "  -i, --infile <infile> (default: ../data/geom/bunny.obj for obj and "
       "./EnzoPlyData/Enzo8 for ply)\n");
-  printf("  -p, --ply-count <ply_count> (default: 8)");
   printf("  -a, --adapter <embree | manta | optix> (default: embree)\n");
   printf("  -t, --tracer <0-3> (default: 0)\n");
   printf(
@@ -133,9 +132,6 @@ void Parse(int argc, char **argv, Options *options) {
         printf("error: file not found. %s\n", options->infile.c_str());
         exit(1);
       }
-    } else if (strcmp(argv[i], "-p") == 0 ||
-               strcmp(argv[i], "--ply-count") == 0) {
-      options->ply_count = atoi(argv[++i]);
     } else if (strcmp(argv[i], "-a") == 0 ||
                strcmp(argv[i], "--adapter") == 0) {
       ++i;
@@ -346,7 +342,6 @@ void CreateDatabase(const MpiInfo &mpi, const commandline::Options &options) {
   // read 'em
   std::vector<std::string>::const_iterator file;
 
-  // for (k = 0; k < options.ply_count; k++) {
   for (file = files.begin(), k = 0; file != files.end(); file++, k++) {
     int owner_process = k % mpi.size;
 
@@ -638,6 +633,7 @@ void Render(int argc, char **argv) {
 #ifndef NDEBUG
       std::cout << "rank " << mpi.rank << " start active frames" << std::endl;
 #endif
+      profiler.Reset();
       profiler.Start(Profiler::TOTAL_TIME);
 
       for (int i = 0; i < 100; i++) {
