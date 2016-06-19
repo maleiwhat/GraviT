@@ -111,10 +111,10 @@ void PrintUsage(const char *argv) {
       "schedulers)\n");
   printf("  -m, --model-name <model_name>\n");
   printf(
-      "  --light-position <x, y, z> specify point light position. (512.0, "
+      "  --lpos <x, y, z> specify point light position. (512.0, "
       "512.0, 2048.0)\n");
   printf(
-      "  --light-color <x, y, z> specify point light color (default: 100.0, "
+      "  --lcolor <x, y, z> specify point light color (default: 100.0, "
       "100.0, 500.0).\n");
   printf(
       "  --eye <x, y, z> specify camera position. (default: 512.0 512.0 "
@@ -228,11 +228,11 @@ void Parse(int argc, char **argv, Options *options) {
       options->up[2] = atof(argv[++i]);
     } else if (strcmp(argv[i], "--fov") == 0) {
       options->fov = atof(argv[++i]);
-    } else if (strcmp(argv[i], "--light-position") == 0) {
+    } else if (strcmp(argv[i], "--lpos") == 0) {
       options->light_position[0] = atof(argv[++i]);
       options->light_position[1] = atof(argv[++i]);
       options->light_position[2] = atof(argv[++i]);
-    } else if (strcmp(argv[i], "--light-color") == 0) {
+    } else if (strcmp(argv[i], "--lcolor") == 0) {
       options->light_color[0] = atof(argv[++i]);
       options->light_color[1] = atof(argv[++i]);
       options->light_color[2] = atof(argv[++i]);
