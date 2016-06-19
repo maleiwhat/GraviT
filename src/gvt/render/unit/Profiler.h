@@ -4,6 +4,7 @@
 #include <string>
 #include <chrono>
 #include <vector>
+#include <mpi.h>
 
 namespace gvt {
 namespace render {
@@ -12,25 +13,43 @@ namespace profiler {
 
 using namespace std::chrono;
 
+#ifdef USE_CHRONO_TIMER
 class Timer {
  public:
   Timer() {
-    elapsed = 0.0;
     st = high_resolution_clock::now();
   }
   void Start() { st = high_resolution_clock::now(); }
+  void Stop() { et = high_resolution_clock::now(); }
   double Stop() {
     auto et = high_resolution_clock::now();
+    return elapsed;
+  }
+  double GetElapsed() const {
     double elapsed =
         std::chrono::duration<double, std::ratio<1, 1000> >(et - st).count();
     return elapsed;
   }
-  double GetElapsed() const { return elapsed; }
-
  private:
   high_resolution_clock::time_point st;
-  double elapsed;
+  high_resolution_clock::time_point et;
 };
+#else
+class Timer {
+ public:
+  Timer() {
+    st = et = 0.0;
+    Start();
+  }
+  void Start() { st = MPI_Wtime(); }
+  void Stop() { et = MPI_Wtime(); }
+  double GetElapsed() {
+    if (et == 0.0) Stop();
+    return et - st;
+  }
+  double st, et;
+};
+#endif
 
 class Profiler {
  public:

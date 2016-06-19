@@ -27,7 +27,8 @@ void Profiler::Start(int timer) { timers[timer].Start(); }
 
 void Profiler::Stop(int timer) {
   Timer& t = timers[timer];
-  times[timer] += t.Stop();
+  t.Stop();
+  times[timer] += t.GetElapsed();
 }
 
 void Profiler::AddCounter(int type, int count) {
@@ -53,9 +54,13 @@ std::ostream &operator<<(std::ostream &os, const Profiler &p) {
   for (std::size_t i = 0; i < p.times.size(); ++i) {
     double time = p.times[i];
     double ratio = time * 100.0 / p.times[Profiler::TOTAL_TIME];
+#ifdef USE_CHRONO_TIMER
     os << "Timer [" << p.timerNames[i] << "] : " << time << " ms (" << ratio
        << " %)\n";
-    ;
+#else
+    os << "Timer [" << p.timerNames[i] << "] : " << time << " s (" << ratio
+       << " %)\n";
+#endif
   }
   // counters
   for (std::size_t i = 0; i < p.counters.size(); ++i) {
