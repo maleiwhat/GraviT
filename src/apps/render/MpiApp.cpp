@@ -39,6 +39,7 @@
 #include <sys/stat.h>
 #include <tbb/task_scheduler_init.h>
 #include <thread>
+#include <glm/glm.hpp>
 
 // timer
 #include "gvt/core/utils/timer.h"
@@ -86,11 +87,7 @@ namespace commandline {
 using namespace gvt::render::unit;
 
 void PrintUsage(const char *argv) {
-  printf(
-      "Usage : %s [-h] [-i <infile>] [-a <adapter>] [-n <x y z>] [-p] [-s "
-      "<scheduler>] [-W <image_width>] [-H "
-      "<image_height>] [-N <num_frames>] [-t <num_tbb_threads>]\n",
-      argv);
+  printf("Usage : %s [options]\n");
   printf("  -h, --help\n");
   printf(
       "  -i, --infile <infile> (default: ../data/geom/bunny.obj for obj and "
@@ -113,12 +110,56 @@ void PrintUsage(const char *argv) {
       "      (default: # cores for sync. schedulers or # cores - 2 for async. "
       "schedulers)\n");
   printf("  -m, --model-name <model_name>\n");
+  printf(
+      "  --light-position <x, y, z> specify point light position. (512.0, "
+      "512.0, 2048.0)\n");
+  printf(
+      "  --light-color <x, y, z> specify point light color (default: 100.0, "
+      "100.0, 500.0).\n");
+  printf(
+      "  --eye <x, y, z> specify camera position. (default: 512.0 512.0 "
+      "4096.0)\n");
+  printf(
+      "  --look <x, y, z> specify lookat position (default: 512.0 512.0 "
+      "0.0).\n");
+  printf("  --up <x, y, z> specify up vector (default: 0 1 0).\n");
+  printf("  --fov <degree> specify field of view in degree (default: 25).\n");
+  printf("  --ray-max-depth <value> specify ray max. depth (default: 1).\n");
+  printf("  --ray-samples <value> specify number of samples (default: 1).\n");
 }
 
 void Parse(int argc, char **argv, Options *options) {
   MpiInfo mpi;
   // MPI_Comm_rank(MPI_COMM_WORLD, &mpi.rank);
   // MPI_Comm_size(MPI_COMM_WORLD, &mpi.size);
+
+  // default settings
+  options->tracer = Options::ASYNC_DOMAIN;
+  options->adapter = Options::EMBREE;
+  options->width = 1920;
+  options->height = 1080;
+  options->obj = false;
+  options->instanceCountX = 1;
+  options->instanceCountY = 1;
+  options->instanceCountZ = 1;
+  options->numFrames = 1;
+  // options->numTbbThreads;
+  // options->infile;
+  options->model_name = std::string("model");
+
+  // light
+  options->light_position = glm::vec3(512.0, 512.0, 2048.0);
+  options->light_color = glm::vec3(100.0, 100.0, 500.0);
+
+  // camera
+  options->eye = glm::vec3(512.0, 512.0, 4096.0);
+  options->look = glm::vec3(512.0, 512.0, 0.0);
+  options->up = glm::vec3(0.0, 1.0, 0.0);
+  options->fov = 25.0;
+
+  // ray
+  options->ray_max_depth = 1;
+  options->ray_samples = 1;
 
   options->numTbbThreads = -1;
   for (int i = 1; i < argc; ++i) {
@@ -173,6 +214,28 @@ void Parse(int argc, char **argv, Options *options) {
     } else if (strcmp(argv[i], "-m") == 0 ||
                strcmp(argv[i], "--model-name") == 0) {
       options->model_name = argv[++i];
+    } else if (strcmp(argv[i], "--eye") == 0) {
+      options->eye[0] = atof(argv[++i]);
+      options->eye[1] = atof(argv[++i]);
+      options->eye[2] = atof(argv[++i]);
+    } else if (strcmp(argv[i], "--look") == 0) {
+      options->look[0] = atof(argv[++i]);
+      options->look[1] = atof(argv[++i]);
+      options->look[2] = atof(argv[++i]);
+    } else if (strcmp(argv[i], "--up") == 0) {
+      options->up[0] = atof(argv[++i]);
+      options->up[1] = atof(argv[++i]);
+      options->up[2] = atof(argv[++i]);
+    } else if (strcmp(argv[i], "--fov") == 0) {
+      options->fov = atof(argv[++i]);
+    } else if (strcmp(argv[i], "--light-position") == 0) {
+      options->light_position[0] = atof(argv[++i]);
+      options->light_position[1] = atof(argv[++i]);
+      options->light_position[2] = atof(argv[++i]);
+    } else if (strcmp(argv[i], "--light-color") == 0) {
+      options->light_color[0] = atof(argv[++i]);
+      options->light_color[1] = atof(argv[++i]);
+      options->light_color[2] = atof(argv[++i]);
     } else {
       printf("error: %s not defined\n", argv[i]);
       exit(1);
@@ -479,22 +542,20 @@ void CreateDatabase(const MpiInfo &mpi, const commandline::Options &options) {
       cntxt->createNodeFromType("Lights", "Lights", root.UUID());
   gvt::core::DBNodeH lightNode =
       cntxt->createNodeFromType("PointLight", "conelight", lightNodes.UUID());
-  lightNode["position"] = glm::vec3(512.0, 512.0, 2048.0);
-  lightNode["color"] = glm::vec3(100.0, 100.0, 500.0);
+  lightNode["position"] = options.light_position;
+  lightNode["color"] = options.light_color;
   // camera
   gvt::core::DBNodeH camNode =
       cntxt->createNodeFromType("Camera", "conecam", root.UUID());
-  camNode["eyePoint"] = glm::vec3(512.0, 512.0, 4096.0);
-  camNode["focus"] = glm::vec3(512.0, 512.0, 0.0);
-  camNode["upVector"] = glm::vec3(0.0, 1.0, 0.0);
-  camNode["fov"] = (float)(25.0 * M_PI / 180.0);
-  camNode["rayMaxDepth"] = (int)1;
-  camNode["raySamples"] = (int)1;
+  camNode["eyePoint"] = options.eye;
+  camNode["focus"] = options.look;
+  camNode["upVector"] = options.up;
+  camNode["fov"] = static_cast<float>(options.fov * M_PI / 180.0);
+  camNode["rayMaxDepth"] = static_cast<int>(options.ray_max_depth);
+  camNode["raySamples"] = static_cast<int>(options.ray_samples);
   // film
   gvt::core::DBNodeH filmNode =
       cntxt->createNodeFromType("Film", "conefilm", root.UUID());
-  // filmNode["width"] = 1900;
-  // filmNode["height"] = 1080;
   filmNode["width"] = options.width;
   filmNode["height"] = options.height;
 
@@ -572,7 +633,9 @@ void Render(int argc, char **argv) {
   MpiInfo mpi;
   MPI_Comm_rank(MPI_COMM_WORLD, &mpi.rank);
   MPI_Comm_size(MPI_COMM_WORLD, &mpi.size);
-  // timer t_database(false, "database timer:");
+
+  timer t_database(false, "database timer:");
+
   if (mpi.rank == 0) std::cout << "mpi size: " << mpi.size << std::endl;
 
   commandline::Options options;
@@ -597,10 +660,10 @@ void Render(int argc, char **argv) {
       if (mpi.rank == 0) std::cout << "start ASYNC_DOMAIN" << std::endl;
 
       std::cout << "rank " << mpi.rank << " creating database." << std::endl;
-      // std::cout << " creating database." << std::endl;
-      // t_database.start();
+      t_database.start();
       CreateDatabase(mpi, options);
-      // t_database.stop();
+      t_database.stop();
+      std::cout << "rank " << mpi.rank << " done creating database." << std::endl;
 
       g_image = new Image(g_camera->getFilmSizeWidth(),
                           g_camera->getFilmSizeHeight(), "mpi");
@@ -682,9 +745,10 @@ void Render(int argc, char **argv) {
       if (mpi.rank == 0) std::cout << "start SYNC_DOMAIN" << std::endl;
 
       std::cout << "rank " << mpi.rank << " creating database." << std::endl;
-      // t_database.start();
+      t_database.start();
       CreateDatabase(mpi, options);
-      // t_database.stop();
+      t_database.stop();
+      std::cout << "rank " << mpi.rank << " done creating database." << std::endl;
 
       g_image = new Image(g_camera->getFilmSizeWidth(),
                           g_camera->getFilmSizeHeight(), "mpi");

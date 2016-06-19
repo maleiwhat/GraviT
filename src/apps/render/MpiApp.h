@@ -2,6 +2,7 @@
 #define APPS_RENDER_MPI_APP_H
 
 #include <string>
+#include <glm/glm.hpp>
 
 namespace apps {
 namespace render {
@@ -20,20 +21,26 @@ struct Options {
 
   enum AdapterType { EMBREE, MANTA, OPTIX };
 
-  int tracer = ASYNC_DOMAIN;
-  int adapter = EMBREE;
-  int width = 1920;
-  int height = 1080;
-  bool obj = false;
-  int instanceCountX = 1;
-  int instanceCountY = 1;
-  int instanceCountZ = 1;
-  int numFrames = 1;
+  int tracer;
+  int adapter;
+  int width;
+  int height;
+  bool obj;
+  int instanceCountX;
+  int instanceCountY;
+  int instanceCountZ;
+  int numFrames;
   int numTbbThreads;
   std::string infile;
-  std::string model_name = std::string("model");
-  // glm::vec3 eye;
-  // glm::vec3 look;
+  std::string model_name;
+  glm::vec3 light_position;
+  glm::vec3 light_color;
+  glm::vec3 eye;
+  glm::vec3 look;
+  glm::vec3 up;
+  float fov;
+  int ray_max_depth;
+  int ray_samples;
 };
 
 }  // namespace commandline
