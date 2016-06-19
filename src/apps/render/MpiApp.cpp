@@ -87,7 +87,7 @@ namespace commandline {
 using namespace gvt::render::unit;
 
 void PrintUsage(const char *argv) {
-  printf("Usage : %s [options]\n");
+  printf("Usage : %s [options]\n", argv);
   printf("  -h, --help\n");
   printf(
       "  -i, --infile <infile> (default: ../data/geom/bunny.obj for obj and "
