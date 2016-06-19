@@ -31,13 +31,14 @@
    =======================================================================================
    */
 
+#include <cstdlib>
+#include <glob.h>
+#include <iostream>
+#include <map>
+#include <sstream>
 #include <sys/stat.h>
 #include <tbb/task_scheduler_init.h>
-#include <cstdlib>
-#include <iostream>
-#include <sstream>
 #include <thread>
-#include <map>
 
 // timer
 #include "gvt/core/utils/timer.h"
@@ -57,9 +58,9 @@
 #include "gvt/render/unit/CommonWorks.h"
 #include "gvt/render/unit/DomainTracer.h"
 #include "gvt/render/unit/DomainWorks.h"
+#include "gvt/render/unit/Profiler.h"
 #include "gvt/render/unit/TestTracer.h"
 #include "gvt/render/unit/Worker.h"
-#include "gvt/render/unit/Profiler.h"
 
 // sync schedule
 #include "gvt/render/algorithm/DomainTracer.h"
@@ -132,7 +133,8 @@ void Parse(int argc, char **argv, Options *options) {
         printf("error: file not found. %s\n", options->infile.c_str());
         exit(1);
       }
-    } else if (strcmp(argv[i], "-p") == 0 || strcmp(argv[i], "--ply-count") == 0) {
+    } else if (strcmp(argv[i], "-p") == 0 ||
+               strcmp(argv[i], "--ply-count") == 0) {
       options->ply_count = atoi(argv[++i]);
     } else if (strcmp(argv[i], "-a") == 0 ||
                strcmp(argv[i], "--adapter") == 0) {
@@ -181,7 +183,8 @@ void Parse(int argc, char **argv, Options *options) {
     }
   }
   if (options->numTbbThreads <= 0) {
-    if (options->tracer == Options::ASYNC_DOMAIN || options->tracer == Options::ASYNC_IMAGE) {
+    if (options->tracer == Options::ASYNC_DOMAIN ||
+        options->tracer == Options::ASYNC_IMAGE) {
       options->numTbbThreads = MAX(1, std::thread::hardware_concurrency() - 2);
     } else {
       options->numTbbThreads = MAX(1, std::thread::hardware_concurrency());
@@ -196,10 +199,10 @@ void Parse(int argc, char **argv, Options *options) {
   }
 }
 
-} // namespace commandline
-} // namespace mpi
-} // namespace render
-} // namespace apps
+}  // namespace commandline
+}  // namespace mpi
+}  // namespace render
+}  // namespace apps
 
 namespace apps {
 namespace render {
@@ -213,7 +216,7 @@ using namespace gvt::render::schedule;
 using namespace gvt::render::unit::profiler;
 
 // global variables
-gvt::render::data::scene::gvtPerspectiveCamera* g_camera = NULL;
+gvt::render::data::scene::gvtPerspectiveCamera *g_camera = NULL;
 gvt::render::data::scene::Image *g_image = NULL;
 
 typedef struct Vertex {
@@ -260,6 +263,29 @@ void DeallocatePly(std::map<T **, std::queue<T *>> &ply_mem_map) {
   }
 }
 
+bool FileExists(const char *path) {
+  struct stat buf;
+  return (stat(path, &buf) == 0);
+}
+
+bool IsDir(const char *path) {
+  struct stat buf;
+  stat(path, &buf);
+  return S_ISDIR(buf.st_mode);
+}
+
+std::vector<std::string> FindPly(const std::string dirname) {
+  glob_t result;
+  std::string exp = dirname + "/*.ply";
+  glob(exp.c_str(), GLOB_TILDE, NULL, &result);
+  std::vector<std::string> ret;
+  for (int i = 0; i < result.gl_pathc; i++) {
+    ret.push_back(std::string(result.gl_pathv[i]));
+  }
+  globfree(&result);
+  return ret;
+}
+
 void CreateDatabase(const MpiInfo &mpi, const commandline::Options &options) {
   // mess I use to open and read the ply file with the c utils I found.
   PlyFile *in_ply;
@@ -297,18 +323,42 @@ void CreateDatabase(const MpiInfo &mpi, const commandline::Options &options) {
   gvt::core::DBNodeH instNodes =
       cntxt->createNodeFromType("Instances", "Instances", root.UUID());
 
-  // Enzo isosurface...
-  for (k = 0; k < options.ply_count; k++) {
+  if (!FileExists(rootdir.c_str())) {
+    std::cout << "File \"" << rootdir << "\" does not exist. Exiting."
+              << std::endl;
+    exit(1);
+  }
+
+  if (!IsDir(rootdir.c_str())) {
+    std::cout << "File \"" << rootdir << "\" is not a directory. Exiting."
+              << std::endl;
+    exit(1);
+  }
+
+  std::vector<std::string> files = FindPly(rootdir);
+
+  if (files.empty()) {
+    std::cout << "Directory \"" << rootdir
+              << "\" contains no .ply files. Exiting." << std::endl;
+    exit(1);
+  }
+
+  // read 'em
+  std::vector<std::string>::const_iterator file;
+
+  // for (k = 0; k < options.ply_count; k++) {
+  for (file = files.begin(), k = 0; file != files.end(); file++, k++) {
     int owner_process = k % mpi.size;
 
-    sprintf(txt, "%d", k);
-    filename = "block";
-    filename += txt;
+    // sprintf(txt, "%d", k);
+    // filename = "block";
+    // filename += txt;
     gvt::core::DBNodeH EnzoMeshNode =
-        cntxt->createNodeFromType("Mesh", filename.c_str(), dataNodes.UUID());
+        cntxt->createNodeFromType("Mesh", *file, dataNodes.UUID());
     // read in some ply data and get ready to load it into the mesh
     // filepath = rootdir + "block" + std::string(txt) + ".ply";
-    filepath = rootdir + "/" + filename + ".ply";
+    // filepath = rootdir + "/" + filename + ".ply";
+    filepath = *file;
 
     myfile = fopen(filepath.c_str(), "r");
     in_ply = read_ply(myfile);
@@ -519,7 +569,7 @@ void CreateDatabase(const MpiInfo &mpi, const commandline::Options &options) {
   g_camera->setSamples(raySamples);
   g_camera->setFOV(fov);
   g_camera->setFilmsize(filmNode["width"].value().toInteger(),
-                       filmNode["height"].value().toInteger());
+                        filmNode["height"].value().toInteger());
 
 }  // void CreateDatabase(const commandline::Options& options) {
 
@@ -568,9 +618,9 @@ void Render(int argc, char **argv) {
 
       DomainTracer *domain_tracer =
           static_cast<DomainTracer *>(worker.GetTracer());
-      Profiler& profiler = domain_tracer->GetProfiler();
+      Profiler &profiler = domain_tracer->GetProfiler();
 
-      // warm up
+// warm up
 #ifndef NDEBUG
       std::cout << "rank " << mpi.rank << " start warming up\n\n";
 #endif
@@ -580,7 +630,8 @@ void Render(int argc, char **argv) {
         g_image->clear();
         worker.Render();
 #ifndef NDEBUG
-        std::cout << "rank " << mpi.rank << " warm up frame " << i << " done\n\n";
+        std::cout << "rank " << mpi.rank << " warm up frame " << i
+                  << " done\n\n";
 #endif
       }
 
@@ -647,7 +698,7 @@ void Render(int argc, char **argv) {
 
       gvt::render::algorithm::Tracer<DomainScheduler> tracer(g_camera->rays,
                                                              *g_image);
-      Profiler& profiler = tracer.GetProfiler();
+      Profiler &profiler = tracer.GetProfiler();
 
       for (int z = 0; z < 10; z++) {
         g_camera->AllocateCameraRays();
