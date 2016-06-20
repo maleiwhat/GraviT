@@ -352,8 +352,11 @@ inline void DomainTracer::Trace() {
   //   work->SendAll(comm);
   // }
   profiler.Start(Profiler::COMPOSITE);
-  CompositeFrameBuffers();
+  this->gatherFramebuffers(this->rays_end - this->rays_start);
   profiler.Stop(Profiler::COMPOSITE);
+  // profiler.Start(Profiler::COMPOSITE);
+  // CompositeFrameBuffers();
+  // profiler.Stop(Profiler::COMPOSITE);
 #ifndef NDEBUG
   std::cout << "rank " << mpiInfo.rank << " composite done" << std::endl;
 #endif
