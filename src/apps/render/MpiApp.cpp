@@ -145,7 +145,7 @@ void Parse(int argc, char **argv, Options *options) {
   options->numFrames = 1;
   // options->numTbbThreads;
   // options->infile;
-  options->model_name = std::string("model");
+  options->model_name = std::string("unknownmodel");
 
   // light
   options->light_position = glm::vec3(512.0, 512.0, 2048.0);
@@ -347,6 +347,30 @@ std::vector<std::string> FindPly(const std::string dirname) {
   }
   globfree(&result);
   return ret;
+}
+
+std::string GetTestName(const MpiInfo &mpi,
+                        const commandline::Options &options) {
+  std::string tracer_name;
+  if (options.tracer == commandline::Options::ASYNC_DOMAIN) {
+    tracer_name = "async_domain";
+  } else if (options.tracer == commandline::Options::SYNC_DOMAIN) {
+    tracer_name = "async_domain";
+  } else {
+    tracer_name = "unknown_tracer";
+  }
+
+  std::ostringstream rank_ss;
+  rank_ss << mpi.rank;
+  std::string rank_str = rank_ss.str();
+
+  std::ostringstream mpi_size_ss;
+  mpi_size_ss << mpi.size;
+  std::string mpi_size_str = mpi_size_ss.str();
+
+  std::string filename("prof_" + options.model_name + "_" + tracer_name +
+                       "_size_" + mpi_size_str + "_rank_" + rank_str);
+  return filename;
 }
 
 void CreateDatabase(const MpiInfo &mpi, const commandline::Options &options) {
@@ -670,7 +694,7 @@ void Render(int argc, char **argv) {
       std::cout << "rank " << mpi.rank << " done creating database." << std::endl;
 
       g_image = new Image(g_camera->getFilmSizeWidth(),
-                          g_camera->getFilmSizeHeight(), "mpi");
+                          g_camera->getFilmSizeHeight(), GetTestName(mpi, options));
 
       Worker worker(mpi, options, g_camera, g_image);
 
@@ -725,19 +749,7 @@ void Render(int argc, char **argv) {
       }
       worker.Wait();
 
-      std::ostringstream rank_ss;
-      rank_ss << mpi.rank;
-      std::string rank_str = rank_ss.str();
-
-      std::ostringstream mpi_size_ss;
-      mpi_size_ss << mpi.size;
-      std::string mpi_size_str = mpi_size_ss.str();
-
-      std::string filename("prof_" + options.model_name +
-                           "_async_domain_size_" + mpi_size_str + "_rank_" +
-                           rank_str + ".txt");
-
-      profiler.WriteToFile(filename, mpi.rank);
+      profiler.WriteToFile(GetTestName(mpi, options) + ".txt", mpi.rank);
 
     } break;
 
@@ -755,7 +767,7 @@ void Render(int argc, char **argv) {
       std::cout << "rank " << mpi.rank << " done creating database." << std::endl;
 
       g_image = new Image(g_camera->getFilmSizeWidth(),
-                          g_camera->getFilmSizeHeight(), "mpi");
+                          g_camera->getFilmSizeHeight(), GetTestName(mpi, options));
 
       g_camera->AllocateCameraRays();
       g_camera->generateRays();
@@ -786,18 +798,7 @@ void Render(int argc, char **argv) {
 
       g_image->Write();
 
-      std::ostringstream rank_ss;
-      rank_ss << mpi.rank;
-      std::string rank_str = rank_ss.str();
-
-      std::ostringstream mpi_size_ss;
-      mpi_size_ss << mpi.size;
-      std::string mpi_size_str = mpi_size_ss.str();
-
-      std::string filename("prof_" + options.model_name + "_sync_domain_size_" +
-                           mpi_size_str + "_rank_" + rank_str + ".txt");
-
-      profiler.WriteToFile(filename, mpi.rank);
+      profiler.WriteToFile(GetTestName(mpi, options) + ".txt", mpi.rank);
 
     } break;
 
