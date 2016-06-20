@@ -355,7 +355,7 @@ std::string GetTestName(const MpiInfo &mpi,
   if (options.tracer == commandline::Options::ASYNC_DOMAIN) {
     tracer_name = "async_domain";
   } else if (options.tracer == commandline::Options::SYNC_DOMAIN) {
-    tracer_name = "async_domain";
+    tracer_name = "sync_domain";
   } else {
     tracer_name = "unknown_tracer";
   }
