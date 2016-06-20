@@ -145,7 +145,13 @@ public:
     }
   }
 
-  virtual ~Tracer() {}
+  virtual ~Tracer() {
+    for(std::map<gvt::render::data::primitives::Mesh *, gvt::render::Adapter *>::iterator iter = adapterCache.begin(); iter != adapterCache.end(); ++iter)
+    {
+      gvt::render::Adapter * adapter =  iter->second;
+      delete adapter;
+    }
+  }
 
   void RegisterCurrentDomains(int * instanceIds, int * mpiInstanceIds, int count, int totalInstances)
   {
@@ -462,6 +468,9 @@ public:
 // std::cout << "domain scheduler: trace time: " << t_trace.format();
 // std::cout << "domain scheduler: shuffle time: " << t_shuffle.format();
 // std::cout << "domain scheduler: send time: " << t_send.format();
+
+    //delete all adapters
+
 
 // add colors to the framebuffer
 #ifdef GVT_USE_MPE
