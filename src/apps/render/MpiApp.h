@@ -39,7 +39,7 @@ struct Options {
   glm::vec3 look;
   glm::vec3 up;
   float fov;
-  int ray_max_depth;
+  int ray_depth;
   int ray_samples;
 };
 

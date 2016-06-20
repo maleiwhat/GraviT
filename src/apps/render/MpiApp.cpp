@@ -124,7 +124,7 @@ void PrintUsage(const char *argv) {
       "0.0).\n");
   printf("  --up <x, y, z> specify up vector (default: 0 1 0).\n");
   printf("  --fov <degree> specify field of view in degree (default: 25).\n");
-  printf("  --ray-max-depth <value> specify ray max. depth (default: 1).\n");
+  printf("  --ray-depth <value> specify ray max. depth (default: 1).\n");
   printf("  --ray-samples <value> specify number of samples (default: 1).\n");
 }
 
@@ -158,7 +158,7 @@ void Parse(int argc, char **argv, Options *options) {
   options->fov = 25.0;
 
   // ray
-  options->ray_max_depth = 1;
+  options->ray_depth = 1;
   options->ray_samples = 1;
 
   options->numTbbThreads = -1;
@@ -236,6 +236,10 @@ void Parse(int argc, char **argv, Options *options) {
       options->light_color[0] = atof(argv[++i]);
       options->light_color[1] = atof(argv[++i]);
       options->light_color[2] = atof(argv[++i]);
+    } else if (strcmp(argv[i], "--ray-depth") == 0) {
+      options->ray_depth = atoi(argv[++i]);
+    } else if (strcmp(argv[i], "--ray-samples") == 0) {
+      options->ray_samples = atoi(argv[++i]);
     } else {
       printf("error: %s not defined\n", argv[i]);
       exit(1);
@@ -551,7 +555,7 @@ void CreateDatabase(const MpiInfo &mpi, const commandline::Options &options) {
   camNode["focus"] = options.look;
   camNode["upVector"] = options.up;
   camNode["fov"] = static_cast<float>(options.fov * M_PI / 180.0);
-  camNode["rayMaxDepth"] = static_cast<int>(options.ray_max_depth);
+  camNode["rayMaxDepth"] = static_cast<int>(options.ray_depth);
   camNode["raySamples"] = static_cast<int>(options.ray_samples);
   // film
   gvt::core::DBNodeH filmNode =
