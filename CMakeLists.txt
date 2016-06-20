@@ -145,6 +145,8 @@ set(GVT_THIRDPARTY_EMBREESHADERS "${CMAKE_SOURCE_DIR}/third-party/embree-shaders
 #   set(GVT_COMPILER ${CMAKE_CXX_COMPILER_ID} CACHE STRING "GraviT Compiler?")
 # endif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
 
+FIND_PACKAGE(IceT REQUIRED)
+include_directories(${ICET_INCLUDE_DIRS})
 
 # modules
 include(CMake/gravit.cmake)
@@ -326,6 +328,7 @@ set(GVT_MPI_SRCS
     src/gvt/render/unit/DomainWorks.cpp
     src/gvt/render/unit/TpcVoter.cpp
     src/gvt/render/unit/Profiler.cpp
+    src/gvt/render/unit/Composite.cpp
 )
 
 
@@ -669,7 +672,7 @@ if (GVT_MPI_APP)
   find_package(MPI REQUIRED)
   find_package(Threads REQUIRED)
   include_directories(${MPI_INCLUDE_PATH} src src/apps/render ${PLYPATH})
-  set(GVT_MPI_LIBS ${GVT_MPI_LIBS} ${MPI_LIBRARIES})
+  set(GVT_MPI_LIBS ${GVT_MPI_LIBS} ${MPI_LIBRARIES} ${ICET_CORE_LIBS} ${ICET_MPI_LIBS})
   set(GVT_MPI_SRCS ${GVT_MPI_SRCS} src/apps/render/MpiApp.cpp ${PLYPATH}/ply.c)
   add_executable(gvtMpi ${GVT_MPI_SRCS})
   target_link_libraries(gvtMpi gvtCore gvtRender ${GVT_MPI_LIBS} ${CMAKE_THREAD_LIBS_INIT})
