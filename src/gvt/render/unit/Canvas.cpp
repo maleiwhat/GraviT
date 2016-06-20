@@ -1,4 +1,4 @@
-#include "gvt/render/unit/Composite.h"
+#include "gvt/render/unit/Canvas.h"
 
 #include <iostream>
 #include <mpi.h>
@@ -66,7 +66,7 @@ static void draw(const IceTDouble *projection_matrix,
                     ap);
 }
 
-bool Composite::InitIceT() {
+bool Canvas::InitIceT() {
   if (MPI::COMM_WORLD.Get_size() < 2) return false;
 
   IceTInt *process_ranks;
@@ -90,7 +90,7 @@ bool Composite::InitIceT() {
   return true;
 }
 
-glm::vec4 *Composite::Execute(glm::vec4 *buffer_in, const size_t width,
+glm::vec4 *Canvas::Execute(glm::vec4 *buffer_in, const size_t width,
                               const size_t height) {
   IceTFloat *color_buffer;
   IceTSizeType num_pixels;

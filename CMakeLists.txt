@@ -318,6 +318,7 @@ set(GVT_RENDER_SRCS ${GVT_RENDER_SRCS}
   src/gvt/render/unit/Voter.cpp
   src/apps/render/TestScenes.cpp
   src/gvt/render/unit/Profiler.cpp
+  src/gvt/render/unit/Canvas.cpp
 )
 
 set(GVT_MPI_SRCS
@@ -328,7 +329,6 @@ set(GVT_MPI_SRCS
     src/gvt/render/unit/DomainWorks.cpp
     src/gvt/render/unit/TpcVoter.cpp
     src/gvt/render/unit/Profiler.cpp
-    src/gvt/render/unit/Composite.cpp
 )
 
 
@@ -423,7 +423,7 @@ if (GVT_RENDER)
   #       should only need Manta if including Manta adapter
   # find_package(Manta REQUIRED)
   set(GVT_RENDER_LIBS ${GVT_RENDER_LIBS})
-  set(GVT_RENDER_LIBS ${GVT_RENDER_LIBS} tinyobjloader)
+  set(GVT_RENDER_LIBS ${GVT_RENDER_LIBS} tinyobjloader ${ICET_CORE_LIBS} ${ICET_MPI_LIBS})
   include_directories(${TINYOBJPATH})
 
     find_package(Boost REQUIRED COMPONENTS thread timer system)

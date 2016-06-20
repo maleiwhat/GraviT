@@ -8,16 +8,16 @@ namespace gvt {
 namespace render {
 namespace unit {
 
-class Composite {
+class Canvas {
  public:
-  // Composite() {}
+  // Canvas() {}
   // void Init(int width, int height);
   // glm::vec4 *Execute(int width, int height, glm::vec4 *buffer_in);
 
   // glm::vec4 *buffer;
   IceTInt num_proc;
-  Composite() {}
-  ~Composite() {}
+  Canvas() {}
+  ~Canvas() {}
   bool InitIceT();
   glm::vec4 *Execute(glm::vec4 *buffer_in, const size_t width, const size_t height);
 
