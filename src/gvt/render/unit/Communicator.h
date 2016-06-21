@@ -73,6 +73,8 @@ class Communicator {
   std::queue<Work*> recvQ;
   pthread_mutex_t sendQ_mutex;
   pthread_mutex_t recvQ_mutex;
+  pthread_cond_t recvQ_cond;
+  bool workToDo;
 
   // flag to indicate there is no more work
   // don't need a lock since worker will set it via ThreadJoin()

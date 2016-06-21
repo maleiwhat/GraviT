@@ -22,7 +22,7 @@ namespace unit {
 // Communicator::Communicator(int* argc, char*** argv, Worker* worker)
 //     : argcp(argc), argvp(argv), worker(worker), allWorkDone(false) {
 Communicator::Communicator(const MpiInfo& mpi, Worker* worker)
-    : mpi(mpi), worker(worker), allWorkDone(false) {
+    : mpi(mpi), worker(worker), allWorkDone(false), workToDo(false) {
   InitThreads();
 }
 
@@ -89,6 +89,7 @@ void Communicator::InitThreads() {
 void Communicator::InitMutexes() {
   pthread_mutex_init(&sendQ_mutex, NULL);
   pthread_mutex_init(&recvQ_mutex, NULL);
+  pthread_cond_init(&recvQ_cond, NULL);
 }
 
 void* Communicator::StartWorkThread(void* This) {
@@ -108,6 +109,11 @@ inline void Communicator::WorkThread() {
     Work* work = NULL;
 
     pthread_mutex_lock(&recvQ_mutex);
+
+    while(!workToDo) {
+      pthread_cond_wait(&recvQ_cond, &recvQ_mutex);
+    }
+
     if (!recvQ.empty()) {
       work = recvQ.front();
       recvQ.pop();
@@ -117,7 +123,10 @@ inline void Communicator::WorkThread() {
                 << work->GetTag() << " from recvQ (size " << recvQ.size() << ")"
                 << std::endl;
 #endif
+      if (recvQ.empty()) workToDo = false;
     }
+
+
     pthread_mutex_unlock(&recvQ_mutex);
 
     if (work) {
@@ -255,6 +264,10 @@ void Communicator::RecvWork(const MPI_Status& status, Work* work) {
             << work->GetTag() << " to recvQ (size " << recvQ.size() << ")"
             << std::endl;
 #endif
+  if (!workToDo) {
+    workToDo = true;
+    pthread_cond_signal(&recvQ_cond);
+  }
   pthread_mutex_unlock(&recvQ_mutex);
 }
 

@@ -671,6 +671,8 @@ void Render(int argc, char **argv) {
 
   // initialize tbb
   tbb::task_scheduler_init init(options.numTbbThreads);
+  // tbb::task_scheduler_init init(tbb::task_scheduler_init::automatic);
+  // tbb::task_scheduler_init init(16);
 
   switch (options.tracer) {
     case commandline::Options::PING_TEST: {
