@@ -306,7 +306,7 @@ gvt::render::data::scene::Image *g_image = NULL;
 
 // global variables
 // gvt::render::unit::RayTracer* tracer;
-// bool s_quit_key_entered = false;
+bool g_quit_key_entered = false;
 int g_window;
 // std::size_t s_num_frames = 0;
 int g_num_warmup_frames;
@@ -708,10 +708,23 @@ void Kill() {
   // FreeMem();
 }
 
+void KeyboardFunc(unsigned char key, int x, int y) {
+  switch (key) {
+    case 'q':
+      printf("pressed q\n");
+      g_quit_key_entered = true;
+      break;
+    default:
+      break;
+  }
+}
+
 void DisplayFunc(void) {
+  static bool quit = false;
+
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-  if (g_num_frames == (g_num_warmup_frames + g_num_active_frames)) {
+  if (g_num_frames == (g_num_warmup_frames + g_num_active_frames) || quit) {
     glutDestroyWindow(g_window);
     Kill();
     MPI_Finalize();
@@ -724,6 +737,8 @@ void DisplayFunc(void) {
   g_worker->Render();
 
   ++g_num_frames;
+
+  if (g_quit_key_entered) quit = true;
 
   // PrintHelpAndSettings();
   // glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
@@ -744,7 +759,7 @@ void InitGlut(int width, int height) {
   g_window = glutCreateWindow("MpiApp");
   glutDisplayFunc(DisplayFunc);
   // glutIdleFunc(idleFunc);
-  // glutKeyboardFunc(KeyboardFunc);
+  glutKeyboardFunc(KeyboardFunc);
   // glutSpecialFunc(SpecialFunc);
   // glutMouseFunc(MouseFunc);
   // glutMotionFunc(MotionFunc);
