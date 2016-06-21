@@ -136,7 +136,7 @@ void PrintUsage(const char *argv) {
   printf("  --ray-samples <value> specify number of samples (default: 1).\n");
   printf("  --warmup <value> specify number of warm-up frames (default: 10).\n");
   printf("  --active <value> specify number of active frames (default: 100).\n");
-  printf("  --interactive enable interactive mode.\n");
+  printf("  --gl enable interactive mode.\n");
 }
 
 void Parse(int argc, char **argv, Options *options) {
@@ -260,7 +260,7 @@ void Parse(int argc, char **argv, Options *options) {
       options->warmup_frames = atoi(argv[++i]);
     } else if (strcmp(argv[i], "--active") == 0) {
       options->active_frames = atoi(argv[++i]);
-    } else if (strcmp(argv[i], "--interactive") == 0) {
+    } else if (strcmp(argv[i], "--gl") == 0) {
       options->interactive = true;
     } else {
       printf("error: %s not defined\n", argv[i]);
@@ -759,7 +759,7 @@ void InitGlut(int width, int height) {
   g_window = glutCreateWindow("MpiApp");
   glutDisplayFunc(DisplayFunc);
   // glutIdleFunc(idleFunc);
-  // glutKeyboardFunc(KeyboardFunc);
+  glutKeyboardFunc(KeyboardFunc);
   // glutSpecialFunc(SpecialFunc);
   // glutMouseFunc(MouseFunc);
   // glutMotionFunc(MotionFunc);
