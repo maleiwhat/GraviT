@@ -126,6 +126,8 @@ void PrintUsage(const char *argv) {
   printf("  --fov <degree> specify field of view in degree (default: 25).\n");
   printf("  --ray-depth <value> specify ray max. depth (default: 1).\n");
   printf("  --ray-samples <value> specify number of samples (default: 1).\n");
+  printf("  --warmup <value> specify number of warm-up frames (default: 10).\n");
+  printf("  --active <value> specify number of active frames (default: 100).\n");
 }
 
 void Parse(int argc, char **argv, Options *options) {
@@ -160,6 +162,9 @@ void Parse(int argc, char **argv, Options *options) {
   // ray
   options->ray_depth = 1;
   options->ray_samples = 1;
+
+  options->warmup_frames = 10;
+  options->active_frames = 100;
 
   options->numTbbThreads = -1;
   for (int i = 1; i < argc; ++i) {
@@ -240,6 +245,10 @@ void Parse(int argc, char **argv, Options *options) {
       options->ray_depth = atoi(argv[++i]);
     } else if (strcmp(argv[i], "--ray-samples") == 0) {
       options->ray_samples = atoi(argv[++i]);
+    } else if (strcmp(argv[i], "--warmup") == 0) {
+      options->warmup_frames = atoi(argv[++i]);
+    } else if (strcmp(argv[i], "--active") == 0) {
+      options->active_frames = atoi(argv[++i]);
     } else {
       printf("error: %s not defined\n", argv[i]);
       exit(1);
@@ -712,7 +721,7 @@ void Render(int argc, char **argv) {
 #ifndef NDEBUG
       std::cout << "rank " << mpi.rank << " start warming up\n\n";
 #endif
-      for (int i = 0; i < 10; i++) {
+      for (int i = 0; i < options.warmup_frames; i++) {
         g_camera->AllocateCameraRays();
         g_camera->generateRays();
         g_image->clear();
@@ -729,7 +738,7 @@ void Render(int argc, char **argv) {
       profiler.Reset();
       profiler.Start(Profiler::TOTAL_TIME);
 
-      for (int i = 0; i < 100; i++) {
+      for (int i = 0; i < options.active_frames; i++) {
         profiler.Start(Profiler::CAMERA_RAY);
         g_camera->AllocateCameraRays();
         g_camera->generateRays();
@@ -778,7 +787,7 @@ void Render(int argc, char **argv) {
                                                              *g_image);
       Profiler &profiler = tracer.GetProfiler();
 
-      for (int z = 0; z < 10; z++) {
+      for (int z = 0; z < options.warmup_frames; z++) {
         g_camera->AllocateCameraRays();
         g_camera->generateRays();
         g_image->clear();
@@ -787,7 +796,7 @@ void Render(int argc, char **argv) {
 
       profiler.Reset();
       profiler.Start(Profiler::TOTAL_TIME);
-      for (int z = 0; z < 100; z++) {
+      for (int z = 0; z < options.active_frames; z++) {
         profiler.Start(Profiler::CAMERA_RAY);
         g_camera->AllocateCameraRays();
         g_camera->generateRays();

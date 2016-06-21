@@ -41,6 +41,8 @@ struct Options {
   float fov;
   int ray_depth;
   int ray_samples;
+  int warmup_frames;
+  int active_frames;
 };
 
 }  // namespace commandline
