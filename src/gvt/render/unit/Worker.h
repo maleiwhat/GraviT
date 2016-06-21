@@ -57,6 +57,12 @@ class Worker {
   void Quit();
   void Wait();
 
+  // void IsQuit(bool* quit_detected) {
+  //   pthread_mutex_lock(&quit_mutex);
+  //   *quit_detected = quit;
+  //   pthread_mutex_unlock(&quit_mutex);
+  // }
+
   // get mpi info
   MpiInfo GetMpiInfo() const { return mpi; }
   int GetRank() const { return mpi.rank; }

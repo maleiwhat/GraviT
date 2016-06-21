@@ -759,7 +759,7 @@ void InitGlut(int width, int height) {
   g_window = glutCreateWindow("MpiApp");
   glutDisplayFunc(DisplayFunc);
   // glutIdleFunc(idleFunc);
-  glutKeyboardFunc(KeyboardFunc);
+  // glutKeyboardFunc(KeyboardFunc);
   // glutSpecialFunc(SpecialFunc);
   // glutMouseFunc(MouseFunc);
   // glutMotionFunc(MotionFunc);
@@ -809,11 +809,20 @@ void CreateTracer(const commandline::Options &options,
 
 void RenderInteractive(const commandline::Options &options,
                        const gvt::render::unit::MpiInfo &mpi) {
+  CreateTracer(options, mpi);
   if (mpi.rank == 0) {
-    CreateTracer(options, mpi);
     InitGlut(options.width, options.height);
   } else {
-    // TODO
+    // bool quit_pressed = false;
+    for (int i = 0; i < g_num_warmup_frames + g_num_active_frames; ++i) {
+      g_camera->AllocateCameraRays();
+      g_camera->generateRays();
+      g_image->clear();
+      g_worker->Render();
+      // g_worker->IsQuit(&quit_pressed);
+      // if (quit_pressed) break;
+    }
+    g_worker->Wait();
   }
 }
 
