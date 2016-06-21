@@ -40,6 +40,7 @@
 #include <tbb/task_scheduler_init.h>
 #include <thread>
 #include <glm/glm.hpp>
+#include <mpi.h>
 
 // timer
 #include "gvt/core/utils/timer.h"
@@ -56,6 +57,7 @@
 #include "gvt/render/unit/Types.h"
 
 // async schedule
+// #include "gvt/render/unit/RayTracer.h"
 #include "gvt/render/unit/CommonWorks.h"
 #include "gvt/render/unit/DomainTracer.h"
 #include "gvt/render/unit/DomainWorks.h"
@@ -70,6 +72,12 @@
 
 // warning: ply.h must be included after tracer related headers
 #include <ply.h>
+
+#if defined(__APPLE__)
+#include <GLUT/glut.h>
+#else
+#include <GL/freeglut.h>
+#endif
 
 #ifndef MAX
 #define MAX(a, b) ((a > b) ? (a) : (b))
@@ -128,6 +136,7 @@ void PrintUsage(const char *argv) {
   printf("  --ray-samples <value> specify number of samples (default: 1).\n");
   printf("  --warmup <value> specify number of warm-up frames (default: 10).\n");
   printf("  --active <value> specify number of active frames (default: 100).\n");
+  printf("  --interactive enable interactive mode.\n");
 }
 
 void Parse(int argc, char **argv, Options *options) {
@@ -165,6 +174,8 @@ void Parse(int argc, char **argv, Options *options) {
 
   options->warmup_frames = 10;
   options->active_frames = 100;
+
+  options->interactive = false;
 
   options->numTbbThreads = -1;
   for (int i = 1; i < argc; ++i) {
@@ -249,6 +260,8 @@ void Parse(int argc, char **argv, Options *options) {
       options->warmup_frames = atoi(argv[++i]);
     } else if (strcmp(argv[i], "--active") == 0) {
       options->active_frames = atoi(argv[++i]);
+    } else if (strcmp(argv[i], "--interactive") == 0) {
+      options->interactive = true;
     } else {
       printf("error: %s not defined\n", argv[i]);
       exit(1);
@@ -290,6 +303,23 @@ using namespace gvt::render::unit::profiler;
 // global variables
 gvt::render::data::scene::gvtPerspectiveCamera *g_camera = NULL;
 gvt::render::data::scene::Image *g_image = NULL;
+
+// global variables
+// gvt::render::unit::RayTracer* tracer;
+// bool s_quit_key_entered = false;
+int g_window;
+// std::size_t s_num_frames = 0;
+int g_num_warmup_frames;
+int g_num_active_frames;
+int g_width;
+int g_height;
+GLubyte *imagebuffer;
+int g_tracer_mode;
+int g_mpiRank;
+int g_mpiSize;
+gvt::render::unit::Worker* g_worker;
+gvt::render::algorithm::AbstractTrace *g_tracer;
+int g_num_frames = 0;
 
 typedef struct Vertex {
   float x, y, z;
@@ -666,22 +696,129 @@ void CreateDatabase(const MpiInfo &mpi, const commandline::Options &options) {
 
 }  // void CreateDatabase(const commandline::Options& options) {
 
-void Render(int argc, char **argv) {
-  MpiInfo mpi;
-  MPI_Comm_rank(MPI_COMM_WORLD, &mpi.rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &mpi.size);
+void Kill() {
+  g_worker->Quit();
+  g_worker->Wait();
+  // pthread_mutex_unlock(&quit_thread_mutex_);
+  // for (int i = 0; i < num_threads_; ++i) {
+  //   // printf("thread %d / %d trying to join.\n", i, num_threads_);
+  //   pthread_join(worker_threads_[i], NULL);
+  //   printf("thread %d / %d joined.\n", i, num_threads_);
+  // }
+  // FreeMem();
+}
 
-  timer t_database(false, "database timer:");
+void DisplayFunc(void) {
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-  if (mpi.rank == 0) std::cout << "mpi size: " << mpi.size << std::endl;
+  if (g_num_frames == (g_num_warmup_frames + g_num_active_frames)) {
+    glutDestroyWindow(g_window);
+    Kill();
+    MPI_Finalize();
+    exit(0);
+  }
 
-  commandline::Options options;
-  commandline::Parse(argc, argv, &options);
+  g_camera->AllocateCameraRays();
+  g_camera->generateRays();
+  g_image->clear();
+  g_worker->Render();
 
-  // initialize tbb
-  tbb::task_scheduler_init init(options.numTbbThreads);
-  // tbb::task_scheduler_init init(tbb::task_scheduler_init::automatic);
-  // tbb::task_scheduler_init init(16);
+  ++g_num_frames;
+
+  // PrintHelpAndSettings();
+  // glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+  // glRasterPos2i(0, 0);
+  glDrawPixels(g_width, g_height, GL_RGB, GL_UNSIGNED_BYTE, g_image->GetBuffer());
+  glutSwapBuffers();
+  glutPostRedisplay();
+}
+
+void InitGlut(int width, int height) {
+  // resizeDisplay(width, height);
+  int argc = 0;
+  char **argv = NULL;
+  glutInit(&argc, argv);
+  glutInitWindowSize((GLsizei)width, (GLsizei)height);
+  glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE);
+  glutInitWindowPosition(5, 5);
+  g_window = glutCreateWindow("MpiApp");
+  glutDisplayFunc(DisplayFunc);
+  // glutIdleFunc(idleFunc);
+  // glutKeyboardFunc(KeyboardFunc);
+  // glutSpecialFunc(SpecialFunc);
+  // glutMouseFunc(MouseFunc);
+  // glutMotionFunc(MotionFunc);
+  // glutReshapeFunc(reshapeFunc);
+  glutMainLoop();
+}
+
+void CreateTracer(const commandline::Options &options,
+                  const gvt::render::unit::MpiInfo &mpi) {
+  switch (options.tracer) {
+    case commandline::Options::ASYNC_DOMAIN: {
+      if (mpi.rank == 0) std::cout << "start ASYNC_DOMAIN" << std::endl;
+
+      g_image = new Image(g_camera->getFilmSizeWidth(),
+                          g_camera->getFilmSizeHeight(), GetTestName(mpi, options));
+
+      g_worker = new Worker(mpi, options, g_camera, g_image);
+
+      // DomainTracer *domain_tracer =
+      //     static_cast<DomainTracer *>(worker.GetTracer());
+      // Profiler &profiler = domain_tracer->GetProfiler();
+    } break;
+
+    case commandline::Options::SYNC_DOMAIN: {
+
+      if (mpi.rank == 0) std::cout << "start SYNC_DOMAIN" << std::endl;
+
+      g_image = new Image(g_camera->getFilmSizeWidth(),
+                          g_camera->getFilmSizeHeight(), GetTestName(mpi, options));
+
+      // g_camera->AllocateCameraRays();
+      // g_camera->generateRays();
+
+      g_tracer = new gvt::render::algorithm::Tracer<DomainScheduler>(
+          g_camera->rays, *g_image);
+
+    } break;
+
+    default: {
+      std::cout << "rank " << mpi.rank
+                << " error found unsupported tracer type " << options.tracer
+                << std::endl;
+      exit(1);
+    } break;
+  }
+}
+
+void RenderInteractive(const commandline::Options &options,
+                       const gvt::render::unit::MpiInfo &mpi) {
+  if (mpi.rank == 0) {
+    CreateTracer(options, mpi);
+    InitGlut(options.width, options.height);
+  } else {
+    // TODO
+  }
+}
+
+void RenderFilm(const commandline::Options &options,
+                gvt::render::unit::MpiInfo &mpi) {
+  // MpiInfo mpi;
+  // MPI_Comm_rank(MPI_COMM_WORLD, &mpi.rank);
+  // MPI_Comm_size(MPI_COMM_WORLD, &mpi.size);
+
+  // timer t_database(false, "database timer:");
+
+  // if (mpi.rank == 0) std::cout << "mpi size: " << mpi.size << std::endl;
+
+  // commandline::Options options;
+  // commandline::Parse(argc, argv, &options);
+
+  // // initialize tbb
+  // tbb::task_scheduler_init init(options.numTbbThreads);
+  // // tbb::task_scheduler_init init(tbb::task_scheduler_init::automatic);
+  // // tbb::task_scheduler_init init(16);
 
   switch (options.tracer) {
     case commandline::Options::PING_TEST: {
@@ -698,11 +835,11 @@ void Render(int argc, char **argv) {
     case commandline::Options::ASYNC_DOMAIN: {
       if (mpi.rank == 0) std::cout << "start ASYNC_DOMAIN" << std::endl;
 
-      std::cout << "rank " << mpi.rank << " creating database." << std::endl;
-      t_database.start();
-      CreateDatabase(mpi, options);
-      t_database.stop();
-      std::cout << "rank " << mpi.rank << " done creating database." << std::endl;
+      // std::cout << "rank " << mpi.rank << " creating database." << std::endl;
+      // t_database.start();
+      // CreateDatabase(mpi, options);
+      // t_database.stop();
+      // std::cout << "rank " << mpi.rank << " done creating database." << std::endl;
 
       g_image = new Image(g_camera->getFilmSizeWidth(),
                           g_camera->getFilmSizeHeight(), GetTestName(mpi, options));
@@ -766,16 +903,16 @@ void Render(int argc, char **argv) {
 
     case commandline::Options::SYNC_DOMAIN: {
       // MPI_Init(&argc, &argv);
-      MPI_Comm_rank(MPI_COMM_WORLD, &mpi.rank);
-      MPI_Comm_size(MPI_COMM_WORLD, &mpi.size);
+      // MPI_Comm_rank(MPI_COMM_WORLD, &mpi.rank);
+      // MPI_Comm_size(MPI_COMM_WORLD, &mpi.size);
 
       if (mpi.rank == 0) std::cout << "start SYNC_DOMAIN" << std::endl;
 
-      std::cout << "rank " << mpi.rank << " creating database." << std::endl;
-      t_database.start();
-      CreateDatabase(mpi, options);
-      t_database.stop();
-      std::cout << "rank " << mpi.rank << " done creating database." << std::endl;
+      // std::cout << "rank " << mpi.rank << " creating database." << std::endl;
+      // t_database.start();
+      // CreateDatabase(mpi, options);
+      // t_database.stop();
+      // std::cout << "rank " << mpi.rank << " done creating database." << std::endl;
 
       g_image = new Image(g_camera->getFilmSizeWidth(),
                           g_camera->getFilmSizeHeight(), GetTestName(mpi, options));
@@ -829,6 +966,9 @@ void Render(int argc, char **argv) {
 }  // namespace render
 }  // namespace apps
 
+using namespace gvt::render::unit;
+using namespace apps::render::mpi;
+
 int main(int argc, char **argv) {
   // MPI_Init(&argc, &argv);
   int pvd;
@@ -838,7 +978,43 @@ int main(int argc, char **argv) {
     exit(1);
   }
 
-  apps::render::mpi::Render(argc, argv);
+  MpiInfo mpi;
+  MPI_Comm_rank(MPI_COMM_WORLD, &mpi.rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &mpi.size);
+
+  if (mpi.rank == 0) std::cout << "mpi size: " << mpi.size << std::endl;
+
+  commandline::Options options;
+  commandline::Parse(argc, argv, &options);
+
+  g_width = options.width;
+  g_height = options.height;
+  g_tracer_mode = options.tracer;
+  g_mpiRank = mpi.rank;
+  g_mpiSize = mpi.size;
+  g_num_warmup_frames = options.warmup_frames;
+  g_num_active_frames = options.active_frames;
+
+  // initialize tbb
+  tbb::task_scheduler_init init(options.numTbbThreads);
+  // tbb::task_scheduler_init init(tbb::task_scheduler_init::automatic);
+  // tbb::task_scheduler_init init(16);
+
+  // create database
+  if (options.tracer != commandline::Options::PING_TEST) {
+    timer t_database(false, "database timer:");
+    std::cout << "rank " << mpi.rank << " creating database." << std::endl;
+    t_database.start();
+    CreateDatabase(mpi, options);
+    t_database.stop();
+    std::cout << "rank " << mpi.rank << " done creating database." << std::endl;
+  }
+
+  if (options.interactive) {
+    RenderInteractive(options, mpi);
+  } else {
+    RenderFilm(options, mpi);
+  }
 
   MPI_Finalize();
 }

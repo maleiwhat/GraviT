@@ -43,6 +43,7 @@ struct Options {
   int ray_samples;
   int warmup_frames;
   int active_frames;
+  bool interactive;
 };
 
 }  // namespace commandline
