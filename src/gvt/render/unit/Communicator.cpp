@@ -301,6 +301,10 @@ void Communicator::SendAll(Work* work) {
   // push the original copy to recvQ
   pthread_mutex_lock(&recvQ_mutex);
   recvQ.push(work);
+  if (!workToDo) {
+    workToDo = true;
+    pthread_cond_signal(&recvQ_cond);
+  }
   pthread_mutex_unlock(&recvQ_mutex);
 }
 
