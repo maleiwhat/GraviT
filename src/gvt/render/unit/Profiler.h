@@ -94,7 +94,9 @@ class Profiler {
   void WriteToFile(const std::string& filename, int rank);
 
  private:
+#if GVT_USE_TIMING
   friend std::ostream &operator<<(std::ostream &os, const Profiler &p);
+#endif
 
   std::vector<Timer> timers;
   std::vector<double> times;
