@@ -734,8 +734,7 @@ void DisplayFunc(void) {
     double fps =
         static_cast<double>(g_num_frames - g_num_warmup_frames) / elapsed;
     std::cout << "elapsed time: " << elapsed << " seconds per " << g_num_frames
-              << " frames (" << fps << " fps) " << g_num_frames << " frames."
-              << std::endl;
+              << " frames (" << fps << " fps) " << std::endl;
     glutDestroyWindow(g_window);
     Kill();
     MPI_Finalize();
