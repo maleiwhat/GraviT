@@ -721,10 +721,21 @@ void KeyboardFunc(unsigned char key, int x, int y) {
 
 void DisplayFunc(void) {
   static bool quit = false;
+  static double st = 0.0;
+
+  if (g_num_frames == g_num_warmup_frames) {
+    st = MPI_Wtime();
+  }
 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   if (g_num_frames == (g_num_warmup_frames + g_num_active_frames) || quit) {
+    double elapsed = MPI_Wtime() - st;
+    double fps =
+        static_cast<double>(g_num_frames - g_num_warmup_frames) / elapsed;
+    std::cout << "elapsed time: " << elapsed << " seconds per " << g_num_frames
+              << " frames (" << fps << " fps) " << g_num_frames << " frames."
+              << std::endl;
     glutDestroyWindow(g_window);
     Kill();
     MPI_Finalize();
