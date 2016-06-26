@@ -311,6 +311,8 @@ public:
 
           GVT_DEBUG(DBG_ALWAYS, "image scheduler: calling process queue");
           {
+#ifdef __USE_TAU
+          TAU_PROFILE("DomainTracer.h::t_trace","",TAU_DEFAULT);
             t_trace.resume();
             moved_rays.reserve(this->queue[instTarget].size() * 10);
 #ifdef GVT_USE_DEBUG
@@ -335,7 +337,7 @@ public:
       {
 #ifdef __USE_TAU
   TAU_PROFILE("DomainTracer.h::t_send","",TAU_DEFAULT);
-#endif        
+#endif
         t_send.resume();
         // done with current domain, send off rays to their proper processors.
         GVT_DEBUG(DBG_ALWAYS, "Rank [ " << mpi.rank << "]  calling SendRays");
