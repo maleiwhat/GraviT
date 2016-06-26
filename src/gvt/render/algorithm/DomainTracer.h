@@ -313,6 +313,7 @@ public:
           {
 #ifdef __USE_TAU
           TAU_PROFILE("DomainTracer.h::t_trace","",TAU_DEFAULT);
+#endif
             t_trace.resume();
             moved_rays.reserve(this->queue[instTarget].size() * 10);
 #ifdef GVT_USE_DEBUG
