@@ -248,7 +248,9 @@ TAU_PROFILE("src/gvt/render/algorithm/TracerBase.h:AbstractTrace ","",TAU_DEFAUL
   }
 
   inline void gatherFramebuffers(int rays_traced) {
-
+#ifdef __USE_TAU
+    TAU_PROFILE("TraceBase.h::gatherFramebuffers","",TAU_DEFAULT);
+#endif
     localComposite();
     // for (size_t i = 0; i < size; i++) image.Add(i, colorBuf[i]);
 
