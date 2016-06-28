@@ -55,7 +55,7 @@ public:
 
 	void SetVisitProcessBlockFunc(void * obj, int(*loadBlock)(void *, int, double ** , int& , int ** , int& )) {loadBlockObj = obj; loadBlockFunc = loadBlock;}
 
-	void SetLight(int numberOfLights, int * lighttypes, double * lightDirection, unsigned char * color, double * lightIntensity, bool enableShadows, float lightBoost);
+	void SetLight(int numberOfLights, int * lighttypes, double * lightDirection, unsigned char * color, double * lightIntensity, bool enableShadows, float lightBoost, float lightDistance);
 
         void SetRayTraceProperties(RayTraceProperties properties);
 

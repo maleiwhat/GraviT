@@ -104,7 +104,7 @@ void VisitAdapter::SetRayTraceProperties(RayTraceProperties properties)
   gravitProgramConfig.backgroundColor[2] = properties.backgroundColor[2];
 }
 
-void VisitAdapter::SetLight(int numberOfLights, int * lighttypes, double * lightDirection, unsigned char * color, double * lightIntensity, bool enableShadows, float lightBoost)
+void VisitAdapter::SetLight(int numberOfLights, int * lighttypes, double * lightDirection, unsigned char * color, double * lightIntensity, bool enableShadows, float lightBoost, float lightDistance)
 {
   gvt::render::RenderContext *cntxt = gvt::render::RenderContext::instance();
   if (cntxt == NULL) {
@@ -158,7 +158,7 @@ void VisitAdapter::SetLight(int numberOfLights, int * lighttypes, double * light
       center = dataCenter;
     }
     
-    distanceMod = diag;
+    distanceMod = lightDistance;
 
     double * lDirection = lightDirection + i * 3;
     unsigned  char * lcolor = color + i * 3;
