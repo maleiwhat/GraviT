@@ -59,7 +59,7 @@
 #include <tbb/partitioner.h>
 #include <tbb/tick_count.h>
 
-#define FLAT_SHADING
+//#define FLAT_SHADING
 
 // TODO: add logic for other packet sizes
 
@@ -375,9 +375,8 @@ struct embreeParallelTrace {
 	lightPos = light->position;
 	}
 
-	 if (!gvt::render::data::primitives::Shade(
-	   material, r, normal, light, lightPos, c))
-	     continue;
+	 gvt::render::data::primitives::Shade(
+	 	   material, r, normal, light, lightPos, c);
 
 	const float multiplier = 1.0f - gvt::render::actor::Ray::RAY_EPSILON *16;
 	const float t_shadow = multiplier * r.t;
@@ -393,6 +392,9 @@ struct embreeParallelTrace {
 	shadow_ray.t = r.t;
 	shadow_ray.id = r.id;
 	shadow_ray.t_max = t_max;
+	shadow_ray.z = r.z;
+	shadow_ray.type_origin = r.type_origin;
+
 
 	// gvt::render::data::Color c = adapter->getMesh()->mat->shade(shadow_ray,
 	// normal, lights[lindex]);
@@ -418,9 +420,12 @@ struct embreeParallelTrace {
       GVT_EMBREE_OCCULUSION(valid, scene, ray4);
 
       for (size_t pi = 0; pi < localPacketSize; pi++) {
-        if (valid[pi] && ray4.geomID[pi] == (int)RTC_INVALID_GEOMETRY_ID) {
-          // ray is valid, but did not hit anything, so add to dispatch queue
-          localDispatch.push_back(shadowRays[idx + pi]);
+        if (valid[pi]){
+				if (ray4.geomID[pi] != (int)RTC_INVALID_GEOMETRY_ID) {
+					//shadow that hit geometry, clear color
+					shadowRays[idx + pi].color = glm::vec3(0.0f);
+				}
+				localDispatch.push_back(shadowRays[idx + pi]);
         }
       }
     }
@@ -568,13 +573,19 @@ struct embreeParallelTrace {
             auto &r = rayList[localIdx + pi];
             if (ray4.geomID[pi] != (int)RTC_INVALID_GEOMETRY_ID) {
               // ray has hit something
-              // shadow ray hit something, so it should be dropped
+              // shadow ray hit something, clear color
               if (r.type == gvt::render::actor::Ray::SHADOW) {
+				r.color = glm::vec3(0.0f);
+                localDispatch.push_back(r);
                 continue;
               }
 
               float t = ray4.tfar[pi];
               r.t = t;
+
+
+              float new_z = glm::length(r.origin + r.direction * r.t - r.camera_origin);
+              r.z = new_z;
 
               // FIXME: embree does not take vertex normal information, the
               // examples have the application calculate the normal using
@@ -623,9 +634,8 @@ struct embreeParallelTrace {
 
               //backface check, requires flat normal
               if (glm::dot(-r.direction, normalflat) <= 0.f ) {
-                 manualNormal = -manualNormal;
-                 continue;
-                 }
+                 manualNormal = -manualNormal; //double sided geometry
+            	 }
 
              const glm::vec3 &normal = manualNormal;
 
@@ -649,11 +659,11 @@ struct embreeParallelTrace {
               // replace current ray with generated secondary ray
               if (ndepth > 0 && r.w > p) {
                 r.type = gvt::render::actor::Ray::SECONDARY;
+                r.type_origin = gvt::render::actor::Ray::SECONDARY;
                 const float multiplier =
                     1.0f - 16.0f * std::numeric_limits<float>::epsilon(); // TODO: move out somewhere / make static
                 const float t_secondary = multiplier * r.t;
                 r.origin = r.origin + r.direction * t_secondary;
-
                 // TODO: remove this dependency on mesh, store material object in the database
                 // r.setDirection(adapter->getMesh()->getMaterial()->CosWeightedRandomHemisphereDirection2(normal));
 
@@ -665,13 +675,16 @@ struct embreeParallelTrace {
               } else {
                 // secondary ray is terminated, so disable its valid bit
                 *valid = 0;
+                localDispatch.push_back(r);
+
               }
 
             } else {
               // ray is valid, but did not hit anything, so add to dispatch
               // queue and disable it
-              localDispatch.push_back(r);
               valid[pi] = 0;
+              localDispatch.push_back(r);
+
             }
           }
         }

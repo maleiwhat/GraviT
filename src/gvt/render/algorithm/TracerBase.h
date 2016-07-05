@@ -117,11 +117,14 @@ public:
   std::map<int, gvt::render::actor::RayVector> queue; ///< Node rays working
   tbb::mutex *colorBuf_mutex;                         ///< buffer for color accumulation
   glm::vec3 *colorBuf;
+  float *zBuf;
 
   AbstractTrace(gvt::render::actor::RayVector &rays, gvt::render::data::scene::Image &image)
       : rays(rays), image(image) {
     GVT_DEBUG(DBG_ALWAYS, "initializing abstract trace: num rays: " << rays.size());
     colorBuf = new glm::vec3[width * height];
+    zBuf = new float[width * height];
+
 
     // TODO: alim: this queue is on the number of domains in the dataset
     // if this is on the number of domains, then it will be equivalent to the
@@ -171,10 +174,13 @@ public:
     height = h;
     if (colorBuf != nullptr) {
       delete[] colorBuf;
+      delete[] zBuf;
       delete[] colorBuf_mutex;
     }
     colorBuf_mutex = new tbb::mutex[width];
     colorBuf = new glm::vec3[width * height];
+    zBuf = new float[width * height];
+
     //std::cout << "Resized buffer" << std::endl;
   }
 
@@ -225,7 +231,10 @@ public:
      }
   }
 
-  void clearBuffer() { std::memset(colorBuf, 0, sizeof(glm::vec3) * width * height); }
+  void clearBuffer() {
+	  std::memset(colorBuf, 0, sizeof(glm::vec3) * width * height);
+	   for (int j=0; j < (width * height); j++) zBuf[j]  = FLT_MAX;
+  }
 
   // clang-format off
   virtual ~AbstractTrace() {};
@@ -261,17 +270,25 @@ public:
                         for (size_t i = 0; i < hits.size(); i++) {
                           gvt::render::actor::Ray &r = *(raysit.begin() + i);
                           if (hits[i].next != -1) {
-                        	  if (hits[i].t < 0)
-                        		  std::cout << "negative t" << std::endl;
 
-                        	  //if (domID != 1)
-                        	   //   	r.color += glm::vec3(0.2f, 0.f, 0.f);
-
-                            r.origin = r.origin + r.direction * (hits[i].t * 0.95f);
+                        	r.origin = r.origin + r.direction * (hits[i].t * 0.95f);
                             local_queue[hits[i].next].push_back(r);
-                          } else if (r.type == gvt::render::actor::Ray::SHADOW && glm::length(r.color) > 0) {
+                          } else if (r.type == gvt::render::actor::Ray::SHADOW /*&& glm::length(r.color) > 0*/) {
                             tbb::mutex::scoped_lock fbloc(colorBuf_mutex[r.id % width]);
-                            colorBuf[r.id] += r.color;
+
+                            if (r.type_origin != gvt::render::actor::Ray::SECONDARY) {
+
+								if (r.z < zBuf[r.id]){
+									colorBuf[r.id] = glm::vec3(0.0f);
+								} else continue;
+
+								colorBuf[r.id] += r.color;
+								zBuf[r.id] = r.z;
+
+                            } else {
+                            	colorBuf[r.id] += r.color;
+                            }
+
                           }
                         }
                         for (auto &q : local_queue) {

@@ -1536,8 +1536,8 @@ int main(int argc, char *argv[]) {
   else if (cmd.isSet("scene"))
 	gvtapps::render::ConfigFileLoader cl(cmd.get<std::string>("scene"));
   else
-	  ConfigOveralappingBBoxScene();
-    //ConfigSceneCubeCone();
+	//  ConfigOveralappingBBoxScene();
+    ConfigSceneCubeCone();
   //
   // ConfigSceneCubeCone();
   // ConfigSceneCone();
