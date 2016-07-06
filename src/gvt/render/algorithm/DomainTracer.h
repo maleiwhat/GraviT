@@ -156,6 +156,7 @@ public:
                         std::vector<gvt::render::data::accel::BVH::hit> hits =
                             acc.intersect<GVT_SIMD_WIDTH>(raysit.begin(), raysit.end(), -1);
                         std::map<int, gvt::render::actor::RayVector> local_queue;
+#pragma simd
                         for (size_t i = 0; i < hits.size(); i++) {
                           gvt::render::actor::Ray &r = *(raysit.begin() + i);
                           if (hits[i].next != -1) {
@@ -423,6 +424,7 @@ public:
         int buf_size = 0;
 
         outbound[n_ptr] += q.second.size(); // outbound[n_ptr] has number of rays going
+#pragma simd        
         for (size_t r = 0; r < q.second.size(); ++r) {
           buf_size += (q.second)[r].packedSize(); // rays can have diff packed sizes
         }
