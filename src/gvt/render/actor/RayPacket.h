@@ -59,6 +59,9 @@ template <size_t simd_width> struct RayPacketIntersection {
   // float data[simd_width * 6];
   // float *lx, *ly, *lz, *ux, *uy, *uz;
   inline RayPacketIntersection(const RayVector::iterator &ray_begin, const RayVector::iterator &ray_end) {
+#ifdef __USE_TAU
+    TAU_PROFILE("RayPacket.h::RayPacketIntersection","",TAU_DEFAULT);
+#endif
     size_t i;
     RayVector::iterator rayit = ray_begin;
     for (i = 0; rayit != ray_end && i < simd_width; ++i, ++rayit) {
