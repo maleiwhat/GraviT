@@ -148,6 +148,9 @@ public:
   virtual ~Tracer() {}
 
   void shuffleDropRays(gvt::render::actor::RayVector &rays) {
+#ifdef __USE_TAU
+  TAU_PROFILE("DomainTracer.h::shuffleDropRays","",TAU_DEFAULT);
+#endif
     const size_t chunksize = MAX(2, rays.size() / (std::thread::hardware_concurrency() * 4));
     static gvt::render::data::accel::BVH &acc = *dynamic_cast<gvt::render::data::accel::BVH *>(acceleration);
     static tbb::simple_partitioner ap;
@@ -181,7 +184,9 @@ public:
   inline void FilterRaysLocally() { shuffleDropRays(rays); }
 
   inline void operator()() {
-
+#ifdef __USE_TAU
+  TAU_PROFILE("DomainTracer.h::operator","",TAU_DEFAULT);
+#endif
     gvt::core::time::timer t_diff(false, "domain tracer: diff timers/frame:");
     gvt::core::time::timer t_all(false, "domain tracer: all timers:");
     gvt::core::time::timer t_frame(true, "domain tracer: frame :");
