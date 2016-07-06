@@ -393,6 +393,8 @@ public:
   }
 
   inline bool SendRays() {
+#ifdef __USE_TAU
+  TAU_PROFILE("DomainTracer.h::SendRays","",TAU_DEFAULT);
     int *outbound = new int[2 * mpi.world_size];
     int *inbound = new int[2 * mpi.world_size];
     MPI_Request *reqs = new MPI_Request[2 * mpi.world_size];
