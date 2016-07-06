@@ -64,7 +64,6 @@ template <size_t simd_width> struct RayPacketIntersection {
 #endif
     size_t i;
     RayVector::iterator rayit = ray_begin;
-#pragma simd
     for (i = 0; rayit != ray_end && i < simd_width; ++i, ++rayit) {
       Ray &ray = (*rayit);
       ox[i] = ray.origin[0];
@@ -76,6 +75,7 @@ template <size_t simd_width> struct RayPacketIntersection {
       t[i] = ray.t_max;
       mask[i] = 1;
     }
+#pragma simd
     for (; i < simd_width; ++i) {
       t[i] = -1;
       mask[i] = -1;
