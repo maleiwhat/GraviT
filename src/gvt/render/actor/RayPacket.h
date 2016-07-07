@@ -75,7 +75,7 @@ template <size_t simd_width> struct RayPacketIntersection {
       t[i] = ray.t_max;
       mask[i] = 1;
     }
-#pragma vector aligned
+#pragma vector aligned 
     for (; i < simd_width; ++i) {
       t[i] = -1;
       mask[i] = -1;
@@ -83,7 +83,6 @@ template <size_t simd_width> struct RayPacketIntersection {
   }
 
   inline bool intersect(const gvt::render::data::primitives::Box3D &bb, int hit[], bool update = false) {
-    &ray_begin, const RayVector::iterator &ray_end) {
     float lx[simd_width];
     float ly[simd_width];
     float lz[simd_width];
