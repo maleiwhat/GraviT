@@ -76,6 +76,8 @@ template <size_t simd_width> struct RayPacketIntersection {
       mask[i] = 1;
     }
 #pragma simd
+   __assume_aligned(t, 32);
+   __assume_aligned(mask, 32);
     for (; i < simd_width; ++i) {
       t[i] = -1;
       mask[i] = -1;
