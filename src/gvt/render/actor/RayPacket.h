@@ -84,9 +84,9 @@ template <size_t simd_width> struct RayPacketIntersection {
 
   inline bool intersect(const gvt::render::data::primitives::Box3D &bb, int hit[], bool update = false) {
     &ray_begin, const RayVector::iterator &ray_end) {
- #ifdef __USE_TAU
-     TAU_PROFILE("RayPacket.h::intersect","",TAU_DEFAULT);
- #endif
+#ifdef __USE_TAU
+    TAU_PROFILE("RayPacket.h::intersect","",TAU_DEFAULT);
+#endif
     float lx[simd_width];
     float ly[simd_width];
     float lz[simd_width];
