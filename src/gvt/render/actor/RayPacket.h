@@ -52,8 +52,8 @@ template <size_t simd_width> struct RayPacketIntersection {
   float dx[simd_width];
   float dy[simd_width];
   float dz[simd_width];
-  float t[simd_width];
-  int mask[simd_width];
+  float t[simd_width] __attribute__((aligned(64)));
+  int mask[simd_width] __attribute__((aligned(64)));
 
   //
   // float data[simd_width * 6];
