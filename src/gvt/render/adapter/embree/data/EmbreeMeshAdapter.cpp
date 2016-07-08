@@ -539,6 +539,8 @@ struct embreeParallelTrace {
 
     // std::cout << "EmbreeMeshAdapter: working on rays [" << begin << ", " << end << "]" << std::endl;
 
+    const float flt_max_inv = 1.0f / FLT_MAX;
+
     for (size_t localIdx = begin; localIdx < end; localIdx += GVT_EMBREE_PACKET_SIZE) {
       // this is the local packet size. this might be less than the main
       // packetSize due to uneven amount of rays
@@ -584,8 +586,7 @@ struct embreeParallelTrace {
               r.t = t;
 
 
-              float new_z = glm::length(r.origin + r.direction * r.t - r.camera_origin);
-              r.z = new_z;
+              r.z = glm::length(r.origin + r.direction * r.t - r.camera_origin) * flt_max_inv;
 
               // FIXME: embree does not take vertex normal information, the
               // examples have the application calculate the normal using

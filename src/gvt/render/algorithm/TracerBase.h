@@ -173,12 +173,15 @@ public:
   int height = rootnode["Film"]["height"].value().toInteger();
 
   float sample_ratio = 1.f;
+  int samples2 = rootnode["Camera"]["raySamples"].value().toInteger()
+		  * rootnode["Camera"]["raySamples"].value().toInteger();
 
   tbb::mutex *queue_mutex;                            // array of mutexes - one per instance
   std::map<int, gvt::render::actor::RayVector> queue; ///< Node rays working
   tbb::mutex *colorBuf_mutex;                         ///< buffer for color accumulation
-  glm::vec4 *colorBuf;
-  float *zBuf;
+  glm::vec4 *colorBuf; //each entry represents a pixel sample
+  float *zBuf;// in the case of overlapping domain bboxes, this is used to assert the
+  	  	  	  // correct contribution to that pixel
 
   gvt::render::composite::composite img;
   bool require_composite = false;
@@ -186,8 +189,8 @@ public:
   AbstractTrace(gvt::render::actor::RayVector &rays, gvt::render::data::scene::Image &image)
       : rays(rays), image(image) {
     GVT_DEBUG(DBG_ALWAYS, "initializing abstract trace: num rays: " << rays.size());
-    colorBuf = new glm::vec4[width * height];
-    zBuf = new float[width * height];
+    colorBuf = new glm::vec4[width * height * samples2];
+    zBuf = new float[width * height * samples2 ];
 
     require_composite = img.initIceT();
     // TODO: alim: this queue is on the number of domains in the dataset
@@ -242,8 +245,8 @@ public:
       delete[] colorBuf_mutex;
     }
     colorBuf_mutex = new tbb::mutex[width];
-    colorBuf = new glm::vec4[width * height];
-    zBuf = new float[width * height];
+    colorBuf = new glm::vec4[width * height * samples2];
+    zBuf = new float[width * height * samples2];
 
     //std::cout << "Resized buffer" << std::endl;
   }
@@ -296,8 +299,8 @@ public:
   }
 
   void clearBuffer() {
-	  std::memset(colorBuf, 0, sizeof(glm::vec4) * width * height);
-	   for (int j=0; j < (width * height); j++) zBuf[j]  = FLT_MAX;
+	  std::memset(colorBuf, 0, sizeof(glm::vec4) * width * height * samples2 );
+	   for (int j=0; j < (width * height * samples2 ); j++) zBuf[j]  = 1.0f;
   }
 
   // clang-format off
@@ -340,8 +343,10 @@ public:
                           } else if (r.type == gvt::render::actor::Ray::SHADOW /*&& glm::length(r.color) > 0*/) {
                             tbb::mutex::scoped_lock fbloc(colorBuf_mutex[r.id % width]);
 
+                            //if secondary ray ignore z assessment
                             if (r.type_origin != gvt::render::actor::Ray::SECONDARY) {
 
+                            	//if previous contribution occluded by this new contribution, reset color
 								if (r.z < zBuf[r.id]){
 									colorBuf[r.id] = glm::vec4(0.0f);
 								} else continue;
@@ -388,16 +393,23 @@ public:
     glm::vec4 * final;
 
     if (require_composite)
-      final = img.execute(colorBuf, width, height);
+      final = img.execute(colorBuf,zBuf, width * samples2, height); // each entry in color buf is a sample
     else
       final = colorBuf;
 
-    const size_t size = width * height;
+    const size_t size = width * height ;
     const size_t chunksize = MAX(2, size / (std::thread::hardware_concurrency() * 4));
     static tbb::simple_partitioner ap;
     tbb::parallel_for(tbb::blocked_range<size_t>(0, size, chunksize),
                       [&](tbb::blocked_range<size_t> chunk) {
-                        for (size_t i = chunk.begin(); i < chunk.end(); i++) image.Add(i, final[i]);
+                        for (size_t i = chunk.begin(); i < chunk.end(); i++) {
+                        	//addup the contributions already weighted in shading
+                        	glm::vec4 v = glm::vec4(0.0f);
+                        	for(int s = 0; s < samples2; s++){
+                        		 v += final[i*samples2 + s];
+                        	}
+                        	 image.Add(i, v);
+                        }
                       },
                       ap);
     if (require_composite) delete[] final;

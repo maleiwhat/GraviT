@@ -19,7 +19,7 @@ struct composite {
 
   bool initIceT();
 
-  glm::vec4 *execute(glm::vec4 *buffer_in, const size_t width, const size_t height);
+  glm::vec4 *execute(glm::vec4 *buffer_in, float *depth_buffer_in, const size_t width, const size_t height);
 };
 }
 }

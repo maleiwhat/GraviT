@@ -237,7 +237,6 @@ void gvtPerspectiveCamera::generateRays() {
                         // int i = idx;
                         int idx = j * buffer_width;
                         for (size_t i = 0; i < buffer_width; i++) {
-                          idx++;
                           const float x0 = float(i) * wmult - 1.0, y0 = float(j) * hmult - 1.0;
                           float x, y;
                           // glm::vec4 camera_space_ray_direction;
@@ -254,7 +253,7 @@ void gvtPerspectiveCamera::generateRays() {
                               camera_space_ray_direction[1] = cam2wrld[1][0] * x + cam2wrld[1][1] * y + z[1];
                               camera_space_ray_direction[2] = cam2wrld[2][0] * x + cam2wrld[2][1] * y + z[2];
                               Ray &ray = rays[ridx];
-                              ray.id = idx;
+                              ray.id = ridx;
                               ray.t_min = gvt::render::actor::Ray::RAY_EPSILON;
                               ray.t = ray.t_max = FLT_MAX;
                               ray.w = contri;
@@ -263,9 +262,10 @@ void gvtPerspectiveCamera::generateRays() {
                               ray.type = Ray::PRIMARY;
                               ray.direction = glm::normalize(camera_space_ray_direction);
                               ray.depth = depth;
-                              ray.z = FLT_MAX;
+                              ray.z = 1.0f;
                             }
                           }
+                         idx++;
                         }
                       }
                     },
