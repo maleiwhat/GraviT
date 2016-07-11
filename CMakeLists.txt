@@ -219,15 +219,6 @@ set(GVT_CORE_HDRS ${GVT_CORE_HDRS}
   src/gvt/core/Types.h
   src/gvt/core/Uuid.h
   src/gvt/core/Variant.h
-  # src/gvt/core/mpi/Application.h
-  # src/gvt/core/mpi/Message.h
-  # src/gvt/core/mpi/MessageQ.h
-  # src/gvt/core/mpi/MessageManager.h
-  # src/gvt/core/mpi/Work.h
-  # src/gvt/core/mpi/smem.h
-  # src/gvt/core/mpi/RayQManager.h
-  # src/gvt/core/mpi/Rays.h
-  # src/gvt/core/mpi/classes.h
 )
 
 set(GVT_CORE_SRCS ${GVT_CORE_SRCS}
@@ -236,14 +227,6 @@ set(GVT_CORE_SRCS ${GVT_CORE_SRCS}
   src/gvt/core/DatabaseNode.cpp
   src/gvt/core/Uuid.cpp
   src/gvt/core/Variant.cpp
-  # src/gvt/core/mpi/Application.cpp
-  # src/gvt/core/mpi/Message.cpp
-  # src/gvt/core/mpi/MessageQ.cpp
-  # src/gvt/core/mpi/MessageManager.cpp
-  # src/gvt/core/mpi/Work.cpp
-  # src/gvt/core/mpi/smem.cpp
-  # src/gvt/core/mpi/RayQManager.cpp
-  # src/gvt/core/mpi/Rays.cpp
 )
 
 
