@@ -44,6 +44,9 @@ namespace gvt {
 namespace render {
 namespace unit {
 
+/**
+ * This class can be used to send a predefined command to other processes.
+ */
 class Command : public Work {
   REGISTER_WORK(Command)
 
@@ -66,6 +69,9 @@ class Command : public Work {
   int GetType() const { return GetBufferPtr<Data>()->type; }
 };
 
+/**
+ * This class is for test purposes only.
+ */
 class PingTest : public Work {
   REGISTER_WORK(PingTest)
 
@@ -86,6 +92,9 @@ class PingTest : public Work {
   int GetValue() const { return GetBufferPtr<Data>()->value; }
 };
 
+/**
+ * This class is for compositing frame buffers (temporarily not used).
+ */
 class Composite : public Work {
   REGISTER_WORK(Composite)
 

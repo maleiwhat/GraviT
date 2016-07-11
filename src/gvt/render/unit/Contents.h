@@ -40,6 +40,9 @@ namespace gvt {
 namespace render {
 namespace unit {
 
+/**
+ * A class that encomposses MPI buffer and its size.
+ */
 class Contents {
  public:
   Contents() : buffer(NULL), size(0) {}

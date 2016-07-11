@@ -42,6 +42,9 @@
 #include <memory>
 #include <mpi.h>
 
+/**
+ * A macro used to register a new type of work.
+ */
 #define REGISTER_WORK(ClassName)                                 \
  public:                                                         \
   static void Register(Communicator* comm) {                     \
@@ -54,6 +57,9 @@
  private:                                                        \
   static int tag;
 
+/**
+ * A MPI tag.
+ */
 #define STATIC_WORK_TAG(ClassName) int ClassName::tag = -1;
 
 namespace gvt {
@@ -62,41 +68,83 @@ namespace unit {
 
 class Worker;
 
+/**
+ * The base work class.
+ */
 class Work {
  public:
-  enum CommunicationType { P2P = 0, SEND_ALL, SEND_ALL_OTHER };
+  enum CommunicationType {
+    P2P = 0, ///< Point-to-point communication.
+    SEND_ALL, ///< Send message to all nodes including myself.
+    SEND_ALL_OTHER ///< Send message to all other nodes excluding myself.
+   };
+
+  /**
+   * Constructor.
+   */
   Work() {}
 
+  /**
+   * Deconstructor.
+   */
   virtual ~Work() {}
 
+  /**
+   * Get the Mpi tag.
+   */
   virtual int GetTag() const {
     assert(false);
     return -1;
   }
 
-  // return type: delete this (1), don't delete this (0)
+  /**
+   * A function called by the work thread of the receiver's communicator class.
+   * @return true: delete this dynamically created work object, false: don't delete this.
+   */
   virtual bool Action(Worker* worker) {
     assert(false);
     return true;
   }
 
+  /**
+   * A getter that returns a shared pointer to the Contents object.
+   */
   std::shared_ptr<Contents> GetContents() { return contents; }
 
+  /**
+   * Make a copy of the message contents.
+   */
   void Clone(Work* work) { contents = work->GetContents(); }
 
+  /**
+   * @return the number of bytes for the MPI buffer.
+   */
   int GetSize() const {
     if (!contents) return 0;
     return contents->GetSize();
   }
 
+  /**
+   * Send this work to the node specified by dest.
+   * @param dest destination node.
+   * @param comm a pointer to the communicator.
+   */
   void Send(int dest, Communicator* comm) {
     comm->Send(dest, this);
   }
 
+  /**
+   * Send this work to all nodes including the node calling this function.
+   * @param comm a pointer to the communicator.
+   */
   void SendAll(Communicator* comm) {
     comm->SendAll(this);
   }
 
+  /**
+   * Send this work to all nodes excluding the node calling this function.
+   * @param comm a pointer to the communicator.
+   */
   void SendAllOther(Communicator* comm) {
     comm->SendAllOther(this);
   }
@@ -104,35 +152,61 @@ class Work {
  protected:
   friend class Communicator;
 
+  /**
+   * A getter.
+   * @return MPI request object.
+   */
   MPI_Request& GetMpiRequest() { return mpiRequest; }
 
+  /**
+   * Test if a given message has been sent.
+   */
   bool IsSent() {
     int flag;
     MPI_Test(&mpiRequest, &flag, &mpiStatus);
     return flag;
   }
 
+  /**
+   * Get a pointer to the MPI buffer.
+   */
   template <class T>
   const T* GetBufferPtr() const {
     assert(contents);
     return reinterpret_cast<const T*>(contents->Get());
   }
 
+  /**
+   * Get a pointer to the MPI buffer.
+   */
   template <class T>
   T* GetBufferPtr() {
     assert(contents);
     return reinterpret_cast<T*>(contents->Get());
   }
 
+  /**
+   * Allocate memory for the MPI buffer.
+   */
   void Allocate(std::size_t n) {
     assert(!contents);
     assert(n > 0);
     contents.reset(new Contents(n));
   }
 
+  /**
+   * A shared pointer to the message contents.
+   */
   std::shared_ptr<Contents> contents;
 
-  MPI_Request mpiRequest; // for mpi_isend
+  /**
+   * A MPI request object used for nonblocking MPI sends.
+   */
+  MPI_Request mpiRequest;
+
+  /**
+   * A MPI status object.
+   */
   MPI_Status mpiStatus;
 };
 

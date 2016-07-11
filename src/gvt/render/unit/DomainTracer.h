@@ -73,28 +73,49 @@ class RemoteRays;
 class TpcVoter;
 class Communicator;
 
+
+/**
+ * A domain tracer that communicates rays asynchronously.
+ */
 class DomainTracer : public RayTracer, public AbstractTrace {
  public:
   DomainTracer(const MpiInfo &mpiInfo, Worker *worker, Communicator *comm,
                RayVector &rays, gvt::render::data::scene::Image &image);
   virtual ~DomainTracer() {}
 
+  /**
+   * The main rendering function that traces rays.
+   */
   virtual void Trace();
 
+  /**
+   * A getter that returns the voter.
+   */
   virtual TpcVoter *GetVoter() { return voter; }
 
+  /**
+   * Push the incoming work sent by another node to the internal work queue (workQ).
+   */
   virtual void BufferWork(Work *work);
 
-  // called inside voter->updateState()
-  // so thread safe without a lock
+  /**
+   * Check if all the ray queues are empty. This is used by the voter's updateState function.
+   */
   virtual bool IsDone() const {
     int busy = 0;
     for (auto &q : queue) busy += q.second.size();
     return (busy == 0);
   }
 
+  /**
+   * Composite frame buffers from all the MPI nodes using MPI_Gather.
+   * This has been replaced by the Canvas class that uses an image compositer in IceT.
+   */
   virtual void CompositeFrameBuffers();
 
+  /**
+   * A getter that returns the profiler.
+   */
   profiler::Profiler &GetProfiler() { return profiler; }
 
  private:
@@ -113,8 +134,15 @@ class DomainTracer : public RayTracer, public AbstractTrace {
 
   TpcVoter *voter;
 
-  // this class is responsible for deleting Work* in the queue
+  /**
+   * A mutex for the work queue.
+   */
   pthread_mutex_t workQ_mutex;
+
+  /**
+   * A work queue for registering all the incoming work sent by other nodes.
+   * This DomainTracer class is responsible for deleting pointers in the queue.
+   */
   std::queue<Work *> workQ;
 
  private:
@@ -139,6 +167,9 @@ class DomainTracer : public RayTracer, public AbstractTrace {
   std::map<int, size_t> recv_map; // src, num_rays
 #endif
 
+  /**
+   * A profiler for performance analysis.
+   */
   profiler::Profiler profiler;
 };
 

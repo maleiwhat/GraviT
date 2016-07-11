@@ -49,6 +49,9 @@ class Communicator;
 class VoteWork;
 class RayTracer;
 
+/**
+ * Two phase commit voter.
+ */
 class TpcVoter {
  public:
   TpcVoter(const MpiInfo& mpi, const RayTracer& tracer, Communicator* comm,

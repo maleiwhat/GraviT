@@ -58,6 +58,9 @@ namespace unit {
 
 using namespace gvt::render::actor;
 
+/**
+ * A ray work used to send rays to other nodes.
+ */
 class RemoteRays : public Work {
   REGISTER_WORK(RemoteRays)
 
@@ -96,6 +99,10 @@ class RemoteRays : public Work {
   }
 };
 
+/**
+ * A voting work used to make consensus among all nodes.
+ * This work is created and sent to other nodes inside the voter class.
+ */
 class Vote : public Work {
   REGISTER_WORK(Vote)
 

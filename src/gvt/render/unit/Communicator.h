@@ -20,70 +20,161 @@ class TpcVoter;
 
 class Communicator {
  public:
-  // Communicator(int* argc, char*** argv, Worker* worker);
   Communicator(const MpiInfo& mpi, Worker* worker);
 
-  // register deserializers
+  /**
+   * Register a function pointer to message deserializer defined in the work class.
+   */
   int RegisterWork(Work* (*Deserialize)());
 
   // helper functions
   // void SetDone() { allWorkDone = true; }
+  
+  /**
+   * Kill all the pthreads and check if all the message queues are empty or not.
+   */
   void Quit();
 
   // mpi
+ 
+  /**
+   * Send a work to node specified by dest.
+   */
   void Send(int dest, Work* work);
+
+  /**
+   * Send a work to all nodes including the node that calls this function.
+   */
   void SendAll(Work* work);
+
+  /**
+   * Send a work to all the rest nodes excluding the node that class this function.
+   */
   void SendAllOther(Work* work);
 
+  /**
+   * Get MPI rank and world size.
+   */
   MpiInfo GetMpiInfo() const { return mpi; }
+
+  /**
+   * Get MPI rank.
+   */
   int GetRank() { return mpi.rank; }
+
+  /**
+   * Get MPI world size.
+   */
   int GetMpiSize() { return mpi.size; }
   // MPI_Comm GetMpiComm() { return mpi.comm; }
 
  private:
+  /**
+   * Unique IDs associated with created p-threads for MPI communication.
+   */
   enum ThreadId { MESSAGE_THREAD = 0, WORK_THREAD, NUM_PTHREADS };
 
+  /**
+   * A pointer to the worker object. This is used to call the Action function in the work class.
+   */
   Worker* worker;
 
-  int* argcp;
-  char*** argvp;
+  int* argcp; ///< unused
+  char*** argvp; ///< unused
+
   // intializers
   // void Initialize();
   // void InitMpi();
+
+  /**
+   * Creates p-threads for MPI commnication.
+   */
   void InitThreads();
+
+  /**
+   * Initializes required mutexes.
+   */
   void InitMutexes();
 
-  // p-threads start routines
+  /**
+   * P-thread's start routine for the message thread. 
+   */
   static void* StartMessageThread(void* This);
+
+  /**
+   * P-thread's start routine for the work thread. 
+   */
   static void* StartWorkThread(void* This);
 
-  // p-threads
+  /**
+   * Implementation of the message thread.
+   */
   void MessageThread();
+
+  /**
+   * Implementation of the work thread.
+   */
   void WorkThread();
 
-  // mpi rank, size
+  /**
+   * MPI rank and world size.
+   */
   MpiInfo mpi;
 
-  // mpi send/recv
+  /**
+   * Receive a message and push it into the message queue (recvQ).
+   */
   void RecvWork(const MPI_Status& status, Work* work);
+
+  /**
+   * Send a work to all other nodes excluding the node calling this function.
+   */
   void SendWorkCopiesToAllOther(Work* work);
 
-  // work queues for communication
+  /**
+   * An outgoing message queue.
+   */
   std::queue<Work*> sendQ;
+
+  /**
+   * An incoming message queue.
+   */
   std::queue<Work*> recvQ;
+
+  /**
+   * Mutex for sendQ.
+   */
   pthread_mutex_t sendQ_mutex;
+
+  /**
+   * Mutex for recvQ.
+   */
   pthread_mutex_t recvQ_mutex;
+
+  /**
+   * A condition variable used to make the work thread idle when there is no pending work to do.
+   */
   pthread_cond_t recvQ_cond;
+
+  /**
+   * A flag indicating if there is pending work or not.
+   */
   bool workToDo;
 
-  // flag to indicate there is no more work
-  // don't need a lock since worker will set it via ThreadJoin()
+  /**
+   * A flag to indicate there is no more work.
+   * We don't need a lock since the worker will set it via ThreadJoin().
+   */
   bool allWorkDone;
 
-  // pthreads
+  /**
+   * A container holding newly created p-threads.
+   */
   std::vector<pthread_t> threads;
 
-  // deserializers used upon receiving a new MPI message
+  /**
+   * A container holding function pointers used to deserialize incoming MPI message.
+   */
   std::vector<Work* (*)()> deserializers;
 };
 
