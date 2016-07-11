@@ -65,8 +65,8 @@
 #include <gvt/render/data/scene/gvtCamera.h>
 
 #include <boost/range/algorithm.hpp>
-#include <gvt/core/mpi/Application.h>
-#include <gvt/core/mpi/RenderWork.h>
+// #include <gvt/core/mpi/Application.h>
+// #include <gvt/core/mpi/RenderWork.h>
 
 #include <iostream>
 
@@ -87,15 +87,14 @@ using namespace gvt::render::data::primitives;
 void test_bvh(gvtPerspectiveCamera &camera);
 
 int main(int argc, char **argv) {
-  /*
+  // /*
+  // new application.h code
+  // */
 
-  new application.h code
-  */
+  // Application theApplication(&argc, &argv);
 
-  Application theApplication(&argc, &argv);
-
-  if (theApplication.GetRank() == 0) {
-  }
+  // if (theApplication.GetRank() == 0) {
+  // }
   /*
 
   old code
