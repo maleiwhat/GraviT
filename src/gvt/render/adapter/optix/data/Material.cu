@@ -69,7 +69,10 @@ __device__ inline float4 toFloat4(glm::vec3 v){
   float NdotL = fmaxf(0.f, (sufaceNormal * wi));
   float4 Li = lightSource->contribution(hitPoint, lightPosSample);
 
-  if (NdotL == 0.f || (Li.x == 0.f && Li.y == 0.f && Li.z == 0.f)) return false;
+  if (NdotL == 0.f || (Li.x == 0.f && Li.y == 0.f && Li.z == 0.f)) {
+	  r = make_float4(0.0f);
+	  return false;
+  }
 
   switch (material->type) {
   case LAMBERT:

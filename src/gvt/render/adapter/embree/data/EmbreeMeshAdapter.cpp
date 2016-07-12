@@ -539,7 +539,6 @@ struct embreeParallelTrace {
 
     // std::cout << "EmbreeMeshAdapter: working on rays [" << begin << ", " << end << "]" << std::endl;
 
-    const float flt_max_inv = 1.0f / FLT_MAX;
 
     for (size_t localIdx = begin; localIdx < end; localIdx += GVT_EMBREE_PACKET_SIZE) {
       // this is the local packet size. this might be less than the main
@@ -579,14 +578,15 @@ struct embreeParallelTrace {
               if (r.type == gvt::render::actor::Ray::SHADOW) {
 				r.color = glm::vec3(0.0f);
                 localDispatch.push_back(r);
+                valid[pi]= false;
                 continue;
               }
 
               float t = ray4.tfar[pi];
               r.t = t;
 
-
-              r.z = glm::length(r.origin + r.direction * r.t - r.camera_origin) * flt_max_inv;
+              //calculate distante to camera and normalize
+              r.z = glm::length(r.origin + r.direction * r.t - r.camera_origin) ;
 
               // FIXME: embree does not take vertex normal information, the
               // examples have the application calculate the normal using
@@ -658,6 +658,11 @@ struct embreeParallelTrace {
 
               float p = 1.f - randEngine.fastrand(0, 1); //(float(rand()) / RAND_MAX);
               // replace current ray with generated secondary ray
+
+              // dispatch back to check for any other intersections
+              if (r.type == gvt::render::actor::Ray::PRIMARY )
+            	  localDispatch.push_back(r);
+
               if (ndepth > 0 && r.w > p) {
                 r.type = gvt::render::actor::Ray::SECONDARY;
                 r.type_origin = gvt::render::actor::Ray::SECONDARY;
@@ -675,8 +680,7 @@ struct embreeParallelTrace {
                 validRayLeft = true; // we still have a valid ray in the packet to trace
               } else {
                 // secondary ray is terminated, so disable its valid bit
-                *valid = 0;
-                localDispatch.push_back(r);
+                  valid[pi] = 0;
 
               }
 

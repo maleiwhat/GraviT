@@ -77,6 +77,7 @@ __inline__ void cudaRayToGvtRay(
 
 	memcpy(&(gvtRay.origin[0]), &(cudaRay.origin.x), sizeof(glm::vec3));
 	memcpy(&(gvtRay.direction[0]), &(cudaRay.direction.x), sizeof(glm::vec3));
+	memcpy(&(gvtRay.camera_origin[0]), &(cudaRay.camera_origin.x), sizeof(glm::vec3));
 //	memcpy(&(gvtRay.inverseDirection[0]), &(cudaRay.inverseDirection.x),
 //			sizeof(float) * 4);
 	memcpy(glm::value_ptr(gvtRay.color), &(cudaRay.color.x),
@@ -88,6 +89,9 @@ __inline__ void cudaRayToGvtRay(
 	gvtRay.t_min = cudaRay.t_min;
 	gvtRay.t_max = cudaRay.t_max;
 	gvtRay.type = cudaRay.type;
+	gvtRay.type_origin = cudaRay.type_origin;
+	gvtRay.z = cudaRay.z;
+
 
 }
 
@@ -97,6 +101,7 @@ __inline__ void gvtRayToCudaRay(const gvt::render::actor::Ray& gvtRay,
 	memcpy(&(cudaRay.origin.x), &(gvtRay.origin[0]), sizeof(glm::vec3));
 	cudaRay.origin.w=1.0f;
 	memcpy(&(cudaRay.direction.x), &(gvtRay.direction[0]),sizeof(glm::vec3));
+	memcpy(&(cudaRay.camera_origin.x), &(gvtRay.camera_origin[0]),sizeof(glm::vec3));
 //	memcpy(&(cudaRay.inverseDirection.x), &(gvtRay.inverseDirection[0]),
 //			sizeof(float) * 4);
 	memcpy(&(cudaRay.color.x), glm::value_ptr(gvtRay.color),
@@ -108,6 +113,9 @@ __inline__ void gvtRayToCudaRay(const gvt::render::actor::Ray& gvtRay,
 	cudaRay.t_min = gvtRay.t_min;
 	cudaRay.t_max = gvtRay.t_max;
 	cudaRay.type = gvtRay.type;
+	cudaRay.type_origin = gvtRay.type_origin;
+	cudaRay.z = gvtRay.z;
+
 
 }
 

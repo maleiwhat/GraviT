@@ -147,11 +147,14 @@ __global__ void cudaKernelFilterShadow( CudaGvtContext* cudaGvtCtx) {
 	int tID = getGlobalIdx_2D_2D();
 	if (tID >= cudaGvtCtx->shadowRayCount) return;
 
-	 if (cudaGvtCtx->traceHits[tID].triangle_id < 0) {
-	          // ray is valid, but did not hit anything, so add to dispatch queue
-	    	  int a = atomicAdd((int *)&(cudaGvtCtx->dispatchCount), 1);
-	    	  cudaGvtCtx->dispatch[a] = cudaGvtCtx->shadowRays[tID];
+	 if (cudaGvtCtx->traceHits[tID].triangle_id >= 0) {
+		 cudaGvtCtx->shadowRays[tID].color = make_float4(0.0f);
+
 	        }
+
+	  // ray is valid, but did not hit anything, so add to dispatch queue
+  	  int a = atomicAdd((int *)&(cudaGvtCtx->dispatchCount), 1);
+   	  cudaGvtCtx->dispatch[a] = cudaGvtCtx->shadowRays[tID];
 }
 
 void cudaProcessShadows(CudaGvtContext* cudaGvtCtx) {
@@ -215,9 +218,8 @@ __device__ void generateShadowRays(const Ray &r, const float4 &normal,
     }
 
     float4 c;
-    if(!gvt::render::data::cuda_primitives::Shade(
-          cudaGvtCtx->mesh.mat, r,normal, light,lightPos, c))
-      continue;
+    gvt::render::data::cuda_primitives::Shade(
+          cudaGvtCtx->mesh.mat, r,normal, light,lightPos, c);
 
     const float multiplier = 1.0f - 16.0f * FLT_EPSILON;
     const float t_shadow = multiplier * r.t;
@@ -237,7 +239,8 @@ __device__ void generateShadowRays(const Ray &r, const float4 &normal,
     shadow_ray.t = r.t;
     shadow_ray.id = r.id;
     shadow_ray.t_max = t_max;
-
+    shadow_ray.z = r.z;
+    shadow_ray.type_origin = r.type_origin;
 
 
     shadow_ray.color.x = c.x;
@@ -267,11 +270,18 @@ __global__ void kernel(gvt::render::data::cuda_primitives::CudaGvtContext* cudaG
         // ray has hit something
         // shadow ray hit something, so it should be dropped
         if (r.type == Ray::SHADOW) {
-        	return;
+        	r.color = make_float4(0.0f);
+        	int a = atomicAdd((int *)&(cudaGvtCtx->dispatchCount), 1);
+        	 cudaGvtCtx->dispatch[a] = r;
+        	 cudaGvtCtx->valid[tID] = false;
+        	 return;
         }
 
         float t = cudaGvtCtx->traceHits[tID].t;
         r.t = t;
+
+        //calculate distante to camera and normalize
+         r.z = length(r.origin + r.direction * r.t - r.camera_origin);
 
         const int triangle_id = cudaGvtCtx->traceHits[tID].triangle_id;
 
@@ -349,10 +359,19 @@ __global__ void kernel(gvt::render::data::cuda_primitives::CudaGvtContext* cudaG
         		traceHits[tID].triangle_id, cudaGvtCtx);
 
         int ndepth = r.depth - 1;
+
+        // dispatch back to check for any other intersections
+        if (r.type == Ray::PRIMARY) {
+        		int a = atomicAdd((int *) &(cudaGvtCtx->dispatchCount), 1);
+				cudaGvtCtx->dispatch[a] = r;
+			}
+
         float p = 1.f - cudaRand();
         // replace current ray with generated secondary ray
         if (ndepth > 0 && r.w > p) {
           r.type = Ray::SECONDARY;
+          r.type_origin = Ray::SECONDARY;
+
           const float multiplier =
               1.0f -
               16.0f *

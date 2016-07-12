@@ -47,6 +47,8 @@ static void draw(const IceTDouble *projection_matrix, const IceTDouble *modelvie
 
   depth_buffer = icetImageGetDepthf(result);
 
+  const float inv_flt_max = 1.0f / FLT_MAX;
+
   const size_t size = num_pixels;
   const size_t chunksize = MAX(2, size / (std::thread::hardware_concurrency() * 4));
   static tbb::simple_partitioner ap;
@@ -58,7 +60,7 @@ static void draw(const IceTDouble *projection_matrix, const IceTDouble *modelvie
                         color_buffer[i * 4 + 2] = local_buffer[i][2];
                         color_buffer[i * 4 + 3] = local_buffer[i][3];
 
-                        depth_buffer[i] = local_depth_buffer[i];
+                        depth_buffer[i] = local_depth_buffer[i] * inv_flt_max;
 
                       }
                     },

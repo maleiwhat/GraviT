@@ -300,7 +300,7 @@ public:
 
   void clearBuffer() {
 	  std::memset(colorBuf, 0, sizeof(glm::vec4) * width * height * samples2 );
-	   for (int j=0; j < (width * height * samples2 ); j++) zBuf[j]  = 1.0f;
+	   for (int j=0; j < (width * height * samples2 ); j++) zBuf[j]  = FLT_MAX;
   }
 
   // clang-format off

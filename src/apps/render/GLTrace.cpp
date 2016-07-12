@@ -1119,6 +1119,8 @@ gvt::core::DBNodeH cubeMeshNode = cntxt->createNodeFromType("Mesh", "cubemesh", 
 {
 
   Material* m = new Material();
+  m->kd = glm::vec3(1.0f,.0f,.0f);
+
   Mesh *mesh = new Mesh(m);
 
   int numPoints = 7;

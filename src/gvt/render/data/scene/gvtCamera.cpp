@@ -262,7 +262,7 @@ void gvtPerspectiveCamera::generateRays() {
                               ray.type = Ray::PRIMARY;
                               ray.direction = glm::normalize(camera_space_ray_direction);
                               ray.depth = depth;
-                              ray.z = 1.0f;
+                              ray.z = FLT_MAX;
                             }
                           }
                          idx++;

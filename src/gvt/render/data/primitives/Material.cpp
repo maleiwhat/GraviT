@@ -240,7 +240,10 @@ bool gvt::render::data::primitives::Shade(gvt::render::data::primitives::Materia
   float NdotL = std::max(0.f, glm::dot(sufaceNormal, wi));
   glm::vec3 Li = lightSource->contribution(hitPoint, lightPosSample);
 
-  if (NdotL == 0.f || (Li[0] == 0.f && Li[1] == 0.f && Li[2] == 0.f)) return false;
+  if (NdotL == 0.f || (Li[0] == 0.f && Li[1] == 0.f && Li[2] == 0.f)) {
+	  color = glm::vec3(0.0f);
+	  return false;
+  }
 
   switch (material->type) {
   case LAMBERT:
