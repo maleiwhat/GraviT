@@ -47,7 +47,7 @@ static void draw(const IceTDouble *projection_matrix, const IceTDouble *modelvie
 
   depth_buffer = icetImageGetDepthf(result);
 
-  const float inv_flt_max = 1.0f / FLT_MAX;
+  const float inv_flt_max = 1.0f / 3.40282347e+37F; //FLT_MAX
 
   const size_t size = num_pixels;
   const size_t chunksize = MAX(2, size / (std::thread::hardware_concurrency() * 4));
