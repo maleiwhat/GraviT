@@ -69,7 +69,7 @@ template <size_t simd_width> struct RayPacketIntersection {
           t[i] = -1;
           mask[i] = -1;
         }
-    for (i = 0; rayit != ray_end ; ++i, ++rayit) {
+    for (i = 0; rayit != ray_end && i < simd_width ; ++i, ++rayit) {
       Ray &ray = (*rayit);
       ox[i] = ray.origin[0];
       oy[i] = ray.origin[1];
