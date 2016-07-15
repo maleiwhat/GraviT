@@ -52,6 +52,15 @@ void Profiler::AddCounter(int type, int count) {
 #endif
 }
 
+void Profiler::AddQueueState(const std::map<int, gvt::render::actor::RayVector> &queue) {
+#if GVT_USE_TIMING
+  for (auto &q : queue) {
+    assert(q.first < domainRayCounts.size());
+    domainRayCounts[q.first] += q.second.size();
+  }
+#endif
+}
+
 void Profiler::WriteToFile(const std::string &filename, int rank) {
 #if GVT_USE_TIMING
   double sum = 0;
@@ -86,6 +95,12 @@ std::ostream &operator<<(std::ostream &os, const Profiler &p) {
   for (std::size_t i = 0; i < p.counters.size(); ++i) {
     os << "Counter [" << p.counterNames[i] << "] : " << p.counters[i] << "\n";
   }
+
+  // ray counts
+  for (std::size_t i = 0; i < p.domainRayCounts.size(); ++i) {
+    os << "Domain [" << i << "] : " << p.domainRayCounts[i] << "\n";
+  }
+   
   return os;
 }
 #endif

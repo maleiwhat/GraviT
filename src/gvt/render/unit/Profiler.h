@@ -5,6 +5,9 @@
 #include <chrono>
 #include <vector>
 #include <mpi.h>
+#include <map>
+
+#include "gvt/render/actor/Ray.h"
 
 namespace gvt {
 namespace render {
@@ -90,6 +93,12 @@ class Profiler {
   void Stop(int timer);
 
   void AddCounter(int type, int count);
+  void AddQueueState(const std::map<int, gvt::render::actor::RayVector>& queue);
+  void SetNumDomains(std::size_t n) {
+#if GVT_USE_TIMING
+    domainRayCounts.resize(n, 0);
+#endif
+  }
 
   void WriteToFile(const std::string& filename, int rank);
 
@@ -104,6 +113,8 @@ class Profiler {
 
   std::vector<std::size_t> counters;
   std::vector<std::string> counterNames;
+
+  std::vector<std::size_t> domainRayCounts;
 };
 
 }  // namespace profiler

@@ -888,6 +888,11 @@ void RenderFilm(const commandline::Options &options,
           static_cast<DomainTracer *>(worker.GetTracer());
       Profiler &profiler = domain_tracer->GetProfiler();
 
+      gvt::render::RenderContext *cntxt = gvt::render::RenderContext::instance();
+      gvt::core::DBNodeH root = cntxt->getRootNode();
+      std::cout << "[INFO] num domains: " << root["Instances"].getChildren().size() << "\n";
+      profiler.SetNumDomains(root["Instances"].getChildren().size());
+
 // warm up
 #ifndef NDEBUG
       std::cout << "rank " << mpi.rank << " start warming up\n\n";

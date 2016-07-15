@@ -222,6 +222,8 @@ inline void DomainTracer::Trace() {
                               << instTarget << ", rays: " << instTargetCount);
 
     if (instTarget >= 0) {
+      profiler.AddQueueState(queue);
+
       // t_adapter.resume();
       profiler.Start(Profiler::ADAPTER);
 
