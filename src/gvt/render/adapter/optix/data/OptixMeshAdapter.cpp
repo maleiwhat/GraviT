@@ -34,7 +34,7 @@
 // OptixMeshAdapter.cpp
 //
 #include "gvt/render/adapter/optix/data/OptixMeshAdapter.h"
-#include "gvt/core/CoreContext.h"
+#include <gvt/render/RenderContext.h>
 
 #include <gvt/core/Debug.h>
 #include <gvt/core/Math.h>
@@ -77,7 +77,6 @@ __inline__ void cudaRayToGvtRay(
 
 	memcpy(&(gvtRay.origin[0]), &(cudaRay.origin.x), sizeof(glm::vec3));
 	memcpy(&(gvtRay.direction[0]), &(cudaRay.direction.x), sizeof(glm::vec3));
-	memcpy(&(gvtRay.camera_origin[0]), &(cudaRay.camera_origin.x), sizeof(glm::vec3));
 //	memcpy(&(gvtRay.inverseDirection[0]), &(cudaRay.inverseDirection.x),
 //			sizeof(float) * 4);
 	memcpy(glm::value_ptr(gvtRay.color), &(cudaRay.color.x),
@@ -89,7 +88,6 @@ __inline__ void cudaRayToGvtRay(
 	gvtRay.t_min = cudaRay.t_min;
 	gvtRay.t_max = cudaRay.t_max;
 	gvtRay.type = cudaRay.type;
-	gvtRay.type_origin = cudaRay.type_origin;
 	gvtRay.z = cudaRay.z;
 
 
@@ -101,7 +99,6 @@ __inline__ void gvtRayToCudaRay(const gvt::render::actor::Ray& gvtRay,
 	memcpy(&(cudaRay.origin.x), &(gvtRay.origin[0]), sizeof(glm::vec3));
 	cudaRay.origin.w=1.0f;
 	memcpy(&(cudaRay.direction.x), &(gvtRay.direction[0]),sizeof(glm::vec3));
-	memcpy(&(cudaRay.camera_origin.x), &(gvtRay.camera_origin[0]),sizeof(glm::vec3));
 //	memcpy(&(cudaRay.inverseDirection.x), &(gvtRay.inverseDirection[0]),
 //			sizeof(float) * 4);
 	memcpy(&(cudaRay.color.x), glm::value_ptr(gvtRay.color),
@@ -113,7 +110,6 @@ __inline__ void gvtRayToCudaRay(const gvt::render::actor::Ray& gvtRay,
 	cudaRay.t_min = gvtRay.t_min;
 	cudaRay.t_max = gvtRay.t_max;
 	cudaRay.type = gvtRay.type;
-	cudaRay.type_origin = gvtRay.type_origin;
 	cudaRay.z = gvtRay.z;
 
 
@@ -701,6 +697,8 @@ struct OptixParallelTrace {
 	 */
 	const glm::mat3 *normi;
 
+	glm::vec3  _camera_origin;
+
 
 	/**
 	 * Thread local outgoing ray queue
@@ -732,10 +730,10 @@ struct OptixParallelTrace {
 			//std::vector<gvt::render::data::scene::Light *> &lights,
 			std::atomic<size_t> &counter, const size_t begin, const size_t end,
 			gvt::render::data::cuda_primitives::Ray* disp_Buff,
-			gvt::render::data::cuda_primitives::Ray* cudaRaysBuff) :
+			gvt::render::data::cuda_primitives::Ray* cudaRaysBuff,  glm::vec3 camera_origin) :
 			adapter(adapter), rayList(rayList), moved_rays(moved_rays),  m(m), minv(minv), normi(normi),
 			packetSize(adapter->getPacketSize()), begin(begin), end(end), disp_Buff(
-					disp_Buff), cudaRaysBuff(cudaRaysBuff) {
+					disp_Buff), cudaRaysBuff(cudaRaysBuff), _camera_origin(camera_origin) {
 	}
 
 	/**
@@ -844,6 +842,9 @@ struct OptixParallelTrace {
 				*(OptixContext::singleton()->_cudaGvtCtx[thread]);
 
 
+		memcpy(&(cudaGvtCtx.camera_origin.x), &(_camera_origin[0]),sizeof(glm::vec3));
+
+
 		//Mesh instance specific data
 		gpuErrchk(
 				cudaMemcpyAsync(cudaGvtCtx.normi, &(normi[0]),
@@ -931,6 +932,7 @@ void OptixMeshAdapter::trace(gvt::render::actor::RayVector &rayList,
 
 	size_t localWork = end-begin;
 
+  glm::vec3 camera_origin = gvt::render::RenderContext::instance()->getRootNode()["Camera"]["eyePoint"].value().tovec3();
 
 	*m_pinned = *m;
 	m = m_pinned;
@@ -957,7 +959,7 @@ void OptixMeshAdapter::trace(gvt::render::actor::RayVector &rayList,
 				size_t end=(parallel && localWork >= 2* packetSize) ? (localWork/2) : localWork;
 
 				OptixParallelTrace(this, localRayList, moved_rays,  m,
-						minv, normi, counter, begin, end, disp_Buff[0], cudaRaysBuff[0])();
+						minv, normi, counter, begin, end, disp_Buff[0], cudaRaysBuff[0],camera_origin)();
 
 			});
 
@@ -970,7 +972,7 @@ void OptixMeshAdapter::trace(gvt::render::actor::RayVector &rayList,
 					size_t end=localWork;
 
 					OptixParallelTrace(this, localRayList, moved_rays, m,
-							minv, normi, counter, begin, end, disp_Buff[1], cudaRaysBuff[1])();
+							minv, normi, counter, begin, end, disp_Buff[1], cudaRaysBuff[1],camera_origin)();
 
 				});
 	}

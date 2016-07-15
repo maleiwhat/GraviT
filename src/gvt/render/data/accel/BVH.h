@@ -167,6 +167,10 @@ public:
     return ret;
   }
 
+  gvt::render::data::primitives::Box3D getRootBBox(){
+	  return root->bbox;
+  }
+
 private:
   struct Node {
     Node() : leftChild(NULL), rightChild(NULL), numInstances(0) {}

@@ -4,6 +4,8 @@
 #include <IceT.h>
 #include <glm/glm.hpp>
 #include <mpi.h>
+#include <gvt/render/actor/Ray.h>
+
 namespace gvt {
 namespace render {
 namespace composite {
@@ -19,7 +21,7 @@ struct composite {
 
   bool initIceT();
 
-  glm::vec4 *execute(glm::vec4 *buffer_in, float *depth_buffer_in, const size_t width, const size_t height);
+  glm::vec4 *execute(glm::vec4 *buffer_in, float *depth_buffer_in, const size_t width, const size_t height, float _diag_size);
 };
 }
 }

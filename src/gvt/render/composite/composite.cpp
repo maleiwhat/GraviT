@@ -25,6 +25,7 @@ namespace composite {
 #define MAX(a, b) ((a > b) ? a : b)
 static glm::vec4 *local_buffer;
 static float *local_depth_buffer;
+static float diag_size;
 const IceTDouble identity[] = { 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 };
 const IceTFloat black[] = { 0.0, 0.0, 0.0, 1.0 };
 
@@ -47,7 +48,7 @@ static void draw(const IceTDouble *projection_matrix, const IceTDouble *modelvie
 
   depth_buffer = icetImageGetDepthf(result);
 
-  const float inv_flt_max = 1.0f / 3.40282347e+37F; //FLT_MAX
+  const float inv_flt_max = 1.0f / diag_size;
 
   const size_t size = num_pixels;
   const size_t chunksize = MAX(2, size / (std::thread::hardware_concurrency() * 4));
@@ -60,7 +61,7 @@ static void draw(const IceTDouble *projection_matrix, const IceTDouble *modelvie
                         color_buffer[i * 4 + 2] = local_buffer[i][2];
                         color_buffer[i * 4 + 3] = local_buffer[i][3];
 
-                        depth_buffer[i] = local_depth_buffer[i] * inv_flt_max;
+                        depth_buffer[i] = local_depth_buffer[i] == gvt::render::actor::Ray::GVT_FLT_MAX ? 1.0f : local_depth_buffer[i] * inv_flt_max;
 
                       }
                     },
@@ -91,13 +92,16 @@ bool composite::initIceT() {
   return true;
 }
 
-glm::vec4 *composite::execute(glm::vec4 *buffer_in, float *depth_buffer_in, const size_t width, const size_t height) {
+glm::vec4 *composite::execute(glm::vec4 *buffer_in, float *depth_buffer_in, const size_t width,
+		const size_t height, float _diag_size) {
   IceTFloat *color_buffer;
   IceTSizeType num_pixels;
   IceTSizeType i;
 
   local_buffer = buffer_in;
   local_depth_buffer = depth_buffer_in;
+  diag_size = _diag_size;
+
   icetResetTiles();
   icetAddTile(0, 0, width, height, 0);
 

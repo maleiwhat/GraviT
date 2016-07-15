@@ -176,6 +176,9 @@ public:
   int samples2 = rootnode["Camera"]["raySamples"].value().toInteger()
 		  * rootnode["Camera"]["raySamples"].value().toInteger();
 
+  glm::vec3 camera_origin = rootnode["Camera"]["eyePoint"].value().tovec3();
+  int initial_depth = rootnode["Camera"]["rayMaxDepth"].value().toInteger();
+
   tbb::mutex *queue_mutex;                            // array of mutexes - one per instance
   std::map<int, gvt::render::actor::RayVector> queue; ///< Node rays working
   tbb::mutex *colorBuf_mutex;                         ///< buffer for color accumulation
@@ -300,7 +303,8 @@ public:
 
   void clearBuffer() {
 	  std::memset(colorBuf, 0, sizeof(glm::vec4) * width * height * samples2 );
-	   for (int j=0; j < (width * height * samples2 ); j++) zBuf[j]  = FLT_MAX;
+	   for (int j=0; j < (width * height * samples2 ); j++) zBuf[j]  =
+			   gvt::render::actor::Ray::GVT_FLT_MAX;
   }
 
   // clang-format off
@@ -339,12 +343,19 @@ public:
                           if (hits[i].next != -1) {
 
                         	r.origin = r.origin + r.direction * (hits[i].t * 0.95f);
+
+                        	if (r.type == gvt::render::actor::Ray::PRIMARY &&
+                        			r.z < (glm::length(r.origin - camera_origin))){
+                        		continue;
+                        	}
+
                             local_queue[hits[i].next].push_back(r);
                           } else if (r.type == gvt::render::actor::Ray::SHADOW /*&& glm::length(r.color) > 0*/) {
                             tbb::mutex::scoped_lock fbloc(colorBuf_mutex[r.id % width]);
 
-                            //if secondary ray ignore z assessment
-                            if (r.type_origin != gvt::render::actor::Ray::SECONDARY) {
+
+                            //if shadow from a secondary ray, ignore z test
+                            if (r.depth == initial_depth) {
 
                             	//if previous contribution occluded by this new contribution, reset color
 								if (r.z < zBuf[r.id]){
@@ -392,8 +403,12 @@ public:
 
     glm::vec4 * final;
 
+    gvt::render::data::primitives::Box3D rootBBox= acceleration->getRootBBox();
+    rootBBox.expand(camera_origin);
+    float diag = glm::length(rootBBox.bounds_max  -rootBBox.bounds_min);
+
     if (require_composite)
-      final = img.execute(colorBuf,zBuf, width * samples2, height); // each entry in color buf is a sample
+      final = img.execute(colorBuf,zBuf, width * samples2, height, diag); // each entry in color buf is a sample
     else
       final = colorBuf;
 

@@ -240,7 +240,6 @@ __device__ void generateShadowRays(const Ray &r, const float4 &normal,
     shadow_ray.id = r.id;
     shadow_ray.t_max = t_max;
     shadow_ray.z = r.z;
-    shadow_ray.type_origin = r.type_origin;
 
 
     shadow_ray.color.x = c.x;
@@ -281,7 +280,7 @@ __global__ void kernel(gvt::render::data::cuda_primitives::CudaGvtContext* cudaG
         r.t = t;
 
         //calculate distante to camera and normalize
-         r.z = length(r.origin + r.direction * r.t - r.camera_origin);
+         r.z = length(r.origin + r.direction * r.t - cudaGvtCtx->camera_origin);
 
         const int triangle_id = cudaGvtCtx->traceHits[tID].triangle_id;
 
@@ -370,7 +369,6 @@ __global__ void kernel(gvt::render::data::cuda_primitives::CudaGvtContext* cudaG
         // replace current ray with generated secondary ray
         if (ndepth > 0 && r.w > p) {
           r.type = Ray::SECONDARY;
-          r.type_origin = Ray::SECONDARY;
 
           const float multiplier =
               1.0f -

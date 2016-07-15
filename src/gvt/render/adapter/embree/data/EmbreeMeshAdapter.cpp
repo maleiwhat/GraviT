@@ -30,7 +30,7 @@
 
 #include "gvt/render/adapter/embree/data/EmbreeMeshAdapter.h"
 
-#include "gvt/core/CoreContext.h"
+#include <gvt/render/RenderContext.h>
 
 #include <gvt/core/Debug.h>
 #include <gvt/core/Math.h>
@@ -252,6 +252,8 @@ struct embreeParallelTrace {
 
   const size_t begin, end;
 
+  glm::vec3 _camera_origin;
+
   gvt::render::data::primitives::Mesh *mesh;
   /**
    * Construct a embreeParallelTrace struct with information needed for the
@@ -262,9 +264,9 @@ struct embreeParallelTrace {
                       gvt::render::actor::RayVector &rayList, gvt::render::actor::RayVector &moved_rays,
                       const size_t workSize, glm::mat4 *m, glm::mat4 *minv, glm::mat3 *normi,
                       std::vector<gvt::render::data::scene::Light *> &lights, gvt::render::data::primitives::Mesh *mesh,
-                      std::atomic<size_t> &counter, const size_t begin, const size_t end)
+                      std::atomic<size_t> &counter, const size_t begin, const size_t end,  glm::vec3 camera_origin)
       : adapter(adapter), rayList(rayList), moved_rays(moved_rays), workSize(workSize), m(m), minv(minv), normi(normi),
-        lights(lights), counter(counter), begin(begin), end(end), mesh(mesh) {}
+        lights(lights), counter(counter), begin(begin), end(end), mesh(mesh),  _camera_origin(camera_origin) {}
   /**
    * Convert a set of rays from a vector into a GVT_EMBREE_PACKET_TYPE ray packet.
    *
@@ -393,8 +395,6 @@ struct embreeParallelTrace {
 	shadow_ray.id = r.id;
 	shadow_ray.t_max = t_max;
 	shadow_ray.z = r.z;
-	shadow_ray.type_origin = r.type_origin;
-
 
 	// gvt::render::data::Color c = adapter->getMesh()->mat->shade(shadow_ray,
 	// normal, lights[lindex]);
@@ -586,7 +586,7 @@ struct embreeParallelTrace {
               r.t = t;
 
               //calculate distante to camera and normalize
-              r.z = glm::length(r.origin + r.direction * r.t - r.camera_origin) ;
+              r.z = glm::length(r.origin + r.direction * r.t - _camera_origin) ;
 
               // FIXME: embree does not take vertex normal information, the
               // examples have the application calculate the normal using
@@ -660,12 +660,12 @@ struct embreeParallelTrace {
               // replace current ray with generated secondary ray
 
               // dispatch back to check for any other intersections
-              if (r.type == gvt::render::actor::Ray::PRIMARY )
+              if (r.type == gvt::render::actor::Ray::PRIMARY ){
             	  localDispatch.push_back(r);
+              }
 
               if (ndepth > 0 && r.w > p) {
                 r.type = gvt::render::actor::Ray::SECONDARY;
-                r.type_origin = gvt::render::actor::Ray::SECONDARY;
                 const float multiplier =
                     1.0f - 16.0f * std::numeric_limits<float>::epsilon(); // TODO: move out somewhere / make static
                 const float t_secondary = multiplier * r.t;
@@ -750,6 +750,8 @@ void EmbreeMeshAdapter::trace(gvt::render::actor::RayVector &rayList, gvt::rende
 
   //std::cout << "Embree zmat" << *m << std::endl;
 
+  glm::vec3 camera_origin = gvt::render::RenderContext::instance()->getRootNode()["Camera"]["eyePoint"].value().tovec3();
+
   rtcSetTransform(global_scene, instID, RTC_MATRIX_COLUMN_MAJOR, mm);
   rtcUpdate(global_scene, instID);
   rtcCommit(global_scene);
@@ -768,7 +770,7 @@ void EmbreeMeshAdapter::trace(gvt::render::actor::RayVector &rayList, gvt::rende
                     [&](tbb::blocked_range<size_t> chunk) {
                       // for (size_t i = chunk.begin(); i < chunk.end(); i++) image.Add(i, colorBuf[i]);
                       embreeParallelTrace(this, rayList, moved_rays, chunk.end() - chunk.begin(), m, minv, normi,
-                                          lights, mesh, counter, chunk.begin(), chunk.end())();
+                                          lights, mesh, counter, chunk.begin(), chunk.end(), camera_origin)();
                     },
                     ap);
   rtcDeleteScene(global_scene);

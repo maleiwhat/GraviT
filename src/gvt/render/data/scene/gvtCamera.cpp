@@ -258,11 +258,10 @@ void gvtPerspectiveCamera::generateRays() {
                               ray.t = ray.t_max = FLT_MAX;
                               ray.w = contri;
                               ray.origin = eye_point;
-                              ray.camera_origin = eye_point;
                               ray.type = Ray::PRIMARY;
                               ray.direction = glm::normalize(camera_space_ray_direction);
                               ray.depth = depth;
-                              ray.z = FLT_MAX;
+                              ray.z = gvt::render::actor::Ray::GVT_FLT_MAX;
                             }
                           }
                          idx++;

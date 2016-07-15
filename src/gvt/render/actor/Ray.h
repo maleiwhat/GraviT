@@ -87,12 +87,13 @@ public:
   };
 
   const static float RAY_EPSILON;
+  const static float GVT_FLT_MAX;
   // clang-format on
   inline Ray() /*: t_min(gvt::render::actor::Ray::RAY_EPSILON), t_max(FLT_MAX), t(FLT_MAX), id(-1), depth(8), w(0.f), type(PRIMARY) */ {
   }
   inline Ray(glm::vec3 _origin, glm::vec3 _direction, float contribution = 1.f, RayType type = PRIMARY, int depth = 10)
-      : origin(_origin), t_min(gvt::render::actor::Ray::RAY_EPSILON), direction(glm::normalize(_direction)),
-        t_max(FLT_MAX), t(FLT_MAX), id(-1), w(contribution), type(type), z(FLT_MAX), type_origin(PRIMARY) {}
+      : depth(depth), origin(_origin), t_min(gvt::render::actor::Ray::RAY_EPSILON), direction(glm::normalize(_direction)),
+        t_max(FLT_MAX), t(FLT_MAX), id(-1), w(contribution), type(type), z(GVT_FLT_MAX) {}
 
   inline Ray(const Ray &r) { std::memcpy(data, r.data, packedSize()); }
 
@@ -141,11 +142,9 @@ public:
       int depth; ///<! sample rate
       float w;   ///<! weight of image contribution
       int type;
-      glm::vec3 camera_origin;
       float z;
-      int type_origin;
     };
-    unsigned char data[84] GVT_ALIGN(16);
+    unsigned char data[68] GVT_ALIGN(16);
   };
 
 protected:

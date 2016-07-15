@@ -99,9 +99,7 @@ public:
 			float t_max;
 			int type;
 			int id;
-		    float4 camera_origin;
 		    float z;
-		    int type_origin;
 
 		};
 

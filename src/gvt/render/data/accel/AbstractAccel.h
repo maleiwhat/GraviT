@@ -57,6 +57,8 @@ public:
 
   virtual ~AbstractAccel() {}
 
+  virtual gvt::render::data::primitives::Box3D getRootBBox()=0;
+
 protected:
   gvt::core::Vector<gvt::core::DBNodeH> instanceSet;
 };

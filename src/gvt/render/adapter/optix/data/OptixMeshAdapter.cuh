@@ -105,6 +105,7 @@ struct CudaGvtContext {
 	 Matrix3f* normi;
 	 Matrix4f* minv;
 
+	 float4 camera_origin;
 
 	 cudaStream_t stream;
 
