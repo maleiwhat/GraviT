@@ -484,7 +484,7 @@ void gvt::render::data::cuda_primitives::CudaGvtContext::initCudaBuffers(
 	gpuErrchk(
 			cudaMalloc((void ** ) &dispatchBuff,
 					sizeof(gvt::render::data::cuda_primitives::Ray) *
-					/*(end-begin)*/packetSize * 2));
+					/*(end-begin)*/packetSize * 8));
 
 	set_random_states(packetSize);
 
@@ -588,11 +588,11 @@ OptixMeshAdapter::OptixMeshAdapter(gvt::render::data::primitives::Mesh *m) : Ada
 	cudaMesh = cudaInstanceMesh(mesh);
 
 	cudaMallocHost(&(disp_Buff[0]),
-			sizeof(gvt::render::data::cuda_primitives::Ray) * packetSize * 2);
+			sizeof(gvt::render::data::cuda_primitives::Ray) * packetSize * 8);
 	cudaMallocHost(&(cudaRaysBuff[0]),
 			sizeof(gvt::render::data::cuda_primitives::Ray) * packetSize);
 	cudaMallocHost(&(disp_Buff[1]),
-			sizeof(gvt::render::data::cuda_primitives::Ray) * packetSize * 2);
+			sizeof(gvt::render::data::cuda_primitives::Ray) * packetSize * 8);
 	cudaMallocHost(&(cudaRaysBuff[1]),
 			sizeof(gvt::render::data::cuda_primitives::Ray) * packetSize);
 
@@ -836,7 +836,7 @@ struct OptixParallelTrace {
 
 		int localEnd = (end - begin);
 		size_t localDispatchSize = 0;
-		localDispatch.reserve((end - begin) * 2);
+		localDispatch.reserve((end - begin) * 8);
 
 		gvt::render::data::cuda_primitives::CudaGvtContext& cudaGvtCtx =
 				*(OptixContext::singleton()->_cudaGvtCtx[thread]);
