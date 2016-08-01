@@ -95,25 +95,27 @@ public:
       : depth(depth), origin(_origin), t_min(gvt::render::actor::Ray::RAY_EPSILON), direction(glm::normalize(_direction)),
         t_max(FLT_MAX), t(FLT_MAX), id(-1), w(contribution), type(type), z(GVT_FLT_MAX) {}
 
-  inline Ray(const Ray &r) { std::memcpy(data, r.data, packedSize()); }
+  inline Ray(const Ray &r) { std::memcpy(data, r.data, packedSize()); doms = r.doms;}
 
-  inline Ray(Ray &&r) { std::memmove(data, r.data, packedSize()); }
+  inline Ray(Ray &&r) { std::memmove(data, r.data, packedSize()); doms = r.doms;}
 
   inline Ray(const unsigned char *buf) { std::memcpy(data, buf, packedSize()); }
 
   inline Ray &operator=(const Ray &r) {
     std::memcpy(data, r.data, packedSize());
+    doms = r.doms;
     return *this;
   }
 
   inline Ray &operator=(Ray &&r) {
     std::memmove(data, r.data, packedSize());
+    doms = r.doms;
     return *this;
   }
   ~Ray(){};
 
   /// returns size in bytes for the ray information to be sent via MPI
-  size_t packedSize() const { return sizeof(Ray); }
+  size_t packedSize() const { return 68 /*sizeof(Ray)*/; }
 
   /// packs the ray information onto the given buffer and returns the number of bytes packed
   int pack(unsigned char *buffer) {
@@ -129,6 +131,27 @@ public:
     stream << " t[" << ray.t_min << ", " << ray.t << ", " << ray.t_max << "]";
     return stream;
   }
+
+  inline void addDomain(int d){
+	  doms.push_back(d);
+	}
+
+	inline bool hasDomain(int d) {
+	return std::find(doms.begin(),doms.end(),d) != doms.end();
+	}
+
+	inline void clearDomains() {
+	doms.clear();
+	}
+
+	inline void setDomains(std::vector<int>& ff) {
+		doms = ff;
+	}
+
+	inline std::vector<int>& getDomains() {
+			return doms;
+	}
+
 
   union {
     struct {
@@ -148,6 +171,8 @@ public:
   };
 
 protected:
+  std::vector<int> doms;
+
 };
 
 // NOTE: removing boost pool allocator greatly improves timings

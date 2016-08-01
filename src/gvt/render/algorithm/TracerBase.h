@@ -335,20 +335,30 @@ public:
     static tbb::simple_partitioner ap;
     tbb::parallel_for(tbb::blocked_range<gvt::render::actor::RayVector::iterator>(rays.begin(), rays.end(), chunksize),
                       [&](tbb::blocked_range<gvt::render::actor::RayVector::iterator> raysit) {
+
+						if (domID != -1){
+							  for (gvt::render::actor::RayVector::iterator it = raysit.begin() ; it != raysit.end() ; ++it){
+								  gvt::render::actor::Ray &r = *(it);
+
+								  //if dom list is not a set, this may duplicate entries
+								  if (r.type != gvt::render::actor::Ray::PRIMARY){
+									  r.addDomain(domID);
+								  }
+							  }
+						}
+
                         std::vector<gvt::render::data::accel::BVH::hit> hits =
                             acc.intersect<GVT_SIMD_WIDTH>(raysit.begin(), raysit.end(), domID);
                         std::map<int, gvt::render::actor::RayVector> local_queue;
                         for (size_t i = 0; i < hits.size(); i++) {
                           gvt::render::actor::Ray &r = *(raysit.begin() + i);
                           if (hits[i].next != -1) {
-
-                        	r.origin = r.origin + r.direction * (hits[i].t * 0.95f);
-
-                        	if (r.type == gvt::render::actor::Ray::PRIMARY &&
+                            //r.origin = r.origin + r.direction * (hits[i].t * 0.95f);
+  							if (r.type == gvt::render::actor::Ray::PRIMARY &&
                         			r.z < (glm::length(r.origin - camera_origin))){
                         		continue;
                         	}
-
+                            r.addDomain(hits[i].next);
                             local_queue[hits[i].next].push_back(r);
                           } else if (r.type == gvt::render::actor::Ray::SHADOW /*&& glm::length(r.color) > 0*/) {
                             tbb::mutex::scoped_lock fbloc(colorBuf_mutex[r.id % width]);

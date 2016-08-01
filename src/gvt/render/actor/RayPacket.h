@@ -139,7 +139,10 @@ template <size_t simd_width> struct RayPacketIntersection {
 
 #pragma simd
     for (size_t i = 0; i < simd_width; ++i) {
-      hit[i] = (tfar[i] > tnear[i] && (!update || tnear[i] > gvt::render::actor::Ray::RAY_EPSILON) && t[i] > tnear[i])
+    	 hit[i] = (tfar[i] > tnear[i] // If ray intersects
+    	       //&& (!update || tnear[i] > gvt::render::actor::Ray::RAY_EPSILON) // if not a instance bbox, consider rays inside bbox
+    	       && (!update || (tnear[i] > gvt::render::actor::Ray::RAY_EPSILON || tfar[i] > gvt::render::actor::Ray::RAY_EPSILON)) // if not a instance bbox, consider rays inside bbox
+    	        && t[i] > tnear[i]) //if previous hit far way
                    ? 1
                    : -1;
     }

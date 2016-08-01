@@ -240,6 +240,7 @@ __device__ void generateShadowRays(const Ray &r, const float4 &normal,
     shadow_ray.id = r.id;
     shadow_ray.t_max = t_max;
     shadow_ray.z = r.z;
+    shadow_ray.newRay = -1;
 
 
     shadow_ray.color.x = c.x;
@@ -385,6 +386,8 @@ __global__ void kernel(gvt::render::data::cuda_primitives::CudaGvtContext* cudaG
 
           r.w = r.w * (r.direction * normal);
           r.depth = ndepth;
+          r.newRay=-1;
+
           if (!cudaGvtCtx->validRayLeft)
         	  cudaGvtCtx->validRayLeft = true;
 
