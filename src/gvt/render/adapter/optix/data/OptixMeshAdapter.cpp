@@ -250,7 +250,7 @@ void cudaSetRays(gvt::render::actor::RayVector::iterator gvtRayVector,
 			[&](tbb::blocked_range<int> chunk) {
 				for (int jj = chunk.begin(); jj < chunk.end(); jj++) {
 						gvtRayToCudaRay(gvtRayVector[jj], cudaRays[jj]);
-
+						cudaRays[jj].newRay = localIdx + jj;
 				}}, ap);
 
 
@@ -291,6 +291,10 @@ void cudaGetRays(size_t& localDispatchSize,
 						cudaRayToGvtRay(cudaRay, gvtRay);
 
 						//gvtRay.setDirection(gvtRay.direction);
+						if (cudaRay.newRay != -1)
+							gvtRay.setDomains(rayList[cudaRay.newRay].getDomains());
+						else
+							gvtRay.clearDomains();
 					}
 				}
 			}, ap);
@@ -864,7 +868,7 @@ struct OptixParallelTrace {
 
 	
 			cudaSetRays(localRayList, localPacketSize, cudaGvtCtx.rays,
-					localIdx, cudaGvtCtx.stream, cudaRaysBuff);
+					 begin + localIdx, cudaGvtCtx.stream, cudaRaysBuff);
 
 
 			cudaGvtCtx.validRayLeft = true;

@@ -143,6 +143,15 @@ public:
 	doms.clear();
 	}
 
+	inline void setDomains(std::vector<int>& ff) {
+		doms = ff;
+	}
+
+	inline std::vector<int>& getDomains() {
+			return doms;
+	}
+
+
   union {
     struct {
       glm::vec3 origin;
