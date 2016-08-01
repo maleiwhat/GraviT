@@ -1358,7 +1358,7 @@ int main(int argc, char *argv[]) {
     schedNode["type"] = gvt::render::scheduler::Domain;
   else
    schedNode["type"] = gvt::render::scheduler::Image;
- schedNode["type"] = gvt::render::scheduler::Domain;
+
 
 #ifdef GVT_RENDER_ADAPTER_EMBREE
   int adapterType = gvt::render::adapter::Embree;

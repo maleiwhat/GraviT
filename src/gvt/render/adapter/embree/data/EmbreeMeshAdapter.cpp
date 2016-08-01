@@ -391,6 +391,8 @@ struct embreeParallelTrace {
 	shadow_ray.t = r.t;
 	shadow_ray.id = r.id;
 	shadow_ray.t_max = t_max;
+	shadow_ray.clearDomains();
+
 
 	// gvt::render::data::Color c = adapter->getMesh()->mat->shade(shadow_ray,
 	// normal, lights[lindex]);
@@ -658,6 +660,8 @@ struct embreeParallelTrace {
 
                 r.w = r.w * glm::dot(r.direction, normal);
                 r.depth = ndepth;
+                r.clearDomains();
+
                 validRayLeft = true; // we still have a valid ray in the packet to trace
               } else {
                 // secondary ray is terminated, so disable its valid bit
