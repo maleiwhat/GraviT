@@ -123,7 +123,7 @@ public:
   ~Ray(){};
 
   /// returns size in bytes for the ray data information
-  inline size_t dataPackedSize() const { return 64; }
+  inline size_t dataPackedSize() const { return 68; }
 
   /// returns size in bytes for the ray data information
   inline size_t packedSize() const { return dataPackedSize() + sizeof(int) + visitedDomains.size()*sizeof(int); }
