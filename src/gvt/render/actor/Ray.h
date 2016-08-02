@@ -95,32 +95,55 @@ public:
       : depth(depth), origin(_origin), t_min(gvt::render::actor::Ray::RAY_EPSILON), direction(glm::normalize(_direction)),
         t_max(FLT_MAX), t(FLT_MAX), id(-1), w(contribution), type(type), z(GVT_FLT_MAX) {}
 
-  inline Ray(const Ray &r) { std::memcpy(data, r.data, packedSize()); doms = r.doms;}
+  inline Ray(const Ray &r) { std::memcpy(data, r.data, dataPackedSize()); visitedDomains = r.visitedDomains;}
 
-  inline Ray(Ray &&r) { std::memmove(data, r.data, packedSize()); doms = r.doms;}
+  inline Ray(Ray &&r) { std::memmove(data, r.data, dataPackedSize()); visitedDomains = r.visitedDomains;}
 
-  inline Ray(const unsigned char *buf) { std::memcpy(data, buf, packedSize()); }
+  inline Ray(const unsigned char *buf) {
+	  std::memcpy(data, buf, dataPackedSize());
+	  buf+=dataPackedSize();
+	  int domain_size = *((int *)buf);
+	    buf += sizeof(int);
+	  for (int i = 0; i < domain_size; ++i, buf += sizeof(int)) {
+	    addDomain(*(int *)buf);
+	  }
+  }
 
   inline Ray &operator=(const Ray &r) {
-    std::memcpy(data, r.data, packedSize());
-    doms = r.doms;
+    std::memcpy(data, r.data, dataPackedSize());
+    visitedDomains = r.visitedDomains;
     return *this;
   }
 
   inline Ray &operator=(Ray &&r) {
-    std::memmove(data, r.data, packedSize());
-    doms = r.doms;
+    std::memmove(data, r.data, dataPackedSize());
+    visitedDomains = r.visitedDomains;
     return *this;
   }
   ~Ray(){};
 
-  /// returns size in bytes for the ray information to be sent via MPI
-  size_t packedSize() const { return 68 /*sizeof(Ray)*/; }
+  /// returns size in bytes for the ray data information
+  inline size_t dataPackedSize() const { return 64; }
+
+  /// returns size in bytes for the ray data information
+  inline size_t packedSize() const { return dataPackedSize() + sizeof(int) + visitedDomains.size()*sizeof(int); }
+
 
   /// packs the ray information onto the given buffer and returns the number of bytes packed
   int pack(unsigned char *buffer) {
     unsigned char *buf = buffer;
-    std::memcpy(buf, data, packedSize());
+    std::memcpy(buf, data, dataPackedSize());
+    buf+=dataPackedSize();
+
+    *((int *)buf) = visitedDomains.size();
+    buf += sizeof(int);
+
+    for (auto &dom : visitedDomains) {
+        *((int *)buf) = dom;
+        buf += sizeof(int);
+
+      }
+
     return packedSize();
   }
 
@@ -133,25 +156,24 @@ public:
   }
 
   inline void addDomain(int d){
-	  doms.push_back(d);
-	}
+	  visitedDomains.push_back(d);
+  }
 
-	inline bool hasDomain(int d) {
-	return std::find(doms.begin(),doms.end(),d) != doms.end();
-	}
+  inline bool hasDomain(int d) {
+	return std::find(visitedDomains.begin(),visitedDomains.end(),d) != visitedDomains.end();
+  }
 
-	inline void clearDomains() {
-	doms.clear();
-	}
+  inline void clearDomains() {
+	visitedDomains.clear();
+  }
 
-	inline void setDomains(std::vector<int>& ff) {
-		doms = ff;
-	}
+  inline void setDomains(std::vector<int>& ff) {
+		visitedDomains = ff;
+  }
 
-	inline std::vector<int>& getDomains() {
-			return doms;
-	}
-
+  inline std::vector<int>& getDomains() {
+			return visitedDomains;
+  }
 
   union {
     struct {
@@ -171,7 +193,7 @@ public:
   };
 
 protected:
-  std::vector<int> doms;
+  std::vector<int> visitedDomains;
 
 };
 
