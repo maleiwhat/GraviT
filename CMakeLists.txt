@@ -222,6 +222,9 @@ set(GVT_CORE_HDRS ${GVT_CORE_HDRS}
 
   src/gvt/core/schedule/SchedulerBase.h
 
+  src/gvt/core/acomm/acommunicator.h
+  src/gvt/core/acomm/message.h
+
 )
 
 set(GVT_CORE_SRCS ${GVT_CORE_SRCS}
@@ -230,6 +233,10 @@ set(GVT_CORE_SRCS ${GVT_CORE_SRCS}
   src/gvt/core/context/DatabaseNode.cpp
   src/gvt/core/context/Uuid.cpp
   src/gvt/core/context/Variant.cpp
+
+  src/gvt/core/acomm/acommunicator.cpp
+  src/gvt/core/acomm/message.cpp
+
 )
 
 
