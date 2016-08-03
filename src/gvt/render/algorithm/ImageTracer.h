@@ -33,7 +33,6 @@
 
 #include <mpi.h>
 
-#include <gvt/core/Types.h>
 #include <gvt/core/mpi/Wrapper.h>
 #include <gvt/core/utils/timer.h>
 #include <gvt/render/Schedulers.h>

@@ -36,7 +36,7 @@
 #include <gvt/core/Debug.h>
 #include <gvt/core/utils/timer.h>
 #include <gvt/render/Adapter.h>
-#include <gvt/render/RenderContext.h>
+#include <gvt/render/Context.h>
 #include <gvt/render/data/Primitives.h>
 #include <gvt/render/data/accel/BVH.h>
 #include <gvt/render/data/scene/ColorAccumulator.h>

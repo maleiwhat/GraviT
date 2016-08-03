@@ -24,7 +24,7 @@
 #ifndef GVT_CORE_UUID_H
 #define GVT_CORE_UUID_H
 
-#include <gvt/core/String.h>
+#include <gvt/core/context/String.h>
 
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>

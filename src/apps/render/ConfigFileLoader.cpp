@@ -35,12 +35,11 @@
 #include <boost/regex.h>
 #include <boost/regex.hpp>
 #include <fstream>
+#include <gvt/core/Math.h>
+#include <gvt/render/Context.h>
 #include <iostream>
 #include <map>
 #include <sstream>
-#include <gvt/render/RenderContext.h>
-#include <gvt/core/Math.h>
-
 
 using namespace gvtapps::render;
 
@@ -77,7 +76,6 @@ ConfigFileLoader::ConfigFileLoader(const std::string filename) {
   file.open(filename.c_str());
   GVT_ASSERT(file.good(), "Error loading config file " << filename);
 
-
   gvt::render::RenderContext *cntxt = gvt::render::RenderContext::instance();
   /*
    * Assumes that required base nodes are created
@@ -85,7 +83,7 @@ ConfigFileLoader::ConfigFileLoader(const std::string filename) {
   gvt::core::DBNodeH root = cntxt->getRootNode();
 
   std::map<std::string, gvt::render::data::primitives::Mesh *> meshes;
-  int domainCount=0;
+  int domainCount = 0;
 
   while (file.good()) {
     std::string line;
@@ -99,9 +97,9 @@ ConfigFileLoader::ConfigFileLoader(const std::string filename) {
 
     if (elems[0] == "F") {
 
-    gvt::core::DBNodeH filmNode = root["Film"];
-    filmNode["width"] = std::atoi(elems[1].c_str());
-    filmNode["height"] =  std::atoi(elems[2].c_str());
+      gvt::core::DBNodeH filmNode = root["Film"];
+      filmNode["width"] = std::atoi(elems[1].c_str());
+      filmNode["height"] = std::atoi(elems[2].c_str());
 
     } else if (elems[0] == "C") {
       glm::vec3 pos, look, up, focus;
@@ -126,30 +124,29 @@ ConfigFileLoader::ConfigFileLoader(const std::string filename) {
     } else if (elems[0] == "G") {
       GVT_DEBUG(DBG_ALWAYS, "Geometry file" << elems[1]);
 
-     // gvt::render::data::domain::GeometryDomain *domain = NULL;
+      // gvt::render::data::domain::GeometryDomain *domain = NULL;
       gvt::render::data::primitives::Mesh *mesh;
 
-      glm::mat4* m = new glm::mat4(1.f);
-      glm::mat4* minv= new glm::mat4(1.f);
-      glm::mat3* normi = new glm::mat3(1.f);
+      glm::mat4 *m = new glm::mat4(1.f);
+      glm::mat4 *minv = new glm::mat4(1.f);
+      glm::mat3 *normi = new glm::mat3(1.f);
 
       if (elems[1].find(".obj") < elems[1].size()) {
         GVT_DEBUG(DBG_ALWAYS, "Found obj file : " << elems[1].find(".obj"));
 
+        std::map<std::string, gvt::render::data::primitives::Mesh *>::iterator meshIt = meshes.find(elems[1]);
 
-      std::map<std::string, gvt::render::data::primitives::Mesh *>::iterator meshIt = meshes.find(elems[1]);
+        if (meshIt != meshes.end()) {
+          mesh = meshIt->second;
+        } else {
+          gvt::render::data::domain::reader::ObjReader objReader(elems[1]);
+          mesh = objReader.getMesh();
+          meshes[elems[1]] = mesh;
+        }
 
-      if (meshIt != meshes.end()) {
-        mesh = meshIt->second;
-      } else {
-        gvt::render::data::domain::reader::ObjReader objReader(elems[1]);
-        mesh = objReader.getMesh();
-        meshes[elems[1]] = mesh;
-      }
+        mesh->generateNormals();
 
-      mesh->generateNormals();
-
-     // domain = new gvt::render::data::domain::GeometryDomain(mesh);
+        // domain = new gvt::render::data::domain::GeometryDomain(mesh);
 
         glm::vec3 t;
         t[0] = std::atof(elems[2].c_str());
@@ -159,9 +156,9 @@ ConfigFileLoader::ConfigFileLoader(const std::string filename) {
         GVT_DEBUG(DBG_ALWAYS, "Translate vector : \n" << t);
 
         if (glm::length(t) > 0.0) {
-           *m = glm::translate(*m, t);
-           *minv = glm::inverse(*m);
-           *normi =  glm::transpose(glm::inverse(glm::mat3(*m)));
+          *m = glm::translate(*m, t);
+          *minv = glm::inverse(*m);
+          *normi = glm::transpose(glm::inverse(glm::mat3(*m)));
         }
 
         t[0] = std::atof(elems[5].c_str());
@@ -170,12 +167,11 @@ ConfigFileLoader::ConfigFileLoader(const std::string filename) {
 
         if (glm::length(t) > 0.0) {
 
-        	 glm::mat4 mAA = glm::rotate(*m, t[0], glm::vec3(1, 0, 0)) *
-        	                  glm::rotate(*m, t[1], glm::vec3(0, 1, 0)) *
-        	                  glm::rotate(*m, t[2], glm::vec3(0, 0, 1));
+          glm::mat4 mAA = glm::rotate(*m, t[0], glm::vec3(1, 0, 0)) * glm::rotate(*m, t[1], glm::vec3(0, 1, 0)) *
+                          glm::rotate(*m, t[2], glm::vec3(0, 0, 1));
 
-             *minv = glm::inverse(*m);
-             *normi =  glm::transpose(glm::inverse(glm::mat3(*m)));
+          *minv = glm::inverse(*m);
+          *normi = glm::transpose(glm::inverse(glm::mat3(*m)));
         }
 
         t[0] = std::atof(elems[8].c_str());
@@ -185,48 +181,43 @@ ConfigFileLoader::ConfigFileLoader(const std::string filename) {
         GVT_DEBUG(DBG_ALWAYS, "Scale vector : \n" << t);
 
         if (glm::length(t) > 0.0) {
-                   *m = glm::scale(*m, t);
-                   *minv = glm::inverse(*m);
-                   *normi =  glm::transpose(glm::inverse(glm::mat3(*m)));
-                }
+          *m = glm::scale(*m, t);
+          *minv = glm::inverse(*m);
+          *normi = glm::transpose(glm::inverse(glm::mat3(*m)));
+        }
       }
       if (elems[1].find(".ply") < elems[1].size()) {
         GVT_DEBUG(DBG_ALWAYS, "Found ply file : " << elems[1].find(".ply"));
       }
 
-		gvt::core::DBNodeH dataNodes = root["Data"];
-		gvt::core::DBNodeH instNodes = root["Instances"];
+      gvt::core::DBNodeH dataNodes = root["Data"];
+      gvt::core::DBNodeH instNodes = root["Instances"];
 
-		//gvt::render::data::primitives::Mesh *mesh = domain->getMesh();
+      // gvt::render::data::primitives::Mesh *mesh = domain->getMesh();
 
-		gvt::core::DBNodeH meshNode = cntxt->createNodeFromType("Mesh",
-				filename.c_str(), dataNodes.UUID());
+      gvt::core::DBNodeH meshNode = cntxt->createNodeFromType("Mesh", filename.c_str(), dataNodes.UUID());
 
-		meshNode["file"] = filename;
-		gvt::render::data::primitives::Box3D *bbox = mesh->getBoundingBox();
-		meshNode["bbox"] = (unsigned long long) bbox;
-		meshNode["ptr"] = (unsigned long long) mesh;
+      meshNode["file"] = filename;
+      gvt::render::data::primitives::Box3D *bbox = mesh->getBoundingBox();
+      meshNode["bbox"] = (unsigned long long)bbox;
+      meshNode["ptr"] = (unsigned long long)mesh;
 
-		// add instance
-		gvt::core::DBNodeH instnode = cntxt->createNodeFromType("Instance",
-				"inst", instNodes.UUID());
-		gvt::render::data::primitives::Box3D *mbox =
-				(gvt::render::data::primitives::Box3D *) meshNode["bbox"].value().toULongLong();
-		instnode["id"] = domainCount++;
-		instnode["meshRef"] = meshNode.UUID();
+      // add instance
+      gvt::core::DBNodeH instnode = cntxt->createNodeFromType("Instance", "inst", instNodes.UUID());
+      gvt::render::data::primitives::Box3D *mbox =
+          (gvt::render::data::primitives::Box3D *)meshNode["bbox"].value().toULongLong();
+      instnode["id"] = domainCount++;
+      instnode["meshRef"] = meshNode.UUID();
 
-		instnode["mat"] = (unsigned long long) m;
-		instnode["matInv"] = (unsigned long long) minv;
-		instnode["normi"] = (unsigned long long) normi;
+      instnode["mat"] = (unsigned long long)m;
+      instnode["matInv"] = (unsigned long long)minv;
+      instnode["normi"] = (unsigned long long)normi;
 
-		auto il = glm::vec3((*m) * glm::vec4(mbox->bounds_min, 1.f));
-		auto ih = glm::vec3((*m) * glm::vec4(mbox->bounds_max, 1.f));
-		gvt::render::data::primitives::Box3D *ibox =
-				new gvt::render::data::primitives::Box3D(il, ih);
-		instnode["bbox"] = (unsigned long long) ibox;
-		instnode["centroid"] = ibox->centroid();
-
-
+      auto il = glm::vec3((*m) * glm::vec4(mbox->bounds_min, 1.f));
+      auto ih = glm::vec3((*m) * glm::vec4(mbox->bounds_max, 1.f));
+      gvt::render::data::primitives::Box3D *ibox = new gvt::render::data::primitives::Box3D(il, ih);
+      instnode["bbox"] = (unsigned long long)ibox;
+      instnode["centroid"] = ibox->centroid();
 
     } else if (elems[0] == "LP") {
       glm::vec3 pos, color;
@@ -237,18 +228,15 @@ ConfigFileLoader::ConfigFileLoader(const std::string filename) {
       color[1] = std::atof(elems[5].c_str());
       color[2] = std::atof(elems[6].c_str());
 
+      gvt::core::DBNodeH lightNode = cntxt->createNodeFromType("PointLight", "PointLight", root["Lights"].UUID());
 
-      gvt::core::DBNodeH lightNode = cntxt->createNodeFromType(
-    		  "PointLight", "PointLight", root["Lights"].UUID());
-
-        gvt::render::data::scene::PointLight *lp =
-        		new gvt::render::data::scene::PointLight(pos, color);
-        lightNode["position"] = glm::vec3(lp->position);
-        lightNode["color"] = glm::vec3(lp->color);
+      gvt::render::data::scene::PointLight *lp = new gvt::render::data::scene::PointLight(pos, color);
+      lightNode["position"] = glm::vec3(lp->position);
+      lightNode["color"] = glm::vec3(lp->color);
 
     } else if (elems[0] == "LA") {
       glm::vec3 pos, normal, color;
-      float width,height;
+      float width, height;
       pos[0] = std::atof(elems[1].c_str());
       pos[1] = std::atof(elems[2].c_str());
       pos[2] = std::atof(elems[3].c_str());
@@ -261,16 +249,13 @@ ConfigFileLoader::ConfigFileLoader(const std::string filename) {
       color[1] = std::atof(elems[10].c_str());
       color[2] = std::atof(elems[11].c_str());
 
-      gvt::core::DBNodeH lightNode = cntxt->createNodeFromType(
-                  "AreaLight", "AreaLight", root["Lights"].UUID());
-
+      gvt::core::DBNodeH lightNode = cntxt->createNodeFromType("AreaLight", "AreaLight", root["Lights"].UUID());
 
       lightNode["position"] = pos;
       lightNode["normal"] = normal;
       lightNode["width"] = width;
       lightNode["height"] = height;
       lightNode["color"] = color;
-
 
       GVT_DEBUG(DBG_ALWAYS, "Light area not implemented");
     } else if (elems[0] == "RT") {

@@ -21,21 +21,55 @@
    GraviT is funded in part by the US National Science Foundation under awards ACI-1339863,
    ACI-1339881 and ACI-1339840
    ======================================================================================= */
+#ifndef GVT_CORE_VARIANT_H
+#define GVT_CORE_VARIANT_H
 
-#include <gvt/core/Uuid.h>
+#include <gvt/core/Math.h>
+#include <gvt/core/context/String.h>
+#include <gvt/core/context/Uuid.h>
 
-using namespace gvt::core;
+#include <boost/variant.hpp>
 
-boost::uuids::random_generator Uuid::gen;
-
-Uuid Uuid::null() {
-  Uuid u;
-  u.nullify();
-  return u;
-}
+#include <ostream>
 
 namespace gvt {
 namespace core {
-std::ostream &operator<<(std::ostream &os, const Uuid &u) { return os << u.uuid; }
+/// mutable container class for datatypes used in the context database
+/**
+* \sa CoreContext, Database, DatabaseNode
+*/
+class Variant {
+public:
+  Variant();
+  Variant(int);
+  Variant(long);
+  Variant(float);
+  Variant(double);
+  Variant(bool);
+  Variant(unsigned long long);
+  Variant(String);
+  Variant(Uuid);
+  Variant(glm::vec3);
+
+  int toInteger() const;
+  long toLong() const;
+  float toFloat() const;
+  double toDouble() const;
+  bool toBoolean() const;
+  String toString() const;
+  Uuid toUuid() const;
+  unsigned long long toULongLong() const;
+  glm::vec3 tovec3() const;
+
+  bool operator==(const Variant &) const;
+  bool operator!=(const Variant &) const;
+
+  friend std::ostream &operator<<(std::ostream &, const Variant &);
+
+protected:
+  boost::variant<int, long, float, double, bool, unsigned long long, String, Uuid, glm::vec3> coreData;
+};
 }
 }
+
+#endif // GVT_CORE_VARIANT_H

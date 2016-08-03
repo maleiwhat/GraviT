@@ -32,7 +32,7 @@
 #include <algorithm>
 #include <gvt/core/Math.h>
 #include <gvt/core/mpi/Wrapper.h>
-#include <gvt/render/RenderContext.h>
+#include <gvt/render/Context.h>
 #include <gvt/render/Schedulers.h>
 #include <gvt/render/Types.h>
 #include <gvt/render/data/Domains.h>
@@ -64,13 +64,13 @@
 
 #include <boost/range/algorithm.hpp>
 
+#include <cstdint>
+#include <glob.h>
 #include <iostream>
 #include <math.h>
 #include <ply.h>
-#include <glob.h>
-#include <sys/stat.h>
-#include <cstdint>
 #include <stdio.h>
+#include <sys/stat.h>
 
 #include "ParseCommandLine.h"
 
@@ -91,7 +91,7 @@ bool isdir(const char *path) {
 // determine if a file exists
 bool file_exists(const char *path) {
   struct stat buf;
-  return(stat(path, &buf) == 0);
+  return (stat(path, &buf) == 0);
 }
 std::vector<std::string> findply(const std::string dirname) {
   glob_t result;
@@ -188,31 +188,31 @@ int main(int argc, char **argv) {
   gvt::core::DBNodeH instNodes = cntxt->createNodeFromType("Instances", "Instances", root.UUID());
 
   // Enzo isosurface...
-  if(!file_exists(rootdir.c_str())) {
+  if (!file_exists(rootdir.c_str())) {
     cout << "File \"" << rootdir << "\" does not exist. Exiting." << endl;
     return 0;
   }
-  
-  if(!isdir(rootdir.c_str())) {
+
+  if (!isdir(rootdir.c_str())) {
     cout << "File \"" << rootdir << "\" is not a directory. Exiting." << endl;
     return 0;
   }
   vector<string> files = findply(rootdir);
-  if(files.empty()) {
+  if (files.empty()) {
     cout << "Directory \"" << rootdir << "\" contains no .ply files. Exiting." << endl;
     return 0;
   }
-  // read 'em 
+  // read 'em
   vector<string>::const_iterator file;
-  //for (k = 0; k < 8; k++) {
-  for (file = files.begin(),k = 0; file != files.end(); file++, k++) {
-    //sprintf(txt, "%d", k);
-    //filename = "block";
-    //filename += txt;
-    gvt::core::DBNodeH EnzoMeshNode = cntxt->createNodeFromType("Mesh",*file, dataNodes.UUID());
+  // for (k = 0; k < 8; k++) {
+  for (file = files.begin(), k = 0; file != files.end(); file++, k++) {
+    // sprintf(txt, "%d", k);
+    // filename = "block";
+    // filename += txt;
+    gvt::core::DBNodeH EnzoMeshNode = cntxt->createNodeFromType("Mesh", *file, dataNodes.UUID());
     // read in some ply data and get ready to load it into the mesh
     // filepath = rootdir + "block" + std::string(txt) + ".ply";
-    filepath =  *file;
+    filepath = *file;
     myfile = fopen(filepath.c_str(), "r");
     in_ply = read_ply(myfile);
     for (i = 0; i < in_ply->num_elem_types; i++) {
@@ -241,17 +241,17 @@ int main(int argc, char **argv) {
     close_ply(in_ply);
     // smoosh data into the mesh object
     {
-      Material* m = new Material();
+      Material *m = new Material();
       m->type = LAMBERT;
-      //m->type = EMBREE_MATERIAL_MATTE;
-      m->kd = glm::vec3(1.0,1.0, 1.0);
-      m->ks = glm::vec3(1.0,1.0,1.0);
+      // m->type = EMBREE_MATERIAL_MATTE;
+      m->kd = glm::vec3(1.0, 1.0, 1.0);
+      m->ks = glm::vec3(1.0, 1.0, 1.0);
       m->alpha = 0.5;
 
-      //m->type = EMBREE_MATERIAL_METAL;
-      //copper metal
-      m->eta = glm::vec3(.19,1.45, 1.50);
-      m->k = glm::vec3(3.06,2.40, 1.88);
+      // m->type = EMBREE_MATERIAL_METAL;
+      // copper metal
+      m->eta = glm::vec3(.19, 1.45, 1.50);
+      m->k = glm::vec3(3.06, 2.40, 1.88);
       m->roughness = 0.05;
 
       Mesh *mesh = new Mesh(m);

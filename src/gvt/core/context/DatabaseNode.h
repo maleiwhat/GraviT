@@ -24,7 +24,7 @@
 #ifndef GVT_CORE_DATABASE_NODE_H
 #define GVT_CORE_DATABASE_NODE_H
 
-#include "gvt/core/Types.h"
+#include "gvt/core/context/Types.h"
 
 namespace gvt {
 namespace core {

@@ -21,55 +21,11 @@
    GraviT is funded in part by the US National Science Foundation under awards ACI-1339863,
    ACI-1339881 and ACI-1339840
    ======================================================================================= */
-#ifndef GVT_CORE_VARIANT_H
-#define GVT_CORE_VARIANT_H
+#ifndef GVT_CORE_SCHEDULER_H
+#define GVT_CORE_SCHEDULER_H
 
-#include <gvt/core/Math.h>
-#include <gvt/core/String.h>
-#include <gvt/core/Uuid.h>
+/// placeholder base class for work schedules
 
-#include <boost/variant.hpp>
+#include <gvt/core/schedule/SchedulerBase.h>
 
-#include <ostream>
-
-namespace gvt {
-namespace core {
-/// mutable container class for datatypes used in the context database
-/**
-* \sa CoreContext, Database, DatabaseNode
-*/
-class Variant {
-public:
-  Variant();
-  Variant(int);
-  Variant(long);
-  Variant(float);
-  Variant(double);
-  Variant(bool);
-  Variant(unsigned long long);
-  Variant(String);
-  Variant(Uuid);
-  Variant(glm::vec3);
-
-  int toInteger() const;
-  long toLong() const;
-  float toFloat() const;
-  double toDouble() const;
-  bool toBoolean() const;
-  String toString() const;
-  Uuid toUuid() const;
-  unsigned long long toULongLong() const;
-  glm::vec3 tovec3() const;
-
-  bool operator==(const Variant &) const;
-  bool operator!=(const Variant &) const;
-
-  friend std::ostream &operator<<(std::ostream &, const Variant &);
-
-protected:
-  boost::variant<int, long, float, double, bool, unsigned long long, String, Uuid, glm::vec3> coreData;
-};
-}
-}
-
-#endif // GVT_CORE_VARIANT_H
+#endif // GVT_CORE_SCHEDULE_H

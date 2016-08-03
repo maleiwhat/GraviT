@@ -21,28 +21,21 @@
    GraviT is funded in part by the US National Science Foundation under awards ACI-1339863,
    ACI-1339881 and ACI-1339840
    ======================================================================================= */
-#ifndef GVT_RENDER_CONTEXT_H
-#define GVT_RENDER_CONTEXT_H
 
-#include <gvt/core/CoreContext.h>
+#include <gvt/core/context/Uuid.h>
+
+using namespace gvt::core;
+
+boost::uuids::random_generator Uuid::gen;
+
+Uuid Uuid::null() {
+  Uuid u;
+  u.nullify();
+  return u;
+}
 
 namespace gvt {
-namespace render {
-/// internal context for GraviT ray tracing renderer
-/** \sa CoreContext
-*/
-class RenderContext : public gvt::core::CoreContext {
-public:
-  static void CreateContext();
-  virtual ~RenderContext();
-  gvt::core::DBNodeH createNodeFromType(gvt::core::String type, gvt::core::String name,
-                                        gvt::core::Uuid parent = gvt::core::Uuid::null());
-  static RenderContext *instance();
-
-protected:
-  RenderContext();
-};
+namespace core {
+std::ostream &operator<<(std::ostream &os, const Uuid &u) { return os << u.uuid; }
 }
 }
-
-#endif // GVT_RENDER_CONTEXT_H

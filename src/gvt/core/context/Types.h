@@ -25,9 +25,9 @@
 #define GVT_CORE_TYPES_H
 
 #include <gvt/core/Math.h>
-#include <gvt/core/String.h>
-#include <gvt/core/Uuid.h>
-#include <gvt/core/Variant.h>
+#include <gvt/core/context/String.h>
+#include <gvt/core/context/Uuid.h>
+#include <gvt/core/context/Variant.h>
 
 #include <map>
 #include <vector>

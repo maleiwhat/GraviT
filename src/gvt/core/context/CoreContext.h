@@ -26,9 +26,9 @@
 
 #include <gvt/core/Debug.h>
 
-#include "gvt/core/DatabaseNode.h"
-#include "gvt/core/Types.h"
-#include <gvt/core/Database.h>
+#include "gvt/core/context/DatabaseNode.h"
+#include "gvt/core/context/Types.h"
+#include <gvt/core/context/Database.h>
 
 #ifndef MAX
 #define MAX(a, b) ((a > b) ? (a) : (b))

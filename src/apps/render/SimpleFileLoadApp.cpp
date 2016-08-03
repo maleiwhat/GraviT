@@ -28,7 +28,7 @@
 #include <algorithm>
 #include <gvt/core/Math.h>
 #include <gvt/core/mpi/Wrapper.h>
-#include <gvt/render/RenderContext.h>
+#include <gvt/render/Context.h>
 #include <gvt/render/Schedulers.h>
 #include <gvt/render/Types.h>
 #include <set>
@@ -107,8 +107,7 @@ int main(int argc, char **argv) {
   {
 
     std::string objPath = std::string("../data/geom/bunny.obj");
-    if(cmd.isSet("obj"))
-    {
+    if (cmd.isSet("obj")) {
       objPath = cmd.getValue<std::string>("obj")[0];
     }
 
@@ -184,13 +183,13 @@ int main(int argc, char **argv) {
   camNode["fov"] = (float)(45.0 * M_PI / 180.0);
   camNode["rayMaxDepth"] = (int)1;
   camNode["raySamples"] = (int)1;
-  camNode["jitterWindowSize"]= (float) 0;
+  camNode["jitterWindowSize"] = (float)0;
 
   // set image width/height
   gvt::core::DBNodeH filmNode = cntxt->createNodeFromType("Film", "film", root.UUID());
   filmNode["width"] = 512;
   filmNode["height"] = 512;
-  filmNode["outputPath"] = (std::string)"bunny";
+  filmNode["outputPath"] = (std::string) "bunny";
 
   if (cmd.isSet("eye")) {
     std::vector<float> eye = cmd.getValue<float>("eye");
@@ -206,8 +205,7 @@ int main(int argc, char **argv) {
     filmNode["width"] = wsize[0];
     filmNode["height"] = wsize[1];
   }
-  if (cmd.isSet("output"))
-  {
+  if (cmd.isSet("output")) {
     std::vector<std::string> output = cmd.getValue<std::string>("output");
     filmNode["outputPath"] = output[0];
   }
@@ -246,7 +244,7 @@ int main(int argc, char **argv) {
   float fov = camNode["fov"].value().toFloat();
   glm::vec3 up = camNode["upVector"].value().tovec3();
 
-  int rayMaxDepth =camNode["rayMaxDepth"].value().toInteger();
+  int rayMaxDepth = camNode["rayMaxDepth"].value().toInteger();
   int raySamples = camNode["raySamples"].value().toInteger();
   float jitterWindowSize = camNode["jitterWindowSize"].value().toFloat();
 
@@ -255,7 +253,7 @@ int main(int argc, char **argv) {
   mycamera.setJitterWindowSize(jitterWindowSize);
   mycamera.lookAt(cameraposition, focus, up);
   mycamera.setFOV(fov);
-  
+
   mycamera.setFilmsize(filmNode["width"].value().toInteger(), filmNode["height"].value().toInteger());
 
   // setup image from database sizes

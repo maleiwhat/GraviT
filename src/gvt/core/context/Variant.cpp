@@ -22,7 +22,7 @@
    ACI-1339881 and ACI-1339840
    ======================================================================================= */
 
-#include <gvt/core/Variant.h>
+#include <gvt/core/context/Variant.h>
 
 using namespace gvt::core;
 

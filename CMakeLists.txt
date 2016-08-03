@@ -197,43 +197,52 @@ set(GVT_CORE_HDRS ${GVT_CORE_HDRS}
   src/gvt/core/Actor.h
   src/gvt/core/Adapter.h
   src/gvt/core/Algorithm.h
-  src/gvt/core/CoreContext.h
-  src/gvt/core/data/Transform.h
+  src/gvt/core/Context.h
   src/gvt/core/Data.h
-  src/gvt/core/Database.h
-  src/gvt/core/DatabaseNode.h
   src/gvt/core/Debug.h
-  src/gvt/core/math/RandEngine.h
   src/gvt/core/Math.h
+  src/gvt/core/Scheduler.h
+
+  src/gvt/core/math/RandEngine.h
+  src/gvt/core/data/Transform.h
+
   src/gvt/core/mpi/Comm.h
   src/gvt/core/mpi/CommData.h
   src/gvt/core/mpi/SingleNode.h
   src/gvt/core/mpi/Wrapper.h
+
+  src/gvt/core/context/CoreContext.h
+  src/gvt/core/context/Database.h
+  src/gvt/core/context/DatabaseNode.h
+
+  src/gvt/core/context/Types.h
+  src/gvt/core/context/String.h
+  src/gvt/core/context/Uuid.h
+  src/gvt/core/context/Variant.h
+
   src/gvt/core/schedule/SchedulerBase.h
-  src/gvt/core/Schedule.h
-  src/gvt/core/String.h
-  src/gvt/core/Types.h
-  src/gvt/core/Uuid.h
-  src/gvt/core/Variant.h
+
 )
 
 set(GVT_CORE_SRCS ${GVT_CORE_SRCS}
-  src/gvt/core/CoreContext.cpp
-  src/gvt/core/Database.cpp
-  src/gvt/core/DatabaseNode.cpp
-  src/gvt/core/Uuid.cpp
-  src/gvt/core/Variant.cpp
+  src/gvt/core/context/CoreContext.cpp
+  src/gvt/core/context/Database.cpp
+  src/gvt/core/context/DatabaseNode.cpp
+  src/gvt/core/context/Uuid.cpp
+  src/gvt/core/context/Variant.cpp
 )
 
 
 set(GVT_RENDER_HDRS ${GVT_RENDER_HDRS}
+  src/gvt/render/Context.h
+  src/gvt/render/Context.h
+
   src/gvt/render/actor/Ray.h
   src/gvt/render/algorithm/DomainTracer.h
   src/gvt/render/algorithm/HybridTracer.h
   src/gvt/render/algorithm/ImageTracer.h
   src/gvt/render/algorithm/TracerBase.h
   src/gvt/render/algorithm/Tracers.h
-  src/gvt/render/RenderContext.h
   src/gvt/render/data/DerivedTypes.h
   src/gvt/render/data/reader/ObjReader.h
   src/gvt/render/data/reader/PlyReader.h
@@ -250,6 +259,9 @@ set(GVT_RENDER_HDRS ${GVT_RENDER_HDRS}
 	src/gvt/render/data/scene/Light.h
 	src/gvt/render/data/accel/AbstractAccel.h
 	src/gvt/render/data/accel/BVH.h
+
+  src/gvt/render/context/RenderContext.h
+
 	src/gvt/render/schedule/DomainScheduler.h
 	src/gvt/render/schedule/hybrid/AdaptiveSendSchedule.h
 	src/gvt/render/schedule/hybrid/GreedySchedule.h
@@ -263,13 +275,14 @@ set(GVT_RENDER_HDRS ${GVT_RENDER_HDRS}
 	src/gvt/render/schedule/HybridScheduler.h
 	src/gvt/render/schedule/ImageScheduler.h
 	src/gvt/render/Schedulers.h
-	src/gvt/render/Types.h
+
+  src/gvt/render/Types.h
 )
 
 
 set(GVT_RENDER_SRCS ${GVT_RENDER_SRCS}
   src/gvt/render/actor/Ray.cpp
-  src/gvt/render/RenderContext.cpp
+  src/gvt/render/context/RenderContext.cpp
   src/gvt/render/data/reader/ObjReader.cpp
   src/gvt/render/data/reader/PlyReader.cpp
   src/gvt/render/data/primitives/BBox.cpp
@@ -426,7 +439,7 @@ if (GVT_RENDER)
 
 	add_library(gvtRender STATIC
 		${GVT_CORE_HDRS}
-		${GVT_CORE_SRCS}
+		# ${GVT_CORE_SRCS}
 		${GVT_RENDER_HDRS}
 		${GVT_RENDER_SRCS}
 		)
@@ -442,10 +455,10 @@ endif(GVT_RENDER)
 
 ## CTEST
 if (GVT_CTEST)
-    
+
   enable_testing()
   ## Check if run in mpi
-  
+
   SET(runConfig "" )
   if (GVT_USE_MPI)
     set (no_mpi_proc 2)
@@ -595,7 +608,3 @@ if (GVT_GLRENDER_APP)
     RUNTIME DESTINATION bin
   )
 endif(GVT_GLRENDER_APP)
-
-
-
-

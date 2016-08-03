@@ -21,29 +21,12 @@
    GraviT is funded in part by the US National Science Foundation under awards ACI-1339863,
    ACI-1339881 and ACI-1339840
    ======================================================================================= */
-#include "gvt/core/Context.h"
-#include "gvt/core/Database.h"
-#include "gvt/core/DatabaseNode.h"
-#include "gvt/core/Debug.h"
+#ifndef GVT_CORE_CONTEXT_INCLUDE_H
+#define GVT_CORE_CONTEXT_INCLUDE_H
 
-using namespace gvt::core;
+/// include all relevant context classes
 
-int main(int argc, char **argv) {
-  Context &ctx = *Context::singleton();
-  Database &db = *ctx.database();
+#include <gvt/core/context/CoreContext.h>
+#include <gvt/core/context/Types.h>
 
-  GVT_DEBUG(DBG_ALWAYS, "Created database with root node uuid " << ctx.getRootNode().UUID().toString());
-
-  DBNodeH session = ctx.createNodeFromType(String("Session"), ctx.getRootNode().UUID());
-  DBNodeH renderable = ctx.createNodeFromType(String("Renderable3DGrid"), ctx.getRootNode().UUID());
-
-  GVT_DEBUG(DBG_ALWAYS, "Created session with node uuid " << session.UUID().toString());
-  GVT_DEBUG(DBG_ALWAYS, "Created renderable with node uuid " << renderable.UUID().toString());
-
-  session["foo"] = String("foo");
-  renderable["bar"] = 5;
-
-  db.printTree(ctx.getRootNode().UUID());
-
-  return 0;
-}
+#endif // GVT_CORE_CONTEXT_INCLUDE_H

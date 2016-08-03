@@ -21,9 +21,12 @@
    GraviT is funded in part by the US National Science Foundation under awards ACI-1339863,
    ACI-1339881 and ACI-1339840
    ======================================================================================= */
-#ifndef GVT_CORE_SCHEDULE_H
-#define GVT_CORE_SCHEDULE_H
+#ifndef GVT_RENDER_CONTEXT_INCLUDE_H
+#define GVT_RENDER_CONTEXT_INCLUDE_H
 
-/// placeholder base class for work schedules
+/// include all relevant context classes
 
-#endif // GVT_CORE_SCHEDULE_H
+#include <gvt/core/context/CoreContext.h>
+#include <gvt/render/context/RenderContext.h>
+
+#endif // GVT_RENDER_CONTEXT_INCLUDE_H

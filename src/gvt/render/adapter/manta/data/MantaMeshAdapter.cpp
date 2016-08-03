@@ -27,7 +27,7 @@
 
 #include "gvt/render/adapter/manta/data/MantaMeshAdapter.h"
 
-#include "gvt/core/CoreContext.h"
+#include "gvt/core/Context.h"
 
 #include <gvt/core/Debug.h>
 #include <gvt/core/Math.h>

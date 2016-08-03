@@ -21,46 +21,28 @@
    GraviT is funded in part by the US National Science Foundation under awards ACI-1339863,
    ACI-1339881 and ACI-1339840
    ======================================================================================= */
-//
-// AbstractAccel.h
-//
-
-#ifndef GVT_RENDER_DATA_ACCEL_ABSTRACT_ACCEL_H
-#define GVT_RENDER_DATA_ACCEL_ABSTRACT_ACCEL_H
+#ifndef GVT_RENDER_CONTEXT_H
+#define GVT_RENDER_CONTEXT_H
 
 #include <gvt/core/Context.h>
 
-#include <gvt/render/actor/Ray.h>
-#include <gvt/render/data/primitives/BBox.h>
-
-#include <limits>
-#include <vector>
-
 namespace gvt {
 namespace render {
-namespace data {
-namespace accel {
-/// struct for closest intersection between ray and acceleration structure
-// struct ClosestHit {
-//   ClosestHit() : distance(std::numeric_limits<float>::max()) {}
-//   // gvt::render::data::domain::AbstractDomain *domain;
-//   // gvt::core::DBNodeH instance;
-//   float distance;
-// };
-
-/// abstract base class for acceleration structures
-class AbstractAccel {
+/// internal context for GraviT ray tracing renderer
+/** \sa CoreContext
+*/
+class RenderContext : public gvt::core::CoreContext {
 public:
-  AbstractAccel(gvt::core::Vector<gvt::core::DBNodeH> &instanceSet) : instanceSet(instanceSet) {}
-  virtual void intersect(const gvt::render::actor::Ray &ray, gvt::render::actor::isecDomList &isect) = 0;
-  virtual int intersect(const gvt::render::actor::Ray &ray, int from, float &t) = 0;
+  static void CreateContext();
+  virtual ~RenderContext();
+  gvt::core::DBNodeH createNodeFromType(gvt::core::String type, gvt::core::String name,
+                                        gvt::core::Uuid parent = gvt::core::Uuid::null());
+  static RenderContext *instance();
 
 protected:
-  gvt::core::Vector<gvt::core::DBNodeH> instanceSet;
+  RenderContext();
 };
 }
 }
-}
-}
 
-#endif // GVT_RENDER_DATA_ACCEL_ABSTRACT_ACCEL_H
+#endif // GVT_RENDER_CONTEXT_H

@@ -21,7 +21,7 @@
    GraviT is funded in part by the US National Science Foundation under awards ACI-1339863,
    ACI-1339881 and ACI-1339840
    ======================================================================================= */
-#include "gvt/render/RenderContext.h"
+#include "gvt/render/context/RenderContext.h"
 
 #include "gvt/core/Debug.h"
 
