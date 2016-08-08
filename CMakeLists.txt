@@ -58,6 +58,7 @@ if (GVT_RENDER)
   option(GVT_RENDER_ADAPTER_OPTIX_PRIME 	"Build the NVIDIA Optix Prime ray tracing engine adapter" OFF)
   option(GVT_RENDER_APP 					"Build the GraviT example renderer application" ON)
   option(GVT_GLRENDER_APP			"Build the interactive X application" ON)
+  option(GVT_ASYNC_APP			"Build the interactive Async application" ON)
   option(GVT_SIMPLE_APP			"Build the simple application" ON)
   option(GVT_SIMPLE_FILE_LOAD_APP		"Build the simple application (load obj file)" ON)
   option(GVT_PLY_APP "Build the ply reader application (load ply file)" ON)
@@ -615,3 +616,38 @@ if (GVT_GLRENDER_APP)
     RUNTIME DESTINATION bin
   )
 endif(GVT_GLRENDER_APP)
+
+if (GVT_ASYNC_APP)
+  find_package(MPI REQUIRED)
+  find_package(OpenGL REQUIRED)
+  include_directories(${MPI_INCLUDE_PATH})
+  set(GVTASYNCAPP_RENDER_LIBS ${GVTASYNCAPP_RENDER_LIBS}  ${MPI_LIBRARIES})
+
+  find_library(GLUTLIB glut)
+  if(GLUTLIB)
+    set(GVTASYNCAPP_RENDER_LIBS ${GVTASYNCAPP_RENDER_LIBS} ${OpenGL_LIBRARIES} ${GLUTLIB} ${GVT_CORE_LIBS})
+  endif(GLUTLIB)
+  find_library(GLULIB GLU)
+  if(GLULIB)
+    set(GVTASYNCAPP_RENDER_LIBS ${GVTASYNCAPP_RENDER_LIBS} ${GLULIB})
+  endif(GLULIB)
+
+  set(GVTASYNCAPP_RENDER_HDRS ${GVTASYNCAPP_RENDER_HDRS}
+
+  )
+
+  set(GVTASYNCAPP_RENDER_SRCS ${GVTASYNCAPP_RENDER_SRCS}
+    src/apps/async/async.cpp
+  )
+
+  add_executable(gvtAsync
+    ${GVTASYNCAPP_RENDER_HDRS}
+    ${GVTASYNCAPP_RENDER_SRCS}
+  )
+
+  target_link_libraries(gvtAsync ${OPENGL_gl_LIBRARY} ${GVTASYNCAPP_RENDER_LIBS} gvtCore gvtRender)
+
+  install(TARGETS gvtAsync
+    RUNTIME DESTINATION bin
+  )
+endif(GVT_ASYNC_APP)
