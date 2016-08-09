@@ -29,21 +29,43 @@
 #include <mpi.h>
 #include <thread>
 
+#include <iostream>
+
 namespace gvt {
 namespace comm {
-std::shared_ptr<acommunicator> acommunicator::_singleton = nullptr;
 
-std::shared_ptr<acommunicator> acommunicator::instance() {
+std::shared_ptr<acommunicator> acommunicator::_singleton = nullptr;
+tbb::task_group acommunicator::g;
+
+std::mutex acommunicator::m;
+
+std::shared_ptr<acommunicator> acommunicator::instance(int argc, char *argv[]) {
+
   std::lock_guard<std::mutex> lg(acommunicator::m);
   if (acommunicator::_singleton == nullptr) {
-    acommunicator::_singleton = std::make_shared<acommunicator>();
+    acommunicator::_singleton = std::shared_ptr<acommunicator>(new acommunicator(argc, argv));
+    g.run([&]() { acommunicator::launch(acommunicator::_singleton); });
   }
 
   return acommunicator::_singleton;
 }
 
-acommunicator::acommunicator() { MPI::Init(); }
-acommunicator::~acommunicator() { MPI::Finalize(); }
+acommunicator::acommunicator(int argc, char *argv[]) { MPI::Init(argc, argv); }
+acommunicator::~acommunicator() {
+
+  // MPI::Finalize();
+  //  MPI_Finalize();
+}
+
+void acommunicator::terminate() {
+  // MPI::COMM_WORLD.Barrier();
+  _terminate = true;
+  g.wait();
+  // std::cout << "Terminate comm channel : " << id() << std::endl;
+  MPI::Finalize();
+}
+
+bool acommunicator::hasMessages() { return _inbox.size() > 0; }
 
 size_t acommunicator::id() const { return MPI::COMM_WORLD.Get_rank(); }
 size_t acommunicator::maxid() const { return MPI::COMM_WORLD.Get_size(); }
@@ -65,29 +87,57 @@ void acommunicator::broadcast(std::shared_ptr<Message> msg, bool sync) {
   if (sync) {
     MPI::COMM_WORLD.Bcast(msg->msg_ptr(), msg->size(), MPI::UNSIGNED_CHAR, 0);
   } else {
+    std::lock_guard<std::mutex> lk(_outbox_mutex);
     _outbox.push_back(msg);
   }
 }
 
-void acommunicator::run(acommunicator *com) {
-  while (!_outbox.empty() || !_inbox.empty() || !_terminate) {
+std::shared_ptr<Message> acommunicator::popMessage() {
+  std::lock_guard<std::mutex> lk(_inbox_mutex);
+  if (_inbox.empty()) return std::make_shared<Message>();
+  std::shared_ptr<Message> msg = _inbox.front();
+  _inbox.pop_front();
+  return msg;
+}
 
+void acommunicator::launch(std::shared_ptr<acommunicator> com) { com->run(); }
+
+void acommunicator::run() {
+
+  // std::cout << "Communication started : " << id() << std::endl;
+  //
+  // std::cout << "C[" << id() << "] : " << ((!_outbox.empty() || !_inbox.empty() || !_terminate) ? "T" : "F")
+  //           << std::endl;
+  //
+  // std::cout << "I[" << id() << "] : " << ((_inbox.empty()) ? "T" : "F") << std::endl;
+  // std::cout << "O[" << id() << "] : " << ((_inbox.empty()) ? "T" : "F") << std::endl;
+  // std::cout << "T[" << id() << "] : " << ((_terminate) ? "T" : "F") << std::endl;
+
+  while ((!_outbox.empty() || !_inbox.empty()) || !_terminate) {
+    // std::cout << "I[" << id() << "] : " << (!(_inbox.empty()) ? "T" : "F") << " : " << _inbox.size() << std::endl;
+    // std::cout << "O[" << id() << "] : " << (!(_outbox.empty()) ? "T" : "F") << " : " << _outbox.size() <<
+    // std::endl;
+    // std::cout << "T[" << id() << "] : " << (!(_terminate) ? "T" : "F") << std::endl;
+    // std::cout << "C[" << id() << "] : " << ((!_outbox.empty() || !_inbox.empty() || !_terminate) ? "T" : "F")
+    //           << std::endl;
     // Process out box
-    if (!_inbox.empty()) {
+    if (!_outbox.empty()) {
+      std::lock_guard<std::mutex> lk(_outbox_mutex);
       std::shared_ptr<Message> msg = _outbox.front();
       _outbox.pop_front();
       if (msg->dst() == -1) {
         MPI::COMM_WORLD.Bcast(msg->msg_ptr(), msg->size(), MPI::UNSIGNED_CHAR, 0);
+        // std::cout << "Broadcasted message on channel " << id() << std::endl;
       } else {
         GVT_ASSERT(msg->dst() < maxid(), "Trying to send a message to a bad processor ID");
         MPI::COMM_WORLD.Isend(msg->msg_ptr(), msg->size(), MPI::UNSIGNED_CHAR, msg->dst(), USER_DEFINED_MSG);
       }
     }
     // Check for messages and put on the inbox
-    {
-      MPI::Status status;
-      MPI::COMM_WORLD.Probe(MPI::ANY_SOURCE, COMMUNICATOR_CONTROL, status);
 
+    MPI::Status status;
+    if (MPI::COMM_WORLD.Iprobe(MPI::ANY_SOURCE, COMMUNICATOR_CONTROL, status)) {
+      // std::cout << "Got comm messages : " << id() << std::endl;
       const auto sender = status.Get_source();
       const auto n_bytes = status.Get_count(MPI::BYTE);
 
@@ -97,22 +147,20 @@ void acommunicator::run(acommunicator *com) {
       }
     }
 
-    {
-      MPI::Status status;
-      MPI::COMM_WORLD.Probe(MPI::ANY_SOURCE, USER_DEFINED_MSG, status);
-
+    if (MPI::COMM_WORLD.Iprobe(MPI::ANY_SOURCE, USER_DEFINED_MSG, status)) {
       const auto sender = status.Get_source();
       const auto n_bytes = status.Get_count(MPI::BYTE);
-
+      // std::cout << "Get user messages " << id() << std::endl;
       if (n_bytes > 0) {
         std::shared_ptr<Message> msg = std::make_shared<Message>(n_bytes);
         MPI::COMM_WORLD.Recv(msg->msg_ptr(), n_bytes, MPI::UNSIGNED_CHAR, sender, USER_DEFINED_MSG);
+        std::lock_guard<std::mutex> lk(_inbox_mutex);
+        _inbox.push_back(msg);
       }
     }
-    {
-      MPI::Status status;
-      MPI::COMM_WORLD.Probe(MPI::ANY_SOURCE, VOTE_MSG_TAG, status);
 
+    if (MPI::COMM_WORLD.Iprobe(MPI::ANY_SOURCE, VOTE_MSG_TAG, status)) {
+      // std::cout << "Got vote messages " << id() << std::endl;
       const auto sender = status.Get_source();
       const auto n_bytes = status.Get_count(MPI::BYTE);
 

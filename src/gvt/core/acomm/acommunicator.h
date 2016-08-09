@@ -29,6 +29,8 @@
 #include <memory>
 #include <mutex>
 
+#include <tbb/task_group.h>
+
 #include <gvt/core/acomm/message.h>
 
 namespace gvt {
@@ -42,10 +44,11 @@ protected:
 public:
   static std::shared_ptr<acommunicator> _singleton;
   static std::mutex m;
-  acommunicator();
+  acommunicator(int argc, char *argv[]);
   ~acommunicator();
 
-  static std::shared_ptr<acommunicator> instance();
+  static std::shared_ptr<acommunicator> instance(int argc = 0, char *argv[] = nullptr);
+  static void launch(std::shared_ptr<acommunicator> com);
 
   size_t id() const;
   size_t maxid() const;
@@ -53,18 +56,26 @@ public:
   void send(std::shared_ptr<Message> msg, size_t target, bool sync = false);
   void broadcast(std::shared_ptr<Message> msg, bool sync = false);
 
-  void terminate() { _terminate = true; }
+  void terminate();
 
-  void run(acommunicator *com);
+  void run();
+
+  bool hasMessages();
+
+  std::shared_ptr<Message> popMessage();
 
 private:
   acommunicator(const acommunicator &) = delete;
   acommunicator &operator=(const acommunicator &) = delete;
 
+  std::mutex _outbox_mutex;
   std::deque<std::shared_ptr<Message> > _outbox;
+  std::mutex _inbox_mutex;
   std::deque<std::shared_ptr<Message> > _inbox;
 
-  bool _terminate = true;
+  static tbb::task_group g;
+
+  bool _terminate = false;
 };
 }
 }

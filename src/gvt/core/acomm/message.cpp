@@ -57,7 +57,7 @@ bool Message::wait() {
 }
 
 void Message::setcontent(const void *_data, const size_t &size) {
-  GVT_ASSERT(size < _size, "Wrong size buffer");
+  GVT_ASSERT(size <= _size, "Wrong size buffer");
   std::memcpy(_buffer.get(), _data, _size);
 }
 
