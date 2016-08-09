@@ -25,6 +25,8 @@
 #define GVT_CORE_DATABASE_NODE_H
 
 #include "gvt/core/context/Types.h"
+#include <gvt/core/Debug.h>
+#include <gvt/render/data/primitives/BBox.h>
 
 namespace gvt {
 namespace core {
@@ -47,7 +49,6 @@ public:
   void setName(String name);
   void setParentUUID(Uuid parentUUID);
   void setValue(Variant value);
-
   Vector<DatabaseNode *> getChildren();
 
   void propagateUpdate();
@@ -73,6 +74,7 @@ public:
 
   void propagateUpdate();
   DBNodeH deRef();
+  void remove();
 
   DatabaseNode &getNode();
 
