@@ -137,11 +137,11 @@ int main(int argc, char **argv) {
   // mix of cones and cubes
 
   if (rank == 0) {
-	 gvt::core::DBNodeH dataNodes = cntxt->addToSync(cntxt->createNodeFromType("Data", "Data", root.UUID()));
-     cntxt->addToSync(cntxt->createNodeFromType("Mesh", "conemesh", dataNodes.UUID()));
-     cntxt->addToSync(cntxt->createNodeFromType("Mesh", "cubemesh", dataNodes.UUID()));
-     cntxt->addToSync(cntxt->createNodeFromType("Instances", "Instances", root.UUID()));
-   }
+    gvt::core::DBNodeH dataNodes = cntxt->addToSync(cntxt->createNodeFromType("Data", "Data", root.UUID()));
+    cntxt->addToSync(cntxt->createNodeFromType("Mesh", "conemesh", dataNodes.UUID()));
+    cntxt->addToSync(cntxt->createNodeFromType("Mesh", "cubemesh", dataNodes.UUID()));
+    cntxt->addToSync(cntxt->createNodeFromType("Instances", "Instances", root.UUID()));
+  }
 
   cntxt->syncContext();
 
@@ -149,7 +149,7 @@ int main(int argc, char **argv) {
   gvt::core::DBNodeH instNodes = root["Instances"];
 
   gvt::core::DBNodeH coneMeshNode = dataNodes.getChildren()[0];
-  gvt::core::DBNodeH cubeMeshNode =  dataNodes.getChildren()[1];
+  gvt::core::DBNodeH cubeMeshNode = dataNodes.getChildren()[1];
 
   {
     Material *m = new Material();
@@ -204,10 +204,10 @@ int main(int argc, char **argv) {
     coneMeshNode["bbox"] = (unsigned long long)meshbbox;
     coneMeshNode["ptr"] = (unsigned long long)mesh;
 
-	gvt::core::DBNodeH loc = cntxt->createNode("rank", rank);
-	coneMeshNode["Locations"] += loc;
+    gvt::core::DBNodeH loc = cntxt->createNode("rank", rank);
+    coneMeshNode["Locations"] += loc;
 
-	cntxt->addToSync(coneMeshNode);
+    cntxt->addToSync(coneMeshNode);
   }
 
   {
@@ -297,57 +297,54 @@ int main(int argc, char **argv) {
     cubeMeshNode["bbox"] = (unsigned long long)meshbbox;
     cubeMeshNode["ptr"] = (unsigned long long)mesh;
 
-	gvt::core::DBNodeH loc = cntxt->createNode("rank", rank);
-	cubeMeshNode["Locations"] += loc;
+    gvt::core::DBNodeH loc = cntxt->createNode("rank", rank);
+    cubeMeshNode["Locations"] += loc;
 
     cntxt->addToSync(cubeMeshNode);
-
   }
 
   cntxt->syncContext();
 
-  if (rank ==0 ) {
-  // create a NxM grid of alternating cones / cubes, offset using i and j
-  int instId = 0;
-  int ii[2] = { -2, 3 }; // i range
-  int jj[2] = { -2, 3 }; // j range
-  for (int i = ii[0]; i < ii[1]; i++) {
-    for (int j = jj[0]; j < jj[1]; j++) {
-      gvt::core::DBNodeH instnode = cntxt->createNodeFromType("Instance", "inst", instNodes.UUID());
-      // gvt::core::DBNodeH meshNode = (instId % 2) ? coneMeshNode : cubeMeshNode;
-      gvt::core::DBNodeH meshNode = (instId % 2) ? cubeMeshNode : coneMeshNode;
-      Box3D *mbox = (Box3D *)meshNode["bbox"].value().toULongLong();
+  if (rank == 0) {
+    // create a NxM grid of alternating cones / cubes, offset using i and j
+    int instId = 0;
+    int ii[2] = { -2, 3 }; // i range
+    int jj[2] = { -2, 3 }; // j range
+    for (int i = ii[0]; i < ii[1]; i++) {
+      for (int j = jj[0]; j < jj[1]; j++) {
+        gvt::core::DBNodeH instnode = cntxt->createNodeFromType("Instance", "inst", instNodes.UUID());
+        // gvt::core::DBNodeH meshNode = (instId % 2) ? coneMeshNode : cubeMeshNode;
+        gvt::core::DBNodeH meshNode = (instId % 2) ? cubeMeshNode : coneMeshNode;
+        Box3D *mbox = (Box3D *)meshNode["bbox"].value().toULongLong();
 
-      instnode["id"] = instId++;
-      instnode["meshRef"] = meshNode.UUID();
+        instnode["id"] = instId++;
+        instnode["meshRef"] = meshNode.UUID();
 
-      auto m = new glm::mat4(1.f);
-      auto minv = new glm::mat4(1.f);
-      auto normi = new glm::mat3(1.f);
-      //*m *glm::mat4::createTranslation(0.0, i * 0.5, j * 0.5);
-      *m = glm::translate(*m, glm::vec3(0.0, i * 0.5, j * 0.5));
-      //*m = *m * glm::mat4::createScale(0.4, 0.4, 0.4);
-      *m = glm::scale(*m, glm::vec3(0.4, 0.4, 0.4));
+        auto m = new glm::mat4(1.f);
+        auto minv = new glm::mat4(1.f);
+        auto normi = new glm::mat3(1.f);
+        //*m *glm::mat4::createTranslation(0.0, i * 0.5, j * 0.5);
+        *m = glm::translate(*m, glm::vec3(0.0, i * 0.5, j * 0.5));
+        //*m = *m * glm::mat4::createScale(0.4, 0.4, 0.4);
+        *m = glm::scale(*m, glm::vec3(0.4, 0.4, 0.4));
 
-      instnode["mat"] = (unsigned long long)m;
-      *minv = glm::inverse(*m);
-      instnode["matInv"] = (unsigned long long)minv;
-      *normi = glm::transpose(glm::inverse(glm::mat3(*m)));
-      instnode["normi"] = (unsigned long long)normi;
-      auto il = glm::vec3((*m) * glm::vec4(mbox->bounds_min, 1.f));
-      auto ih = glm::vec3((*m) * glm::vec4(mbox->bounds_max, 1.f));
-      Box3D *ibox = new gvt::render::data::primitives::Box3D(il, ih);
-      instnode["bbox"] = (unsigned long long)ibox;
-      instnode["centroid"] = ibox->centroid();
+        instnode["mat"] = (unsigned long long)m;
+        *minv = glm::inverse(*m);
+        instnode["matInv"] = (unsigned long long)minv;
+        *normi = glm::transpose(glm::inverse(glm::mat3(*m)));
+        instnode["normi"] = (unsigned long long)normi;
+        auto il = glm::vec3((*m) * glm::vec4(mbox->bounds_min, 1.f));
+        auto ih = glm::vec3((*m) * glm::vec4(mbox->bounds_max, 1.f));
+        Box3D *ibox = new gvt::render::data::primitives::Box3D(il, ih);
+        instnode["bbox"] = (unsigned long long)ibox;
+        instnode["centroid"] = ibox->centroid();
 
-	  cntxt->addToSync(instnode);
-
+        cntxt->addToSync(instnode);
+      }
     }
   }
-  }
 
   cntxt->syncContext();
-
 
   // add lights, camera, and film to the database
   gvt::core::DBNodeH lightNodes = cntxt->createNodeFromType("Lights", "Lights", root.UUID());

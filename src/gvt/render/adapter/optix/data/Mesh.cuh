@@ -37,64 +37,54 @@
 
 //#include <gvt/render/data/primitives/Mesh.h>
 
-#include <vector_functions.h>
 #include "Material.cuh"
+#include <vector_functions.h>
 
 namespace gvt {
 namespace render {
 namespace data {
 namespace cuda_primitives {
 
-
 class Matrix3f {
   //---[ Private Variable Declarations ]-----------------
 public:
   // matrix elements in row major order
 
-	float n[3][3];
+  float n[3][3];
 
-  inline __device__ float3 operator*(const float3& v)
-  {
+  inline __device__ float3 operator*(const float3 &v) {
 
-  return make_float3(n[0][0] * v.x + n[1][0] * v.y + n[2][0] * v.z,
-	  			n[0][1] * v.x + n[1][1] * v.y + n[2][1] * v.z ,
-	  			n[0][2] * v.x + n[1][2] * v.y + n[2][2] * v.z );
+    return make_float3(n[0][0] * v.x + n[1][0] * v.y + n[2][0] * v.z, n[0][1] * v.x + n[1][1] * v.y + n[2][1] * v.z,
+                       n[0][2] * v.x + n[1][2] * v.y + n[2][2] * v.z);
   }
-
 };
-
 
 class Matrix4f {
   //---[ Private Variable Declarations ]-----------------
 public:
   // matrix elements in row major order
 
-	float n[4][4];
+  float n[4][4];
 
+  inline __device__ float4 operator*(const float4 &v) {
 
-  inline __device__ float4 operator*(const float4& v)
-  {
-
-	  return make_float4(n[0][0] * v.x + n[1][0] * v.y + n[2][0] * v.z + n[3][0] * v.w,
-	  			n[0][1] * v.x + n[1][1] * v.y + n[2][1] * v.z + n[3][1] * v.w,
-	  			n[0][2] * v.x + n[1][2] * v.y + n[2][2] * v.z + n[3][2] * v.w,
-	  			n[0][3] * v.x + n[1][3] * v.y + n[2][3] * v.z + n[3][3] * v.w);
-
+    return make_float4(n[0][0] * v.x + n[1][0] * v.y + n[2][0] * v.z + n[3][0] * v.w,
+                       n[0][1] * v.x + n[1][1] * v.y + n[2][1] * v.z + n[3][1] * v.w,
+                       n[0][2] * v.x + n[1][2] * v.y + n[2][2] * v.z + n[3][2] * v.w,
+                       n[0][3] * v.x + n[1][3] * v.y + n[2][3] * v.z + n[3][3] * v.w);
   }
-
-
 };
 
 /// base class for mesh
 class AbstractMesh {
 public:
-	 __device__ AbstractMesh() {}
+  __device__ AbstractMesh() {}
 
-	 __device__ AbstractMesh(const AbstractMesh &) {}
+  __device__ AbstractMesh(const AbstractMesh &) {}
 
-	 __device__  ~AbstractMesh() {}
+  __device__ ~AbstractMesh() {}
 
- // virtual gvt::render::data::primitives::Box3D *getBoundingBox() { return NULL; }
+  // virtual gvt::render::data::primitives::Box3D *getBoundingBox() { return NULL; }
 };
 
 /// geometric mesh
@@ -104,15 +94,11 @@ public:
 
 class Mesh : public AbstractMesh {
 public:
-  //typedef boost::tuple<int, int, int> Face;
-  //typedef boost::tuple<int, int, int> FaceToNormals;
-   __device__ Mesh(){
+  // typedef boost::tuple<int, int, int> Face;
+  // typedef boost::tuple<int, int, int> FaceToNormals;
+  __device__ Mesh() {}
 
-  }
-
-   __device__ virtual ~Mesh(){
-
-  }
+  __device__ virtual ~Mesh() {}
   //  virtual gvt::render::data::primitives::Box3D *getBoundingBox() { return &boundingBox; }
 
   /*virtual gvt::render::data::primitives::Material *getMaterial() { return mat; }
@@ -124,16 +110,16 @@ public:
                                              const gvt::render::data::scene::Light *lsource);
 */
 public:
-   data::primitives::Material* mat;
-  float4* vertices;
-  //float4* mapuv;
-  float4* normals;
-  int3* faces;
-  int3* faces_to_normals;
-  float4* face_normals;
-  //float4* faces_to_materials;
-  //gvt::render::data::primitives::Box3D boundingBox;
-  //bool haveNormals;
+  data::primitives::Material *mat;
+  float4 *vertices;
+  // float4* mapuv;
+  float4 *normals;
+  int3 *faces;
+  int3 *faces_to_normals;
+  float4 *face_normals;
+  // float4* faces_to_materials;
+  // gvt::render::data::primitives::Box3D boundingBox;
+  // bool haveNormals;
 };
 }
 }

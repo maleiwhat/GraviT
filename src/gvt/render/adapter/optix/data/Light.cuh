@@ -28,12 +28,10 @@
  * Created on February 4, 2016, 11:00 PM
  */
 
-#include <vector_functions.h>
 #include <stdio.h>
+#include <vector_functions.h>
 
 #include "Ray.cuh"
-
-
 
 #ifndef GVT_RENDER_DATA_SCENE_LIGHT_CUH
 #define GVT_RENDER_DATA_SCENE_LIGHT_CUH
@@ -43,55 +41,52 @@ namespace render {
 namespace data {
 namespace cuda_primitives {
 
-typedef enum {BASE_LIGHT, AMBIENT, POINT, AREA} LIGH_TYPE;
+typedef enum { BASE_LIGHT, AMBIENT, POINT, AREA } LIGH_TYPE;
 
 class BaseLight {
 public:
-/*
-	BaseLight(const float4 position = make_float4(0.f));
-  virtual ~BaseLight();
-*/
-           __device__ float4 contribution(const float4 &hit,const float4 &samplePos) const;
-
+  /*
+          BaseLight(const float4 position = make_float4(0.f));
+    virtual ~BaseLight();
+  */
+  __device__ float4 contribution(const float4 &hit, const float4 &samplePos) const;
 
   float4 position;
 
-/*  virtual gvt::render::data::primitives::Box3D getWorldBoundingBox() {
-    gvt::render::data::primitives::Box3D bb(position, position);
-    return bb;
-  }*/
+  /*  virtual gvt::render::data::primitives::Box3D getWorldBoundingBox() {
+      gvt::render::data::primitives::Box3D bb(position, position);
+      return bb;
+    }*/
 };
 /// general lighting factor added to each successful ray intersection
 class AmbientLight : public BaseLight {
 public:
-/*  AmbientLight(const float4 color = make_float4(1.f, 1.f, 1.f, 0.f));
-  AmbientLight(const AmbientLight &orig);
-  virtual ~AmbientLight();
-*/
-           __device__ float4 contribution(const float4 &hit,const float4 &samplePos) const;
+  /*  AmbientLight(const float4 color = make_float4(1.f, 1.f, 1.f, 0.f));
+    AmbientLight(const AmbientLight &orig);
+    virtual ~AmbientLight();
+  */
+  __device__ float4 contribution(const float4 &hit, const float4 &samplePos) const;
 
   float4 color;
 };
 /// point light source
 class PointLight : public BaseLight {
 public:
-/*  PointLight(const float4 position = make_float4(0.f),
-             const float4 color = make_float4(1.f, 1.f, 1.f, 0.f));
+  /*  PointLight(const float4 position = make_float4(0.f),
+               const float4 color = make_float4(1.f, 1.f, 1.f, 0.f));
 
-  virtual ~PointLight();
-*/
-           __device__  float4 contribution(const float4 &hit,const float4 &samplePos) const;
+    virtual ~PointLight();
+  */
+  __device__ float4 contribution(const float4 &hit, const float4 &samplePos) const;
 
   float4 color;
 };
 
 class AreaLight : public BaseLight {
 public:
-
-
   __device__ float4 contribution(const float4 &hitpoint, const float4 &samplePos) const;
 
-  __device__ float4  GetPosition();
+  __device__ float4 GetPosition();
 
   float4 color;
   float4 LightNormal;
@@ -99,44 +94,40 @@ public:
   float LightHeight;
 
   float4 u, v, w;
-
 };
 
-
 typedef struct {
-	LIGH_TYPE type;
-	union {
-		BaseLight light;
-		AmbientLight ambient;
-		PointLight point;
-                AreaLight area;
+  LIGH_TYPE type;
+  union {
+    BaseLight light;
+    AmbientLight ambient;
+    PointLight point;
+    AreaLight area;
+  };
 
-	};
+  __device__ float4 contribution(const float4 &hit, const float4 &samplePos) const {
+    float4 r;
+    switch (type) {
+    case BASE_LIGHT:
+      r = light.contribution(hit, samplePos);
+      break;
+    case AMBIENT:
+      r = ambient.contribution(hit, samplePos);
+      break;
+    case POINT:
+      r = point.contribution(hit, samplePos);
+      break;
+    case AREA:
+      r = area.contribution(hit, samplePos);
+      break;
+    default:
+      break;
+    }
 
-           __device__ float4 contribution(const float4 &hit,const float4 &samplePos) const {
-		float4 r;
-		switch (type) {
-		case BASE_LIGHT:
-                        r = light.contribution(hit,samplePos);
-			break;
-		case AMBIENT:
-                        r = ambient.contribution(hit,samplePos);
-			break;
-		case POINT:
-                        r = point.contribution(hit,samplePos);
-			break;
-                case AREA:
-                        r = area.contribution(hit,samplePos);
-                            break;
-		default:
-			break;
-		}
-
-		return r;
-	}
+    return r;
+  }
 
 } Light;
-
 }
 }
 }

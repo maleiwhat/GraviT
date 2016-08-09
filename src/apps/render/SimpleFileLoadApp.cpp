@@ -101,10 +101,10 @@ int main(int argc, char **argv) {
   gvt::core::DBNodeH root = cntxt->getRootNode();
 
   if (rank == 0) {
-	 gvt::core::DBNodeH dataNodes = cntxt->addToSync(cntxt->createNodeFromType("Data", "Data", root.UUID()));
-     cntxt->addToSync(cntxt->createNodeFromType("Mesh", "bunny", dataNodes.UUID()));
-     cntxt->addToSync(cntxt->createNodeFromType("Instances", "Instances", root.UUID()));
-   }
+    gvt::core::DBNodeH dataNodes = cntxt->addToSync(cntxt->createNodeFromType("Data", "Data", root.UUID()));
+    cntxt->addToSync(cntxt->createNodeFromType("Mesh", "bunny", dataNodes.UUID()));
+    cntxt->addToSync(cntxt->createNodeFromType("Instances", "Instances", root.UUID()));
+  }
 
   cntxt->syncContext();
 
@@ -135,52 +135,49 @@ int main(int argc, char **argv) {
     bunnyMeshNode["bbox"] = (unsigned long long)meshbbox;
     bunnyMeshNode["ptr"] = (unsigned long long)mesh;
 
-	gvt::core::DBNodeH loc = cntxt->createNode("rank", rank);
-	bunnyMeshNode["Locations"] += loc;
+    gvt::core::DBNodeH loc = cntxt->createNode("rank", rank);
+    bunnyMeshNode["Locations"] += loc;
 
-	cntxt->addToSync(bunnyMeshNode);
+    cntxt->addToSync(bunnyMeshNode);
   }
 
   cntxt->syncContext();
-
 
   // create the instance
-  if (rank ==0 ) {
-  gvt::core::DBNodeH instnode = cntxt->createNodeFromType("Instance", "inst", instNodes.UUID());
-  gvt::core::DBNodeH meshNode = bunnyMeshNode;
-  Box3D *mbox = (Box3D *)meshNode["bbox"].value().toULongLong();
+  if (rank == 0) {
+    gvt::core::DBNodeH instnode = cntxt->createNodeFromType("Instance", "inst", instNodes.UUID());
+    gvt::core::DBNodeH meshNode = bunnyMeshNode;
+    Box3D *mbox = (Box3D *)meshNode["bbox"].value().toULongLong();
 
-  instnode["id"] = 0; // unique id per instance
-  instnode["meshRef"] = meshNode.UUID();
+    instnode["id"] = 0; // unique id per instance
+    instnode["meshRef"] = meshNode.UUID();
 
-  // transform bunny
-  float scale = 1.0;
-  auto m = new glm::mat4(1.f);
-  auto minv = new glm::mat4(1.f);
-  auto normi = new glm::mat3(1.f);
-  //*m = glm::translate(*m, glm::vec3(0, 0, 0));
-  //*m *glm::mat4::createTranslation(0.0, 0.0, 0.0);
-  //*m = *m * glm::mat4::createScale(scale, scale, scale);
-  *m = glm::scale(*m, glm::vec3(scale, scale, scale));
+    // transform bunny
+    float scale = 1.0;
+    auto m = new glm::mat4(1.f);
+    auto minv = new glm::mat4(1.f);
+    auto normi = new glm::mat3(1.f);
+    //*m = glm::translate(*m, glm::vec3(0, 0, 0));
+    //*m *glm::mat4::createTranslation(0.0, 0.0, 0.0);
+    //*m = *m * glm::mat4::createScale(scale, scale, scale);
+    *m = glm::scale(*m, glm::vec3(scale, scale, scale));
 
-  instnode["mat"] = (unsigned long long)m;
-  *minv = glm::inverse(*m);
-  instnode["matInv"] = (unsigned long long)minv;
-  *normi = glm::transpose(glm::inverse(glm::mat3(*m)));
-  instnode["normi"] = (unsigned long long)normi;
+    instnode["mat"] = (unsigned long long)m;
+    *minv = glm::inverse(*m);
+    instnode["matInv"] = (unsigned long long)minv;
+    *normi = glm::transpose(glm::inverse(glm::mat3(*m)));
+    instnode["normi"] = (unsigned long long)normi;
 
-  // transform mesh bounding box
-  auto il = glm::vec3((*m) * glm::vec4(mbox->bounds_min, 1.f));
-  auto ih = glm::vec3((*m) * glm::vec4(mbox->bounds_max, 1.f));
-  Box3D *ibox = new gvt::render::data::primitives::Box3D(il, ih);
-  instnode["bbox"] = (unsigned long long)ibox;
-  instnode["centroid"] = ibox->centroid();
-  cntxt->addToSync(instnode);
-
+    // transform mesh bounding box
+    auto il = glm::vec3((*m) * glm::vec4(mbox->bounds_min, 1.f));
+    auto ih = glm::vec3((*m) * glm::vec4(mbox->bounds_max, 1.f));
+    Box3D *ibox = new gvt::render::data::primitives::Box3D(il, ih);
+    instnode["bbox"] = (unsigned long long)ibox;
+    instnode["centroid"] = ibox->centroid();
+    cntxt->addToSync(instnode);
   }
 
   cntxt->syncContext();
-
 
   // add a light
   gvt::core::DBNodeH lightNodes = cntxt->createNodeFromType("Lights", "Lights", root.UUID());

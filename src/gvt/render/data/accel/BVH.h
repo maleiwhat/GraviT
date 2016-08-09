@@ -28,8 +28,8 @@
 #ifndef GVT_RENDER_DATA_ACCEL_BVH_H
 #define GVT_RENDER_DATA_ACCEL_BVH_H
 
-#include <stack>
 #include <mutex>
+#include <stack>
 
 #include <gvt/core/Math.h>
 #include <gvt/render/actor/RayPacket.h>

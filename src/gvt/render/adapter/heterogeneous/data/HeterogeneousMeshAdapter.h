@@ -31,7 +31,6 @@
 #include <gvt/render/adapter/embree/Wrapper.h>
 #include <gvt/render/adapter/optix/Wrapper.h>
 
-
 namespace gvt {
 namespace render {
 namespace adapter {

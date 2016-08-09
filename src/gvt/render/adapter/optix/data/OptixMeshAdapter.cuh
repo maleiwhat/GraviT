@@ -33,90 +33,77 @@
 
 #include "curand_kernel.h"
 
-#define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
-inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=true)
-{
-   if (code != cudaSuccess)
-   {
-      fprintf(stderr,"gpu-assert: %s %s %d\n", cudaGetErrorString(code), file, line);
-      if (abort) exit(code);
-   }
+#define gpuErrchk(ans)                                                                                                 \
+  { gpuAssert((ans), __FILE__, __LINE__); }
+inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort = true) {
+  if (code != cudaSuccess) {
+    fprintf(stderr, "gpu-assert: %s %s %d\n", cudaGetErrorString(code), file, line);
+    if (abort) exit(code);
+  }
 }
 
-__device__ float cudaRand( );
+__device__ float cudaRand();
 
 namespace gvt {
 namespace render {
 namespace data {
 namespace cuda_primitives {
 
-
 struct CudaGvtContext {
 
-	void initCudaBuffers(int packetSize);
+  void initCudaBuffers(int packetSize);
 
-	__inline__ CudaGvtContext* toGPU() {
+  __inline__ CudaGvtContext *toGPU() {
 
+    gpuErrchk(cudaMemcpyAsync(devicePtr, this, sizeof(gvt::render::data::cuda_primitives::CudaGvtContext),
+                              cudaMemcpyHostToDevice, stream));
 
-		gpuErrchk(cudaMemcpyAsync(devicePtr, this,
-				sizeof(gvt::render::data::cuda_primitives::CudaGvtContext),
-				cudaMemcpyHostToDevice, stream));
+    // cudaStreamSynchronize(stream);
 
-		//cudaStreamSynchronize(stream);
+    return (CudaGvtContext *)devicePtr;
+  }
 
-		return (CudaGvtContext*)devicePtr;
-	}
+  __inline__ void toHost() {
 
-	__inline__ void  toHost() {
+    gpuErrchk(cudaMemcpyAsync(this, devicePtr, sizeof(gvt::render::data::cuda_primitives::CudaGvtContext),
+                              cudaMemcpyDeviceToHost, stream));
 
+    // cudaStreamSynchronize(stream);
+  }
 
-		gpuErrchk(cudaMemcpyAsync(this, devicePtr,
-					sizeof(gvt::render::data::cuda_primitives::CudaGvtContext),
-					cudaMemcpyDeviceToHost, stream));
+  __inline__ CudaGvtContext *devPtr() { return (CudaGvtContext *)devicePtr; }
 
-		//cudaStreamSynchronize(stream);
-	}
+  // shared, allocated once per runtime
+  Ray *rays;
+  Ray *shadowRays;
+  OptixRay *traceRays;
+  OptixHit *traceHits;
+  Ray *dispatch;
+  Light *lights;
+  bool *valid;
+  int nLights;
+  int rayCount;
+  volatile int shadowRayCount;
+  volatile int dispatchCount;
+  bool validRayLeft;
 
-	__inline__ CudaGvtContext* devPtr(){
-		return (CudaGvtContext*)devicePtr;
-	}
+  // per domain, allocated once per Adapter instance
+  // copied in adapter construct, updated per trace
+  Mesh mesh;
 
+  // per instance, allocated once per runtime
+  // copied per trace
+  Matrix3f *normi;
+  Matrix4f *minv;
 
-	//shared, allocated once per runtime
-	Ray * rays;
-	Ray * shadowRays;
-	OptixRay* traceRays;
-	OptixHit* traceHits;
-	Ray * dispatch;
-	Light* lights;
-	bool* valid;
-    int nLights;
-	int rayCount;
-	volatile int shadowRayCount;
-	volatile int dispatchCount;
-	bool validRayLeft;
-
-	 //per domain, allocated once per Adapter instance
-	 //copied in adapter construct, updated per trace
-	 Mesh mesh;
-
-	 //per instance, allocated once per runtime
-	 //copied per trace
-	 Matrix3f* normi;
-	 Matrix4f* minv;
-
-
-	 cudaStream_t stream;
+  cudaStream_t stream;
 
 private:
-	 void * devicePtr;
-
+  void *devicePtr;
 };
-
 }
 }
 }
 }
-
 
 #endif

@@ -189,9 +189,9 @@ int main(int argc, char **argv) {
   gvt::core::DBNodeH root = cntxt->getRootNode();
 
   // A single mpi node will create db nodes and then broadcast them
-  if (MPI::COMM_WORLD.Get_rank()==0){
-	  cntxt->addToSync(cntxt->createNodeFromType("Data", "Data", root.UUID()));
-  	  cntxt->addToSync(cntxt->createNodeFromType("Instances", "Instances", root.UUID()));
+  if (MPI::COMM_WORLD.Get_rank() == 0) {
+    cntxt->addToSync(cntxt->createNodeFromType("Data", "Data", root.UUID()));
+    cntxt->addToSync(cntxt->createNodeFromType("Instances", "Instances", root.UUID()));
   }
 
   cntxt->syncContext();
@@ -199,44 +199,45 @@ int main(int argc, char **argv) {
   gvt::core::DBNodeH dataNodes = root["Data"];
   gvt::core::DBNodeH instNodes = root["Instances"];
 
-
   // Enzo isosurface...
-  if(!file_exists(rootdir.c_str())) {
+  if (!file_exists(rootdir.c_str())) {
     cout << "File \"" << rootdir << "\" does not exist. Exiting." << endl;
     return 0;
   }
-  
-  if(!isdir(rootdir.c_str())) {
+
+  if (!isdir(rootdir.c_str())) {
     cout << "File \"" << rootdir << "\" is not a directory. Exiting." << endl;
     return 0;
   }
   vector<string> files = findply(rootdir);
-  if(files.empty()) {
+  if (files.empty()) {
     cout << "Directory \"" << rootdir << "\" contains no .ply files. Exiting." << endl;
     return 0;
   }
-  // read 'em 
+  // read 'em
   vector<string>::const_iterator file;
-  //for (k = 0; k < 8; k++) {
-  for (file = files.begin(),k = 0; file != files.end(); file++, k++) {
-//if defined, ply blocks load are divided across available mpi ranks
-//Each block will be loaded by a single mpi rank and a mpi rank can read multiple blocks
+  // for (k = 0; k < 8; k++) {
+  for (file = files.begin(), k = 0; file != files.end(); file++, k++) {
+// if defined, ply blocks load are divided across available mpi ranks
+// Each block will be loaded by a single mpi rank and a mpi rank can read multiple blocks
 #ifdef DOMAIN_PER_NODE
-  	if (!((k >= MPI::COMM_WORLD.Get_rank() * DOMAIN_PER_NODE) && (k < MPI::COMM_WORLD.Get_rank() * DOMAIN_PER_NODE + DOMAIN_PER_NODE))) continue;
+    if (!((k >= MPI::COMM_WORLD.Get_rank() * DOMAIN_PER_NODE) &&
+          (k < MPI::COMM_WORLD.Get_rank() * DOMAIN_PER_NODE + DOMAIN_PER_NODE)))
+      continue;
 #endif
 
-//if all ranks read all ply blocks, one has to create the db node which is then broadcasted.
-//if not, since each block will be loaded by only one mpi, this mpi rank will create the db node
+// if all ranks read all ply blocks, one has to create the db node which is then broadcasted.
+// if not, since each block will be loaded by only one mpi, this mpi rank will create the db node
 #ifndef DOMAIN_PER_NODE
-    if (MPI::COMM_WORLD.Get_rank()==0)
+    if (MPI::COMM_WORLD.Get_rank() == 0)
 #endif
-    gvt::core::DBNodeH PlyMeshNode =  cntxt->addToSync(cntxt->createNodeFromType("Mesh",*file, dataNodes.UUID()));
+      gvt::core::DBNodeH PlyMeshNode = cntxt->addToSync(cntxt->createNodeFromType("Mesh", *file, dataNodes.UUID()));
 
 #ifndef DOMAIN_PER_NODE
     cntxt->syncContext();
     gvt::core::DBNodeH PlyMeshNode = dataNodes.getChildren()[k];
 #endif
-    filepath =  *file;
+    filepath = *file;
     myfile = fopen(filepath.c_str(), "r");
     in_ply = read_ply(myfile);
     for (i = 0; i < in_ply->num_elem_types; i++) {
@@ -265,7 +266,7 @@ int main(int argc, char **argv) {
     close_ply(in_ply);
     // smoosh data into the mesh object
     {
-      Material* m = new Material();
+      Material *m = new Material();
       Mesh *mesh = new Mesh(m);
       vert = vlist[0];
       xmin = vert->x;
@@ -305,40 +306,38 @@ int main(int argc, char **argv) {
 
       cntxt->addToSync(PlyMeshNode);
     }
-
   }
-   cntxt->syncContext();
+  cntxt->syncContext();
 
-   // context has the location information of the domain, so for simplicity only one mpi will create the instances
-   if (MPI::COMM_WORLD.Get_rank()==0) {
-		  for (file = files.begin(),k = 0; file != files.end(); file++, k++) {
+  // context has the location information of the domain, so for simplicity only one mpi will create the instances
+  if (MPI::COMM_WORLD.Get_rank() == 0) {
+    for (file = files.begin(), k = 0; file != files.end(); file++, k++) {
 
-		// add instance
-		gvt::core::DBNodeH instnode = cntxt->createNodeFromType("Instance", "inst", instNodes.UUID());
-		gvt::core::DBNodeH meshNode = dataNodes.getChildren()[k];
-		Box3D *mbox = (Box3D *)meshNode["bbox"].value().toULongLong();
-		instnode["id"] = k;
-		instnode["meshRef"] = meshNode.UUID();
-		auto m = new glm::mat4(1.f);
-		auto minv = new glm::mat4(1.f);
-		auto normi = new glm::mat3(1.f);
-		instnode["mat"] = (unsigned long long)m;
-		*minv = glm::inverse(*m);
-		instnode["matInv"] = (unsigned long long)minv;
-		*normi = glm::transpose(glm::inverse(glm::mat3(*m)));
-		instnode["normi"] = (unsigned long long)normi;
-		auto il = glm::vec3((*m) * glm::vec4(mbox->bounds_min, 1.f));
-		auto ih = glm::vec3((*m) * glm::vec4(mbox->bounds_max, 1.f));
-		Box3D *ibox = new gvt::render::data::primitives::Box3D(il, ih);
-		instnode["bbox"] = (unsigned long long)ibox;
-		instnode["centroid"] = ibox->centroid();
+      // add instance
+      gvt::core::DBNodeH instnode = cntxt->createNodeFromType("Instance", "inst", instNodes.UUID());
+      gvt::core::DBNodeH meshNode = dataNodes.getChildren()[k];
+      Box3D *mbox = (Box3D *)meshNode["bbox"].value().toULongLong();
+      instnode["id"] = k;
+      instnode["meshRef"] = meshNode.UUID();
+      auto m = new glm::mat4(1.f);
+      auto minv = new glm::mat4(1.f);
+      auto normi = new glm::mat3(1.f);
+      instnode["mat"] = (unsigned long long)m;
+      *minv = glm::inverse(*m);
+      instnode["matInv"] = (unsigned long long)minv;
+      *normi = glm::transpose(glm::inverse(glm::mat3(*m)));
+      instnode["normi"] = (unsigned long long)normi;
+      auto il = glm::vec3((*m) * glm::vec4(mbox->bounds_min, 1.f));
+      auto ih = glm::vec3((*m) * glm::vec4(mbox->bounds_max, 1.f));
+      Box3D *ibox = new gvt::render::data::primitives::Box3D(il, ih);
+      instnode["bbox"] = (unsigned long long)ibox;
+      instnode["centroid"] = ibox->centroid();
 
-		cntxt->addToSync(instnode);
-		  }
-	}
+      cntxt->addToSync(instnode);
+    }
+  }
 
-
-   cntxt->syncContext();
+  cntxt->syncContext();
 
   // add lights, camera, and film to the database
   gvt::core::DBNodeH lightNodes = cntxt->createNodeFromType("Lights", "Lights", root.UUID());
