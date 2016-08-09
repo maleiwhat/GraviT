@@ -66,6 +66,7 @@ void acommunicator::terminate() {
 }
 
 bool acommunicator::hasMessages() { return _inbox.size() > 0; }
+bool acommunicator::hasAnyMessages() { return _inbox.size() > 0 || _outbox.size() > 0; }
 
 size_t acommunicator::id() const { return MPI::COMM_WORLD.Get_rank(); }
 size_t acommunicator::maxid() const { return MPI::COMM_WORLD.Get_size(); }

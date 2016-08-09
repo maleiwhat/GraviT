@@ -31,7 +31,6 @@
  *
 */
 #include <algorithm>
-#include <gvt/core/Context.h>
 #include <gvt/core/Math.h>
 #include <gvt/core/mpi/Wrapper.h>
 #include <gvt/render/Context.h>

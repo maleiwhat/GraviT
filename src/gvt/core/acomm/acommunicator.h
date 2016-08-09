@@ -62,6 +62,8 @@ public:
 
   bool hasMessages();
 
+  bool hasAnyMessages();
+
   std::shared_ptr<Message> popMessage();
 
 private:

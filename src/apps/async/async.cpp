@@ -16,7 +16,7 @@ int main(int argc, char *argv[]) {
     int data = 0;
     while (data < 9) {
       msg->setcontent(&data, sizeof(int));
-      comm->send(msg, 1);
+      comm->send(msg, comm->maxid() - 1);
       while (!comm->hasMessages())
         ;
       std::shared_ptr<gvt::comm::Message> msg2 = comm->popMessage();
@@ -26,7 +26,7 @@ int main(int argc, char *argv[]) {
     std::cout << "Out of the loop " << comm->id() << std::endl;
   }
 
-  if (comm->id() == 1) {
+  if (comm->maxid() > 1 && comm->id() == comm->maxid() - 1) {
     std::shared_ptr<gvt::comm::Message> msg = std::make_shared<gvt::comm::Message>(sizeof(int));
     int data = 0;
     while (data < 9) {
