@@ -44,6 +44,7 @@
 
 #include <iomanip>
 #include <vector>
+#include <memory>
 
 namespace gvt {
 namespace render {
@@ -89,10 +90,15 @@ public:
   const static float RAY_EPSILON;
   // clang-format on
   inline Ray() /*: t_min(gvt::render::actor::Ray::RAY_EPSILON), t_max(FLT_MAX), t(FLT_MAX), id(-1), depth(8), w(0.f), type(PRIMARY) */ {
+	  visitedDomains = new std::vector<int>();
+
   }
   inline Ray(glm::vec3 _origin, glm::vec3 _direction, float contribution = 1.f, RayType type = PRIMARY, int depth = 10)
       : origin(_origin), t_min(gvt::render::actor::Ray::RAY_EPSILON), direction(glm::normalize(_direction)),
-        t_max(FLT_MAX), t(FLT_MAX), id(-1), w(contribution), type(type) {}
+        t_max(FLT_MAX), t(FLT_MAX), id(-1), w(contribution), type(type) {
+	  visitedDomains = new std::vector<int>();
+
+  }
 
   inline Ray(const Ray &r) { std::memcpy(data, r.data, dataPackedSize()); visitedDomains = r.visitedDomains;}
 
@@ -125,24 +131,24 @@ public:
   inline size_t dataPackedSize() const { return 64; }
 
   /// returns size in bytes for the ray data information
-  inline size_t packedSize() const { return dataPackedSize() + sizeof(int) + visitedDomains.size()*sizeof(int); }
+  inline size_t packedSize() const { return dataPackedSize() + sizeof(int) + getDomains().size()*sizeof(int); }
 
 
   /// packs the ray information onto the given buffer and returns the number of bytes packed
   int pack(unsigned char *buffer) {
-    unsigned char *buf = buffer;
-    std::memcpy(buf, data, dataPackedSize());
-    buf+=dataPackedSize();
-
-    *((int *)buf) = visitedDomains.size();
-    buf += sizeof(int);
-
-    for (auto &dom : visitedDomains) {
-        *((int *)buf) = dom;
-        buf += sizeof(int);
-
-      }
-
+//    unsigned char *buf = buffer;
+//    std::memcpy(buf, data, dataPackedSize());
+//    buf+=dataPackedSize();
+//
+//    *((int *)buf) = getDomains().size();
+//    buf += sizeof(int);
+//
+//    for (auto &dom : visitedDomains) {
+//        *((int *)buf) = dom;
+//        buf += sizeof(int);
+//
+//      }
+//
     return packedSize();
   }
 
@@ -155,23 +161,23 @@ public:
   }
 
   inline void addDomain(int d){
-	  visitedDomains.push_back(d);
+	  getDomains().push_back(d);
   }
 
   inline bool hasDomain(int d) {
-	return std::find(visitedDomains.begin(),visitedDomains.end(),d) != visitedDomains.end();
+	return std::find(getDomains().begin(),getDomains().end(),d) != getDomains().end();
   }
 
   inline void clearDomains() {
-	visitedDomains.clear();
+	  getDomains().clear();
   }
 
   inline void setDomains(std::vector<int>& ff) {
-		visitedDomains = ff;
+		visitedDomains = &ff;
   }
 
-  inline std::vector<int>& getDomains() {
-			return visitedDomains;
+  inline std::vector<int>& getDomains() const {
+			return *visitedDomains;
   }
 
   union {
@@ -190,8 +196,11 @@ public:
     unsigned char data[64] GVT_ALIGN(16);
   };
 
-protected:
-  std::vector<int> visitedDomains;
+public:
+  std::vector<int>* visitedDomains;
+
+//  std::shared_ptr<std::vector<int>*> visitedDomains;
+
 
 };
 
