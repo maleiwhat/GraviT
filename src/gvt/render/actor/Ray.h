@@ -90,19 +90,24 @@ public:
   const static float RAY_EPSILON;
   // clang-format on
   inline Ray() /*: t_min(gvt::render::actor::Ray::RAY_EPSILON), t_max(FLT_MAX), t(FLT_MAX), id(-1), depth(8), w(0.f), type(PRIMARY) */ {
-	  visitedDomains = new std::vector<int>();
-
   }
   inline Ray(glm::vec3 _origin, glm::vec3 _direction, float contribution = 1.f, RayType type = PRIMARY, int depth = 10)
       : origin(_origin), t_min(gvt::render::actor::Ray::RAY_EPSILON), direction(glm::normalize(_direction)),
         t_max(FLT_MAX), t(FLT_MAX), id(-1), w(contribution), type(type) {
-	  visitedDomains = new std::vector<int>();
+  }
+
+  inline Ray(const Ray &r) {
+	  std::memcpy(data, r.data, dataPackedSize());
+	  visitedDomains = r.visitedDomains;
 
   }
 
-  inline Ray(const Ray &r) { std::memcpy(data, r.data, dataPackedSize()); visitedDomains = r.visitedDomains;}
+  inline Ray(Ray &&r) {
+	  std::memmove(data, r.data, dataPackedSize());
+	  visitedDomains = r.visitedDomains;
 
-  inline Ray(Ray &&r) { std::memmove(data, r.data, dataPackedSize()); visitedDomains = r.visitedDomains;}
+
+  }
 
   inline Ray(const unsigned char *buf) {
 	  std::memcpy(data, buf, dataPackedSize());
@@ -117,6 +122,8 @@ public:
   inline Ray &operator=(const Ray &r) {
     std::memcpy(data, r.data, dataPackedSize());
     visitedDomains = r.visitedDomains;
+
+
     return *this;
   }
 
@@ -131,24 +138,27 @@ public:
   inline size_t dataPackedSize() const { return 64; }
 
   /// returns size in bytes for the ray data information
-  inline size_t packedSize() const { return dataPackedSize() + sizeof(int) + getDomains().size()*sizeof(int); }
+  inline size_t packedSize()  { return dataPackedSize() + sizeof(int) + getDomains().size()*sizeof(int); }
 
 
   /// packs the ray information onto the given buffer and returns the number of bytes packed
   int pack(unsigned char *buffer) {
-//    unsigned char *buf = buffer;
-//    std::memcpy(buf, data, dataPackedSize());
-//    buf+=dataPackedSize();
-//
-//    *((int *)buf) = getDomains().size();
-//    buf += sizeof(int);
-//
-//    for (auto &dom : visitedDomains) {
-//        *((int *)buf) = dom;
-//        buf += sizeof(int);
-//
-//      }
-//
+    unsigned char *buf = buffer;
+    std::memcpy(buf, data, dataPackedSize());
+    buf+=dataPackedSize();
+
+
+	std::vector<int>& Ds =getDomains();
+
+    *((int *)buf) = Ds.size();
+    buf += sizeof(int);
+
+    for (auto &dom : Ds) {
+        *((int *)buf) = dom;
+        buf += sizeof(int);
+
+      }
+
     return packedSize();
   }
 
@@ -165,19 +175,27 @@ public:
   }
 
   inline bool hasDomain(int d) {
-	return std::find(getDomains().begin(),getDomains().end(),d) != getDomains().end();
+	std::vector<int>& Ds =getDomains();
+	return std::find(Ds.begin(),Ds.end(),d) != Ds.end();
   }
 
   inline void clearDomains() {
 	  getDomains().clear();
   }
 
-  inline void setDomains(std::vector<int>& ff) {
-		visitedDomains = &ff;
+  inline void setDomains( std::shared_ptr<std::vector<int>> ff) {
+		visitedDomains = ff;
   }
 
-  inline std::vector<int>& getDomains() const {
-			return *visitedDomains;
+  inline void resetDomains( ) {
+	  visitedDomains = std::make_shared<std::vector<int>>();
+    }
+
+  inline std::vector<int>& getDomains()  {
+		  if (visitedDomains == NULL){
+			  resetDomains();
+		  }
+		  return *visitedDomains;
   }
 
   union {
@@ -197,15 +215,14 @@ public:
   };
 
 public:
-  std::vector<int>* visitedDomains;
-
-//  std::shared_ptr<std::vector<int>*> visitedDomains;
+  std::shared_ptr<std::vector<int>> visitedDomains = NULL;
 
 
 };
 
 // NOTE: removing boost pool allocator greatly improves timings
 typedef std::vector<Ray> RayVector;
+
 }
 }
 }
