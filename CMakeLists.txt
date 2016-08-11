@@ -624,37 +624,48 @@ if (GVT_GLRENDER_APP)
   )
 endif(GVT_GLRENDER_APP)
 
+
+
 if (GVT_ASYNC_APP)
   find_package(MPI REQUIRED)
-  find_package(OpenGL REQUIRED)
   include_directories(${MPI_INCLUDE_PATH})
-  set(GVTASYNCAPP_RENDER_LIBS ${GVTASYNCAPP_RENDER_LIBS}  ${MPI_LIBRARIES})
-
-  find_library(GLUTLIB glut)
-  if(GLUTLIB)
-    set(GVTASYNCAPP_RENDER_LIBS ${GVTASYNCAPP_RENDER_LIBS} ${OpenGL_LIBRARIES} ${GLUTLIB} ${GVT_CORE_LIBS})
-  endif(GLUTLIB)
-  find_library(GLULIB GLU)
-  if(GLULIB)
-    set(GVTASYNCAPP_RENDER_LIBS ${GVTASYNCAPP_RENDER_LIBS} ${GLULIB})
-  endif(GLULIB)
-
-  set(GVTASYNCAPP_RENDER_HDRS ${GVTASYNCAPP_RENDER_HDRS}
-
-  )
-
-  set(GVTASYNCAPP_RENDER_SRCS ${GVTASYNCAPP_RENDER_SRCS}
-    src/apps/async/async.cpp
-  )
-
-  add_executable(gvtAsync
-    ${GVTASYNCAPP_RENDER_HDRS}
-    ${GVTASYNCAPP_RENDER_SRCS}
-  )
-
-  target_link_libraries(gvtAsync ${OPENGL_gl_LIBRARY} ${GVTASYNCAPP_RENDER_LIBS} gvtCore gvtRender)
-
-  install(TARGETS gvtAsync
-    RUNTIME DESTINATION bin
-  )
+  set(GVTASYNC_RENDER_LIBS ${GVTASYNC_RENDER_LIBS}  ${MPI_LIBRARIES} ${GVT_CORE_LIBS})
+  set(GVTASYNC_RENDER_SRCS ${GVTASYNC_RENDER_SRCS}
+    src/apps/async/async.cpp)
+  add_executable(gvtAsync ${GVTASYNC_RENDER_SRCS})
+  target_link_libraries(gvtAsync gvtCore gvtRender ${GVTASYNC_RENDER_LIBS} )
 endif(GVT_ASYNC_APP)
+# if (GVT_ASYNC_APP)
+#   find_package(MPI REQUIRED)
+#   find_package(OpenGL REQUIRED)
+#   include_directories(${MPI_INCLUDE_PATH})
+#   set(GVTASYNCAPP_RENDER_LIBS ${GVTASYNCAPP_RENDER_LIBS}  ${MPI_LIBRARIES})
+#
+#   find_library(GLUTLIB glut)
+#   if(GLUTLIB)
+#     set(GVTASYNCAPP_RENDER_LIBS ${GVTASYNCAPP_RENDER_LIBS} ${OpenGL_LIBRARIES} ${GLUTLIB} ${GVT_CORE_LIBS})
+#   endif(GLUTLIB)
+#   find_library(GLULIB GLU)
+#   if(GLULIB)
+#     set(GVTASYNCAPP_RENDER_LIBS ${GVTASYNCAPP_RENDER_LIBS} ${GLULIB})
+#   endif(GLULIB)
+#
+#   set(GVTASYNCAPP_RENDER_HDRS ${GVTASYNCAPP_RENDER_HDRS}
+#
+#   )
+#
+#   set(GVTASYNCAPP_RENDER_SRCS ${GVTASYNCAPP_RENDER_SRCS}
+#     src/apps/async/async.cpp
+#   )
+#
+#   add_executable(gvtAsync
+#     ${GVTASYNCAPP_RENDER_HDRS}
+#     ${GVTASYNCAPP_RENDER_SRCS}
+#   )
+#
+#   target_link_libraries(gvtAsync ${OPENGL_gl_LIBRARY} ${GVTASYNCAPP_RENDER_LIBS} gvtCore gvtRender)
+#
+#   install(TARGETS gvtAsync
+#     RUNTIME DESTINATION bin
+#   )
+# endif(GVT_ASYNC_APP)

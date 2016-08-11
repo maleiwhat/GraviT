@@ -15,6 +15,8 @@ int main(int argc, char *argv[]) {
   std::shared_ptr<gvt::comm::acommunicator> comm =
       gvt::comm::acommunicator::instance(argc, argv);
 
+  gvt::render::RenderContext *cntxt = gvt::render::RenderContext::instance();
+
   if (comm->id() == 0) {
     std::shared_ptr<gvt::comm::Message> msg =
         std::make_shared<gvt::comm::Message>(sizeof(int));
