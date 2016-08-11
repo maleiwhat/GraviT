@@ -40,7 +40,7 @@ namespace schedule {
 /// scheduler placeholder for Image schedule
 /** \sa ImageTracer
 */
-struct ImageScheduler : public SchedulerBase {
+struct ImageScheduler : public gvt::tracer::SchedulerBase {
 
   ImageScheduler() : SchedulerBase() {}
 

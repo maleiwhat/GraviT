@@ -18,34 +18,47 @@
    See the License for the specific language governing permissions and limitations under
    limitations under the License.
 
-   GraviT is funded in part by the US National Science Foundation under awards ACI-1339863,
+   GraviT is funded in part by the US National Science Foundation under awards
+   ACI-1339863,
    ACI-1339881 and ACI-1339840
-   ======================================================================================= */
-/*
- * File:   SchedulerBase.h
- * Author: jbarbosa
- *
- * Created on January 21, 2014, 4:07 PM
- */
+   =======================================================================================
+   */
 
-#ifndef GVT_CORE_SCHEDULE_SCHEDULER_BASE_H
-#define GVT_CORE_SCHEDULE_SCHEDULER_BASE_H
+#ifndef GVT_TRACER_H
+#define GVT_TRACER_H
 
 #include <gvt/core/Debug.h>
 #include <gvt/core/acomm/message.h>
 
 namespace gvt {
 namespace tracer {
-
-/// base class for work schedulers
-class SchedulerBase {
+class Tracer {
+protected:
 public:
-  SchedulerBase() {}
+  Tracer() {}
+  virtual ~Tracer() {}
+  virtual void operator()() { GVT_ASSERT(false, "Tracer not implemented"); };
 
-  virtual ~SchedulerBase() {}
+  virtual bool MessageManager(std::shared_ptr<gvt::comm::Message> msg) { return false; }
 
-  virtual void operator()() { GVT_ASSERT_BACKTRACE(false, "schedule not implemented"); }
+  virtual bool isDone() {
+    GVT_ASSERT(false, "Tracer not implemented");
+    return false;
+  }
+
+  virtual bool hasWork() {
+    GVT_ASSERT(false, "Tracer not implemented");
+    return false;
+  }
+
+  virtual float *getImageBuffer() {
+    GVT_ASSERT(false, "Tracer not implemented");
+    return nullptr;
+  };
+
+private:
 };
 }
 }
-#endif /* GVT_CORE_SCHEDULE_SCHEDULER_BASE_H */
+
+#endif

@@ -226,6 +226,8 @@ set(GVT_CORE_HDRS ${GVT_CORE_HDRS}
   src/gvt/core/acomm/acommunicator.h
   src/gvt/core/acomm/message.h
 
+  src/gvt/core/tracer/tracer.h
+
 )
 
 set(GVT_CORE_SRCS ${GVT_CORE_SRCS}
@@ -285,6 +287,8 @@ set(GVT_RENDER_HDRS ${GVT_RENDER_HDRS}
 	src/gvt/render/Schedulers.h
 
   src/gvt/render/Types.h
+
+  src/gvt/render/tracer/ImageTracer.h
 )
 
 
@@ -301,6 +305,9 @@ set(GVT_RENDER_SRCS ${GVT_RENDER_SRCS}
   src/gvt/render/data/scene/Image.cpp
   src/gvt/render/data/scene/Light.cpp
   src/gvt/render/data/accel/BVH.cpp
+
+
+  src/gvt/render/tracer/ImageTracer.cpp
 )
 
 

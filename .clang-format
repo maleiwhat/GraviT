@@ -15,7 +15,7 @@ BreakBeforeBinaryOperators: false
 BreakBeforeBraces: Attach
 BreakBeforeTernaryOperators: true  # not 3.4 compatible
 BreakConstructorInitializersBeforeComma: false
-ColumnLimit:     120
+ColumnLimit:     90
 ConstructorInitializerAllOnOneLineOrOnePerLine: false
 ConstructorInitializerIndentWidth: 4
 ContinuationIndentWidth: 4
@@ -47,4 +47,3 @@ Standard:        Cpp03
 TabWidth:        8
 UseTab:          Never
 ...
-

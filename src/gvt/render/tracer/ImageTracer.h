@@ -18,34 +18,42 @@
    See the License for the specific language governing permissions and limitations under
    limitations under the License.
 
-   GraviT is funded in part by the US National Science Foundation under awards ACI-1339863,
+   GraviT is funded in part by the US National Science Foundation under awards
+   ACI-1339863,
    ACI-1339881 and ACI-1339840
-   ======================================================================================= */
-/*
- * File:   SchedulerBase.h
- * Author: jbarbosa
- *
- * Created on January 21, 2014, 4:07 PM
- */
+   =======================================================================================
+   */
 
-#ifndef GVT_CORE_SCHEDULE_SCHEDULER_BASE_H
-#define GVT_CORE_SCHEDULE_SCHEDULER_BASE_H
+#ifndef GVT_IMAGETRACER_H
+#define GVT_IMAGETRACER_H
 
 #include <gvt/core/Debug.h>
-#include <gvt/core/acomm/message.h>
+#include <gvt/core/tracer/tracer.h>
+
+#include <gvt/render/actor/Ray.h>
 
 namespace gvt {
 namespace tracer {
+class ImageTracer : public gvt::tracer::Tracer {
+protected:
+  // Vooting....
+  // Ray queue manager
+  // Data manager
 
-/// base class for work schedulers
-class SchedulerBase {
 public:
-  SchedulerBase() {}
+  ImageTracer();
+  virtual ~ImageTracer();
+  virtual void operator()();
+  virtual bool MessageManager(std::shared_ptr<gvt::comm::Message> msg);
 
-  virtual ~SchedulerBase() {}
+  virtual void processRayQueue(gvt::render::actor::RayVector &rays, const int src = -1,
+                               const int dst = -1);
 
-  virtual void operator()() { GVT_ASSERT_BACKTRACE(false, "schedule not implemented"); }
+  virtual void updateGeometry();
+
+private:
 };
 }
 }
-#endif /* GVT_CORE_SCHEDULE_SCHEDULER_BASE_H */
+
+#endif

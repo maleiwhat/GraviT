@@ -1,4 +1,6 @@
-/* =======================================================================================
+// clang-format off
+/*
+  =======================================================================================
    This file is released as part of GraviT - scalable, platform independent ray tracing
    tacc.github.io/GraviT
 
@@ -20,32 +22,23 @@
 
    GraviT is funded in part by the US National Science Foundation under awards ACI-1339863,
    ACI-1339881 and ACI-1339840
-   ======================================================================================= */
-/*
- * File:   SchedulerBase.h
- * Author: jbarbosa
- *
- * Created on January 21, 2014, 4:07 PM
- */
+   =======================================================================================
 
-#ifndef GVT_CORE_SCHEDULE_SCHEDULER_BASE_H
-#define GVT_CORE_SCHEDULE_SCHEDULER_BASE_H
-
-#include <gvt/core/Debug.h>
-#include <gvt/core/acomm/message.h>
+   */
+// clang-format on
+#include "ImageTracer.h"
 
 namespace gvt {
 namespace tracer {
 
-/// base class for work schedulers
-class SchedulerBase {
-public:
-  SchedulerBase() {}
+ImageTracer::ImageTracer() : Tracer() {}
 
-  virtual ~SchedulerBase() {}
+ImageTracer::~ImageTracer() {}
 
-  virtual void operator()() { GVT_ASSERT_BACKTRACE(false, "schedule not implemented"); }
-};
+void ImageTracer::operator()() { GVT_ASSERT(false, "schedule not implemented"); };
+
+bool ImageTracer::MessageManager(std::shared_ptr<gvt::comm::Message> msg) {
+  return Tracer::MessageManager(msg);
 }
 }
-#endif /* GVT_CORE_SCHEDULE_SCHEDULER_BASE_H */
+}

@@ -40,7 +40,7 @@ namespace schedule {
 /// scheduler placeholder for Domain schedule
 /** \sa DomainTracer
 */
-struct DomainScheduler : public SchedulerBase {
+struct DomainScheduler : public gvt::tracer::SchedulerBase {
 
   DomainScheduler() : SchedulerBase() {}
 

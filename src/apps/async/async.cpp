@@ -4,15 +4,19 @@
 #include <gvt/core/acomm/acommunicator.h>
 #include <gvt/core/acomm/message.h>
 
+#include <gvt/render/tracer/ImageTracer.h>
+
 #include <chrono>
 #include <thread>
 
 int main(int argc, char *argv[]) {
 
-  std::shared_ptr<gvt::comm::acommunicator> comm = gvt::comm::acommunicator::instance(argc, argv);
+  std::shared_ptr<gvt::comm::acommunicator> comm =
+      gvt::comm::acommunicator::instance(argc, argv);
 
   if (comm->id() == 0) {
-    std::shared_ptr<gvt::comm::Message> msg = std::make_shared<gvt::comm::Message>(sizeof(int));
+    std::shared_ptr<gvt::comm::Message> msg =
+        std::make_shared<gvt::comm::Message>(sizeof(int));
     int data = 0;
     while (data < 9) {
       msg->setcontent(&data, sizeof(int));
@@ -27,7 +31,8 @@ int main(int argc, char *argv[]) {
   }
 
   if (comm->maxid() > 1 && comm->id() == comm->maxid() - 1) {
-    std::shared_ptr<gvt::comm::Message> msg = std::make_shared<gvt::comm::Message>(sizeof(int));
+    std::shared_ptr<gvt::comm::Message> msg =
+        std::make_shared<gvt::comm::Message>(sizeof(int));
     int data = 0;
     while (data < 9) {
 
@@ -41,7 +46,12 @@ int main(int argc, char *argv[]) {
     std::cout << "Out of the loop " << comm->id() << std::endl;
   }
 
+  std::shared_ptr<gvt::tracer::ImageTracer> tracer =
+      std::make_shared<gvt::tracer::ImageTracer>();
+
   // std::this_thread::sleep_for(std::chrono::seconds(10));
   comm->terminate();
+
+  (*tracer)();
   return 0;
 }

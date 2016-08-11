@@ -18,9 +18,11 @@
    See the License for the specific language governing permissions and limitations under
    limitations under the License.
 
-   GraviT is funded in part by the US National Science Foundation under awards ACI-1339863,
+   GraviT is funded in part by the US National Science Foundation under awards
+   ACI-1339863,
    ACI-1339881 and ACI-1339840
-   ======================================================================================= */
+   =======================================================================================
+   */
 #ifndef GVT_CORE_CONTEXT_H
 #define GVT_CORE_CONTEXT_H
 
@@ -30,6 +32,9 @@
 #include "gvt/core/context/Types.h"
 #include <gvt/core/context/Database.h>
 #include <mpi.h>
+
+#include <gvt/core/acomm/acommunicator.h>
+#include <gvt/core/tracer/Tracer.h>
 
 #ifndef MAX
 #define MAX(a, b) ((a > b) ? (a) : (b))
@@ -78,7 +83,8 @@ public:
       \param val the node value
       \param parent the uuid of the parent node
       */
-  DBNodeH createNode(String name, Variant val = Variant(String("")), Uuid parent = Uuid::null());
+  DBNodeH createNode(String name, Variant val = Variant(String("")),
+                     Uuid parent = Uuid::null());
 
   /// create a node of the specified type in the database
   DBNodeH createNodeFromType(String);
@@ -95,12 +101,16 @@ public:
 
   /**
    * Packs a node and its children in a buffer
-   * assigned UUIDs are guaranteed to be unique across all nodes, e.g. camera node will have the same
+   * assigned UUIDs are guaranteed to be unique across all nodes, e.g. camera node will
+   * have the same
    * uuid in all nodes. This requires that a single mpi-node creates the tree node.
    * Byte structure:
-   * <parentUUID><UUID><nodeName><int variant type><value><parentUUID><UUID><child0Name><int variant type><value><...>
-   * Each node or leaf is packed in CONTEXT_LEAF_MARSH_SIZE max byte size in database->marshLeaf routine
-   * i.e.<parentUUID><UUID><nodeName><int variant type><value> = CONTEXT_LEAF_MARSH_SIZE max bytes
+   * <parentUUID><UUID><nodeName><int variant
+   * type><value><parentUUID><UUID><child0Name><int variant type><value><...>
+   * Each node or leaf is packed in CONTEXT_LEAF_MARSH_SIZE max byte size in
+   * database->marshLeaf routine
+   * i.e.<parentUUID><UUID><nodeName><int variant type><value> = CONTEXT_LEAF_MARSH_SIZE
+   * max bytes
    */
   void marsh(std::vector<MarshedDatabaseNode> &buffer, DatabaseNode &node);
 
@@ -117,6 +127,13 @@ public:
   // one to all communication model
   void syncContext();
 
+  std::shared_ptr<gvt::comm::acommunicator> comm() { return _comm; };
+  std::shared_ptr<gvt::tracer::Tracer> tracer() { return _tracer; };
+
+  void setTracer(std::shared_ptr<gvt::tracer::Tracer> &tracer) {
+    if (tracer != nullptr) _tracer = tracer;
+  }
+
 protected:
   CoreContext();
   static CoreContext *__singleton;
@@ -124,6 +141,9 @@ protected:
   DBNodeH __rootNode;
 
   std::vector<DBNodeH> __nodesToSync;
+
+  std::shared_ptr<gvt::comm::acommunicator> _comm;
+  std::shared_ptr<gvt::tracer::Tracer> _tracer;
 };
 }
 }
