@@ -147,7 +147,7 @@ public:
             int hit[simd_width];
             if (rp.intersect(ibbox, hit, true)) {
               for (int o = 0; o < simd_width; ++o) {
-				if ( chead[o].hasDomain(instanceSetID[i])) {
+				if (rp.mask[o] == 1 &&  chead[o].hasDomain(instanceSetID[i])) {
 								hit[o] = -1;
 								rp.t[o] = ret[offset + o].t;
 								continue;

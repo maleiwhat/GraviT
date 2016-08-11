@@ -292,9 +292,9 @@ void cudaGetRays(size_t& localDispatchSize,
 
 						//gvtRay.setDirection(gvtRay.direction);
 						if (cudaRay.newRay != -1)
-							gvtRay.setDomains(rayList[cudaRay.newRay].getDomains());
+							gvtRay.setDomains(rayList[cudaRay.newRay].visitedDomains);
 						else
-							gvtRay.clearDomains();
+							gvtRay.resetDomains();
 					}
 				}
 			}, ap);
