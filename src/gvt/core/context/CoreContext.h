@@ -34,7 +34,7 @@
 #include <mpi.h>
 
 #include <gvt/core/acomm/acommunicator.h>
-#include <gvt/core/tracer/Tracer.h>
+#include <gvt/core/tracer/tracer.h>
 
 #ifndef MAX
 #define MAX(a, b) ((a > b) ? (a) : (b))

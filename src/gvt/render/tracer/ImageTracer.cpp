@@ -40,5 +40,10 @@ void ImageTracer::operator()() { GVT_ASSERT(false, "schedule not implemented"); 
 bool ImageTracer::MessageManager(std::shared_ptr<gvt::comm::Message> msg) {
   return Tracer::MessageManager(msg);
 }
+
+void ImageTracer::processRayQueue(gvt::render::actor::RayVector &rays, const int src,
+                                  const int dst) {}
+
+void ImageTracer::updateGeometry() {}
 }
 }

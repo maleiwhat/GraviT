@@ -3,6 +3,7 @@
 #include <gvt/core/Context.h>
 #include <gvt/core/acomm/acommunicator.h>
 #include <gvt/core/acomm/message.h>
+#include <gvt/render/Context.h>
 
 #include <gvt/render/tracer/ImageTracer.h>
 
