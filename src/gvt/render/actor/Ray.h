@@ -134,19 +134,22 @@ public:
 
   /// packs the ray information onto the given buffer and returns the number of bytes packed
   int pack(unsigned char *buffer) {
-//    unsigned char *buf = buffer;
-//    std::memcpy(buf, data, dataPackedSize());
-//    buf+=dataPackedSize();
-//
-//    *((int *)buf) = getDomains().size();
-//    buf += sizeof(int);
-//
-//    for (auto &dom : visitedDomains) {
-//        *((int *)buf) = dom;
-//        buf += sizeof(int);
-//
-//      }
-//
+    unsigned char *buf = buffer;
+    std::memcpy(buf, data, dataPackedSize());
+    buf+=dataPackedSize();
+
+
+	std::vector<int>& Ds =getDomains();
+
+    *((int *)buf) = Ds.size();
+    buf += sizeof(int);
+
+    for (auto &dom : Ds) {
+        *((int *)buf) = dom;
+        buf += sizeof(int);
+
+      }
+
     return packedSize();
   }
 

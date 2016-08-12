@@ -1626,11 +1626,8 @@ int main(int argc, char *argv[]) {
   else if (cmd.isSet("scene"))
 	gvtapps::render::ConfigFileLoader cl(cmd.get<std::string>("scene"));
   else
-	ConfigOveralappingBBoxScene();
-    //ConfigSceneCubeCone();
-
-
-  cntxt->database()->printTree(root.UUID(),1,4);
+	//ConfigOveralappingBBoxScene();
+    ConfigSceneCubeCone();
 
   gvt::core::DBNodeH schedNode = root["Schedule"];
   if (cmd.isSet("domain"))
