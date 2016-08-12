@@ -113,6 +113,8 @@ public:
   inline Ray &operator=(const Ray &r) {
     std::memcpy(data, r.data, dataPackedSize());
     visitedDomains = r.visitedDomains;
+
+
     return *this;
   }
 
@@ -169,14 +171,17 @@ public:
 	  getDomains().clear();
   }
 
-  inline void setDomains(std::vector<int>& ff) {
-		//visitedDomains = &ff;
+  inline void setDomains( std::shared_ptr<std::vector<int>> ff) {
+		visitedDomains = ff;
   }
 
+  inline void resetDomains( ) {
+	  visitedDomains = std::make_shared<std::vector<int>>();
+    }
+
   inline std::vector<int>& getDomains()  {
-		  //for some reason, only just ray id 0 has visitedDomains as NULL
 		  if (visitedDomains == NULL){
-			  visitedDomains = std::make_shared<std::vector<int>>();
+			  resetDomains();
 		  }
 		  return *visitedDomains;
   }
