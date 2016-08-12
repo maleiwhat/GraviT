@@ -223,6 +223,8 @@ set(GVT_CORE_HDRS ${GVT_CORE_HDRS}
 
   src/gvt/core/schedule/SchedulerBase.h
 
+  src/gvt/core/data/primitives/BBox.h
+
   src/gvt/core/acomm/acommunicator.h
   src/gvt/core/acomm/message.h
 
@@ -236,6 +238,8 @@ set(GVT_CORE_SRCS ${GVT_CORE_SRCS}
   src/gvt/core/context/DatabaseNode.cpp
   src/gvt/core/context/Uuid.cpp
   src/gvt/core/context/Variant.cpp
+
+  src/gvt/core/data/primitives/BBox.cpp
 
   src/gvt/core/acomm/acommunicator.cpp
   src/gvt/core/acomm/message.cpp
@@ -258,7 +262,6 @@ set(GVT_RENDER_HDRS ${GVT_RENDER_HDRS}
   src/gvt/render/data/reader/PlyReader.h
   src/gvt/render/data/Domains.h
   src/gvt/render/data/Primitives.h
-  src/gvt/render/data/primitives/BBox.h
   src/gvt/render/data/primitives/Material.h
 	src/gvt/render/data/primitives/EmbreeMaterial.h
 	src/gvt/render/data/primitives/Mesh.h
@@ -297,7 +300,6 @@ set(GVT_RENDER_SRCS ${GVT_RENDER_SRCS}
   src/gvt/render/context/RenderContext.cpp
   src/gvt/render/data/reader/ObjReader.cpp
   src/gvt/render/data/reader/PlyReader.cpp
-  src/gvt/render/data/primitives/BBox.cpp
   src/gvt/render/data/primitives/Material.cpp
   src/gvt/render/data/primitives/Mesh.cpp
   src/gvt/render/data/scene/gvtCamera.cpp
@@ -459,7 +461,7 @@ if (GVT_RENDER)
 		${GVT_RENDER_SRCS}
 		)
 
-	target_link_libraries(gvtRender ${GVT_RENDER_LIBS})
+	target_link_libraries(gvtRender gvtCore ${GVT_RENDER_LIBS})
 
 	install(TARGETS gvtRender
 		LIBRARY DESTINATION lib

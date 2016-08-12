@@ -31,7 +31,7 @@
 #ifndef GVT_RENDER_DATA_PRIMITIVES_MESH_CUH
 #define GVT_RENDER_DATA_PRIMITIVES_MESH_CUH
 
-//#include <gvt/render/data/primitives/BBox.h>
+//#include <gvt/core/data/primitives/BBox.h>
 //#include <gvt/render/data/primitives/Material.h>
 //#include <gvt/render/data/scene/Light.h>
 

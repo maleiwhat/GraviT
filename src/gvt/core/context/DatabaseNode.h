@@ -26,7 +26,7 @@
 
 #include "gvt/core/context/Types.h"
 #include <gvt/core/Debug.h>
-#include <gvt/render/data/primitives/BBox.h>
+#include <gvt/core/data/primitives/BBox.h>
 
 namespace gvt {
 namespace core {

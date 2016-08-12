@@ -32,7 +32,7 @@
 #define GVT_RENDER_DATA_PRIMITIVES
 
 #include <gvt/render/data/DerivedTypes.h>
-#include <gvt/render/data/primitives/BBox.h>
+#include <gvt/core/data/primitives/BBox.h>
 #include <gvt/render/data/primitives/Material.h>
 #include <gvt/render/data/primitives/Mesh.h>
 

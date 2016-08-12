@@ -31,7 +31,7 @@
 #include <gvt/core/Context.h>
 
 #include <gvt/render/actor/Ray.h>
-#include <gvt/render/data/primitives/BBox.h>
+#include <gvt/core/data/primitives/BBox.h>
 
 #include <limits>
 #include <vector>

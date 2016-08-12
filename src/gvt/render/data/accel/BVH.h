@@ -34,7 +34,7 @@
 #include <gvt/core/Math.h>
 #include <gvt/render/actor/RayPacket.h>
 #include <gvt/render/data/accel/AbstractAccel.h>
-#include <gvt/render/data/primitives/BBox.h>
+#include <gvt/core/data/primitives/BBox.h>
 
 namespace gvt {
 namespace render {

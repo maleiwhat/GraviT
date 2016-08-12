@@ -22,7 +22,7 @@
    ACI-1339881 and ACI-1339840
    ======================================================================================= */
 
-#include "gvt/render/data/primitives/BBox.h"
+#include "gvt/core/data/primitives/BBox.h"
 
 #include "gvt/render/actor/Ray.h"
 

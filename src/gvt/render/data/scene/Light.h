@@ -33,7 +33,7 @@
 
 #include <gvt/core/Math.h>
 #include <gvt/render/actor/Ray.h>
-#include <gvt/render/data/primitives/BBox.h>
+#include <gvt/core/data/primitives/BBox.h>
 
 namespace gvt {
 namespace render {
