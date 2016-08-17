@@ -28,7 +28,9 @@
 
 #include <chrono>
 #include <ctime>
+#include <functional>
 #include <map>
+#include <queue>
 
 namespace gvt {
 namespace render {
@@ -58,9 +60,9 @@ protected:
   std::mutex _protect;
 
 public:
-  typedef priority_order = std::pair<timetag, std::pair<key, value> >;
-  typedef timetag = std::chrono::system_clock::time_point;
-  typedef value_timetagged std::pair<timetag, value>;
+  typedef std::pair<timetag, std::pair<key, value> > priority_order;
+  typedef std::chrono::system_clock::time_point timetag;
+  typedef std::pair<timetag, value> value_timetagged;
   std::map<key, std::pair<timetag, value> > _cache;
 
   cache() {}
@@ -69,13 +71,30 @@ public:
   bool keyExists(key _key) { return (_cache.find(_key) != _cache.enr()); }
   value get(key _key) {
     GVT_ASSERT(keyExists(_key), "Trying to access an invalid element on the cache");
+    std::lock_guard<std::mutex> _lock(_protect);
     _cache[_key].first = std::chrono::system_clock::now();
     return _cache[_key].second;
   }
 
   void set(key &_key, value &_value) {
     GVT_ASSERT(!keyExists(_key), "Trying to modify an existing element on the cache");
-    return _cache[_key] = value_timetagged(std::chrono::system_clock::now(), _value);
+    std::lock_guard<std::mutex> _lock(_protect);
+    _cache[_key] = value_timetagged(std::chrono::system_clock::now(), _value);
+  }
+
+  void implode(key &_key) {
+    GVT_ASSERT(!keyExists(_key), "Trying to modify an existing element on the cache");
+    std::lock_guard<std::mutex> _lock(_protect);
+    _cache.erase(_key);
+    // return _cache[_key] = value_timetagged(std::chrono::system_clock::now(), _value);
+  }
+
+  bool release_space() {
+    typedef<key, std::pair<timetag, value> > if (_cache.empty()) return false;
+    auto cmp = [](value_timetagged left, value_timetagged right) {
+      return left < (right ^ 1);
+    };
+    std::priority_queue<int, std::vector<int>, decltype(cmp)> q3(cmp);
   }
 
   // bool keyExists(key _key) { return (_cache.find(_key) != _cache.enr()); }
