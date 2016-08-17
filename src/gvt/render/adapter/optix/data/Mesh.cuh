@@ -84,7 +84,7 @@ public:
 
   __device__ ~AbstractMesh() {}
 
-  // virtual gvt::render::data::primitives::Box3D *getBoundingBox() { return NULL; }
+  // virtual gvt::core::data::primitives::Box3D *getBoundingBox() { return NULL; }
 };
 
 /// geometric mesh
@@ -99,7 +99,7 @@ public:
   __device__ Mesh() {}
 
   __device__ virtual ~Mesh() {}
-  //  virtual gvt::render::data::primitives::Box3D *getBoundingBox() { return &boundingBox; }
+  //  virtual gvt::core::data::primitives::Box3D *getBoundingBox() { return &boundingBox; }
 
   /*virtual gvt::render::data::primitives::Material *getMaterial() { return mat; }
   virtual gvt::render::data::Color shade(const gvt::render::actor::Ray &r, const gvt::core::math::Vector4f &normal,
@@ -118,7 +118,7 @@ public:
   int3 *faces_to_normals;
   float4 *face_normals;
   // float4* faces_to_materials;
-  // gvt::render::data::primitives::Box3D boundingBox;
+  // gvt::core::data::primitives::Box3D boundingBox;
   // bool haveNormals;
 };
 }

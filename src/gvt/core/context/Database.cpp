@@ -18,9 +18,11 @@
    See the License for the specific language governing permissions and limitations under
    limitations under the License.
 
-   GraviT is funded in part by the US National Science Foundation under awards ACI-1339863,
+   GraviT is funded in part by the US National Science Foundation under awards
+   ACI-1339863,
    ACI-1339881 and ACI-1339840
-   ======================================================================================= */
+   =======================================================================================
+   */
 #include "gvt/core/context/Database.h"
 #include "gvt/core/Debug.h"
 #include <iostream>
@@ -31,7 +33,8 @@ using namespace gvt::core;
 Database::Database() {}
 
 Database::~Database() {
-  for (Map<Uuid, DatabaseNode *>::iterator it = __nodes.begin(); it != __nodes.end(); ++it) {
+  for (Map<Uuid, DatabaseNode *>::iterator it = __nodes.begin(); it != __nodes.end();
+       ++it) {
     delete it->second;
   }
 }
@@ -48,7 +51,9 @@ void Database::setRoot(DatabaseNode *root) { __nodes[root->UUID()] = root; }
 
 bool Database::hasNode(Uuid uuid) { return (__nodes.find(uuid) != __nodes.end()); }
 
-bool Database::hasNode(DatabaseNode *node) { return (__nodes.find(node->UUID()) != __nodes.end()); }
+bool Database::hasNode(DatabaseNode *node) {
+  return (__nodes.find(node->UUID()) != __nodes.end());
+}
 
 ChildList &Database::getChildren(Uuid parent) { return __tree[parent]; }
 
@@ -69,8 +74,8 @@ void Database::removeItem(Uuid uuid) {
     ChildList::iterator it;
 
     GVT_DEBUG(DBG_LOW, "removing children:");
-    GVT_DEBUG_CODE(DBG_LOW,
-                   for (it = children->begin(); it != children->end(); it++) print((*it)->UUID(), 0, std::cerr););
+    GVT_DEBUG_CODE(DBG_LOW, for (it = children->begin(); it != children->end(); it++)
+                                print((*it)->UUID(), 0, std::cerr););
     GVT_DEBUG(DBG_LOW, "");
 
     int numChildren = children->size();
@@ -78,18 +83,21 @@ void Database::removeItem(Uuid uuid) {
       removeItem((children->at(0))->UUID());
     }
     children = &__tree[cnode->parentUUID()];
-    GVT_DEBUG_CODE(DBG_LOW, for (it = children->begin(); it != children->end(); it++) std::cerr
-                                << "tree item: " << (*it)->UUID().toString() << std::endl;);
+    GVT_DEBUG_CODE(DBG_LOW,
+                   for (it = children->begin(); it != children->end(); it++) std::cerr
+                       << "tree item: " << (*it)->UUID().toString() << std::endl;);
     for (it = children->begin(); it != children->end(); ++it) {
       if ((*it)->UUID() == uuid) break;
     }
     Uuid puid = cnode->parentUUID();
-    GVT_DEBUG(DBG_LOW, "found tree item to remove from parent: " << (*it)->name() << " " << (*it)->UUID().toString());
+    GVT_DEBUG(DBG_LOW, "found tree item to remove from parent: "
+                           << (*it)->name() << " " << (*it)->UUID().toString());
     if (it != children->end()) children->erase(it);
     __nodes.erase(uuid);
     delete cnode;
   } else {
-    GVT_DEBUG(DBG_MODERATE, "ERROR: Could not find item to remove from database : " << uuid.toString());
+    GVT_DEBUG(DBG_MODERATE,
+              "ERROR: Could not find item to remove from database : " << uuid.toString());
   }
 }
 
@@ -110,20 +118,24 @@ void Database::print(const Uuid &parent, const int depth, std::ostream &os) {
   }
   std::string offset = "";
   for (int i = 0; i < depth; i++) offset += "-";
-  os << offset << pnode->UUID().toString() << " : " << pnode->name() << " : " << pnode->value() << std::endl;
+  os << offset << pnode->UUID().toString() << " : " << pnode->name() << " : "
+     << pnode->value() << std::endl;
   offset += "-";
   ChildList children = __tree[parent];
   for (ChildList::iterator it = children.begin(); it != children.end(); ++it) {
     DatabaseNode *node = (*it);
-    os << offset << node->UUID().toString() << " : " << node->name() << " : " << node->value() << std::endl;
+    os << offset << node->UUID().toString() << " : " << node->name() << " : "
+       << node->value() << std::endl;
   }
 
   os.flush();
 }
 
-void Database::printTree(const Uuid &parent, int rank, const int depth, std::ostream &os) {
+void Database::printTree(const Uuid &parent, int rank, const int depth,
+                         std::ostream &os) {
   if (MPI::COMM_WORLD.Get_rank() == rank) {
-    std::cout << std::endl << "Rank " << MPI::COMM_WORLD.Get_rank() << " tree:" << std::endl;
+    std::cout << std::endl
+              << "Rank " << MPI::COMM_WORLD.Get_rank() << " tree:" << std::endl;
     printTree(parent, depth, os);
   }
   MPI::COMM_WORLD.Barrier();
@@ -138,7 +150,8 @@ void Database::printTree(const Uuid &parent, const int depth, std::ostream &os) 
   std::string offset = "";
   for (int i = 0; i < depth; i++) offset += "-";
   offset += "|";
-  os << offset << pnode->UUID().toString() << " : " << pnode->name() << " : " << pnode->value() << std::endl;
+  os << offset << pnode->UUID().toString() << " : " << pnode->name() << " : "
+     << pnode->value() << std::endl;
   ChildList children = __tree[parent];
   for (ChildList::iterator it = children.begin(); it != children.end(); ++it) {
     DatabaseNode *node = (*it);
@@ -184,7 +197,8 @@ void Database::marshLeaf(unsigned char *buffer, DatabaseNode &leaf) {
   memcpy(buffer, &type, sizeof(int));
   buffer += sizeof(int);
 
-  // boost::variant<int, long, float, double, bool, unsigned long long, String, Uuid, glm::vec3> coreData;
+  // boost::variant<int, long, float, double, bool, unsigned long long, String, Uuid,
+  // glm::vec3> coreData;
   switch (type) {
   case 0: {
     int v = leaf.value().toInteger();
@@ -213,7 +227,8 @@ void Database::marshLeaf(unsigned char *buffer, DatabaseNode &leaf) {
   }
   case 5: { // if pointer, handle according to what the pointer points
     if (strcmp(name, "bbox") == 0) {
-      gvt::render::data::primitives::Box3D *bbox = (gvt::render::data::primitives::Box3D *)leaf.value().toULongLong();
+      gvt::core::data::primitives::Box3D *bbox =
+          (gvt::core::data::primitives::Box3D *)leaf.value().toULongLong();
       const float *v = glm::value_ptr(bbox->bounds_min);
       memcpy(buffer, v, sizeof(float) * 3);
       buffer += sizeof(float) * 3;
@@ -229,7 +244,8 @@ void Database::marshLeaf(unsigned char *buffer, DatabaseNode &leaf) {
       const float *v = (float *)(leaf.value().toULongLong());
       memcpy(buffer, v, sizeof(glm::mat3));
       break;
-    } else if (strcmp(name, "ptr") == 0) { // if it is actually a pointer, invalidate - separate memory adresses
+    } else if (strcmp(name, "ptr") ==
+               0) { // if it is actually a pointer, invalidate - separate memory adresses
       memset(buffer, 0, sizeof(unsigned long long));
     } else
       GVT_ASSERT(false, "Pointer used in marsh");
@@ -300,7 +316,8 @@ DatabaseNode *Database::unmarshLeaf(unsigned char *buffer, Uuid parent) {
       fs = (float *)buffer;
       glm::vec3 bounds_max = glm::vec3(fs[0], fs[1], fs[2]);
 
-      gvt::render::data::primitives::Box3D *meshbbox = new gvt::render::data::primitives::Box3D(bounds_min, bounds_max);
+      gvt::core::data::primitives::Box3D *meshbbox =
+          new gvt::core::data::primitives::Box3D(bounds_min, bounds_max);
 
       v = (unsigned long long)meshbbox;
 

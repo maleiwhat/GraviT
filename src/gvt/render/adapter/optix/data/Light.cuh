@@ -53,8 +53,8 @@ public:
 
   float4 position;
 
-  /*  virtual gvt::render::data::primitives::Box3D getWorldBoundingBox() {
-      gvt::render::data::primitives::Box3D bb(position, position);
+  /*  virtual gvt::core::data::primitives::Box3D getWorldBoundingBox() {
+      gvt::core::data::primitives::Box3D bb(position, position);
       return bb;
     }*/
 };

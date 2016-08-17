@@ -26,16 +26,61 @@
 
    */
 // clang-format on
+
+#include <gvt/render/Context.h>
 #include "ImageTracer.h"
 
 namespace gvt {
 namespace tracer {
 
+template <>
+gvt::render::actor::RayVector &&RayQueueManager::dequeue<ImageTracer>(int &target) {
+  int id = -1;
+  unsigned _total = 0;
+  {
+    std::lock_guard<std::mutex> _lock(_protect);
+    for (const auto &q : _queue) {
+      if (q.second.size() > _total) {
+        id = q.first;
+        _total = q.second.size();
+      }
+    }
+  }
+
+  if (id == -1) return std::move(gvt::render::actor::RayVector());
+  gvt::render::actor::RayVector _raylist = dequeue(id);
+
+  std::lock_guard<std::mutex> _lock(_protect);
+  _queue.erase(id);
+  return std::move(_raylist);
+
+  // return (id != -1) ? dequeue(id) : gvt::render::actor::RayVector();
+}
+
 ImageTracer::ImageTracer() : Tracer() {}
 
 ImageTracer::~ImageTracer() {}
 
-void ImageTracer::operator()() { GVT_ASSERT(false, "schedule not implemented"); };
+void ImageTracer::operator()() {
+
+  bool GlobalFrameFinished = false;
+  gvt::render::RenderContext *cntx = gvt::render::RenderContext::instance();
+  while (!GlobalFrameFinished) {
+    if (!_queues.empty()) {
+      int target;
+      gvt::render::actor::RayVector toprocess = _queues.dequeue<ImageTracer>(target);
+      if (target != -1) {
+        // Check cache if adpter exists;
+        // Call adapter
+        // Process rays
+      }
+    }
+    if (_queues.empty()) {
+      // Ask if done;
+    }
+  }
+  // Start composite
+};
 
 bool ImageTracer::MessageManager(std::shared_ptr<gvt::comm::Message> msg) {
   return Tracer::MessageManager(msg);

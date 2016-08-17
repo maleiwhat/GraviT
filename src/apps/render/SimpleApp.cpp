@@ -18,9 +18,11 @@
    See the License for the specific language governing permissions and limitations under
    limitations under the License.
 
-   GraviT is funded in part by the US National Science Foundation under awards ACI-1339863,
+   GraviT is funded in part by the US National Science Foundation under awards
+   ACI-1339863,
    ACI-1339881 and ACI-1339840
-   ======================================================================================= */
+   =======================================================================================
+   */
 /**
  * A simple GraviT application that loads some geometry and renders it.
  *
@@ -58,6 +60,7 @@
 #ifdef GVT_USE_MPE
 #include "mpe.h"
 #endif
+#include <gvt/core/data/primitives/BBox.h>
 #include <gvt/render/algorithm/Tracers.h>
 #include <gvt/render/data/Primitives.h>
 #include <gvt/render/data/scene/Image.h>
@@ -96,7 +99,8 @@ int main(int argc, char **argv) {
   cmd.addoption("lcolor", ParseCommandLine::FLOAT, "Light color", 3);
   cmd.addoption("image", ParseCommandLine::NONE, "Use embeded scene", 0);
   cmd.addoption("domain", ParseCommandLine::NONE, "Use embeded scene", 0);
-  cmd.addoption("threads", ParseCommandLine::INT, "Number of threads to use (default number cores + ht)", 1);
+  cmd.addoption("threads", ParseCommandLine::INT,
+                "Number of threads to use (default number cores + ht)", 1);
   cmd.addoption("output", ParseCommandLine::PATH, "Output Image Path", 1);
   cmd.addconflict("image", "domain");
 
@@ -136,7 +140,8 @@ int main(int argc, char **argv) {
   // mix of cones and cubes
 
   if (rank == 0) {
-    gvt::core::DBNodeH dataNodes = cntxt->addToSync(cntxt->createNodeFromType("Data", "Data", root.UUID()));
+    gvt::core::DBNodeH dataNodes =
+        cntxt->addToSync(cntxt->createNodeFromType("Data", "Data", root.UUID()));
     cntxt->addToSync(cntxt->createNodeFromType("Mesh", "conemesh", dataNodes.UUID()));
     cntxt->addToSync(cntxt->createNodeFromType("Mesh", "cubemesh", dataNodes.UUID()));
     cntxt->addToSync(cntxt->createNodeFromType("Instances", "Instances", root.UUID()));
@@ -194,7 +199,8 @@ int main(int argc, char **argv) {
         upper[j] = (upper[j] > points[i][j]) ? upper[j] : points[i][j];
       }
     }
-    Box3D *meshbbox = new gvt::render::data::primitives::Box3D(lower, upper);
+    gvt::core::data::primitives::Box3D *meshbbox =
+        new gvt::core::data::primitives::Box3D(lower, upper);
 
     // add cone mesh to the database
     gvt::core::Variant meshvariant(mesh);
@@ -289,7 +295,8 @@ int main(int argc, char **argv) {
         upper[j] = (upper[j] > points[i][j]) ? upper[j] : points[i][j];
       }
     }
-    Box3D *meshbbox = new gvt::render::data::primitives::Box3D(lower, upper);
+    gvt::core::data::primitives::Box3D *meshbbox =
+        new gvt::core::data::primitives::Box3D(lower, upper);
 
     // add cube mesh to the database
     cubeMeshNode["file"] = string("/fake/path/to/cube");
@@ -311,10 +318,12 @@ int main(int argc, char **argv) {
     int jj[2] = { -2, 3 }; // j range
     for (int i = ii[0]; i < ii[1]; i++) {
       for (int j = jj[0]; j < jj[1]; j++) {
-        gvt::core::DBNodeH instnode = cntxt->createNodeFromType("Instance", "inst", instNodes.UUID());
+        gvt::core::DBNodeH instnode =
+            cntxt->createNodeFromType("Instance", "inst", instNodes.UUID());
         // gvt::core::DBNodeH meshNode = (instId % 2) ? coneMeshNode : cubeMeshNode;
         gvt::core::DBNodeH meshNode = (instId % 2) ? cubeMeshNode : coneMeshNode;
-        Box3D *mbox = (Box3D *)meshNode["bbox"].value().toULongLong();
+        gvt::core::data::primitives::Box3D *mbox =
+            (gvt::core::data::primitives::Box3D *)meshNode["bbox"].value().toULongLong();
 
         instnode["id"] = instId++;
         instnode["meshRef"] = meshNode.UUID();
@@ -334,7 +343,8 @@ int main(int argc, char **argv) {
         instnode["normi"] = (unsigned long long)normi;
         auto il = glm::vec3((*m) * glm::vec4(mbox->bounds_min, 1.f));
         auto ih = glm::vec3((*m) * glm::vec4(mbox->bounds_max, 1.f));
-        Box3D *ibox = new gvt::render::data::primitives::Box3D(il, ih);
+        gvt::core::data::primitives::Box3D *ibox =
+            new gvt::core::data::primitives::Box3D(il, ih);
         instnode["bbox"] = (unsigned long long)ibox;
         instnode["centroid"] = ibox->centroid();
 
@@ -346,13 +356,16 @@ int main(int argc, char **argv) {
   cntxt->syncContext();
 
   // add lights, camera, and film to the database
-  gvt::core::DBNodeH lightNodes = cntxt->createNodeFromType("Lights", "Lights", root.UUID());
+  gvt::core::DBNodeH lightNodes =
+      cntxt->createNodeFromType("Lights", "Lights", root.UUID());
 #if 1
-  gvt::core::DBNodeH lightNode = cntxt->createNodeFromType("PointLight", "conelight", lightNodes.UUID());
+  gvt::core::DBNodeH lightNode =
+      cntxt->createNodeFromType("PointLight", "conelight", lightNodes.UUID());
   lightNode["position"] = glm::vec3(1.0, 0.0, -1.0);
   lightNode["color"] = glm::vec3(1.0, 1.0, 1.0);
 #else
-  gvt::core::DBNodeH lightNode = cntxt->createNodeFromType("AreaLight", "AreaLight", lightNodes.UUID());
+  gvt::core::DBNodeH lightNode =
+      cntxt->createNodeFromType("AreaLight", "AreaLight", lightNodes.UUID());
 
   lightNode["position"] = glm::vec3(1.0, 0.0, 0.0);
   lightNode["normal"] = glm::vec3(-1.0, 0.0, 0.0);
@@ -361,11 +374,13 @@ int main(int argc, char **argv) {
   lightNode["color"] = glm::vec3(1.0, 1.0, 1.0);
 #endif
   // second light just for fun
-  // gvt::core::DBNodeH lN2 = cntxt->createNodeFromType("PointLight", "conelight", lightNodes.UUID());
+  // gvt::core::DBNodeH lN2 = cntxt->createNodeFromType("PointLight", "conelight",
+  // lightNodes.UUID());
   // lN2["position"] = glm::vec3(2.0, 2.0, 2.0, 0.0);
   // lN2["color"] = glm::vec3(0.0, 0.0, 0.0, 0.0);
 
-  gvt::core::DBNodeH camNode = cntxt->createNodeFromType("Camera", "conecam", root.UUID());
+  gvt::core::DBNodeH camNode =
+      cntxt->createNodeFromType("Camera", "conecam", root.UUID());
   camNode["eyePoint"] = glm::vec3(4.0, 0.0, 0.0);
   camNode["focus"] = glm::vec3(0.0, 0.0, 0.0);
   camNode["upVector"] = glm::vec3(0.0, 1.0, 0.0);
@@ -374,7 +389,8 @@ int main(int argc, char **argv) {
   camNode["raySamples"] = (int)1;
   camNode["jitterWindowSize"] = (float)0.5;
 
-  gvt::core::DBNodeH filmNode = cntxt->createNodeFromType("Film", "conefilm", root.UUID());
+  gvt::core::DBNodeH filmNode =
+      cntxt->createNodeFromType("Film", "conefilm", root.UUID());
   filmNode["width"] = 512;
   filmNode["height"] = 512;
   filmNode["outputPath"] = (std::string) "simple";
@@ -407,7 +423,8 @@ int main(int argc, char **argv) {
     filmNode["outputPath"] = output[0];
   }
 
-  gvt::core::DBNodeH schedNode = cntxt->createNodeFromType("Schedule", "Enzosched", root.UUID());
+  gvt::core::DBNodeH schedNode =
+      cntxt->createNodeFromType("Schedule", "Enzosched", root.UUID());
   if (cmd.isSet("domain"))
     schedNode["type"] = gvt::render::scheduler::Domain;
   else
@@ -447,13 +464,15 @@ int main(int argc, char **argv) {
   mycamera.setJitterWindowSize(jitterWindowSize);
   mycamera.lookAt(cameraposition, focus, up);
   mycamera.setFOV(fov);
-  mycamera.setFilmsize(filmNode["width"].value().toInteger(), filmNode["height"].value().toInteger());
+  mycamera.setFilmsize(filmNode["width"].value().toInteger(),
+                       filmNode["height"].value().toInteger());
 
 #ifdef GVT_USE_MPE
   MPE_Log_event(readend, 0, NULL);
 #endif
   // setup image from database sizes
-  Image myimage(mycamera.getFilmSizeWidth(), mycamera.getFilmSizeHeight(), filmNode["outputPath"].value().toString());
+  Image myimage(mycamera.getFilmSizeWidth(), mycamera.getFilmSizeHeight(),
+                filmNode["outputPath"].value().toString());
 
   mycamera.AllocateCameraRays();
   mycamera.generateRays();
@@ -524,7 +543,8 @@ int main(int argc, char **argv) {
 //   rays.push_back(mycamera.rays[300 * 512 + 300]);
 //   rays.push_back(mycamera.rays[400 * 512 + 400]);
 //   rays.push_back(mycamera.rays[470 * 512 + 470]);
-//   rays.push_back(gvt::render::actor::Ray(glm::vec3(0.0, 0.0, 1.0), glm::vec3(0.0, 0.0, -1.0)));
+//   rays.push_back(gvt::render::actor::Ray(glm::vec3(0.0, 0.0, 1.0), glm::vec3(0.0, 0.0,
+//   -1.0)));
 //   rays.push_back(mycamera.rays[144231]);
 //
 //   // test rays and print out which instances were hit

@@ -24,36 +24,48 @@
    =======================================================================================
    */
 
-#ifndef GVT_IMAGETRACER_H
-#define GVT_IMAGETRACER_H
-
-#include <gvt/core/Debug.h>
-#include <gvt/core/tracer/tracer.h>
-
-#include <gvt/render/actor/Ray.h>
+#ifndef GVT_RAYQUEUEMANAGER_H
+#define GVT_RAYQUEUEMANAGER_H
 
 namespace gvt {
 namespace tracer {
-class ImageTracer : public gvt::tracer::Tracer {
-protected:
-  // Vooting....
-  // Ray queue manager
-  // Data manager
+struct RayQueueManager {
 
-public:
-  ImageTracer();
-  virtual ~ImageTracer();
-  virtual void operator()();
-  virtual bool MessageManager(std::shared_ptr<gvt::comm::Message> msg);
+  std::mutex _protect;
 
-  virtual void processRayQueue(gvt::render::actor::RayVector &rays, const int src = -1,
-                               const int dst = -1);
+  std::map<int, gvt::render::actor::RayVector> _queue;
 
-  virtual void updateGeometry();
+  RayQueueManager(){};
 
-private:
+  ~RayQueueManager() {}
+
+  virtual void enqueue(int id, gvt::render::actor::RayVector &_raylist) {
+    std::lock_guard<std::mutex> _lock(_protect);
+    if (_queue.find(id) == _queue.end()) {
+      _queue[id] = gvt::render::actor::RayVector();
+    }
+    if (_queue[id].size() == 0)
+      std::swap(_queue[id], _raylist);
+    else {
+      _queue[id].insert(_queue[id].end(), std::make_move_iterator(_raylist.begin()),
+                        std::make_move_iterator(_raylist.end()));
+    }
+  }
+
+  virtual gvt::render::actor::RayVector &&dequeue(int id) {
+    GVT_ASSERT(_queue.find(id) != _queue.end(), "Trying to access an invalid queue");
+    std::lock_guard<std::mutex> _lock(_protect);
+    return std::move(gvt::render::actor::RayVector());
+  }
+
+  bool empty() { return _queue.empty(); }
+  std::size_t size() { return _queue.size(); }
+
+  template <class scheduler> gvt::render::actor::RayVector &&dequeue(int &target) {
+    GVT_ASSERT(false, "Queue policity not defined");
+  }
 };
 }
 }
 
-#endif
+#endif /* GVT_RAYQUEUEMANAGER_H */

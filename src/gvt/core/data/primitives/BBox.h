@@ -18,9 +18,11 @@
    See the License for the specific language governing permissions and limitations under
    limitations under the License.
 
-   GraviT is funded in part by the US National Science Foundation under awards ACI-1339863,
+   GraviT is funded in part by the US National Science Foundation under awards
+   ACI-1339863,
    ACI-1339881 and ACI-1339840
-   ======================================================================================= */
+   =======================================================================================
+   */
 /*
  * File:   BBox.h
  * Author: jbarbosa
@@ -34,10 +36,11 @@
 #include <fstream>
 #include <gvt/core/Debug.h>
 #include <gvt/core/Math.h>
-#include <gvt/render/actor/Ray.h>
+#include <gvt/core/data/primitives/BBox.h>
+// #include <gvt/render/actor/Ray.h>
 
 namespace gvt {
-namespace render {
+namespace core {
 namespace data {
 namespace primitives {
 
@@ -57,13 +60,14 @@ public:
   Box3D(glm::vec3 vmin, glm::vec3 vmax);
 
   Box3D(const Box3D &other);
-  inline bool intersectDistance(const glm::vec3 &origin, const glm::vec3 &inv, float &t) const {
+  inline bool intersectDistance(const glm::vec3 &origin, const glm::vec3 &inv,
+                                float &t) const {
     glm::vec3 l = (bounds_min - origin) * inv;
     glm::vec3 u = (bounds_max - origin) * inv;
     glm::vec3 m = glm::min(l, u);
     float tmin = fastmax(fastmax(m.x, m.y), m.z);
 
-    if (tmin < gvt::render::actor::Ray::RAY_EPSILON) return false;
+    if (tmin < 1.e-6) return false;
 
     glm::vec3 M = glm::max(l, u);
 
@@ -72,9 +76,10 @@ public:
     if (tmax < 0 || tmin > tmax) return false;
     t = (tmin > 0) ? tmin : -1;
 
-    return (t > gvt::render::actor::Ray::RAY_EPSILON);
+    return (t > 1.e-6);
   };
-  bool intersectDistance(const glm::vec3 &origin, const glm::vec3 &inv, float &tmin, float &tmax) const;
+  bool intersectDistance(const glm::vec3 &origin, const glm::vec3 &inv, float &tmin,
+                         float &tmax) const;
   void merge(const Box3D &other);
   void expand(glm::vec3 &v);
   int wideRangingBoxDir() const;
@@ -90,7 +95,8 @@ public:
   }
 
   template <typename cast> operator cast() {
-    GVT_ASSERT(false, "Cast operator not available from gvt::render::data::primitives::BBox");
+    GVT_ASSERT(false,
+               "Cast operator not available from gvt::render::data::primitives::BBox");
   }
 };
 }

@@ -158,7 +158,7 @@ ConfigFileLoader::ConfigFileLoader(const std::string filename) {
           meshNode = dataNodes.getChildren().back();
 
           meshNode["file"] = filename;
-          gvt::render::data::primitives::Box3D *bbox = mesh->getBoundingBox();
+          gvt::core::data::primitives::Box3D *bbox = mesh->getBoundingBox();
           meshNode["bbox"] = (unsigned long long)bbox;
           meshNode["ptr"] = (unsigned long long)mesh;
 
@@ -217,8 +217,8 @@ ConfigFileLoader::ConfigFileLoader(const std::string filename) {
       if (MPI::COMM_WORLD.Get_rank() == 0) {
         // add instance
         gvt::core::DBNodeH instnode = cntxt->createNodeFromType("Instance", "inst", instNodes.UUID());
-        gvt::render::data::primitives::Box3D *mbox =
-            (gvt::render::data::primitives::Box3D *)meshNode["bbox"].value().toULongLong();
+        gvt::core::data::primitives::Box3D *mbox =
+            (gvt::core::data::primitives::Box3D *)meshNode["bbox"].value().toULongLong();
         instnode["id"] = domainCount++;
         instnode["meshRef"] = meshNode.UUID();
 
@@ -228,7 +228,7 @@ ConfigFileLoader::ConfigFileLoader(const std::string filename) {
 
         auto il = glm::vec3((*m) * glm::vec4(mbox->bounds_min, 1.f));
         auto ih = glm::vec3((*m) * glm::vec4(mbox->bounds_max, 1.f));
-        gvt::render::data::primitives::Box3D *ibox = new gvt::render::data::primitives::Box3D(il, ih);
+        gvt::core::data::primitives::Box3D *ibox = new gvt::core::data::primitives::Box3D(il, ih);
         instnode["bbox"] = (unsigned long long)ibox;
         instnode["centroid"] = ibox->centroid();
         cntxt->addToSync(instnode);

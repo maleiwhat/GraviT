@@ -18,9 +18,11 @@
    See the License for the specific language governing permissions and limitations under
    limitations under the License.
 
-   GraviT is funded in part by the US National Science Foundation under awards ACI-1339863,
+   GraviT is funded in part by the US National Science Foundation under awards
+   ACI-1339863,
    ACI-1339881 and ACI-1339840
-   ======================================================================================= */
+   =======================================================================================
+   */
 /**
  * A simple GraviT application that loads some geometry and renders it.
  *
@@ -57,6 +59,7 @@
 #ifdef GVT_USE_MPE
 #include "mpe.h"
 #endif
+#include <gvt/core/data/primitives/BBox.h>
 #include <gvt/render/algorithm/Tracers.h>
 #include <gvt/render/data/Primitives.h>
 #include <gvt/render/data/scene/Image.h>
@@ -129,7 +132,8 @@ PlyProperty vert_props[] = {
 
 PlyProperty face_props[] = {
   /* list of property information for a face */
-  { "vertex_indices", Int32, Int32, offsetof(Face, verts), 1, Uint8, Uint8, offsetof(Face, nverts) },
+  { "vertex_indices", Int32, Int32, offsetof(Face, verts), 1, Uint8, Uint8,
+    offsetof(Face, nverts) },
 };
 static Vertex **vlist;
 static Face **flist;
@@ -147,7 +151,8 @@ int main(int argc, char **argv) {
   cmd.addoption("file", ParseCommandLine::PATH | ParseCommandLine::REQUIRED, "File path");
   cmd.addoption("image", ParseCommandLine::NONE, "Use embeded scene", 0);
   cmd.addoption("domain", ParseCommandLine::NONE, "Use embeded scene", 0);
-  cmd.addoption("threads", ParseCommandLine::INT, "Number of threads to use (default number cores + ht)", 1);
+  cmd.addoption("threads", ParseCommandLine::INT,
+                "Number of threads to use (default number cores + ht)", 1);
 
   cmd.addconflict("image", "domain");
 
@@ -226,12 +231,15 @@ int main(int argc, char **argv) {
       continue;
 #endif
 
-// if all ranks read all ply blocks, one has to create the db node which is then broadcasted.
-// if not, since each block will be loaded by only one mpi, this mpi rank will create the db node
+// if all ranks read all ply blocks, one has to create the db node which is then
+// broadcasted.
+// if not, since each block will be loaded by only one mpi, this mpi rank will create the
+// db node
 #ifndef DOMAIN_PER_NODE
     if (MPI::COMM_WORLD.Get_rank() == 0)
 #endif
-      gvt::core::DBNodeH PlyMeshNode = cntxt->addToSync(cntxt->createNodeFromType("Mesh", *file, dataNodes.UUID()));
+      gvt::core::DBNodeH PlyMeshNode =
+          cntxt->addToSync(cntxt->createNodeFromType("Mesh", *file, dataNodes.UUID()));
 
 #ifndef DOMAIN_PER_NODE
     cntxt->syncContext();
@@ -288,7 +296,8 @@ int main(int argc, char **argv) {
       }
       glm::vec3 lower(xmin, ymin, zmin);
       glm::vec3 upper(xmax, ymax, zmax);
-      Box3D *meshbbox = new gvt::render::data::primitives::Box3D(lower, upper);
+      gvt::core::data::primitives::Box3D *meshbbox =
+          new gvt::core::data::primitives::Box3D(lower, upper);
       // add faces to mesh
       for (i = 0; i < nfaces; i++) {
         face = flist[i];
@@ -296,7 +305,8 @@ int main(int argc, char **argv) {
       }
       mesh->generateNormals();
       // add Ply mesh to the database
-      // PlyMeshNode["file"] = string("/work/01197/semeraro/maverick/DAVEDATA/EnzoPlyDATA/Block0.ply");
+      // PlyMeshNode["file"] =
+      // string("/work/01197/semeraro/maverick/DAVEDATA/EnzoPlyDATA/Block0.ply");
       PlyMeshNode["file"] = string(filepath);
       PlyMeshNode["bbox"] = (unsigned long long)meshbbox;
       PlyMeshNode["ptr"] = (unsigned long long)mesh;
@@ -309,14 +319,17 @@ int main(int argc, char **argv) {
   }
   cntxt->syncContext();
 
-  // context has the location information of the domain, so for simplicity only one mpi will create the instances
+  // context has the location information of the domain, so for simplicity only one mpi
+  // will create the instances
   if (MPI::COMM_WORLD.Get_rank() == 0) {
     for (file = files.begin(), k = 0; file != files.end(); file++, k++) {
 
       // add instance
-      gvt::core::DBNodeH instnode = cntxt->createNodeFromType("Instance", "inst", instNodes.UUID());
+      gvt::core::DBNodeH instnode =
+          cntxt->createNodeFromType("Instance", "inst", instNodes.UUID());
       gvt::core::DBNodeH meshNode = dataNodes.getChildren()[k];
-      Box3D *mbox = (Box3D *)meshNode["bbox"].value().toULongLong();
+      gvt::core::data::primitives::Box3D *mbox =
+          (gvt::core::data::primitives::Box3D *)meshNode["bbox"].value().toULongLong();
       instnode["id"] = k;
       instnode["meshRef"] = meshNode.UUID();
       auto m = new glm::mat4(1.f);
@@ -329,7 +342,8 @@ int main(int argc, char **argv) {
       instnode["normi"] = (unsigned long long)normi;
       auto il = glm::vec3((*m) * glm::vec4(mbox->bounds_min, 1.f));
       auto ih = glm::vec3((*m) * glm::vec4(mbox->bounds_max, 1.f));
-      Box3D *ibox = new gvt::render::data::primitives::Box3D(il, ih);
+      gvt::core::data::primitives::Box3D *ibox =
+          new gvt::core::data::primitives::Box3D(il, ih);
       instnode["bbox"] = (unsigned long long)ibox;
       instnode["centroid"] = ibox->centroid();
 
@@ -340,12 +354,15 @@ int main(int argc, char **argv) {
   cntxt->syncContext();
 
   // add lights, camera, and film to the database
-  gvt::core::DBNodeH lightNodes = cntxt->createNodeFromType("Lights", "Lights", root.UUID());
-  gvt::core::DBNodeH lightNode = cntxt->createNodeFromType("PointLight", "conelight", lightNodes.UUID());
+  gvt::core::DBNodeH lightNodes =
+      cntxt->createNodeFromType("Lights", "Lights", root.UUID());
+  gvt::core::DBNodeH lightNode =
+      cntxt->createNodeFromType("PointLight", "conelight", lightNodes.UUID());
   lightNode["position"] = glm::vec3(512.0, 512.0, 2048.0);
   lightNode["color"] = glm::vec3(1000.0, 1000.0, 1000.0);
   // camera
-  gvt::core::DBNodeH camNode = cntxt->createNodeFromType("Camera", "conecam", root.UUID());
+  gvt::core::DBNodeH camNode =
+      cntxt->createNodeFromType("Camera", "conecam", root.UUID());
   camNode["eyePoint"] = glm::vec3(512.0, 512.0, 4096.0);
   camNode["focus"] = glm::vec3(512.0, 512.0, 0.0);
   camNode["upVector"] = glm::vec3(0.0, 1.0, 0.0);
@@ -353,7 +370,8 @@ int main(int argc, char **argv) {
   camNode["rayMaxDepth"] = (int)1;
   camNode["raySamples"] = (int)1;
   // film
-  gvt::core::DBNodeH filmNode = cntxt->createNodeFromType("Film", "conefilm", root.UUID());
+  gvt::core::DBNodeH filmNode =
+      cntxt->createNodeFromType("Film", "conefilm", root.UUID());
   filmNode["width"] = 1900;
   filmNode["height"] = 1080;
 
@@ -372,7 +390,8 @@ int main(int argc, char **argv) {
     filmNode["height"] = wsize[1];
   }
 
-  gvt::core::DBNodeH schedNode = cntxt->createNodeFromType("Schedule", "Plysched", root.UUID());
+  gvt::core::DBNodeH schedNode =
+      cntxt->createNodeFromType("Schedule", "Plysched", root.UUID());
   if (cmd.isSet("domain"))
     schedNode["type"] = gvt::render::scheduler::Domain;
   else
@@ -406,7 +425,8 @@ int main(int argc, char **argv) {
   mycamera.setMaxDepth(rayMaxDepth);
   mycamera.setSamples(raySamples);
   mycamera.setFOV(fov);
-  mycamera.setFilmsize(filmNode["width"].value().toInteger(), filmNode["height"].value().toInteger());
+  mycamera.setFilmsize(filmNode["width"].value().toInteger(),
+                       filmNode["height"].value().toInteger());
 
 #ifdef GVT_USE_MPE
   MPE_Log_event(readend, 0, NULL);
@@ -483,7 +503,8 @@ int main(int argc, char **argv) {
 //   rays.push_back(mycamera.rays[300 * 512 + 300]);
 //   rays.push_back(mycamera.rays[400 * 512 + 400]);
 //   rays.push_back(mycamera.rays[470 * 512 + 470]);
-//   rays.push_back(gvt::render::actor::Ray(glm::vec3(0.0, 0.0, 1.0), glm::vec3(0.0, 0.0, -1.0)));
+//   rays.push_back(gvt::render::actor::Ray(glm::vec3(0.0, 0.0, 1.0), glm::vec3(0.0, 0.0,
+//   -1.0)));
 //   rays.push_back(mycamera.rays[144231]);
 //
 //   // test rays and print out which instances were hit

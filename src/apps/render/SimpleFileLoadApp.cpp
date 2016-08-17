@@ -18,9 +18,11 @@
    See the License for the specific language governing permissions and limitations under
    limitations under the License.
 
-   GraviT is funded in part by the US National Science Foundation under awards ACI-1339863,
+   GraviT is funded in part by the US National Science Foundation under awards
+   ACI-1339863,
    ACI-1339881 and ACI-1339840
-   ======================================================================================= */
+   =======================================================================================
+   */
 //
 // Simple gravit application.
 // Load some geometry and render it.
@@ -49,6 +51,7 @@
 #include <gvt/render/adapter/optix/Wrapper.h>
 #endif
 
+#include <gvt/core/data/primitives/BBox.h>
 #include <gvt/render/algorithm/Tracers.h>
 #include <gvt/render/data/Primitives.h>
 #include <gvt/render/data/reader/ObjReader.h>
@@ -77,7 +80,8 @@ int main(int argc, char **argv) {
   cmd.addoption("look", ParseCommandLine::FLOAT, "Camera look at", 3);
   cmd.addoption("image", ParseCommandLine::NONE, "Use embeded scene", 0);
   cmd.addoption("domain", ParseCommandLine::NONE, "Use embeded scene", 0);
-  cmd.addoption("threads", ParseCommandLine::INT, "Number of threads to use (default number cores + ht)", 1);
+  cmd.addoption("threads", ParseCommandLine::INT,
+                "Number of threads to use (default number cores + ht)", 1);
   cmd.addoption("output", ParseCommandLine::PATH, "Output Image Path", 1);
   cmd.addconflict("image", "domain");
   cmd.parse(argc, argv);
@@ -101,7 +105,8 @@ int main(int argc, char **argv) {
   gvt::core::DBNodeH root = cntxt->getRootNode();
 
   if (rank == 0) {
-    gvt::core::DBNodeH dataNodes = cntxt->addToSync(cntxt->createNodeFromType("Data", "Data", root.UUID()));
+    gvt::core::DBNodeH dataNodes =
+        cntxt->addToSync(cntxt->createNodeFromType("Data", "Data", root.UUID()));
     cntxt->addToSync(cntxt->createNodeFromType("Mesh", "bunny", dataNodes.UUID()));
     cntxt->addToSync(cntxt->createNodeFromType("Instances", "Instances", root.UUID()));
   }
@@ -127,7 +132,7 @@ int main(int argc, char **argv) {
     mesh->generateNormals();
 
     mesh->computeBoundingBox();
-    Box3D *meshbbox = mesh->getBoundingBox();
+    gvt::core::data::primitives::Box3D *meshbbox = mesh->getBoundingBox();
 
     // add bunny mesh to the database
 
@@ -145,9 +150,11 @@ int main(int argc, char **argv) {
 
   // create the instance
   if (rank == 0) {
-    gvt::core::DBNodeH instnode = cntxt->createNodeFromType("Instance", "inst", instNodes.UUID());
+    gvt::core::DBNodeH instnode =
+        cntxt->createNodeFromType("Instance", "inst", instNodes.UUID());
     gvt::core::DBNodeH meshNode = bunnyMeshNode;
-    Box3D *mbox = (Box3D *)meshNode["bbox"].value().toULongLong();
+    gvt::core::data::primitives::Box3D *mbox =
+        (gvt::core::data::primitives::Box3D *)meshNode["bbox"].value().toULongLong();
 
     instnode["id"] = 0; // unique id per instance
     instnode["meshRef"] = meshNode.UUID();
@@ -171,7 +178,8 @@ int main(int argc, char **argv) {
     // transform mesh bounding box
     auto il = glm::vec3((*m) * glm::vec4(mbox->bounds_min, 1.f));
     auto ih = glm::vec3((*m) * glm::vec4(mbox->bounds_max, 1.f));
-    Box3D *ibox = new gvt::render::data::primitives::Box3D(il, ih);
+    gvt::core::data::primitives::Box3D *ibox =
+        new gvt::core::data::primitives::Box3D(il, ih);
     instnode["bbox"] = (unsigned long long)ibox;
     instnode["centroid"] = ibox->centroid();
     cntxt->addToSync(instnode);
@@ -180,17 +188,20 @@ int main(int argc, char **argv) {
   cntxt->syncContext();
 
   // add a light
-  gvt::core::DBNodeH lightNodes = cntxt->createNodeFromType("Lights", "Lights", root.UUID());
+  gvt::core::DBNodeH lightNodes =
+      cntxt->createNodeFromType("Lights", "Lights", root.UUID());
 
   // area Light
-  // gvt::core::DBNodeH lightNode = cntxt->createNodeFromType("AreaLight", "light", lightNodes.UUID());
+  // gvt::core::DBNodeH lightNode = cntxt->createNodeFromType("AreaLight", "light",
+  // lightNodes.UUID());
   // lightNode["position"] = glm::vec3(-0.2, 0.1, 0.9, 0.0);
   // lightNode["color"] = glm::vec3(1.0, 1.0, 1.0, 0.0);
   // lightNode["normal"] = glm::vec3(0.0, 0.0, 1.0, 0.0);
   // lightNode["width"] = float(0.05);
   // lightNode["height"] = float(0.05);
 
-  gvt::core::DBNodeH lightNode = cntxt->createNodeFromType("PointLight", "light", lightNodes.UUID());
+  gvt::core::DBNodeH lightNode =
+      cntxt->createNodeFromType("PointLight", "light", lightNodes.UUID());
   lightNode["position"] = glm::vec3(0.0, 0.1, 0.5);
   lightNode["color"] = glm::vec3(1.0, 1.0, 1.0);
 
@@ -229,7 +240,8 @@ int main(int argc, char **argv) {
     filmNode["outputPath"] = output[0];
   }
 
-  gvt::core::DBNodeH schedNode = cntxt->createNodeFromType("Schedule", "Enzosched", root.UUID());
+  gvt::core::DBNodeH schedNode =
+      cntxt->createNodeFromType("Schedule", "Enzosched", root.UUID());
   if (cmd.isSet("domain"))
     schedNode["type"] = gvt::render::scheduler::Domain;
   else
@@ -273,10 +285,12 @@ int main(int argc, char **argv) {
   mycamera.lookAt(cameraposition, focus, up);
   mycamera.setFOV(fov);
 
-  mycamera.setFilmsize(filmNode["width"].value().toInteger(), filmNode["height"].value().toInteger());
+  mycamera.setFilmsize(filmNode["width"].value().toInteger(),
+                       filmNode["height"].value().toInteger());
 
   // setup image from database sizes
-  Image myimage(mycamera.getFilmSizeWidth(), mycamera.getFilmSizeHeight(), filmNode["outputPath"].value().toString());
+  Image myimage(mycamera.getFilmSizeWidth(), mycamera.getFilmSizeHeight(),
+                filmNode["outputPath"].value().toString());
 
   mycamera.AllocateCameraRays();
   mycamera.generateRays();

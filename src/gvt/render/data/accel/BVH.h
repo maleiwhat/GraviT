@@ -18,9 +18,11 @@
    See the License for the specific language governing permissions and limitations under
    limitations under the License.
 
-   GraviT is funded in part by the US National Science Foundation under awards ACI-1339863,
+   GraviT is funded in part by the US National Science Foundation under awards
+   ACI-1339863,
    ACI-1339881 and ACI-1339840
-   ======================================================================================= */
+   =======================================================================================
+   */
 //
 // BVH.h
 //
@@ -28,13 +30,13 @@
 #ifndef GVT_RENDER_DATA_ACCEL_BVH_H
 #define GVT_RENDER_DATA_ACCEL_BVH_H
 
-#include <stack>
 #include <mutex>
+#include <stack>
 
 #include <gvt/core/Math.h>
+#include <gvt/core/data/primitives/BBox.h>
 #include <gvt/render/actor/RayPacket.h>
 #include <gvt/render/data/accel/AbstractAccel.h>
-#include <gvt/core/data/primitives/BBox.h>
 
 namespace gvt {
 namespace render {
@@ -52,7 +54,8 @@ public:
   BVH(gvt::core::Vector<gvt::core::DBNodeH> &instanceSet);
   ~BVH();
 
-  virtual void intersect(const gvt::render::actor::Ray &ray, gvt::render::actor::isecDomList &isect);
+  virtual void intersect(const gvt::render::actor::Ray &ray,
+                         gvt::render::actor::isecDomList &isect);
   inline int intersect(const gvt::render::actor::Ray &ray, int from, float &t) {
     const glm::vec3 &origin = ray.origin;
     const glm::vec3 inv = 1.f / ray.direction;
@@ -75,7 +78,7 @@ public:
         int end = start + cur->numInstances;
         for (int i = start; i < end; ++i) {
           if (from == instanceSetID[i]) continue;
-          primitives::Box3D *ibbox = instanceSetBB[i];
+          gvt::core::data::primitives::Box3D *ibbox = instanceSetBB[i];
           float tlocal;
           if (ibbox->intersectDistance(origin, inv, tlocal) && (tlocal < best)) {
             t = best = tlocal;
@@ -98,7 +101,8 @@ public:
 
   template <size_t simd_width>
   std::vector<hit> intersect(const gvt::render::actor::RayVector::iterator &ray_begin,
-                             const gvt::render::actor::RayVector::iterator &ray_end, const int from) {
+                             const gvt::render::actor::RayVector::iterator &ray_end,
+                             const int from) {
     std::vector<hit> ret((ray_end - ray_begin));
     size_t offset = 0;
 #ifndef GVT_BRUTEFORCE
@@ -114,7 +118,7 @@ public:
       for (int i = 0; i < instanceSet.size(); i++) {
         if (from == instanceSetID[i]) continue;
         int hit[simd_width];
-        const primitives::Box3D &ibbox = *instanceSetBB[i];
+        const gvt::core::data::primitives::Box3D &ibbox = *instanceSetBB[i];
         rp.intersect(ibbox, hit, true);
         {
           for (int o = 0; o < simd_width; ++o) {
@@ -132,7 +136,7 @@ public:
       int hit[simd_width];
       while (cur) {
 
-        const gvt::render::data::primitives::Box3D &bb = cur->bbox;
+        const gvt::core::data::primitives::Box3D &bb = cur->bbox;
         if (!rp.intersect(bb, hit)) {
           cur = *(--stackptr);
           continue;
@@ -143,7 +147,7 @@ public:
           int end = start + cur->numInstances;
           for (int i = start; i < end; ++i) {
             if (from == instanceSetID[i]) continue;
-            const primitives::Box3D &ibbox = *instanceSetBB[i];
+            const gvt::core::data::primitives::Box3D &ibbox = *instanceSetBB[i];
             int hit[simd_width];
             if (rp.intersect(ibbox, hit, true)) {
               for (int o = 0; o < simd_width; ++o) {
@@ -172,13 +176,14 @@ private:
     Node() : leftChild(NULL), rightChild(NULL), numInstances(0) {}
     Node *leftChild;  /// null for leaf nodes
     Node *rightChild; /// null for leaf nodes
-    gvt::render::data::primitives::Box3D bbox;
+    gvt::core::data::primitives::Box3D bbox;
     int instanceSetIdx; /// base, valid when numInstances>0
     int numInstances;   /// 0 means an internal node
   };
 
   struct CentroidLessThan {
-    CentroidLessThan(float splitPoint, int splitAxis) : splitPoint(splitPoint), splitAxis(splitAxis) {}
+    CentroidLessThan(float splitPoint, int splitAxis)
+        : splitPoint(splitPoint), splitAxis(splitAxis) {}
     bool operator()(const gvt::core::DBNodeH inst) const {
       gvt::core::DBNodeH i2 = inst;
       glm::vec3 centroid = i2["centroid"].value().tovec3();
@@ -190,15 +195,17 @@ private:
   };
 
 private:
-  Node *build(gvt::core::Vector<gvt::core::DBNodeH> &sortedDomainSet, int start, int end, int level);
+  Node *build(gvt::core::Vector<gvt::core::DBNodeH> &sortedDomainSet, int start, int end,
+              int level);
 
   float findSplitPoint(int splitAxis, int start, int end);
 
   /// traverse ray through BVH. Called by intersect().
-  void trace(const glm::vec3 &origin, const glm::vec3 &inv, const Node *node, /*ClosestHit &hit,*/
+  void trace(const glm::vec3 &origin, const glm::vec3 &inv,
+             const Node *node, /*ClosestHit &hit,*/
              gvt::render::actor::isecDomList &isect, int level);
 
-  std::vector<gvt::render::data::primitives::Box3D *> instanceSetBB;
+  std::vector<gvt::core::data::primitives::Box3D *> instanceSetBB;
   std::vector<int> instanceSetID;
 
 private:

@@ -18,9 +18,11 @@
    See the License for the specific language governing permissions and limitations under
    limitations under the License.
 
-   GraviT is funded in part by the US National Science Foundation under awards ACI-1339863,
+   GraviT is funded in part by the US National Science Foundation under awards
+   ACI-1339863,
    ACI-1339881 and ACI-1339840
-   ======================================================================================= */
+   =======================================================================================
+   */
 /*
  * File:   gvt_mesh.cpp
  * Author: jbarbosa
@@ -32,6 +34,7 @@
 
 using namespace gvt::render::actor;
 using namespace gvt::render::data;
+using namespace gvt::core::data::primitives;
 using namespace gvt::render::data::primitives;
 using namespace gvt::render::data::scene;
 
@@ -82,24 +85,28 @@ void Mesh::setVertex(int which, glm::vec3 vertex, glm::vec3 normal, glm::vec3 te
 }
 
 void Mesh::setMaterial(Material *mat_) {
-	this->mat = new Material();
-	*(this->mat) = *mat_;
+  this->mat = new Material();
+  *(this->mat) = *mat_;
 }
 
 void Mesh::addFace(int v0, int v1, int v2) {
-  GVT_ASSERT((v0 - 1 >= 0) && v0 - 1 < vertices.size(), "Vertex index 0 outside bounds : " << (v0 - 1));
-  GVT_ASSERT((v1 - 1 >= 0) && v1 - 1 < vertices.size(), "Vertex index 1 outside bounds : " << (v1 - 1));
-  GVT_ASSERT((v2 - 1 >= 0) && v2 - 1 < vertices.size(), "Vertex index 2 outside bounds : " << (v2 - 1));
+  GVT_ASSERT((v0 - 1 >= 0) && v0 - 1 < vertices.size(),
+             "Vertex index 0 outside bounds : " << (v0 - 1));
+  GVT_ASSERT((v1 - 1 >= 0) && v1 - 1 < vertices.size(),
+             "Vertex index 1 outside bounds : " << (v1 - 1));
+  GVT_ASSERT((v2 - 1 >= 0) && v2 - 1 < vertices.size(),
+             "Vertex index 2 outside bounds : " << (v2 - 1));
 
-  if (vertices[v0 - 1] == vertices[v1 - 1] ||
-		  vertices[v1 - 1] == vertices[v2 - 1] ||
-		  vertices[v2 - 1] == vertices[v0 - 1])
-	  	  return;
+  if (vertices[v0 - 1] == vertices[v1 - 1] || vertices[v1 - 1] == vertices[v2 - 1] ||
+      vertices[v2 - 1] == vertices[v0 - 1])
+    return;
 
   faces.push_back(Face(v0 - 1, v1 - 1, v2 - 1));
 }
 
-void Mesh::addFaceToNormals(Mesh::FaceToNormals face) { faces_to_normals.push_back(face); }
+void Mesh::addFaceToNormals(Mesh::FaceToNormals face) {
+  faces_to_normals.push_back(face);
+}
 
 void Mesh::generateNormals() {
   if (haveNormals) return;
@@ -141,7 +148,8 @@ void Mesh::generateNormals() {
   haveNormals = true;
 }
 
-//Color Mesh::shadeFace(const int face_id, const Ray &r, const glm::vec3 &normal, const Light *lsource) {
+// Color Mesh::shadeFace(const int face_id, const Ray &r, const glm::vec3 &normal, const
+// Light *lsource) {
 //  // XXX TODO: shadeFace returns constant color, fix?
 //
 //  if (!faces_to_materials.size()) return shade(r, normal, lsource, lsource->position);
@@ -154,7 +162,8 @@ void Mesh::generateNormals() {
 //  return c;
 //}
 //
-//Color Mesh::shadeFaceAreaLight(const int face_id, const Ray &r, const glm::vec3 &normal, const Light *lsource,
+// Color Mesh::shadeFaceAreaLight(const int face_id, const Ray &r, const glm::vec3
+// &normal, const Light *lsource,
 //                               const glm::vec3 areaLightPosition) {
 //
 //  if (!faces_to_materials.size()) return shade(r, normal, lsource, areaLightPosition);
@@ -167,7 +176,8 @@ void Mesh::generateNormals() {
 //  return c;
 //}
 //
-//Color Mesh::shade(const Ray &r, const glm::vec3 &normal, const Light *lsource, const glm::vec3 areaLightPosition) {
+// Color Mesh::shade(const Ray &r, const glm::vec3 &normal, const Light *lsource, const
+// glm::vec3 areaLightPosition) {
 //  return mat->shade(r, normal, lsource, areaLightPosition);
 //}
 
@@ -192,13 +202,17 @@ void Mesh::writeobj(std::string filename) {
   file.open(filename);
   {
     file << "#vertices " << vertices.size() << std::endl;
-    for (auto &v : vertices) file << "v " << v[0] << " " << v[1] << " " << v[2] << std::endl;
+    for (auto &v : vertices)
+      file << "v " << v[0] << " " << v[1] << " " << v[2] << std::endl;
 
     file << "#vertices normal " << normals.size() << std::endl;
-    for (auto &vn : normals) file << "vn " << vn[0] << " " << vn[1] << " " << vn[2] << std::endl;
+    for (auto &vn : normals)
+      file << "vn " << vn[0] << " " << vn[1] << " " << vn[2] << std::endl;
 
     file << "#vertices " << faces.size() << std::endl;
-    for (auto &f : faces) file << "f " << f.get<0>() + 1 << " " << f.get<1>() + 1 << " " << f.get<2>() + 1 << std::endl;
+    for (auto &f : faces)
+      file << "f " << f.get<0>() + 1 << " " << f.get<1>() + 1 << " " << f.get<2>() + 1
+           << std::endl;
     file.close();
   }
 }

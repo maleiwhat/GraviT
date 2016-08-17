@@ -5,7 +5,7 @@
 #include <gvt/core/acomm/message.h>
 #include <gvt/render/Context.h>
 
-#include <gvt/render/tracer/ImageTracer.h>
+#include <gvt/render/tracer/Image/ImageTracer.h>
 
 #include <chrono>
 #include <thread>

@@ -56,7 +56,7 @@ public:
 
   virtual AbstractMesh *getMesh() { return this; }
 
-  virtual gvt::render::data::primitives::Box3D *getBoundingBox() { return NULL; }
+  virtual gvt::core::data::primitives::Box3D *getBoundingBox() { return NULL; }
 };
 
 /// geometric mesh
@@ -84,8 +84,8 @@ public:
   virtual void addFace(int v0, int v1, int v2);
   virtual void addFaceToNormals(FaceToNormals);
 
-  virtual gvt::render::data::primitives::Box3D computeBoundingBox();
-  virtual gvt::render::data::primitives::Box3D *getBoundingBox() { return &boundingBox; }
+  virtual gvt::core::data::primitives::Box3D computeBoundingBox();
+  virtual gvt::core::data::primitives::Box3D *getBoundingBox() { return &boundingBox; }
   virtual void generateNormals();
 
   virtual gvt::render::data::primitives::Material *getMaterial() { return mat; }
@@ -112,7 +112,7 @@ public:
   std::vector<FaceToNormals> faces_to_normals;
   std::vector<glm::vec3> face_normals;
   std::vector<Material *> faces_to_materials;
-  gvt::render::data::primitives::Box3D boundingBox;
+  gvt::core::data::primitives::Box3D boundingBox;
   bool haveNormals;
 };
 }

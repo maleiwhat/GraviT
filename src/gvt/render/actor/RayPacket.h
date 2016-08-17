@@ -78,7 +78,7 @@ template <size_t simd_width> struct RayPacketIntersection {
     }
   }
 
-  inline bool intersect(const gvt::render::data::primitives::Box3D &bb, int hit[], bool update = false) {
+  inline bool intersect(const gvt::core::data::primitives::Box3D &bb, int hit[], bool update = false) {
     float lx[simd_width];
     float ly[simd_width];
     float lz[simd_width];

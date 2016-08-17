@@ -18,18 +18,25 @@
    See the License for the specific language governing permissions and limitations under
    limitations under the License.
 
-   GraviT is funded in part by the US National Science Foundation under awards ACI-1339863,
+   GraviT is funded in part by the US National Science Foundation under awards
+   ACI-1339863,
    ACI-1339881 and ACI-1339840
-   ======================================================================================= */
+   =======================================================================================
+   */
 
 #include "gvt/core/data/primitives/BBox.h"
 
-#include "gvt/render/actor/Ray.h"
+//#include "gvt/render/actor/Ray.h"
 
 #include <limits>
 
-using namespace gvt::render::actor;
-using namespace gvt::render::data::primitives;
+// using namespace gvt::render::actor;
+// using namespace gvt::render::data::primitives;
+
+namespace gvt {
+namespace core {
+namespace data {
+namespace primitives {
 
 Box3D::Box3D() {
   for (int i = 0; i < 3; ++i) {
@@ -72,7 +79,8 @@ void Box3D::expand(glm::vec3 &v) {
   bounds_max[2] = fastmax(bounds_max[2], v[2]);
 }
 
-// bool Box3D::intersectDistance(const glm::vec3 &origin, const glm::vec3 &inv, float &t) const {
+// bool Box3D::intersectDistance(const glm::vec3 &origin, const glm::vec3 &inv, float &t)
+// const {
 //
 //   /*float t1 = (bounds_min.x - origin.x) * inv.x;
 //   float t3 = (bounds_min.y - origin.y) * inv.y;
@@ -97,7 +105,8 @@ void Box3D::expand(glm::vec3 &v) {
 //   return (t > gvt::render::actor::Ray::RAY_EPSILON);
 // }
 
-bool Box3D::intersectDistance(const glm::vec3 &origin, const glm::vec3 &inv, float &tmin, float &tmax) const {
+bool Box3D::intersectDistance(const glm::vec3 &origin, const glm::vec3 &inv, float &tmin,
+                              float &tmax) const {
 
   float t1 = (bounds_min.x - origin.x) * inv.x;
 
@@ -132,20 +141,32 @@ float Box3D::surfaceArea() const {
   return (2.f * (diag.x * diag.y + diag.y * diag.z + diag.z * diag.x));
 }
 
-Box3D Box3D::transform(glm::mat4 m){
-	Box3D newBox;
-	const glm::vec3 min = bounds_min;
-	const glm::vec3 max = bounds_max;
+Box3D Box3D::transform(glm::mat4 m) {
+  Box3D newBox;
+  const glm::vec3 min = bounds_min;
+  const glm::vec3 max = bounds_max;
 
-	glm::vec3 v;
-	v = glm::vec3(m * glm::vec4(min.x, min.y, min.z, 1.0f)); newBox.expand(v);
-	v = glm::vec3(m * glm::vec4(min.x, min.y, max.z, 1.0f)); newBox.expand(v);
-	v = glm::vec3(m * glm::vec4(min.x, max.y, min.z, 1.0f)); newBox.expand(v);
-	v = glm::vec3(m * glm::vec4(min.x, max.y, max.z, 1.0f)); newBox.expand(v);
-	v = glm::vec3(m * glm::vec4(max.x, min.y, min.z, 1.0f)); newBox.expand(v);
-	v = glm::vec3(m * glm::vec4(max.x, min.y, max.z, 1.0f)); newBox.expand(v);
-	v = glm::vec3(m * glm::vec4(max.x, max.y, min.z, 1.0f)); newBox.expand(v);
-	v = glm::vec3(m * glm::vec4(max.x, max.y, max.z, 1.0f)); newBox.expand(v);
+  glm::vec3 v;
+  v = glm::vec3(m * glm::vec4(min.x, min.y, min.z, 1.0f));
+  newBox.expand(v);
+  v = glm::vec3(m * glm::vec4(min.x, min.y, max.z, 1.0f));
+  newBox.expand(v);
+  v = glm::vec3(m * glm::vec4(min.x, max.y, min.z, 1.0f));
+  newBox.expand(v);
+  v = glm::vec3(m * glm::vec4(min.x, max.y, max.z, 1.0f));
+  newBox.expand(v);
+  v = glm::vec3(m * glm::vec4(max.x, min.y, min.z, 1.0f));
+  newBox.expand(v);
+  v = glm::vec3(m * glm::vec4(max.x, min.y, max.z, 1.0f));
+  newBox.expand(v);
+  v = glm::vec3(m * glm::vec4(max.x, max.y, min.z, 1.0f));
+  newBox.expand(v);
+  v = glm::vec3(m * glm::vec4(max.x, max.y, max.z, 1.0f));
+  newBox.expand(v);
 
-	return newBox;
+  return newBox;
+}
+}
+}
+}
 }

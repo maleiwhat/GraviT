@@ -291,7 +291,11 @@ set(GVT_RENDER_HDRS ${GVT_RENDER_HDRS}
 
   src/gvt/render/Types.h
 
-  src/gvt/render/tracer/ImageTracer.h
+  src/gvt/render/tracer/RayQueueManager.h
+  src/gvt/render/tracer/Image/ImageTracer.h
+
+  src/gvt/render/adapter/AdapterCache.h
+
 )
 
 
@@ -309,7 +313,7 @@ set(GVT_RENDER_SRCS ${GVT_RENDER_SRCS}
   src/gvt/render/data/accel/BVH.cpp
 
 
-  src/gvt/render/tracer/ImageTracer.cpp
+  src/gvt/render/tracer/Image/ImageTracer.cpp
 )
 
 
