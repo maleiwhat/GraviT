@@ -36,6 +36,8 @@
 
 #include <gvt/render/tracer/RayQueueManager.h>
 
+#include <gvt/render/Adapter.h>
+#include <gvt/render/adapter/AdapterCache.h>
 namespace gvt {
 namespace tracer {
 
@@ -53,13 +55,10 @@ public:
   virtual void updateGeometry();
 
 private:
-  // std::map<int, std::shared_ptr<gvt::render::Adapter> > _cache;
-
   RayQueueManager _queues;
-
-  // std::map<int, gvt::render::actor::RayVector> _queue;
-
   gvt::render::actor::RayVector _rayqueue;
+  gvt::render::AdapterCache<int, std::shared_ptr<gvt::render::Adapter> > _cache;
+  std::shared<gvt::render::data::accel::BVH> global_bvh = nullptr;
 };
 
 template <>

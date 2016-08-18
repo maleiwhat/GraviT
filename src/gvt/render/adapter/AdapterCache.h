@@ -34,7 +34,7 @@
 
 namespace gvt {
 namespace render {
-template <typename key, typename value> class cache {
+template <typename key, typename value> class AdapterCache {
 protected:
   // struct key_pair {
   //   key _key;
@@ -60,13 +60,16 @@ protected:
   std::mutex _protect;
 
 public:
-  typedef std::pair<timetag, std::pair<key, value> > priority_order;
   typedef std::chrono::system_clock::time_point timetag;
+  typedef std::pair<timetag, std::pair<key, value> > priority_order;
   typedef std::pair<timetag, value> value_timetagged;
+
   std::map<key, std::pair<timetag, value> > _cache;
 
-  cache() {}
-  ~cache() { GVT_ASSERT(_cache.empty(), "Something when wrong cache is not empty()"); }
+  AdapterCache() {}
+  ~AdapterCache() {
+    GVT_ASSERT(_cache.empty(), "Something when wrong cache is not empty()");
+  }
   void clear() { _cache.clear(); }
   bool keyExists(key _key) { return (_cache.find(_key) != _cache.enr()); }
   value get(key _key) {
@@ -82,25 +85,28 @@ public:
     _cache[_key] = value_timetagged(std::chrono::system_clock::now(), _value);
   }
 
-  void implode(key &_key) {
+  void invalidate(key &_key) {
     GVT_ASSERT(!keyExists(_key), "Trying to modify an existing element on the cache");
     std::lock_guard<std::mutex> _lock(_protect);
     _cache.erase(_key);
     // return _cache[_key] = value_timetagged(std::chrono::system_clock::now(), _value);
   }
 
-  bool release_space() {
-    typedef<key, std::pair<timetag, value> > if (_cache.empty()) return false;
-    auto cmp = [](value_timetagged left, value_timetagged right) {
-      return left < (right ^ 1);
-    };
-    std::priority_queue<int, std::vector<int>, decltype(cmp)> q3(cmp);
+  bool invalidate_lru() {
+    typedef std::pair<timetag, key> sort_elem;
+    if (_cache.empty()) return false;
+    auto cmp = [](sort_elem left, sort_elem right) { return left.first > right.first; };
+    std::priority_queue<sort_elem, std::vector<sort_elem>, decltype(cmp)> sort(cmp);
+
+    for (auto elem : _cache) sort.push(sort_elem(elem.second.first, elem.first));
+
+    _cache.erase(sort.top().first);
   }
 
   // bool keyExists(key _key) { return (_cache.find(_key) != _cache.enr()); }
 
 private:
-}
+};
 }
 }
 

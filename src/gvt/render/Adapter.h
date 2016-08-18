@@ -18,9 +18,11 @@
    See the License for the specific language governing permissions and limitations under
    limitations under the License.
 
-   GraviT is funded in part by the US National Science Foundation under awards ACI-1339863,
+   GraviT is funded in part by the US National Science Foundation under awards
+   ACI-1339863,
    ACI-1339881 and ACI-1339840
-   ======================================================================================= */
+   =======================================================================================
+   */
 #ifndef GVT_RENDER_ADAPTER_H
 #define GVT_RENDER_ADAPTER_H
 
@@ -62,8 +64,10 @@ public:
    * \param moved_rays outgoing rays [rays that did not hit anything]
    * \param instNode instance db node containing dataRef and transforms
    */
-  virtual void trace(gvt::render::actor::RayVector &rayList, gvt::render::actor::RayVector &moved_rays, glm::mat4 *m,
-                     glm::mat4 *minv, glm::mat3 *, std::vector<gvt::render::data::scene::Light *> &lights,
+  virtual void trace(gvt::render::actor::RayVector &rayList,
+                     gvt::render::actor::RayVector &moved_rays, glm::mat4 *m,
+                     glm::mat4 *minv, glm::mat3 *,
+                     std::vector<gvt::render::data::scene::Light *> &lights,
                      size_t begin = 0, size_t end = 0) = 0;
 
   std::mutex _inqueue;
