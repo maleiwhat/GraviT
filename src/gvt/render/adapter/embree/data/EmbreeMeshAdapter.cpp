@@ -308,7 +308,7 @@ struct embreeParallelTrace {
     }
   }
 
-  glm::vec3 CosWeightedRandomHemisphereDirection2(glm::vec3 n, RandEngine &randEngine) {
+  glm::vec3 CosWeightedRandomHemisphereDirection2(glm::vec3 n, gvt::core::math::RandEngine &randEngine) {
 
     float Xi1 = 0;
     float Xi2 = 0;
@@ -493,7 +493,7 @@ struct embreeParallelTrace {
 
     GVT_DEBUG(DBG_ALWAYS, "EmbreeMeshAdapter: starting while loop");
 
-    RandEngine randEngine;
+    gvt::core::math::RandEngine randEngine;
     randEngine.SetSeed(begin);
     // std::random_device rd;
 

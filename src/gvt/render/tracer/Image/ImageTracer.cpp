@@ -27,6 +27,8 @@
    */
 // clang-format on
 
+#include <memory>
+
 #include <gvt/render/Context.h>
 #include "ImageTracer.h"
 

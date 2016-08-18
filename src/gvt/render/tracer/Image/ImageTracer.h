@@ -27,6 +27,8 @@
 #ifndef GVT_IMAGETRACER_H
 #define GVT_IMAGETRACER_H
 
+#include <memory>
+
 #include <gvt/core/Debug.h>
 #include <gvt/core/tracer/tracer.h>
 
