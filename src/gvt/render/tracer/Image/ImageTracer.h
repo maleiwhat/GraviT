@@ -27,7 +27,9 @@
 #ifndef GVT_IMAGETRACER_H
 #define GVT_IMAGETRACER_H
 
+#include <map>
 #include <memory>
+#include <vector>
 
 #include <gvt/core/Debug.h>
 #include <gvt/core/tracer/tracer.h>
@@ -57,10 +59,13 @@ public:
   virtual void updateGeometry();
 
 private:
-  RayQueueManager _queues;
+  RayQueueManager _queue;
   gvt::render::actor::RayVector _rayqueue;
   gvt::render::AdapterCache<int, std::shared_ptr<gvt::render::Adapter> > _cache;
-  std::shared<gvt::render::data::accel::BVH> global_bvh = nullptr;
+  std::shared_ptr<gvt::render::data::accel::AbstractAccel> global_bvh = nullptr;
+
+  std::vector<gvt::core::DBNodeH> instancenodes;
+  // std::map<int, gvt::render::data::primitives::Mesh *> meshRef;
 };
 
 template <>

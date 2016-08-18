@@ -27,9 +27,9 @@
    */
 // clang-format on
 
-#include <memory>
-
 #include <gvt/render/Context.h>
+#include <gvt/render/data/accel/BVH.h>
+
 #include "ImageTracer.h"
 
 namespace gvt {
@@ -49,14 +49,13 @@ gvt::render::actor::RayVector &&RayQueueManager::dequeue<ImageTracer>(int &targe
     }
   }
 
+  target = id;
   if (id == -1) return std::move(gvt::render::actor::RayVector());
   gvt::render::actor::RayVector _raylist = dequeue(id);
 
   std::lock_guard<std::mutex> _lock(_protect);
   _queue.erase(id);
   return std::move(_raylist);
-
-  // return (id != -1) ? dequeue(id) : gvt::render::actor::RayVector();
 }
 
 ImageTracer::ImageTracer() : Tracer() {}
@@ -64,20 +63,65 @@ ImageTracer::ImageTracer() : Tracer() {}
 ImageTracer::~ImageTracer() {}
 
 void ImageTracer::operator()() {
+  gvt::render::RenderContext &cntxt = *gvt::render::RenderContext::instance();
+  gvt::core::DBNodeH rootnode = cntxt.getRootNode();
+  std::vector<gvt::core::DBNodeH> instancenodes = rootnode["Instances"].getChildren();
+  GVT_ASSERT(!instancenodes.empty(), "Calling a tracer over an empty domain set");
+
+  // Build BVH
+  global_bvh = std::make_shared<gvt::render::data::accel::BVH>(instancenodes);
+
+  // Cache context to avoid expensive lookups
+  std::map<int, gvt::render::data::primitives::Mesh *> meshRef;
+  std::map<int, glm::mat4 *> instM;
+  std::map<int, glm::mat4 *> instMinv;
+  std::map<int, glm::mat3 *> instMinvN;
+  std::vector<gvt::render::data::scene::Light *> lights;
+
+  for (int i = 0; i < instancenodes.size(); i++) {
+    meshRef[i] = (gvt::render::data::primitives::Mesh *)instancenodes[i]["meshRef"]
+                     .deRef()["ptr"]
+                     .value()
+                     .toULongLong();
+    instM[i] = (glm::mat4 *)instancenodes[i]["mat"].value().toULongLong();
+    instMinv[i] = (glm::mat4 *)instancenodes[i]["matInv"].value().toULongLong();
+    instMinvN[i] = (glm::mat3 *)instancenodes[i]["normi"].value().toULongLong();
+  }
+
+  auto lightNodes = rootnode["Lights"].getChildren();
+
+  lights.reserve(2);
+  for (auto lightNode : lightNodes) {
+    auto color = lightNode["color"].value().tovec3();
+
+    if (lightNode.name() == std::string("PointLight")) {
+      auto pos = lightNode["position"].value().tovec3();
+      lights.push_back(new gvt::render::data::scene::PointLight(pos, color));
+    } else if (lightNode.name() == std::string("AmbientLight")) {
+      lights.push_back(new gvt::render::data::scene::AmbientLight(color));
+    } else if (lightNode.name() == std::string("AreaLight")) {
+      auto pos = lightNode["position"].value().tovec3();
+      auto normal = lightNode["normal"].value().tovec3();
+      auto width = lightNode["width"].value().toFloat();
+      auto height = lightNode["height"].value().toFloat();
+      lights.push_back(
+          new gvt::render::data::scene::AreaLight(pos, color, normal, width, height));
+    }
+  }
 
   bool GlobalFrameFinished = false;
   gvt::render::RenderContext *cntx = gvt::render::RenderContext::instance();
   while (!GlobalFrameFinished) {
-    if (!_queues.empty()) {
-      int target;
-      gvt::render::actor::RayVector toprocess = _queues.dequeue<ImageTracer>(target);
+    if (!_queue.empty()) {
+      int target = -1;
+      gvt::render::actor::RayVector toprocess = _queue.dequeue(target);
       if (target != -1) {
         // Check cache if adpter exists;
         // Call adapter
         // Process rays
       }
     }
-    if (_queues.empty()) {
+    if (_queue.empty()) {
       // Ask if done;
     }
   }
