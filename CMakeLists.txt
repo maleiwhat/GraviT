@@ -290,6 +290,12 @@ set(GVT_RENDER_HDRS ${GVT_RENDER_HDRS}
   src/gvt/render/composite/composite.h
   src/gvt/render/Schedulers.h
   src/gvt/render/Types.h
+
+
+  src/gvt/render/adapter/AdapterCache.h
+  src/gvt/render/tracer/RayQueueManager.h
+  src/gvt/render/tracer/Image/ImageTracer.h
+
 )
 
 
@@ -306,6 +312,9 @@ set(GVT_RENDER_SRCS ${GVT_RENDER_SRCS}
   src/gvt/render/data/scene/Light.cpp
   src/gvt/render/data/accel/BVH.cpp
   src/gvt/render/composite/composite.cpp
+
+  src/gvt/render/tracer/Image/ImageTracer.cpp
+
 )
 
 if (GVT_RENDER_ADAPTER_MANTA)
@@ -439,11 +448,11 @@ if (GVT_RENDER)
 
   add_library(gvtRender STATIC
               ${GVT_CORE_HDRS}
-              ${GVT_CORE_SRCS}
+              # ${GVT_CORE_SRCS}
               ${GVT_RENDER_HDRS}
               ${GVT_RENDER_SRCS})
 
-  target_link_libraries(gvtRender ${GVT_RENDER_LIBS})
+  target_link_libraries(gvtRender ${GVT_RENDER_LIBS} gvtCore)
 
   install(TARGETS gvtRender
           LIBRARY DESTINATION lib

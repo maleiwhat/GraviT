@@ -8,6 +8,7 @@
 #include <gvt/render/tracer/Image/ImageTracer.h>
 
 #include <chrono>
+#include <memory>
 #include <thread>
 
 int main(int argc, char *argv[]) {

@@ -18,9 +18,11 @@
    See the License for the specific language governing permissions and limitations under
    limitations under the License.
 
-   GraviT is funded in part by the US National Science Foundation under awards ACI-1339863,
+   GraviT is funded in part by the US National Science Foundation under awards
+   ACI-1339863,
    ACI-1339881 and ACI-1339840
-   ======================================================================================= */
+   =======================================================================================
+   */
 /*
  * Comm.h
  *
@@ -37,6 +39,7 @@
 #include <iostream>
 #include <map>
 #include <mpi.h>
+#include <vector>
 
 namespace gvt {
 namespace core {
@@ -95,7 +98,8 @@ public:
 
     for (int round = 0; round < MPI::COMM_WORLD.Get_size(); round++) {
       next_neighbor = (next_neighbor + 1) % MPI::COMM_WORLD.Get_size();
-      prev_neighbor = (prev_neighbor != 0 ? prev_neighbor - 1 : MPI::COMM_WORLD.Get_size() - 1);
+      prev_neighbor =
+          (prev_neighbor != 0 ? prev_neighbor - 1 : MPI::COMM_WORLD.Get_size() - 1);
 
       if (next_neighbor != MPI::COMM_WORLD.Get_rank()) {
         B *send = &buf[next_neighbor * next_neighbor];
@@ -110,16 +114,19 @@ public:
     }
 
     for (MPI::Request &request : Irecv_requests_status) {
-      MPI::Request::Wait(request);
+      // MPI::Request::Wait(request);
+      request.Wait();
       MPI::Status status;
-      MPI::Request::Get_status(status);
+      request.Get_status(status);
+      // MPI::Request::Get_status(status);
       unsigned int source = status.Get_source();
       for (int i = 0; i < partition_size; ++i) {
         acc[i] = gather[source * partition_size + i];
       }
     }
 
-    MPI::COMM_WORLD.Gather(acc, sizeof(B) * partition_size, MPI::BYTE, sizeof(B) * partition_size, MPI::BYTE, 0);
+    MPI::COMM_WORLD.Gather(acc, sizeof(B) * partition_size, MPI::BYTE,
+                           sizeof(B) * partition_size, MPI::BYTE, 0);
     return;
   }
 };
