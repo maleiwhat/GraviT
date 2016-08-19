@@ -64,12 +64,11 @@ private:
   gvt::render::AdapterCache<int, std::shared_ptr<gvt::render::Adapter> > _cache;
   std::shared_ptr<gvt::render::data::accel::AbstractAccel> global_bvh = nullptr;
 
-  std::vector<gvt::core::DBNodeH> instancenodes;
   // std::map<int, gvt::render::data::primitives::Mesh *> meshRef;
 };
 
 template <>
-gvt::render::actor::RayVector &&RayQueueManager::dequeue<ImageTracer>(int &target);
+void RayQueueManager::dequeue<ImageTracer>(int &target, gvt::render::actor::RayVector &);
 }
 }
 

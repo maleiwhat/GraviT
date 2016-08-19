@@ -18,9 +18,11 @@
    See the License for the specific language governing permissions and limitations under
    limitations under the License.
 
-   GraviT is funded in part by the US National Science Foundation under awards ACI-1339863,
+   GraviT is funded in part by the US National Science Foundation under awards
+   ACI-1339863,
    ACI-1339881 and ACI-1339840
-   ======================================================================================= */
+   =======================================================================================
+   */
 #ifndef GVT_RENDER_DATA_SCENE_GVTCAMERA_H
 #define GVT_RENDER_DATA_SCENE_GVTCAMERA_H
 
@@ -79,10 +81,14 @@ public:
    *  Derived classes insert the rays themselves. */
   // virtual gvt::render::actor::RayVector AllocateCameraRays();
   virtual void AllocateCameraRays();
-  /** given a new eye point, focal point, and up vector modify all the other dependant vars.
-   *  in particular rebuild the transformation matrix. The new camera position is passed in as
-   *  eye. The new focal point is passed in as focus. And the camera up vector is passed in as up. The
-   *  camera coordinate system with unit vectors, u, v, and w is constructed. From this the camera
+  /** given a new eye point, focal point, and up vector modify all the other dependant
+   * vars.
+   *  in particular rebuild the transformation matrix. The new camera position is passed
+   * in as
+   *  eye. The new focal point is passed in as focus. And the camera up vector is passed
+   * in as up. The
+   *  camera coordinate system with unit vectors, u, v, and w is constructed. From this
+   * the camera
    *  to world transformation and its inverse are constructed. */
   void lookAt(glm::vec3 eye, glm::vec3 focus, glm::vec3 up);
 
@@ -91,6 +97,9 @@ public:
   void setMaxDepth(int depth);
 
   void setJitterWindowSize(int windowSize);
+
+  /** Fill the ray data structure */
+  virtual void generateRays() = 0;
 
   /** Bunch-o-rays */
   gvt::render::actor::RayVector rays;
@@ -104,6 +113,7 @@ public:
   glm::vec3 getUpVector() {
     return up_vector;
   };
+
   // clang-format on
 public:
   int samples;
@@ -115,8 +125,8 @@ public:
   glm::vec3 up_vector;      //!< vector pointing "up".
   glm::vec3 view_direction; //!< direction camera is looking. generally focal - eye pt.
   int filmsize[2];          //!< image size dimensions in pixels. filmsize[0] = width.
-  int depth;                //!< legacy variable from previous cameras. Initializes ray depth
-  glm::vec3 u, v, w;        //!< unit basis vectors for camera space in world coords.
+  int depth;         //!< legacy variable from previous cameras. Initializes ray depth
+  glm::vec3 u, v, w; //!< unit basis vectors for camera space in world coords.
   float INVRAND_MAX;
   gvt::core::math::RandEngine randEngine;
   //

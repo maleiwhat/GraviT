@@ -68,7 +68,6 @@ using namespace gvt::render::schedule;
 using namespace gvt::render::data::primitives;
 
 void setContext(int argc, char *argv[]) {
-  std::cout << "Ray :" << sizeof(gvt::render::actor::Ray) << std::endl;
 
   ParseCommandLine cmd("gvtSimple");
 
@@ -94,21 +93,24 @@ void setContext(int argc, char *argv[]) {
 
   // MPI_Init(&argc, &argv);
   // MPI_Pcontrol(0);
-  int rank = -1;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#ifdef GVT_USE_MPE
-  // MPE_Init_log();
-  int readstart, readend;
-  int renderstart, renderend;
-  MPE_Log_get_state_eventIDs(&readstart, &readend);
-  MPE_Log_get_state_eventIDs(&renderstart, &renderend);
-  if (rank == 0) {
-    MPE_Describe_state(readstart, readend, "Initialize context state", "red");
-    MPE_Describe_state(renderstart, renderend, "Render", "yellow");
-  }
-  MPI_Pcontrol(1);
-  MPE_Log_event(readstart, 0, NULL);
-#endif
+  // int rank = -1;
+  //   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  // #ifdef GVT_USE_MPE
+  //   // MPE_Init_log();
+  //   int readstart, readend;
+  //   int renderstart, renderend;
+  //   MPE_Log_get_state_eventIDs(&readstart, &readend);
+  //   MPE_Log_get_state_eventIDs(&renderstart, &renderend);
+  //   if (rank == 0) {
+  //     MPE_Describe_state(readstart, readend, "Initialize context state", "red");
+  //     MPE_Describe_state(renderstart, renderend, "Render", "yellow");
+  //   }
+  //   MPI_Pcontrol(1);
+  //   MPE_Log_event(readstart, 0, NULL);
+  // #endif
+
+  std::shared_ptr<gvt::comm::acommunicator> comm =
+      gvt::comm::acommunicator::instance(argc, argv);
   gvt::render::RenderContext *cntxt = gvt::render::RenderContext::instance();
   if (cntxt == NULL) {
     std::cout << "Something went wrong initializing the context" << std::endl;
@@ -119,18 +121,19 @@ void setContext(int argc, char *argv[]) {
 
   // mix of cones and cubes
 
-  if (rank == 0) {
-    gvt::core::DBNodeH dataNodes =
-        cntxt->addToSync(cntxt->createNodeFromType("Data", "Data", root.UUID()));
-    cntxt->addToSync(cntxt->createNodeFromType("Mesh", "conemesh", dataNodes.UUID()));
-    cntxt->addToSync(cntxt->createNodeFromType("Mesh", "cubemesh", dataNodes.UUID()));
-    cntxt->addToSync(cntxt->createNodeFromType("Instances", "Instances", root.UUID()));
-  }
+  // if (rank == 0) {
+  gvt::core::DBNodeH dataNodes =
+      cntxt->addToSync(cntxt->createNodeFromType("Data", "Data", root.UUID()));
+  cntxt->addToSync(cntxt->createNodeFromType("Mesh", "conemesh", dataNodes.UUID()));
+  cntxt->addToSync(cntxt->createNodeFromType("Mesh", "cubemesh", dataNodes.UUID()));
+  gvt::core::DBNodeH instNodes =
+      cntxt->addToSync(cntxt->createNodeFromType("Instances", "Instances", root.UUID()));
+  // }
 
-  cntxt->syncContext();
+  // cntxt->syncContext();
 
-  gvt::core::DBNodeH dataNodes = root["Data"];
-  gvt::core::DBNodeH instNodes = root["Instances"];
+  // gvt::core::DBNodeH dataNodes = root["Data"];
+  // gvt::core::DBNodeH instNodes = root["Instances"];
 
   gvt::core::DBNodeH coneMeshNode = dataNodes.getChildren()[0];
   gvt::core::DBNodeH cubeMeshNode = dataNodes.getChildren()[1];
@@ -189,10 +192,10 @@ void setContext(int argc, char *argv[]) {
     coneMeshNode["bbox"] = (unsigned long long)meshbbox;
     coneMeshNode["ptr"] = (unsigned long long)mesh;
 
-    gvt::core::DBNodeH loc = cntxt->createNode("rank", rank);
+    gvt::core::DBNodeH loc = cntxt->createNode("rank", (int)comm->id());
     coneMeshNode["Locations"] += loc;
 
-    cntxt->addToSync(coneMeshNode);
+    // cntxt->addToSync(coneMeshNode);
   }
 
   {
@@ -283,57 +286,57 @@ void setContext(int argc, char *argv[]) {
     cubeMeshNode["bbox"] = (unsigned long long)meshbbox;
     cubeMeshNode["ptr"] = (unsigned long long)mesh;
 
-    gvt::core::DBNodeH loc = cntxt->createNode("rank", rank);
+    gvt::core::DBNodeH loc = cntxt->createNode("rank", (int)comm->id());
     cubeMeshNode["Locations"] += loc;
 
-    cntxt->addToSync(cubeMeshNode);
+    // cntxt->addToSync(cubeMeshNode);
   }
 
-  cntxt->syncContext();
+  // cntxt->syncContext();
 
-  if (rank == 0) {
-    // create a NxM grid of alternating cones / cubes, offset using i and j
-    int instId = 0;
-    int ii[2] = { -2, 3 }; // i range
-    int jj[2] = { -2, 3 }; // j range
-    for (int i = ii[0]; i < ii[1]; i++) {
-      for (int j = jj[0]; j < jj[1]; j++) {
-        gvt::core::DBNodeH instnode =
-            cntxt->createNodeFromType("Instance", "inst", instNodes.UUID());
-        // gvt::core::DBNodeH meshNode = (instId % 2) ? coneMeshNode : cubeMeshNode;
-        gvt::core::DBNodeH meshNode = (instId % 2) ? cubeMeshNode : coneMeshNode;
-        gvt::core::data::primitives::Box3D *mbox =
-            (gvt::core::data::primitives::Box3D *)meshNode["bbox"].value().toULongLong();
+  // if (rank == 0) {
+  // create a NxM grid of alternating cones / cubes, offset using i and j
+  int instId = 0;
+  int ii[2] = { -2, 3 }; // i range
+  int jj[2] = { -2, 3 }; // j range
+  for (int i = ii[0]; i < ii[1]; i++) {
+    for (int j = jj[0]; j < jj[1]; j++) {
+      gvt::core::DBNodeH instnode =
+          cntxt->createNodeFromType("Instance", "inst", instNodes.UUID());
+      // gvt::core::DBNodeH meshNode = (instId % 2) ? coneMeshNode : cubeMeshNode;
+      gvt::core::DBNodeH meshNode = (instId % 2) ? cubeMeshNode : coneMeshNode;
+      gvt::core::data::primitives::Box3D *mbox =
+          (gvt::core::data::primitives::Box3D *)meshNode["bbox"].value().toULongLong();
 
-        instnode["id"] = instId++;
-        instnode["meshRef"] = meshNode.UUID();
+      instnode["id"] = instId++;
+      instnode["meshRef"] = meshNode.UUID();
 
-        auto m = new glm::mat4(1.f);
-        auto minv = new glm::mat4(1.f);
-        auto normi = new glm::mat3(1.f);
-        //*m *glm::mat4::createTranslation(0.0, i * 0.5, j * 0.5);
-        *m = glm::translate(*m, glm::vec3(0.0, i * 0.5, j * 0.5));
-        //*m = *m * glm::mat4::createScale(0.4, 0.4, 0.4);
-        *m = glm::scale(*m, glm::vec3(0.4, 0.4, 0.4));
+      auto m = new glm::mat4(1.f);
+      auto minv = new glm::mat4(1.f);
+      auto normi = new glm::mat3(1.f);
+      //*m *glm::mat4::createTranslation(0.0, i * 0.5, j * 0.5);
+      *m = glm::translate(*m, glm::vec3(0.0, i * 0.5, j * 0.5));
+      //*m = *m * glm::mat4::createScale(0.4, 0.4, 0.4);
+      *m = glm::scale(*m, glm::vec3(0.4, 0.4, 0.4));
 
-        instnode["mat"] = (unsigned long long)m;
-        *minv = glm::inverse(*m);
-        instnode["matInv"] = (unsigned long long)minv;
-        *normi = glm::transpose(glm::inverse(glm::mat3(*m)));
-        instnode["normi"] = (unsigned long long)normi;
-        auto il = glm::vec3((*m) * glm::vec4(mbox->bounds_min, 1.f));
-        auto ih = glm::vec3((*m) * glm::vec4(mbox->bounds_max, 1.f));
-        gvt::core::data::primitives::Box3D *ibox =
-            new gvt::core::data::primitives::Box3D(il, ih);
-        instnode["bbox"] = (unsigned long long)ibox;
-        instnode["centroid"] = ibox->centroid();
+      instnode["mat"] = (unsigned long long)m;
+      *minv = glm::inverse(*m);
+      instnode["matInv"] = (unsigned long long)minv;
+      *normi = glm::transpose(glm::inverse(glm::mat3(*m)));
+      instnode["normi"] = (unsigned long long)normi;
+      auto il = glm::vec3((*m) * glm::vec4(mbox->bounds_min, 1.f));
+      auto ih = glm::vec3((*m) * glm::vec4(mbox->bounds_max, 1.f));
+      gvt::core::data::primitives::Box3D *ibox =
+          new gvt::core::data::primitives::Box3D(il, ih);
+      instnode["bbox"] = (unsigned long long)ibox;
+      instnode["centroid"] = ibox->centroid();
 
-        cntxt->addToSync(instnode);
-      }
+      // cntxt->addToSync(instnode);
     }
   }
+  // }
 
-  cntxt->syncContext();
+  // cntxt->syncContext();
 
   // add lights, camera, and film to the database
   gvt::core::DBNodeH lightNodes =
@@ -423,6 +426,43 @@ void setContext(int argc, char *argv[]) {
   schedNode["adapter"] = adapterType;
 }
 
+void setCamera() {
+  gvt::render::RenderContext *cntxt = gvt::render::RenderContext::instance();
+  gvt::core::DBNodeH camNode = cntxt->getRootNode()["Camera"];
+  gvt::core::DBNodeH filmNode = cntxt->getRootNode()["Film"];
+
+  std::shared_ptr<gvt::render::data::scene::gvtPerspectiveCamera> mycamera =
+      std::make_shared<gvt::render::data::scene::gvtPerspectiveCamera>();
+  glm::vec3 cameraposition = camNode["eyePoint"].value().tovec3();
+  glm::vec3 focus = camNode["focus"].value().tovec3();
+  float fov = camNode["fov"].value().toFloat();
+  glm::vec3 up = camNode["upVector"].value().tovec3();
+  int rayMaxDepth = camNode["rayMaxDepth"].value().toInteger();
+  int raySamples = camNode["raySamples"].value().toInteger();
+  float jitterWindowSize = camNode["jitterWindowSize"].value().toFloat();
+
+  mycamera->lookAt(cameraposition, focus, up);
+  mycamera->setMaxDepth(rayMaxDepth);
+  mycamera->setSamples(raySamples);
+  mycamera->setJitterWindowSize(jitterWindowSize);
+  mycamera->setFOV(fov);
+  mycamera->setFilmsize(filmNode["width"].value().toInteger(),
+                        filmNode["height"].value().toInteger());
+
+  cntxt->setCamera(mycamera);
+}
+
+void setImage() {
+  gvt::render::RenderContext *cntxt = gvt::render::RenderContext::instance();
+  gvt::core::DBNodeH camNode = cntxt->getRootNode()["Camera"];
+  gvt::core::DBNodeH filmNode = cntxt->getRootNode()["Film"];
+  std::shared_ptr<gvt::render::data::scene::Image> _img =
+      std::make_shared<gvt::render::data::scene::Image>(
+          filmNode["width"].value().toInteger(), filmNode["height"].value().toInteger(),
+          filmNode["outputPath"].value().toString());
+  cntxt->setImage(_img);
+}
+
 int main(int argc, char *argv[]) {
 
   std::shared_ptr<gvt::comm::acommunicator> comm =
@@ -431,7 +471,10 @@ int main(int argc, char *argv[]) {
   gvt::render::RenderContext *cntxt = gvt::render::RenderContext::instance();
 
   setContext(argc, argv);
+  setCamera();
+  setImage();
 
+#if 0
   if (comm->id() == 0) {
     std::shared_ptr<gvt::comm::Message> msg =
         std::make_shared<gvt::comm::Message>(sizeof(int));
@@ -463,13 +506,11 @@ int main(int argc, char *argv[]) {
     }
     std::cout << "Out of the loop " << comm->id() << std::endl;
   }
-
+#endif
   std::shared_ptr<gvt::tracer::ImageTracer> tracer =
       std::make_shared<gvt::tracer::ImageTracer>();
 
-  // std::this_thread::sleep_for(std::chrono::seconds(10));
-  comm->terminate();
-
   (*tracer)();
+  comm->terminate();
   return 0;
 }

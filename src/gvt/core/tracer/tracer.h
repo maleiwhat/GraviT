@@ -29,11 +29,15 @@
 
 #include <gvt/core/Debug.h>
 #include <gvt/core/acomm/message.h>
+#include <string>
+#include <vector>
 
 namespace gvt {
 namespace tracer {
 class Tracer {
 protected:
+  std::vector<std::string> _registered_messages;
+
 public:
   Tracer() {}
   virtual ~Tracer() {}

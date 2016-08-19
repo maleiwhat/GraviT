@@ -18,9 +18,11 @@
    See the License for the specific language governing permissions and limitations under
    limitations under the License.
 
-   GraviT is funded in part by the US National Science Foundation under awards ACI-1339863,
+   GraviT is funded in part by the US National Science Foundation under awards
+   ACI-1339863,
    ACI-1339881 and ACI-1339840
-   ======================================================================================= */
+   =======================================================================================
+   */
 //
 // Image.h
 //
@@ -41,6 +43,10 @@ namespace scene {
 /** image buffer used to accumulate the final image
 */
 class Image {
+
+protected:
+  Image() {}
+
 public:
   // clang-format off
   enum ImageFormat {

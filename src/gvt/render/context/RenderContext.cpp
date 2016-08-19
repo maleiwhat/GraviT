@@ -18,9 +18,11 @@
    See the License for the specific language governing permissions and limitations under
    limitations under the License.
 
-   GraviT is funded in part by the US National Science Foundation under awards ACI-1339863,
+   GraviT is funded in part by the US National Science Foundation under awards
+   ACI-1339863,
    ACI-1339881 and ACI-1339840
-   ======================================================================================= */
+   =======================================================================================
+   */
 #include "gvt/render/context/RenderContext.h"
 
 #include "gvt/core/Debug.h"
@@ -39,7 +41,10 @@ void RenderContext::CreateContext() {
   }
 }
 
-RenderContext *RenderContext::instance() { return static_cast<RenderContext *>(CoreContext::instance()); }
+RenderContext *RenderContext::instance() {
+  CreateContext();
+  return static_cast<RenderContext *>(CoreContext::instance());
+}
 
 RenderContext::~RenderContext() {}
 
@@ -49,6 +54,7 @@ DBNodeH RenderContext::createNodeFromType(String type, String name, Uuid parent)
 
   // TODO - make these for GraviT
   if (type == String("Camera")) {
+    n += gvt::core::CoreContext::createNode("type");
     n += gvt::core::CoreContext::createNode("focus");
     n += gvt::core::CoreContext::createNode("eyePoint");
     n += gvt::core::CoreContext::createNode("upVector");
@@ -83,7 +89,8 @@ DBNodeH RenderContext::createNodeFromType(String type, String name, Uuid parent)
     n += gvt::core::CoreContext::createNode("Mesh_Pointer");
   } else if (type == String("Attributes")) // TODO: remove attributes db entries
   {
-    GVT_DEBUG(DBG_ALWAYS, "renderctx: db: ERROR: should not be creating an Attributes type");
+    GVT_DEBUG(DBG_ALWAYS,
+              "renderctx: db: ERROR: should not be creating an Attributes type");
     n["Views"] += gvt::core::CoreContext::createNodeFromType("View");
     n += gvt::core::CoreContext::createNode("renderType", "surface");
     n += gvt::core::CoreContext::createNode("schedule", "Image");
@@ -115,4 +122,19 @@ DBNodeH RenderContext::createNodeFromType(String type, String name, Uuid parent)
   }
 
   return n;
+}
+
+std::shared_ptr<gvt::render::data::scene::gvtCameraBase> RenderContext::getCamera() {
+  return _camera;
+}
+void RenderContext::setCamera(
+    std::shared_ptr<gvt::render::data::scene::gvtCameraBase> camera) {
+  _camera = camera;
+}
+
+std::shared_ptr<gvt::render::data::scene::Image> RenderContext::getImage() {
+  return _img;
+}
+void RenderContext::setImage(std::shared_ptr<gvt::render::data::scene::Image> img) {
+  _img = img;
 }

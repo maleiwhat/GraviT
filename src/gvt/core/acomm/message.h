@@ -18,9 +18,11 @@
    See the License for the specific language governing permissions and limitations under
    limitations under the License.
 
-   GraviT is funded in part by the US National Science Foundation under awards ACI-1339863,
+   GraviT is funded in part by the US National Science Foundation under awards
+   ACI-1339863,
    ACI-1339881 and ACI-1339840
-   ======================================================================================= */
+   =======================================================================================
+   */
 
 #ifndef GVT_CORE_MESSAGE_H
 #define GVT_CORE_MESSAGE_H
@@ -37,7 +39,23 @@ template <typename T> std::shared_ptr<T> make_shared_buffer(size_t size) {
   return std::shared_ptr<T>(new T[size], std::default_delete<T[]>());
 }
 
+#define MESSAGE_HEADER(ClassName)                                                        \
+public:                                                                                  \
+  virtual int getTag() const { return ClassName::tag; }                                  \
+  virtual void setTag(const int _tag) const { ClassName::tag = _tag; }                   \
+  virtual std::string getNameTag() const { return "#ClassName"; }                        \
+                                                                                         \
+private:                                                                                 \
+  static size_t tag;                                                                     \
+  static std::string tagName
+
+#define MESSAGE_HEADER_INIT(ClassName)                                                   \
+  size_t ClassName::tag = -1;                                                            \
+  std::string ClassName::tagName = "#ClassName";
+
 class Message {
+  MESSAGE_HEADER(Message);
+
 protected:
   std::shared_ptr<unsigned char> _buffer = nullptr;
   size_t _size = 0;

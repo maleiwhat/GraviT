@@ -18,13 +18,19 @@
    See the License for the specific language governing permissions and limitations under
    limitations under the License.
 
-   GraviT is funded in part by the US National Science Foundation under awards ACI-1339863,
+   GraviT is funded in part by the US National Science Foundation under awards
+   ACI-1339863,
    ACI-1339881 and ACI-1339840
-   ======================================================================================= */
+   =======================================================================================
+   */
 #ifndef GVT_RENDER_CONTEXT_H
 #define GVT_RENDER_CONTEXT_H
 
+#include <memory>
+
 #include <gvt/core/Context.h>
+#include <gvt/render/data/scene/Image.h>
+#include <gvt/render/data/scene/gvtCamera.h>
 
 namespace gvt {
 namespace render {
@@ -39,8 +45,17 @@ public:
                                         gvt::core::Uuid parent = gvt::core::Uuid::null());
   static RenderContext *instance();
 
+  std::shared_ptr<gvt::render::data::scene::gvtCameraBase> getCamera();
+  void setCamera(std::shared_ptr<gvt::render::data::scene::gvtCameraBase>);
+
+  std::shared_ptr<gvt::render::data::scene::Image> getImage();
+  void setImage(std::shared_ptr<gvt::render::data::scene::Image>);
+
 protected:
   RenderContext();
+
+  std::shared_ptr<gvt::render::data::scene::Image> _img;
+  std::shared_ptr<gvt::render::data::scene::gvtCameraBase> _camera;
 };
 }
 }

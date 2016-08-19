@@ -52,16 +52,17 @@ struct RayQueueManager {
     }
   }
 
-  virtual gvt::render::actor::RayVector &&dequeue(int id) {
-    GVT_ASSERT(_queue.find(id) != _queue.end(), "Trying to access an invalid queue");
+  virtual gvt::render::actor::RayVector dequeue(int id) {
+    GVT_ASSERT(_queue.find(id) != _queue.end(), "Trying to access an invalid queue ["
+                                                    << id << "]");
     std::lock_guard<std::mutex> _lock(_protect);
-    return std::move(gvt::render::actor::RayVector());
+    return gvt::render::actor::RayVector();
   }
 
   bool empty() { return _queue.empty(); }
   std::size_t size() { return _queue.size(); }
 
-  template <class scheduler> gvt::render::actor::RayVector &&dequeue(int &target) {
+  template <class scheduler> void dequeue(int &target, gvt::render::actor::RayVector &) {
     GVT_ASSERT(false, "Queue policity not defined");
   }
 };

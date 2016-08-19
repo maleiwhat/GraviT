@@ -60,7 +60,6 @@
 #ifdef GVT_USE_MPE
 #include "mpe.h"
 #endif
-#include <gvt/core/data/primitives/BBox.h>
 #include <gvt/render/algorithm/Tracers.h>
 #include <gvt/render/data/Primitives.h>
 #include <gvt/render/data/scene/Image.h>

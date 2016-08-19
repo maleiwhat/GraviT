@@ -18,20 +18,26 @@
    See the License for the specific language governing permissions and limitations under
    limitations under the License.
 
-   GraviT is funded in part by the US National Science Foundation under awards ACI-1339863,
+   GraviT is funded in part by the US National Science Foundation under awards
+   ACI-1339863,
    ACI-1339881 and ACI-1339840
-   ======================================================================================= */
+   =======================================================================================
+   */
 
 #include <gvt/core/Debug.h>
 #include <gvt/core/acomm/message.h>
 
 namespace gvt {
 namespace comm {
+
+MESSAGE_HEADER_INIT(Message);
+
 Message::Message() {}
 
 Message::Message(const size_t &size) : _size(size) {
   _buffer = make_shared_buffer<unsigned char>(size);
-  // std::make_shared<unsigned char>(new unsigned char[size], std::default_delete<unsigned char[]>());
+  // std::make_shared<unsigned char>(new unsigned char[size], std::default_delete<unsigned
+  // char[]>());
   GVT_ASSERT(_buffer, "Error allocation message buffer");
 }
 
