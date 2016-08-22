@@ -21,48 +21,48 @@
    GraviT is funded in part by the US National Science Foundation under awards ACI-1339863,
    ACI-1339881 and ACI-1339840
    ======================================================================================= */
-//
-// AbstractAccel.h
-//
 
-#ifndef GVT_RENDER_DATA_ACCEL_ABSTRACT_ACCEL_H
-#define GVT_RENDER_DATA_ACCEL_ABSTRACT_ACCEL_H
+#ifndef GVT_RENDER_DATA_PRIMITIVES_SHADE_H
+#define GVT_RENDER_DATA_PRIMITIVES_SHADE_H
 
-#include <gvt/core/CoreContext.h>
+#include <gvt/core/Math.h>
 
-#include <gvt/render/actor/Ray.h>
-#include <gvt/render/data/primitives/BBox.h>
-
-#include <limits>
-#include <vector>
+namespace gvt {
+namespace render {
+namespace actor {
+class Ray;
+}
+}
+}
 
 namespace gvt {
 namespace render {
 namespace data {
-namespace accel {
-/// struct for closest intersection between ray and acceleration structure
-// struct ClosestHit {
-//   ClosestHit() : distance(std::numeric_limits<float>::max()) {}
-//   // gvt::render::data::domain::AbstractDomain *domain;
-//   // gvt::core::DBNodeH instance;
-//   float distance;
-// };
-
-/// abstract base class for acceleration structures
-class AbstractAccel {
-public:
-  AbstractAccel(gvt::core::Vector<gvt::core::DBNodeH> &instanceSet) : instanceSet(instanceSet) {}
-  virtual void intersect(const gvt::render::actor::Ray &ray, gvt::render::actor::isecDomList &isect) = 0;
-  virtual int intersect(const gvt::render::actor::Ray &ray, int from, float &t) = 0;
-
-  virtual ~AbstractAccel() {}
-
-protected:
-  gvt::core::Vector<gvt::core::DBNodeH> instanceSet;
-};
+namespace scene {
+class Light;
 }
 }
 }
 }
 
-#endif // GVT_RENDER_DATA_ACCEL_ABSTRACT_ACCEL_H
+namespace gvt {
+namespace render {
+namespace data {
+namespace primitives {
+
+struct Material;
+
+/*
+ * Material proxy call implemented per adpater
+ * Interfaces to the different shading materials may be significantly different
+ * mainly due to light assessing and vec formats
+ */
+bool Shade(gvt::render::data::primitives::Material *material, const gvt::render::actor::Ray &ray,
+           const glm::vec3 &sufaceNormal, const gvt::render::data::scene::Light *lightSource,
+           const glm::vec3 lightPosSample, glm::vec3 &color);
+}
+}
+}
+}
+
+#endif
