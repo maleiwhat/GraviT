@@ -186,7 +186,7 @@ public:
   tbb::mutex *colorBuf_mutex;                         ///< buffer for color accumulation
   glm::vec4 *colorBuf;
 
-  std::shared_ptr<gvt::core::composite::Buffer<float> > img;
+  std::shared_ptr<gvt::core::composite::AbstractCompositeBuffer> img;
   ;
   bool require_composite = false;
 
@@ -353,7 +353,8 @@ public:
             } else if (r.type == gvt::render::actor::Ray::SHADOW &&
                        glm::length(r.color) > 0) {
               tbb::mutex::scoped_lock fbloc(colorBuf_mutex[r.id % width]);
-              img->localAdd(r.id, r.color, r.w);
+              dynamic_cast<gvt::render::composite::IceTComposite *>(img.get())->localAdd(
+                  r.id, r.color, r.w);
             }
           }
           for (auto &q : local_queue) {
@@ -377,7 +378,8 @@ public:
 
   inline void gatherFramebuffers(int rays_traced) {
 
-    float * final = img->composite();
+    float * final =
+        dynamic_cast<gvt::render::composite::IceTComposite *>(img.get())->composite();
     // float * final = img->color_buffer_final;
 
     const size_t size = width * height;

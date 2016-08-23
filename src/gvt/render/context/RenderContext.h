@@ -29,6 +29,7 @@
 #include <memory>
 
 #include <gvt/core/Context.h>
+#include <gvt/core/composite/Composite.h>
 #include <gvt/render/data/scene/Image.h>
 #include <gvt/render/data/scene/gvtCamera.h>
 
@@ -56,6 +57,7 @@ protected:
 
   std::shared_ptr<gvt::render::data::scene::Image> _img;
   std::shared_ptr<gvt::render::data::scene::gvtCameraBase> _camera;
+  std::shared_ptr<gvt::core::composite::AbstractCompositeBuffer> _composite;
 };
 }
 }

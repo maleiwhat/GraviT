@@ -33,12 +33,22 @@
 namespace gvt {
 namespace core {
 namespace composite {
-template <typename T> class Buffer {
+
+class AbstractCompositeBuffer {
+public:
+  AbstractCompositeBuffer() {}
+  ~AbstractCompositeBuffer() {}
+
+  virtual void reset(){};
+};
+
+template <typename T> class Buffer : public AbstractCompositeBuffer {
 protected:
   std::size_t width, height;
 
 public:
-  Buffer(std::size_t width = 0, std::size_t height = 0) : width(width), height(height) {}
+  Buffer(std::size_t width = 0, std::size_t height = 0)
+      : AbstractCompositeBuffer(), width(width), height(height) {}
   ~Buffer() {}
   virtual void reset(){};
   virtual T *composite() { return nullptr; };
