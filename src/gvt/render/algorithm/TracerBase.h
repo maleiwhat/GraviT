@@ -45,7 +45,6 @@
 #include <gvt/render/data/scene/Image.h>
 
 #include <gvt/render/composite/IceTComposite.h>
-#include <gvt/render/composite/composite.h>
 
 #include <boost/foreach.hpp>
 #include <boost/range/algorithm.hpp>

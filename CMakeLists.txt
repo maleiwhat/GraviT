@@ -297,7 +297,6 @@ set(GVT_RENDER_HDRS ${GVT_RENDER_HDRS}
   src/gvt/render/tracer/RayQueueManager.h
   src/gvt/render/tracer/Image/ImageTracer.h
 
-  src/gvt/render/composite/composite.h
   src/gvt/render/composite/IceTComposite.h
 
 )
@@ -317,8 +316,6 @@ set(GVT_RENDER_SRCS ${GVT_RENDER_SRCS}
   src/gvt/render/data/accel/BVH.cpp
 
   src/gvt/render/tracer/Image/ImageTracer.cpp
-
-  src/gvt/render/composite/composite.cpp
   src/gvt/render/composite/IceTComposite.cpp
 )
 
