@@ -33,7 +33,7 @@ namespace gvt {
 namespace render {
 namespace composite {
 
-struct IceTComposite : gvt::core::composite::Buffer {
+struct IceTComposite : gvt::core::composite::Buffer<float> {
 
   // glm::vec4 *buffer;
   IceTInt num_proc;
@@ -50,11 +50,13 @@ struct IceTComposite : gvt::core::composite::Buffer {
   ~IceTComposite();
 
   void reset();
-  void composite();
+  float *composite();
   virtual void localAdd(size_t x, size_t y, const glm::vec3 &color, float alpha = 1.f,
                         float t = 0.f);
   virtual void localAdd(size_t i, const glm::vec3 &color, float alpha = 1.f,
                         float t = 0.f);
+
+  // virtual T getCompositedBuffer() { return color_buffer_final; }
 };
 }
 }

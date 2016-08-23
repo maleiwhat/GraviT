@@ -88,7 +88,7 @@ const IceTFloat black[] = { 1.0, 0.0, 0.0, 1.0 };
 // }
 
 IceTComposite::IceTComposite(std::size_t width, std::size_t height)
-    : gvt::core::composite::Buffer(width, height) {
+    : gvt::core::composite::Buffer<float>(width, height) {
   // if (MPI::COMM_WORLD.Get_size() < 2) return false;
 
   std::cout << "Creating image buffer " << (size_t)this << std::endl;
@@ -125,7 +125,7 @@ void IceTComposite::reset() {
   memset(depth_buffer, 0, (width * height * sizeof(IceTFloat)));
 }
 
-void IceTComposite::composite() {
+float *IceTComposite::composite() {
   IceTSizeType num_pixels;
   IceTSizeType i;
   icetResetTiles();
@@ -135,6 +135,7 @@ void IceTComposite::composite() {
   IceTImage image = icetCompositeImage(color_buffer, NULL, NULL, NULL, NULL, black);
   num_pixels = icetImageGetNumPixels(image);
   color_buffer_final = icetImageGetColorf(image);
+  return color_buffer_final;
 }
 
 void IceTComposite::localAdd(size_t x, size_t y, const glm::vec3 &color, float alpha,

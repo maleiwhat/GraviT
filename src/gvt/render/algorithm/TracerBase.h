@@ -187,12 +187,14 @@ public:
   tbb::mutex *colorBuf_mutex;                         ///< buffer for color accumulation
   glm::vec4 *colorBuf;
 
-  gvt::render::composite::IceTComposite img;
+  std::shared_ptr<gvt::core::composite::Buffer<float> > img;
+  ;
   bool require_composite = false;
 
   AbstractTrace(gvt::render::actor::RayVector &rays,
                 gvt::render::data::scene::Image &image)
-      : rays(rays), image(image), img(width, height) {
+      : rays(rays), image(image),
+        img(new gvt::render::composite::IceTComposite(width, height)) {
     GVT_DEBUG(DBG_ALWAYS, "initializing abstract trace: num rays: " << rays.size());
     colorBuf = new glm::vec4[width * height];
     // require_composite = img.initIceT();
@@ -252,7 +254,7 @@ public:
     colorBuf_mutex = new tbb::mutex[width];
     // colorBuf = new glm::vec4[width * height];
     // std::cout << "Resized buffer" << std::endl;
-    img = gvt::render::composite::IceTComposite(w, h);
+    img.reset(new gvt::render::composite::IceTComposite(w, h));
   }
 
   void resetInstances() {
@@ -306,7 +308,7 @@ public:
   }
 
   void clearBuffer() { /*std::memset(colorBuf, 0, sizeof(glm::vec4) * width * height);*/
-    img.reset();
+    img->reset();
   }
 
   // clang-format off
@@ -352,10 +354,7 @@ public:
             } else if (r.type == gvt::render::actor::Ray::SHADOW &&
                        glm::length(r.color) > 0) {
               tbb::mutex::scoped_lock fbloc(colorBuf_mutex[r.id % width]);
-              if (r.w < 1) std::cout << " -->" << r.w << std::endl;
-
-              img.localAdd(r.id, r.color, r.w /*.125f*/);
-              // colorBuf[r.id] += glm::vec4(r.color, r.w);
+              img->localAdd(r.id, r.color, r.w);
             }
           }
           for (auto &q : local_queue) {
@@ -375,27 +374,12 @@ public:
 
   inline bool SendRays() { GVT_ASSERT_BACKTRACE(0, "Not supported"); }
 
-  inline void localComposite() {
-    // const size_t size = width * height;
-    // const size_t chunksize = MAX(2, size / (std::thread::hardware_concurrency() * 4));
-    // static tbb::simple_partitioner ap;
-    // tbb::parallel_for(tbb::blocked_range<size_t>(0, size, chunksize),
-    //                   [&](tbb::blocked_range<size_t> chunk) {
-    //                     for (size_t i = chunk.begin(); i < chunk.end(); i++)
-    //                     image.Add(i, colorBuf[i]);
-    //                   },
-    //                   ap);
-  }
+  inline void localComposite() {}
 
   inline void gatherFramebuffers(int rays_traced) {
 
-    img.composite();
-    float * final = img.color_buffer_final;
-    // glm::vec4 * final;
-    // if (require_composite)
-    //   final = img.execute(colorBuf, width, height);
-    // else
-    //   final = colorBuf;
+    float * final = img->composite();
+    // float * final = img->color_buffer_final;
 
     const size_t size = width * height;
     const size_t chunksize = MAX(2, size / (std::thread::hardware_concurrency() * 4));
@@ -406,41 +390,6 @@ public:
                           image.Add(i, & final[i * 4]);
                       },
                       ap);
-    // if (require_composite) delete[] final;
-    // localComposite();
-    // mpi.gatherbuffer<unsigned char>(image.GetBuffer(), width * height * 3);
-
-    // size_t size = width * height;
-    // unsigned char *rgb = image.GetBuffer();
-    //
-    // int rgb_buf_size = 3 * size;
-    //
-    // unsigned char *bufs = mpi.root() ? new unsigned char[mpi.world_size * rgb_buf_size]
-    // : NULL;
-    //
-    // // MPI_Barrier(MPI_COMM_WORLD);
-    // MPI_Gather(rgb, rgb_buf_size, MPI_UNSIGNED_CHAR, bufs, rgb_buf_size,
-    // MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);
-    // if (mpi.root()) {
-    //   const size_t chunksize = MAX(2, size / (std::thread::hardware_concurrency() *
-    //   4));
-    //   static tbb::simple_partitioner ap;
-    //   tbb::parallel_for(tbb::blocked_range<size_t>(0, size, chunksize),
-    //   [&](tbb::blocked_range<size_t> chunk) {
-    //
-    //     for (int j = chunk.begin() * 3; j < chunk.end() * 3; j += 3) {
-    //       for (size_t i = 1; i < mpi.world_size; ++i) {
-    //         int p = i * rgb_buf_size + j;
-    //         // assumes black background, so adding is fine (r==g==b== 0)
-    //         rgb[j + 0] += bufs[p + 0];
-    //         rgb[j + 1] += bufs[p + 1];
-    //         rgb[j + 2] += bufs[p + 2];
-    //       }
-    //     }
-    //   });
-    // }
-    //
-    // delete[] bufs;
   }
 };
 

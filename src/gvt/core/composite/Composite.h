@@ -33,8 +33,7 @@
 namespace gvt {
 namespace core {
 namespace composite {
-
-class Buffer {
+template <typename T> class Buffer {
 protected:
   std::size_t width, height;
 
@@ -42,7 +41,7 @@ public:
   Buffer(std::size_t width = 0, std::size_t height = 0) : width(width), height(height) {}
   ~Buffer() {}
   virtual void reset(){};
-  virtual void composite(){};
+  virtual T *composite() { return nullptr; };
   virtual void localAdd(size_t x, size_t y, const glm::vec3 &color, float alpha = 1.f,
                         float t = 0.f){};
   virtual void localAdd(size_t i, const glm::vec3 &color, float alpha = 1.f,
