@@ -66,13 +66,9 @@ public:
     rgb[index + 0] = (unsigned char)(buf[0] * 255.f);
     rgb[index + 1] = (unsigned char)(buf[1] * 255.f);
     rgb[index + 2] = (unsigned char)(buf[2] * 255.f);
-  }
-
-  void AddMult(int pixel, float *buf) {
-    int index = 3 * pixel;
-    rgb[index + 0] = (unsigned char)(buf[0] * buf[3] * 255.f);
-    rgb[index + 1] = (unsigned char)(buf[1] * buf[3] * 255.f);
-    rgb[index + 2] = (unsigned char)(buf[2] * buf[3] * 255.f);
+    if (rgb[index + 0] > 255.f) rgb[index + 0] = 255;
+    if (rgb[index + 1] > 255.f) rgb[index + 1] = 255;
+    if (rgb[index + 2] > 255.f) rgb[index + 2] = 255;
   }
 
   void Add(int pixel, glm::vec3 &ca) {
@@ -80,6 +76,15 @@ public:
     rgb[index + 0] = (unsigned char)(ca[0] * 255.f);
     rgb[index + 1] = (unsigned char)(ca[1] * 255.f);
     rgb[index + 2] = (unsigned char)(ca[2] * 255.f);
+    if (rgb[index + 0] > 255.f) rgb[index + 0] = 255;
+    if (rgb[index + 1] > 255.f) rgb[index + 1] = 255;
+    if (rgb[index + 2] > 255.f) rgb[index + 2] = 255;
+  }
+  void AddMult(int pixel, float *buf) {
+    int index = 3 * pixel;
+    rgb[index + 0] = (unsigned char)(buf[0] * 255.f);
+    rgb[index + 1] = (unsigned char)(buf[1] * 255.f);
+    rgb[index + 2] = (unsigned char)(buf[2] * 255.f);
     if (rgb[index + 0] > 255.f) rgb[index + 0] = 255;
     if (rgb[index + 1] > 255.f) rgb[index + 1] = 255;
     if (rgb[index + 2] > 255.f) rgb[index + 2] = 255;

@@ -305,7 +305,9 @@ public:
     }
   }
 
-  void clearBuffer() { std::memset(colorBuf, 0, sizeof(glm::vec4) * width * height); }
+  void clearBuffer() { /*std::memset(colorBuf, 0, sizeof(glm::vec4) * width * height);*/
+    img.reset();
+  }
 
   // clang-format off
   virtual ~AbstractTrace() {};
@@ -350,9 +352,10 @@ public:
             } else if (r.type == gvt::render::actor::Ray::SHADOW &&
                        glm::length(r.color) > 0) {
               tbb::mutex::scoped_lock fbloc(colorBuf_mutex[r.id % width]);
-              img.localAdd(r.id, r.color * r.w /*, r.w*/);
+              if (r.w < 1) std::cout << " -->" << r.w << std::endl;
+
+              img.localAdd(r.id, r.color, r.w /*.125f*/);
               // colorBuf[r.id] += glm::vec4(r.color, r.w);
-              // colorBuf[r.id][3] += r.w;
             }
           }
           for (auto &q : local_queue) {
