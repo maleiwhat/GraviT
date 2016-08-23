@@ -233,6 +233,8 @@ set(GVT_CORE_HDRS ${GVT_CORE_HDRS}
 
   src/gvt/core/tracer/tracer.h
 
+  src/gvt/core/composite/Composite.h
+
 )
 
 set(GVT_CORE_SRCS ${GVT_CORE_SRCS}
@@ -287,7 +289,6 @@ set(GVT_RENDER_HDRS ${GVT_RENDER_HDRS}
   src/gvt/render/schedule/hybrid/SpreadSchedule.h
   src/gvt/render/schedule/HybridScheduler.h
   src/gvt/render/schedule/ImageScheduler.h
-  src/gvt/render/composite/composite.h
   src/gvt/render/Schedulers.h
   src/gvt/render/Types.h
 
@@ -295,6 +296,9 @@ set(GVT_RENDER_HDRS ${GVT_RENDER_HDRS}
   src/gvt/render/adapter/AdapterCache.h
   src/gvt/render/tracer/RayQueueManager.h
   src/gvt/render/tracer/Image/ImageTracer.h
+
+  src/gvt/render/composite/composite.h
+  src/gvt/render/composite/IceTComposite.h
 
 )
 
@@ -311,10 +315,11 @@ set(GVT_RENDER_SRCS ${GVT_RENDER_SRCS}
   src/gvt/render/data/scene/Image.cpp
   src/gvt/render/data/scene/Light.cpp
   src/gvt/render/data/accel/BVH.cpp
-  src/gvt/render/composite/composite.cpp
 
   src/gvt/render/tracer/Image/ImageTracer.cpp
 
+  src/gvt/render/composite/composite.cpp
+  src/gvt/render/composite/IceTComposite.cpp
 )
 
 if (GVT_RENDER_ADAPTER_MANTA)

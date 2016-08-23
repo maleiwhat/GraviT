@@ -61,11 +61,18 @@ public:
     for (int i = 0; i < size; ++i) rgb[i] = 0;
   }
 
-  void Add(int pixel, float *buf) {
+  void Add(int pixel, float *buf, const int offset = 3) {
+    int index = offset * pixel;
+    rgb[index + 0] = (unsigned char)(buf[0] * 255.f);
+    rgb[index + 1] = (unsigned char)(buf[1] * 255.f);
+    rgb[index + 2] = (unsigned char)(buf[2] * 255.f);
+  }
+
+  void AddMult(int pixel, float *buf) {
     int index = 3 * pixel;
-    rgb[index + 0] = (unsigned char)(buf[0] * 256.f);
-    rgb[index + 1] = (unsigned char)(buf[1] * 256.f);
-    rgb[index + 2] = (unsigned char)(buf[2] * 256.f);
+    rgb[index + 0] = (unsigned char)(buf[0] * buf[3] * 255.f);
+    rgb[index + 1] = (unsigned char)(buf[1] * buf[3] * 255.f);
+    rgb[index + 2] = (unsigned char)(buf[2] * buf[3] * 255.f);
   }
 
   void Add(int pixel, glm::vec3 &ca) {

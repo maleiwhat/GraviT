@@ -18,9 +18,11 @@
    See the License for the specific language governing permissions and limitations under
    limitations under the License.
 
-   GraviT is funded in part by the US National Science Foundation under awards ACI-1339863,
+   GraviT is funded in part by the US National Science Foundation under awards
+   ACI-1339863,
    ACI-1339881 and ACI-1339840
-   ======================================================================================= */
+   =======================================================================================
+   */
 /*
  * Tracer.h
  *
@@ -42,6 +44,7 @@
 #include <gvt/render/data/scene/ColorAccumulator.h>
 #include <gvt/render/data/scene/Image.h>
 
+#include <gvt/render/composite/IceTComposite.h>
 #include <gvt/render/composite/composite.h>
 
 #include <boost/foreach.hpp>
@@ -101,18 +104,22 @@ struct GVT_COMM {
       next_neighbor = (next_neighbor + 1) % world_size;
 
       if (next_neighbor != rank) {
-        // std::cout << "Node[" << rank << "] send to Node[" << next_neighbor << "]" << std::endl;
+        // std::cout << "Node[" << rank << "] send to Node[" << next_neighbor << "]" <<
+        // std::endl;
         B *send = &buf[next_neighbor * partition_size];
-        MPI::COMM_WORLD.Isend(send, sizeof(B) * partition_size, MPI::BYTE, next_neighbor, rank | 0xF00000000000000);
+        MPI::COMM_WORLD.Isend(send, sizeof(B) * partition_size, MPI::BYTE, next_neighbor,
+                              rank | 0xF00000000000000);
       }
 
       prev_neighbor = (prev_neighbor > 0 ? prev_neighbor - 1 : world_size - 1);
 
       if (prev_neighbor != rank) {
-        // std::cout << "Node[" << rank << "] recv to Node[" << prev_neighbor << "]" << std::endl;
+        // std::cout << "Node[" << rank << "] recv to Node[" << prev_neighbor << "]" <<
+        // std::endl;
         B *recv = &gather[prev_neighbor * partition_size];
-        Irecv_requests_status.push_back(MPI::COMM_WORLD.Irecv(recv, sizeof(B) * partition_size, MPI::BYTE,
-                                                              prev_neighbor, prev_neighbor | 0xF00000000000000));
+        Irecv_requests_status.push_back(
+            MPI::COMM_WORLD.Irecv(recv, sizeof(B) * partition_size, MPI::BYTE,
+                                  prev_neighbor, prev_neighbor | 0xF00000000000000));
       }
     }
 
@@ -120,7 +127,8 @@ struct GVT_COMM {
 
     for (int source = 0; source < world_size; ++source) {
       if (source == rank) continue;
-      const size_t chunksize = MAX(GVT_SIMD_WIDTH, partition_size / (std::thread::hardware_concurrency()));
+      const size_t chunksize =
+          MAX(GVT_SIMD_WIDTH, partition_size / (std::thread::hardware_concurrency()));
       static tbb::simple_partitioner ap;
       tbb::parallel_for(tbb::blocked_range<size_t>(0, partition_size, chunksize),
                         [&](tbb::blocked_range<size_t> chunk) {
@@ -133,8 +141,8 @@ struct GVT_COMM {
     }
 
     B *newbuf = (rank == 0) ? new B[size] : nullptr;
-    MPI::COMM_WORLD.Gather(acc, sizeof(B) * partition_size, MPI::BYTE, newbuf, sizeof(B) * partition_size, MPI::BYTE,
-                           0);
+    MPI::COMM_WORLD.Gather(acc, sizeof(B) * partition_size, MPI::BYTE, newbuf,
+                           sizeof(B) * partition_size, MPI::BYTE, 0);
 
     if (newbuf) std::memcpy(buf, newbuf, sizeof(B) * size);
     delete gather;
@@ -174,19 +182,20 @@ public:
 
   float sample_ratio = 1.f;
 
-  tbb::mutex *queue_mutex;                            // array of mutexes - one per instance
+  tbb::mutex *queue_mutex; // array of mutexes - one per instance
   std::map<int, gvt::render::actor::RayVector> queue; ///< Node rays working
   tbb::mutex *colorBuf_mutex;                         ///< buffer for color accumulation
   glm::vec4 *colorBuf;
 
-  gvt::render::composite::composite img;
+  gvt::render::composite::IceTComposite img;
   bool require_composite = false;
 
-  AbstractTrace(gvt::render::actor::RayVector &rays, gvt::render::data::scene::Image &image)
-      : rays(rays), image(image) {
+  AbstractTrace(gvt::render::actor::RayVector &rays,
+                gvt::render::data::scene::Image &image)
+      : rays(rays), image(image), img(width, height) {
     GVT_DEBUG(DBG_ALWAYS, "initializing abstract trace: num rays: " << rays.size());
     colorBuf = new glm::vec4[width * height];
-    require_composite = img.initIceT();
+    // require_composite = img.initIceT();
     // TODO: alim: this queue is on the number of domains in the dataset
     // if this is on the number of domains, then it will be equivalent to the
     // number
@@ -200,8 +209,10 @@ public:
     acceleration = new gvt::render::data::accel::BVH(instancenodes);
 
     for (int i = 0; i < instancenodes.size(); i++) {
-      meshRef[i] =
-          (gvt::render::data::primitives::Mesh *)instancenodes[i]["meshRef"].deRef()["ptr"].value().toULongLong();
+      meshRef[i] = (gvt::render::data::primitives::Mesh *)instancenodes[i]["meshRef"]
+                       .deRef()["ptr"]
+                       .value()
+                       .toULongLong();
       instM[i] = (glm::mat4 *)instancenodes[i]["mat"].value().toULongLong();
       instMinv[i] = (glm::mat4 *)instancenodes[i]["matInv"].value().toULongLong();
       instMinvN[i] = (glm::mat3 *)instancenodes[i]["normi"].value().toULongLong();
@@ -223,7 +234,8 @@ public:
         auto normal = lightNode["normal"].value().tovec3();
         auto width = lightNode["width"].value().toFloat();
         auto height = lightNode["height"].value().toFloat();
-        lights.push_back(new gvt::render::data::scene::AreaLight(pos, color, normal, width, height));
+        lights.push_back(
+            new gvt::render::data::scene::AreaLight(pos, color, normal, width, height));
       }
     }
 
@@ -234,12 +246,13 @@ public:
     width = w;
     height = h;
     if (colorBuf != nullptr) {
-      delete[] colorBuf;
+      //  delete[] colorBuf;
       delete[] colorBuf_mutex;
     }
     colorBuf_mutex = new tbb::mutex[width];
-    colorBuf = new glm::vec4[width * height];
-    //std::cout << "Resized buffer" << std::endl;
+    // colorBuf = new glm::vec4[width * height];
+    // std::cout << "Resized buffer" << std::endl;
+    img = gvt::render::composite::IceTComposite(w, h);
   }
 
   void resetInstances() {
@@ -256,8 +269,10 @@ public:
     instMinv.clear();
     instMinvN.clear();
     for (int i = 0; i < instancenodes.size(); i++) {
-      meshRef[i] =
-          (gvt::render::data::primitives::Mesh *)instancenodes[i]["meshRef"].deRef()["ptr"].value().toULongLong();
+      meshRef[i] = (gvt::render::data::primitives::Mesh *)instancenodes[i]["meshRef"]
+                       .deRef()["ptr"]
+                       .value()
+                       .toULongLong();
       instM[i] = (glm::mat4 *)instancenodes[i]["mat"].value().toULongLong();
       instMinv[i] = (glm::mat4 *)instancenodes[i]["matInv"].value().toULongLong();
       instMinvN[i] = (glm::mat3 *)instancenodes[i]["normi"].value().toULongLong();
@@ -284,7 +299,8 @@ public:
         auto normal = lightNode["normal"].value().tovec3();
         auto width = lightNode["width"].value().toFloat();
         auto height = lightNode["height"].value().toFloat();
-        lights.push_back(new gvt::render::data::scene::AreaLight(pos, color, normal, width, height));
+        lights.push_back(
+            new gvt::render::data::scene::AreaLight(pos, color, normal, width, height));
       }
     }
   }
@@ -314,35 +330,41 @@ public:
 
     // std::cout << "Suffle rays" << rays.size() << std::endl;
 
-    const size_t chunksize = MAX(2, rays.size() / (std::thread::hardware_concurrency() * 4));
-    gvt::render::data::accel::BVH &acc = *dynamic_cast<gvt::render::data::accel::BVH *>(acceleration);
+    const size_t chunksize =
+        MAX(2, rays.size() / (std::thread::hardware_concurrency() * 4));
+    gvt::render::data::accel::BVH &acc =
+        *dynamic_cast<gvt::render::data::accel::BVH *>(acceleration);
     static tbb::simple_partitioner ap;
-    tbb::parallel_for(tbb::blocked_range<gvt::render::actor::RayVector::iterator>(rays.begin(), rays.end(), chunksize),
-                      [&](tbb::blocked_range<gvt::render::actor::RayVector::iterator> raysit) {
-                        std::vector<gvt::render::data::accel::BVH::hit> hits =
-                            acc.intersect<GVT_SIMD_WIDTH>(raysit.begin(), raysit.end(), domID);
-                        std::map<int, gvt::render::actor::RayVector> local_queue;
-                        for (size_t i = 0; i < hits.size(); i++) {
-                          gvt::render::actor::Ray &r = *(raysit.begin() + i);
-                          if (hits[i].next != -1) {
-                            r.origin = r.origin + r.direction * (hits[i].t * 0.95f);
-                            local_queue[hits[i].next].push_back(r);
-                          } else if (r.type == gvt::render::actor::Ray::SHADOW && glm::length(r.color) > 0) {
-                            tbb::mutex::scoped_lock fbloc(colorBuf_mutex[r.id % width]);
-                            colorBuf[r.id] += glm::vec4(r.color, r.w);
-                            // colorBuf[r.id][3] += r.w;
-                          }
-                        }
-                        for (auto &q : local_queue) {
+    tbb::parallel_for(
+        tbb::blocked_range<gvt::render::actor::RayVector::iterator>(
+            rays.begin(), rays.end(), chunksize),
+        [&](tbb::blocked_range<gvt::render::actor::RayVector::iterator> raysit) {
+          std::vector<gvt::render::data::accel::BVH::hit> hits =
+              acc.intersect<GVT_SIMD_WIDTH>(raysit.begin(), raysit.end(), domID);
+          std::map<int, gvt::render::actor::RayVector> local_queue;
+          for (size_t i = 0; i < hits.size(); i++) {
+            gvt::render::actor::Ray &r = *(raysit.begin() + i);
+            if (hits[i].next != -1) {
+              r.origin = r.origin + r.direction * (hits[i].t * 0.95f);
+              local_queue[hits[i].next].push_back(r);
+            } else if (r.type == gvt::render::actor::Ray::SHADOW &&
+                       glm::length(r.color) > 0) {
+              tbb::mutex::scoped_lock fbloc(colorBuf_mutex[r.id % width]);
+              img.localAdd(r.id, r.color * r.w /*, r.w*/);
+              // colorBuf[r.id] += glm::vec4(r.color, r.w);
+              // colorBuf[r.id][3] += r.w;
+            }
+          }
+          for (auto &q : local_queue) {
 
-                          queue_mutex[q.first].lock();
-                          queue[q.first].insert(queue[q.first].end(),
-                                                std::make_move_iterator(local_queue[q.first].begin()),
-                                                std::make_move_iterator(local_queue[q.first].end()));
-                          queue_mutex[q.first].unlock();
-                        }
-                      },
-                      ap);
+            queue_mutex[q.first].lock();
+            queue[q.first].insert(queue[q.first].end(),
+                                  std::make_move_iterator(local_queue[q.first].begin()),
+                                  std::make_move_iterator(local_queue[q.first].end()));
+            queue_mutex[q.first].unlock();
+          }
+        },
+        ap);
 
     // std::cout << "Finished shuffle" << std::endl;
     rays.clear();
@@ -356,29 +378,32 @@ public:
     // static tbb::simple_partitioner ap;
     // tbb::parallel_for(tbb::blocked_range<size_t>(0, size, chunksize),
     //                   [&](tbb::blocked_range<size_t> chunk) {
-    //                     for (size_t i = chunk.begin(); i < chunk.end(); i++) image.Add(i, colorBuf[i]);
+    //                     for (size_t i = chunk.begin(); i < chunk.end(); i++)
+    //                     image.Add(i, colorBuf[i]);
     //                   },
     //                   ap);
   }
 
   inline void gatherFramebuffers(int rays_traced) {
 
-    glm::vec4 * final;
-
-    if (require_composite)
-      final = img.execute(colorBuf, width, height);
-    else
-      final = colorBuf;
+    img.composite();
+    float * final = img.color_buffer_final;
+    // glm::vec4 * final;
+    // if (require_composite)
+    //   final = img.execute(colorBuf, width, height);
+    // else
+    //   final = colorBuf;
 
     const size_t size = width * height;
     const size_t chunksize = MAX(2, size / (std::thread::hardware_concurrency() * 4));
     static tbb::simple_partitioner ap;
     tbb::parallel_for(tbb::blocked_range<size_t>(0, size, chunksize),
                       [&](tbb::blocked_range<size_t> chunk) {
-                        for (size_t i = chunk.begin(); i < chunk.end(); i++) image.Add(i, final[i]);
+                        for (size_t i = chunk.begin(); i < chunk.end(); i++)
+                          image.Add(i, & final[i * 4]);
                       },
                       ap);
-    if (require_composite) delete[] final;
+    // if (require_composite) delete[] final;
     // localComposite();
     // mpi.gatherbuffer<unsigned char>(image.GetBuffer(), width * height * 3);
 
@@ -387,14 +412,18 @@ public:
     //
     // int rgb_buf_size = 3 * size;
     //
-    // unsigned char *bufs = mpi.root() ? new unsigned char[mpi.world_size * rgb_buf_size] : NULL;
+    // unsigned char *bufs = mpi.root() ? new unsigned char[mpi.world_size * rgb_buf_size]
+    // : NULL;
     //
     // // MPI_Barrier(MPI_COMM_WORLD);
-    // MPI_Gather(rgb, rgb_buf_size, MPI_UNSIGNED_CHAR, bufs, rgb_buf_size, MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);
+    // MPI_Gather(rgb, rgb_buf_size, MPI_UNSIGNED_CHAR, bufs, rgb_buf_size,
+    // MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);
     // if (mpi.root()) {
-    //   const size_t chunksize = MAX(2, size / (std::thread::hardware_concurrency() * 4));
+    //   const size_t chunksize = MAX(2, size / (std::thread::hardware_concurrency() *
+    //   4));
     //   static tbb::simple_partitioner ap;
-    //   tbb::parallel_for(tbb::blocked_range<size_t>(0, size, chunksize), [&](tbb::blocked_range<size_t> chunk) {
+    //   tbb::parallel_for(tbb::blocked_range<size_t>(0, size, chunksize),
+    //   [&](tbb::blocked_range<size_t> chunk) {
     //
     //     for (int j = chunk.begin() * 3; j < chunk.end() * 3; j += 3) {
     //       for (size_t i = 1; i < mpi.world_size; ++i) {
@@ -425,7 +454,8 @@ public:
  */
 template <class BSCHEDULER> class Tracer : public AbstractTrace {
 public:
-  Tracer(gvt::render::actor::RayVector &rays, gvt::render::data::scene::Image &image) : AbstractTrace(rays, image) {}
+  Tracer(gvt::render::actor::RayVector &rays, gvt::render::data::scene::Image &image)
+      : AbstractTrace(rays, image) {}
 
   virtual ~Tracer() {}
 };
@@ -446,7 +476,8 @@ public:
 template <template <typename> class BSCHEDULER, class ISCHEDULER>
 class Tracer<BSCHEDULER<ISCHEDULER> > : public AbstractTrace {
 public:
-  Tracer(gvt::render::actor::RayVector &rays, gvt::render::data::scene::Image &image) : AbstractTrace(rays, image) {}
+  Tracer(gvt::render::actor::RayVector &rays, gvt::render::data::scene::Image &image)
+      : AbstractTrace(rays, image) {}
 
   virtual ~Tracer() {}
 };
