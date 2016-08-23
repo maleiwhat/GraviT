@@ -138,3 +138,8 @@ std::shared_ptr<gvt::render::data::scene::Image> RenderContext::getImage() {
 void RenderContext::setImage(std::shared_ptr<gvt::render::data::scene::Image> img) {
   _img = img;
 }
+
+void RenderContext::setComposite(
+    std::shared_ptr<gvt::core::composite::AbstractCompositeBuffer> composite) {
+  _composite = composite;
+}

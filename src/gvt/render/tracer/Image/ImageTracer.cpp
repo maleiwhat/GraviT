@@ -39,6 +39,8 @@
 
 #include "ImageTracer.h"
 
+#include <gvt/render/composite/ImageComposite.h>
+
 namespace gvt {
 namespace tracer {
 
@@ -72,9 +74,17 @@ ImageTracer::~ImageTracer() {}
 void ImageTracer::operator()() {
   gvt::render::RenderContext &cntxt = *gvt::render::RenderContext::instance();
   gvt::core::DBNodeH rootnode = cntxt.getRootNode();
+  size_t width = cntxt.getRootNode()["Film"]["width"].value().toInteger();
+  size_t height = cntxt.getRootNode()["Film"]["height"].value().toInteger();
 
   std::shared_ptr<gvt::render::data::scene::gvtCameraBase> _cam = cntxt.getCamera();
-  std::shared_ptr<gvt::render::data::scene::Image> _img = cntxt.getImage();
+  std::shared_ptr<gvt::render::composite::ImageComposite> composite_buffer =
+      cntxt.getComposite<gvt::render::composite::ImageComposite>();
+  GVT_ASSERT(composite_buffer,
+             "Invalid image composite buffer, please instanciate a proper "
+             "composite buffer in context");
+  std::shared_ptr<gvt::render::data::scene::Image> image = cntxt.getImage();
+  // std::shared_ptr<gvt::render::data::scene::Image> _img = cntxt.getImage();
 
   std::vector<gvt::core::DBNodeH> instancenodes = rootnode["Instances"].getChildren();
   GVT_ASSERT(!instancenodes.empty(), "Calling a tracer over an empty domain set");
@@ -122,7 +132,7 @@ void ImageTracer::operator()() {
 
   _cam->AllocateCameraRays();
   _cam->generateRays();
-  _img->clear();
+  // _img->clear();
 
   processRayQueue(_cam->rays);
 
@@ -145,6 +155,18 @@ void ImageTracer::operator()() {
     }
   }
   // Start composite
+
+  float * final = composite_buffer->composite();
+
+  const size_t size = width * height;
+  const size_t chunksize = MAX(2, size / (std::thread::hardware_concurrency() * 4));
+  static tbb::simple_partitioner ap;
+  tbb::parallel_for(tbb::blocked_range<size_t>(0, size, chunksize),
+                    [&](tbb::blocked_range<size_t> chunk) {
+                      for (size_t i = chunk.begin(); i < chunk.end(); i++)
+                        image->Add(i, & final[i * 4]);
+                    },
+                    ap);
 };
 
 bool ImageTracer::MessageManager(std::shared_ptr<gvt::comm::Message> msg) {
@@ -157,6 +179,10 @@ void ImageTracer::processRayQueue(gvt::render::actor::RayVector &rays, const int
     _queue.enqueue(dst, rays);
     return;
   }
+
+  gvt::render::RenderContext &cntxt = *gvt::render::RenderContext::instance();
+  std::shared_ptr<gvt::render::composite::ImageComposite> composite_buffer =
+      cntxt.getComposite<gvt::render::composite::ImageComposite>();
 
   const size_t chunksize =
       MAX(2, rays.size() / (std::thread::hardware_concurrency() * 4));
@@ -180,6 +206,7 @@ void ImageTracer::processRayQueue(gvt::render::actor::RayVector &rays, const int
             local_queue[hits[i].next].push_back(r);
           } else if (r.type == gvt::render::actor::Ray::SHADOW &&
                      glm::length(r.color) > 0) {
+            composite_buffer->localAdd(r.id, r.color, r.w);
             // tbb::mutex::scoped_lock fbloc(colorBuf_mutex[r.id % width]);
             // colorBuf[r.id] += glm::vec4(r.color, r.w);
             // colorBuf[r.id][3] += r.w;

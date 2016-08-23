@@ -381,8 +381,8 @@ public:
     float * final = img->composite();
     // float * final = img->color_buffer_final;
 
-    std::shared_ptr<gvt::render::composite::IceTComposite> _img =
-        std::static_pointer_cast<gvt::render::composite::IceTComposite>(img);
+    // std::shared_ptr<gvt::render::composite::IceTComposite> _img =
+    //     std::static_pointer_cast<gvt::render::composite::IceTComposite>(img);
 
     const size_t size = width * height;
     const size_t chunksize = MAX(2, size / (std::thread::hardware_concurrency() * 4));

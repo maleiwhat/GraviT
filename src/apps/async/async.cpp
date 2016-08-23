@@ -5,6 +5,7 @@
 #include <gvt/core/acomm/message.h>
 #include <gvt/render/Context.h>
 
+#include <gvt/render/composite/IceTComposite.h>
 #include <gvt/render/tracer/Image/ImageTracer.h>
 
 #include "ParseCommandLine.h"
@@ -460,7 +461,10 @@ void setImage() {
       std::make_shared<gvt::render::data::scene::Image>(
           filmNode["width"].value().toInteger(), filmNode["height"].value().toInteger(),
           filmNode["outputPath"].value().toString());
+
   cntxt->setImage(_img);
+  cntxt->setComposite(std::make_shared<gvt::render::composite::IceTComposite>(
+      filmNode["width"].value().toInteger(), filmNode["height"].value().toInteger()));
 }
 
 int main(int argc, char *argv[]) {

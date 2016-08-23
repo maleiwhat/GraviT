@@ -51,6 +51,10 @@ public:
 
   std::shared_ptr<gvt::render::data::scene::Image> getImage();
   void setImage(std::shared_ptr<gvt::render::data::scene::Image>);
+  template <typename T> std::shared_ptr<T> getComposite() {
+    return std::dynamic_pointer_cast<T>(_composite);
+  }
+  void setComposite(std::shared_ptr<gvt::core::composite::AbstractCompositeBuffer>);
 
 protected:
   RenderContext();
