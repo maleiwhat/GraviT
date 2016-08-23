@@ -88,7 +88,7 @@ const IceTFloat black[] = { 1.0, 0.0, 0.0, 1.0 };
 // }
 
 IceTComposite::IceTComposite(std::size_t width, std::size_t height)
-    : gvt::core::composite::Buffer<float>(width, height) {
+    : gvt::render::composite::ImageComposite(width, height) {
   // if (MPI::COMM_WORLD.Get_size() < 2) return false;
 
   std::cout << "Creating image buffer " << (size_t)this << std::endl;

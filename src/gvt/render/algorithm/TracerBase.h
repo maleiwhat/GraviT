@@ -45,6 +45,7 @@
 #include <gvt/render/data/scene/Image.h>
 
 #include <gvt/render/composite/IceTComposite.h>
+#include <gvt/render/composite/ImageComposite.h>
 
 #include <boost/foreach.hpp>
 #include <boost/range/algorithm.hpp>
@@ -186,8 +187,8 @@ public:
   tbb::mutex *colorBuf_mutex;                         ///< buffer for color accumulation
   glm::vec4 *colorBuf;
 
-  std::shared_ptr<gvt::core::composite::AbstractCompositeBuffer> img;
-  ;
+  std::shared_ptr<gvt::render::composite::ImageComposite> img;
+
   bool require_composite = false;
 
   AbstractTrace(gvt::render::actor::RayVector &rays,
@@ -353,8 +354,7 @@ public:
             } else if (r.type == gvt::render::actor::Ray::SHADOW &&
                        glm::length(r.color) > 0) {
               tbb::mutex::scoped_lock fbloc(colorBuf_mutex[r.id % width]);
-              dynamic_cast<gvt::render::composite::IceTComposite *>(img.get())->localAdd(
-                  r.id, r.color, r.w);
+              img->localAdd(r.id, r.color, r.w);
             }
           }
           for (auto &q : local_queue) {
@@ -378,9 +378,11 @@ public:
 
   inline void gatherFramebuffers(int rays_traced) {
 
-    float * final =
-        dynamic_cast<gvt::render::composite::IceTComposite *>(img.get())->composite();
+    float * final = img->composite();
     // float * final = img->color_buffer_final;
+
+    std::shared_ptr<gvt::render::composite::IceTComposite> _img =
+        std::static_pointer_cast<gvt::render::composite::IceTComposite>(img);
 
     const size_t size = width * height;
     const size_t chunksize = MAX(2, size / (std::thread::hardware_concurrency() * 4));

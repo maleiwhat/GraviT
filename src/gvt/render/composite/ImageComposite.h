@@ -24,31 +24,28 @@
    =======================================================================================
    */
 
-#ifndef GVT_ICET_COMPOSITE_H
-#define GVT_ICET_COMPOSITE_H
-
-#include <IceT.h>
+#ifndef GVT_IMAGE_COMPOSITE_H
+#define GVT_IMAGE_COMPOSITE_H
 #include <gvt/core/composite/Composite.h>
-#include <gvt/render/composite/ImageComposite.h>
 namespace gvt {
 namespace render {
 namespace composite {
 
-struct IceTComposite : gvt::render::composite::ImageComposite {
+struct ImageComposite : gvt::core::composite::Buffer<float> {
 
   // glm::vec4 *buffer;
-  IceTInt num_proc;
-  IceTFloat *color_buffer;
-  IceTFloat *color_buffer_final;
-  IceTFloat *depth_buffer;
+  // IceTInt num_proc;
+  // IceTFloat *color_buffer;
+  // IceTFloat *color_buffer_final;
+  // IceTFloat *depth_buffer;
+  //
+  // IceTCommunicator comm;
+  // IceTInt *process_ranks;
+  // IceTInt proc;
 
-  IceTCommunicator comm;
-  IceTInt *process_ranks;
-  IceTInt proc;
+  ImageComposite(std::size_t width = 0, std::size_t height = 0);
 
-  IceTComposite(std::size_t width = 0, std::size_t height = 0);
-
-  ~IceTComposite();
+  ~ImageComposite();
 
   void reset();
   float *composite();
@@ -56,10 +53,9 @@ struct IceTComposite : gvt::render::composite::ImageComposite {
                         float t = 0.f);
   virtual void localAdd(size_t i, const glm::vec3 &color, float alpha = 1.f,
                         float t = 0.f);
-
-  // virtual T getCompositedBuffer() { return color_buffer_final; }
 };
 }
 }
 }
-#endif /* COMPOSITE_H */
+
+#endif
