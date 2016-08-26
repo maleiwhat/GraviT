@@ -319,11 +319,9 @@ TAU_PROFILE("main","",TAU_DEFAULT);
     }
 
   }
-<<<<<<< HEAD
 #ifdef __USE_TAU
  }
 #endif
-=======
    cntxt->syncContext();
 
    // context has the location information of the domain, so for simplicity only one mpi will create the instances
