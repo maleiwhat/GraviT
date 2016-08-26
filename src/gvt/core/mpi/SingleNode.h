@@ -43,6 +43,12 @@ public:
   SingleNode(int size) : rank(0), world_size(1), rays_start(0), rays_end(size) {}
 
   virtual ~SingleNode() {}
+
+#ifdef PDT_PARSER
+  template <typename B> void gatherbuffer(B *buf, size_t size) { return (void) buf; }
+#else
+  template <typename B> void gatherbuffer(B *buf, size_t size) { return buf; }
+#endif /* PDT_PARSER */
 };
 }
 }

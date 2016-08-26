@@ -36,6 +36,11 @@
 
 #include <iostream>
 #include <map>
+
+//#ifdef PDT_PARSER
+#include <vector>
+using std::vector;
+//#endif /* PDT_PARSER */
 #include <mpi.h>
 
 namespace gvt {
@@ -79,6 +84,55 @@ public:
   virtual ~MPICOMM() {}
 
   void operator()(void) {}
+
+  template <typename B> void gatherbuffer(B *buf, size_t size) {
+
+    if (MPI::COMM_WORLD.Get_size() < 2) return;
+
+    size_t partition_size = size / MPI::COMM_WORLD.Get_size();
+    size_t next_neighbor = MPI::COMM_WORLD.Get_rank();
+    size_t prev_neighbor = MPI::COMM_WORLD.Get_rank();
+
+    B *acc = &buf[MPI::COMM_WORLD.Get_rank() * partition_size];
+    B *gather = new B[partition_size * MPI::COMM_WORLD.Get_size()];
+
+    std::vector<MPI::Request> Irecv_requests_status;
+
+    for (int round = 0; round < MPI::COMM_WORLD.Get_size(); round++) {
+      next_neighbor = (next_neighbor + 1) % MPI::COMM_WORLD.Get_size();
+      prev_neighbor = (prev_neighbor != 0 ? prev_neighbor - 1 : MPI::COMM_WORLD.Get_size() - 1);
+
+      if (next_neighbor != MPI::COMM_WORLD.Get_rank()) {
+        B *send = &buf[next_neighbor * next_neighbor];
+        MPI::COMM_WORLD.Isend(send, sizeof(B) * partition_size, MPI::BYTE, next_neighbor,
+                              MPI::COMM_WORLD.Get_rank() | 0xF00000000000000);
+      }
+      if (prev_neighbor != MPI::COMM_WORLD.Get_rank()) {
+        B *recv = &gather[prev_neighbor * partition_size];
+        MPI::COMM_WORLD.Irecv(recv, sizeof(B) * partition_size, MPI::BYTE, prev_neighbor,
+                              prev_neighbor | 0xF00000000000000);
+      }
+    }
+
+    for (MPI::Request &request : Irecv_requests_status) {
+#ifndef PDT_PARSER
+      MPI::Request::Wait(request);
+#endif /* PDT_PARSER */
+      MPI::Status status;
+#ifndef PDT_PARSER
+      MPI::Request::Get_status(status);
+#endif /* PDT_PARSER */
+      unsigned int source = status.Get_source();
+      for (int i = 0; i < partition_size; ++i) {
+        acc[i] = gather[source * partition_size + i];
+      }
+    }
+
+#ifndef PDT_PARSER
+    MPI::COMM_WORLD.Gather(acc, sizeof(B) * partition_size, MPI::BYTE, sizeof(B) * partition_size, MPI::BYTE, 0);
+#endif /* PDT_PARSER */
+    return;
+  }
 };
 }
 }
