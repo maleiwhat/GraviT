@@ -29,6 +29,8 @@
 #include "gvt/core/DatabaseNode.h"
 #include "gvt/core/Types.h"
 #include <gvt/core/Database.h>
+#include <mpi.h>
+
 
 #ifdef __USE_TAU
 #include <TAU.h>
@@ -42,6 +44,8 @@
 #define MIN(a, b) ((a < b) ? (a) : (b))
 #endif
 
+#define CONTEXT_LEAF_MARSH_SIZE 256
+
 namespace gvt {
 namespace core {
 /// context base class for GraviT internal state
@@ -49,8 +53,14 @@ namespace core {
 The context contains the object-store database and helper methods to create and
 manage the internal state.
 */
+
 class CoreContext {
 public:
+
+	typedef struct {
+		unsigned char data[CONTEXT_LEAF_MARSH_SIZE];
+	} MarshedDatabaseNode;
+
   virtual ~CoreContext();
 
   /// return the context singleton
@@ -94,11 +104,39 @@ TAU_PROFILE("DBNodeH getRootNode()","",TAU_DEFAULT);
       */
   DBNodeH createNodeFromType(String type, String name, Uuid parent = Uuid::null());
 
+  /**
+   * Packs a node and its children in a buffer
+   * assigned UUIDs are guaranteed to be unique across all nodes, e.g. camera node will have the same
+   * uuid in all nodes. This requires that a single mpi-node creates the tree node.
+   * Byte structure:
+   * <parentUUID><UUID><nodeName><int variant type><value><parentUUID><UUID><child0Name><int variant type><value><...>
+   * Each node or leaf is packed in CONTEXT_LEAF_MARSH_SIZE max byte size in database->marshLeaf routine
+   * i.e.<parentUUID><UUID><nodeName><int variant type><value> = CONTEXT_LEAF_MARSH_SIZE max bytes
+   */
+  void marsh( std::vector<MarshedDatabaseNode>& buffer, DatabaseNode& node);
+
+  // check marsh for buffer structure
+  DatabaseNode* unmarsh(std::vector<MarshedDatabaseNode>& messagesBuffer, int nNodes);
+
+  DBNodeH addToSync(DBNodeH node){
+	  __nodesToSync.push_back(node);
+	  return node;
+  }
+
+ // send and reveives all the tree-nodes marked for syncronization
+ // requires all nodes
+ // one to all communication model
+ void syncContext();
+
+
 protected:
   CoreContext();
   static CoreContext *__singleton;
   Database *__database = nullptr;
   DBNodeH __rootNode;
+
+  std::vector<DBNodeH> __nodesToSync;
+
 };
 }
 }

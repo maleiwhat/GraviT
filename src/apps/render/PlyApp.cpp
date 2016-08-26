@@ -76,7 +76,7 @@
 
 #ifdef __USE_TAU
 #include <TAU.h>
-#endif 
+#endif
 
 
 using namespace std;
@@ -139,10 +139,13 @@ PlyProperty face_props[] = {
 static Vertex **vlist;
 static Face **flist;
 
+// Used for testing purposes where it specifies the number of ply blocks read by each mpi
+//#define DOMAIN_PER_NODE 2
+
 int main(int argc, char **argv) {
 #ifdef __USE_TAU
 TAU_PROFILE("main","",TAU_DEFAULT);
-#endif 
+#endif
 
   ParseCommandLine cmd("gvtPly");
 
@@ -192,19 +195,29 @@ TAU_PROFILE("main","",TAU_DEFAULT);
     exit(0);
   }
   gvt::core::DBNodeH root = cntxt->getRootNode();
-  gvt::core::DBNodeH dataNodes = cntxt->createNodeFromType("Data", "Data", root.UUID());
-  gvt::core::DBNodeH instNodes = cntxt->createNodeFromType("Instances", "Instances", root.UUID());
+
+  // A single mpi node will create db nodes and then broadcast them
+  if (MPI::COMM_WORLD.Get_rank()==0){
+	  cntxt->addToSync(cntxt->createNodeFromType("Data", "Data", root.UUID()));
+  	  cntxt->addToSync(cntxt->createNodeFromType("Instances", "Instances", root.UUID()));
+  }
+
+  cntxt->syncContext();
+
+  gvt::core::DBNodeH dataNodes = root["Data"];
+  gvt::core::DBNodeH instNodes = root["Instances"];
+
 
   // Enzo isosurface...
 #ifdef __USE_TAU
  {
  TAU_PROFILE("Enzo isosurface setup","",TAU_DEFAULT);
-#endif 
+#endif
   if(!file_exists(rootdir.c_str())) {
     cout << "File \"" << rootdir << "\" does not exist. Exiting." << endl;
     return 0;
   }
-  
+
   if(!isdir(rootdir.c_str())) {
     cout << "File \"" << rootdir << "\" is not a directory. Exiting." << endl;
     return 0;
@@ -214,16 +227,27 @@ TAU_PROFILE("main","",TAU_DEFAULT);
     cout << "Directory \"" << rootdir << "\" contains no .ply files. Exiting." << endl;
     return 0;
   }
-  // read 'em 
+  // read 'em
   vector<string>::const_iterator file;
   //for (k = 0; k < 8; k++) {
   for (file = files.begin(),k = 0; file != files.end(); file++, k++) {
-    //sprintf(txt, "%d", k);
-    //filename = "block";
-    //filename += txt;
-    gvt::core::DBNodeH EnzoMeshNode = cntxt->createNodeFromType("Mesh",*file, dataNodes.UUID());
-    // read in some ply data and get ready to load it into the mesh
-    // filepath = rootdir + "block" + std::string(txt) + ".ply";
+//if defined, ply blocks load are divided across available mpi ranks
+//Each block will be loaded by a single mpi rank and a mpi rank can read multiple blocks
+#ifdef DOMAIN_PER_NODE
+  	if (!((k >= MPI::COMM_WORLD.Get_rank() * DOMAIN_PER_NODE) && (k < MPI::COMM_WORLD.Get_rank() * DOMAIN_PER_NODE + DOMAIN_PER_NODE))) continue;
+#endif
+
+//if all ranks read all ply blocks, one has to create the db node which is then broadcasted.
+//if not, since each block will be loaded by only one mpi, this mpi rank will create the db node
+#ifndef DOMAIN_PER_NODE
+    if (MPI::COMM_WORLD.Get_rank()==0)
+#endif
+    gvt::core::DBNodeH PlyMeshNode =  cntxt->addToSync(cntxt->createNodeFromType("Mesh",*file, dataNodes.UUID()));
+
+#ifndef DOMAIN_PER_NODE
+    cntxt->syncContext();
+    gvt::core::DBNodeH PlyMeshNode = dataNodes.getChildren()[k];
+#endif
     filepath =  *file;
     myfile = fopen(filepath.c_str(), "r");
     in_ply = read_ply(myfile);
@@ -254,18 +278,6 @@ TAU_PROFILE("main","",TAU_DEFAULT);
     // smoosh data into the mesh object
     {
       Material* m = new Material();
-      m->type = LAMBERT;
-      //m->type = EMBREE_MATERIAL_MATTE;
-      m->kd = glm::vec3(1.0,1.0, 1.0);
-      m->ks = glm::vec3(1.0,1.0,1.0);
-      m->alpha = 0.5;
-
-      //m->type = EMBREE_MATERIAL_METAL;
-      //copper metal
-      m->eta = glm::vec3(.19,1.45, 1.50);
-      m->k = glm::vec3(3.06,2.40, 1.88);
-      m->roughness = 0.05;
-
       Mesh *mesh = new Mesh(m);
       vert = vlist[0];
       xmin = vert->x;
@@ -294,42 +306,62 @@ TAU_PROFILE("main","",TAU_DEFAULT);
         mesh->addFace(face->verts[0] + 1, face->verts[1] + 1, face->verts[2] + 1);
       }
       mesh->generateNormals();
-      // add Enzo mesh to the database
-      // EnzoMeshNode["file"] = string("/work/01197/semeraro/maverick/DAVEDATA/EnzoPlyDATA/Block0.ply");
-      EnzoMeshNode["file"] = string(filepath);
-      EnzoMeshNode["bbox"] = (unsigned long long)meshbbox;
-      EnzoMeshNode["ptr"] = (unsigned long long)mesh;
+      // add Ply mesh to the database
+      // PlyMeshNode["file"] = string("/work/01197/semeraro/maverick/DAVEDATA/EnzoPlyDATA/Block0.ply");
+      PlyMeshNode["file"] = string(filepath);
+      PlyMeshNode["bbox"] = (unsigned long long)meshbbox;
+      PlyMeshNode["ptr"] = (unsigned long long)mesh;
+
+      gvt::core::DBNodeH loc = cntxt->createNode("rank", MPI::COMM_WORLD.Get_rank());
+      PlyMeshNode["Locations"] += loc;
+
+      cntxt->addToSync(PlyMeshNode);
     }
-    // add instance
-    gvt::core::DBNodeH instnode = cntxt->createNodeFromType("Instance", "inst", instNodes.UUID());
-    gvt::core::DBNodeH meshNode = EnzoMeshNode;
-    Box3D *mbox = (Box3D *)meshNode["bbox"].value().toULongLong();
-    instnode["id"] = k;
-    instnode["meshRef"] = meshNode.UUID();
-    auto m = new glm::mat4(1.f);
-    auto minv = new glm::mat4(1.f);
-    auto normi = new glm::mat3(1.f);
-    instnode["mat"] = (unsigned long long)m;
-    *minv = glm::inverse(*m);
-    instnode["matInv"] = (unsigned long long)minv;
-    *normi = glm::transpose(glm::inverse(glm::mat3(*m)));
-    instnode["normi"] = (unsigned long long)normi;
-    auto il = glm::vec3((*m) * glm::vec4(mbox->bounds_min, 1.f));
-    auto ih = glm::vec3((*m) * glm::vec4(mbox->bounds_max, 1.f));
-    Box3D *ibox = new gvt::render::data::primitives::Box3D(il, ih);
-    instnode["bbox"] = (unsigned long long)ibox;
-    instnode["centroid"] = ibox->centroid();
+
   }
+<<<<<<< HEAD
 #ifdef __USE_TAU
  }
 #endif
+=======
+   cntxt->syncContext();
+
+   // context has the location information of the domain, so for simplicity only one mpi will create the instances
+   if (MPI::COMM_WORLD.Get_rank()==0) {
+		  for (file = files.begin(),k = 0; file != files.end(); file++, k++) {
+
+		// add instance
+		gvt::core::DBNodeH instnode = cntxt->createNodeFromType("Instance", "inst", instNodes.UUID());
+		gvt::core::DBNodeH meshNode = dataNodes.getChildren()[k];
+		Box3D *mbox = (Box3D *)meshNode["bbox"].value().toULongLong();
+		instnode["id"] = k;
+		instnode["meshRef"] = meshNode.UUID();
+		auto m = new glm::mat4(1.f);
+		auto minv = new glm::mat4(1.f);
+		auto normi = new glm::mat3(1.f);
+		instnode["mat"] = (unsigned long long)m;
+		*minv = glm::inverse(*m);
+		instnode["matInv"] = (unsigned long long)minv;
+		*normi = glm::transpose(glm::inverse(glm::mat3(*m)));
+		instnode["normi"] = (unsigned long long)normi;
+		auto il = glm::vec3((*m) * glm::vec4(mbox->bounds_min, 1.f));
+		auto ih = glm::vec3((*m) * glm::vec4(mbox->bounds_max, 1.f));
+		Box3D *ibox = new gvt::render::data::primitives::Box3D(il, ih);
+		instnode["bbox"] = (unsigned long long)ibox;
+		instnode["centroid"] = ibox->centroid();
+
+		cntxt->addToSync(instnode);
+		  }
+	}
+
+
+   cntxt->syncContext();
 
   // add lights, camera, and film to the database
   gvt::core::DBNodeH lightNodes = cntxt->createNodeFromType("Lights", "Lights", root.UUID());
   gvt::core::DBNodeH lightNode = cntxt->createNodeFromType("PointLight", "conelight", lightNodes.UUID());
   lightNode["position"] = glm::vec3(512.0, 512.0, 2048.0);
-  lightNode["color"] = glm::vec3(100.0, 100.0, 500.0);
-
+  lightNode["color"] = glm::vec3(1000.0, 1000.0, 1000.0);
   // camera
   gvt::core::DBNodeH camNode = cntxt->createNodeFromType("Camera", "conecam", root.UUID());
   camNode["eyePoint"] = glm::vec3(512.0, 512.0, 4096.0);
@@ -358,7 +390,7 @@ TAU_PROFILE("main","",TAU_DEFAULT);
     filmNode["height"] = wsize[1];
   }
 
-  gvt::core::DBNodeH schedNode = cntxt->createNodeFromType("Schedule", "Enzosched", root.UUID());
+  gvt::core::DBNodeH schedNode = cntxt->createNodeFromType("Schedule", "Plysched", root.UUID());
   if (cmd.isSet("domain"))
     schedNode["type"] = gvt::render::scheduler::Domain;
   else
@@ -374,7 +406,7 @@ TAU_PROFILE("main","",TAU_DEFAULT);
   GVT_DEBUG(DBG_ALWAYS, "ERROR: missing valid adapter");
 #endif
 
-  schedNode["adapter"] = gvt::render::adapter::Embree;
+  schedNode["adapter"] = adapterType;
 
   // end db setup
 
@@ -398,7 +430,7 @@ TAU_PROFILE("main","",TAU_DEFAULT);
   MPE_Log_event(readend, 0, NULL);
 #endif
   // setup image from database sizes
-  Image myimage(mycamera.getFilmSizeWidth(), mycamera.getFilmSizeHeight(), "enzo");
+  Image myimage(mycamera.getFilmSizeWidth(), mycamera.getFilmSizeHeight(), "output");
 
   mycamera.AllocateCameraRays();
   mycamera.generateRays();

@@ -245,7 +245,7 @@ TAU_PROFILE("gvtPerspectiveCamera::generateRays()","",TAU_DEFAULT);
 #ifdef __USE_TAU
                     TAU_PROFILE("gvtCamera::generateRays  tbb::parallel_for","",TAU_DEFAULT);
 #endif
-                      RandEngine randEngine;
+                      gvt::core::math::RandEngine randEngine;
                       randEngine.SetSeed(chunk.begin());
                       for (size_t j = chunk.begin(); j < chunk.end(); j++) {
                         // multi - jittered samples
