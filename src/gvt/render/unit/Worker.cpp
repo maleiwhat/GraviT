@@ -1,3 +1,30 @@
+/* =======================================================================================
+   This file is released as part of GraviT - scalable, platform independent ray tracing
+   tacc.github.io/GraviT
+
+   Copyright 2013-2015 Texas Advanced Computing Center, The University of Texas at Austin
+   All rights reserved.
+
+   Licensed under the BSD 3-Clause License, (the "License"); you may not use this file
+   except in compliance with the License.
+   A copy of the License is included with this software in the file LICENSE.
+   If your copy does not contain the License, you may obtain a copy of the License at:
+
+       http://opensource.org/licenses/BSD-3-Clause
+
+   Unless required by applicable law or agreed to in writing, software distributed under
+   the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+   KIND, either express or implied.
+   See the License for the specific language governing permissions and limitations under
+   limitations under the License.
+
+   GraviT is funded in part by the US National Science Foundation under awards ACI-1339863,
+   ACI-1339881 and ACI-1339840
+   ======================================================================================= */
+//
+// Worker.cpp
+//
+
 #include "gvt/render/unit/Worker.h"
 
 #include "apps/render/MpiApp.h"
@@ -20,14 +47,8 @@ using namespace apps::render::mpi;
 using namespace gvt::render::data::scene;
 
 // Worker::Worker(int *argc, char ***argv, const commandline::Options &options,
-Worker::Worker(const MpiInfo &mpi, const commandline::Options &options,
-               gvtPerspectiveCamera *camera, Image *image)
-    : mpi(mpi),
-      camera(NULL),
-      image(NULL),
-      quit(false),
-      mpiReady(false),
-      tracerReady(false) {
+Worker::Worker(const MpiInfo &mpi, const commandline::Options &options, gvtPerspectiveCamera *camera, Image *image)
+    : mpi(mpi), camera(NULL), image(NULL), quit(false), mpiReady(false), tracerReady(false) {
   // init mutex
   pthread_mutex_init(&quit_mutex, NULL);
   pthread_cond_init(&quit_cond, NULL);
@@ -54,24 +75,22 @@ Worker::Worker(const MpiInfo &mpi, const commandline::Options &options,
   // create tracer and register required works
   tracer = NULL;
   switch (options.tracer) {
-    case commandline::Options::ASYNC_DOMAIN: {
-      tracer = new DomainTracer(mpi, this, comm, camera->rays, *image);
-      RemoteRays::Register(comm);
-      Vote::Register(comm);
-      Composite::Register(comm);
-    } break;
+  case commandline::Options::ASYNC_DOMAIN: {
+    tracer = new DomainTracer(mpi, this, comm, camera->rays, *image);
+    RemoteRays::Register(comm);
+    Vote::Register(comm);
+    Composite::Register(comm);
+  } break;
 
-    case commandline::Options::PING_TEST: {
-      tracer = new PingTracer(mpi, this, comm);
-      PingTest::Register(comm);
-    } break;
+  case commandline::Options::PING_TEST: {
+    tracer = new PingTracer(mpi, this, comm);
+    PingTest::Register(comm);
+  } break;
 
-    default: {
-      std::cout << "rank " << mpi.rank
-                << " error found unsupported tracer type " << options.tracer
-                << std::endl;
-      exit(1);
-    } break;
+  default: {
+    std::cout << "rank " << mpi.rank << " error found unsupported tracer type " << options.tracer << std::endl;
+    exit(1);
+  } break;
   }
 
   // voter owned by tracer
@@ -90,10 +109,10 @@ Worker::~Worker() {
 //                         gvtPerspectiveCamera *camera, Image *image) {
 //   this->camera = camera;
 //   this->image = image;
-// 
+//
 //   // all applications require this for quitting the worker
 //   Command::Register(comm);
-// 
+//
 //   // create tracer and register required works
 //   tracer = NULL;
 //   switch (options.tracer) {
@@ -105,12 +124,12 @@ Worker::~Worker() {
 //       Vote::Register(comm);
 //       Composite::Register(comm);
 //     } break;
-// 
+//
 //     case commandline::Options::PING_TEST: {
 //       tracer = new PingTracer(mpi, this, comm);
 //       PingTest::Register(comm);
 //     } break;
-// 
+//
 //     default: {
 //       std::cout << "rank " << mpi.rank
 //                 << " error found unsupported tracer type " << options.tracer
@@ -118,7 +137,7 @@ Worker::~Worker() {
 //       exit(1);
 //     } break;
 //   }
-// 
+//
 //   // voter owned by tracer
 //   voter = tracer->GetVoter();
 // }
@@ -127,7 +146,7 @@ void Worker::Render() { tracer->Trace(); }
 
 void Worker::Quit() {
   if (mpi.rank == 0) {
-    Work* work = new Command(Command::QUIT);
+    Work *work = new Command(Command::QUIT);
     work->SendAll(comm);
   }
 }
@@ -181,7 +200,7 @@ void Worker::WaitTracerReady() {
   pthread_mutex_unlock(&tracerReady_mutex);
 }
 
-}  // using namespace unit
-}  // using namespace render
-}  // using namespace gvt
+} // using namespace unit
+} // using namespace render
+} // using namespace gvt
 

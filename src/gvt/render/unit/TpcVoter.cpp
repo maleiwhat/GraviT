@@ -79,7 +79,7 @@ bool TpcVoter::hasWork() const {
   // int notDone = 0;
   // for (auto &q : *rayQ) notDone += q.second.size();
   // return !(notDone == 0 && numPendingRays == 0);
-  return !(tracer.IsDone() && numPendingRays == 0);
+  return !(tracer.IsRayQueueEmpty() && numPendingRays == 0);
 }
 
 bool TpcVoter::updateState() {

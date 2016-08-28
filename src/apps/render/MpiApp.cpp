@@ -1,35 +1,29 @@
 /* =======================================================================================
-   This file is released as part of GraviT - scalable, platform independent ray
-   tracing
+   This file is released as part of GraviT - scalable, platform independent ray tracing
    tacc.github.io/GraviT
 
-   Copyright 2013-2015 Texas Advanced Computing Center, The University of Texas
-   at Austin
+   Copyright 2013-2015 Texas Advanced Computing Center, The University of Texas at Austin
    All rights reserved.
 
-   Licensed under the BSD 3-Clause License, (the "License"); you may not use
-   this file
+   Licensed under the BSD 3-Clause License, (the "License"); you may not use this file
    except in compliance with the License.
    A copy of the License is included with this software in the file LICENSE.
-   If your copy does not contain the License, you may obtain a copy of the
-   License at:
+   If your copy does not contain the License, you may obtain a copy of the License at:
 
        http://opensource.org/licenses/BSD-3-Clause
 
-   Unless required by applicable law or agreed to in writing, software
-   distributed under
-   the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-   CONDITIONS OF ANY
+   Unless required by applicable law or agreed to in writing, software distributed under
+   the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
    KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under
+   See the License for the specific language governing permissions and limitations under
    limitations under the License.
 
-   GraviT is funded in part by the US National Science Foundation under awards
-   ACI-1339863,
+   GraviT is funded in part by the US National Science Foundation under awards ACI-1339863,
    ACI-1339881 and ACI-1339840
-   =======================================================================================
-   */
+   ======================================================================================= */
+//
+// MpiApp.cpp
+//
 
 #include <cstdlib>
 #include <glob.h>
@@ -97,39 +91,31 @@ using namespace gvt::render::unit;
 void PrintUsage(const char *argv) {
   printf("Usage : %s [options]\n", argv);
   printf("  -h, --help\n");
-  printf(
-      "  -i, --infile <infile> (default: ../data/geom/bunny.obj for obj and "
-      "./EnzoPlyData/Enzo8 for ply)\n");
+  printf("  -i, --infile <infile> (default: ../data/geom/bunny.obj for obj and "
+         "./EnzoPlyData/Enzo8 for ply)\n");
   printf("  -a, --adapter <embree | manta | optix> (default: embree)\n");
   printf("  -t, --tracer <0-3> (default: 0)\n");
-  printf(
-      "      0: ASYNC_DOMAIN, 1: ASYNC_IMAGE, 2: SYNC_DOMAIN, 3: SYNC_IMAGE, "
-      "4: PING_TEST\n");
-  printf(
-      "  -n, --num-instances <x, y, z> specify the number of instances in each "
-      "direction (default: 1 1 1). "
-      "effective only with obj.\n");
+  printf("      0: ASYNC_DOMAIN, 1: ASYNC_IMAGE, 2: SYNC_DOMAIN, 3: SYNC_IMAGE, "
+         "4: PING_TEST\n");
+  printf("  -n, --num-instances <x, y, z> specify the number of instances in each "
+         "direction (default: 1 1 1). "
+         "effective only with obj.\n");
   printf("  --obj use obj models (not ply models)\n");
   printf("  -W, --width <image_width> (default: 1920)\n");
   printf("  -H, --height <image_height> (default: 1080)\n");
   printf("  -N, --num-frames <num_frames> (default: 1)\n");
   printf("  --tbb <num_tbb_threads>\n");
-  printf(
-      "      (default: # cores for sync. schedulers or # cores - 2 for async. "
-      "schedulers)\n");
+  printf("      (default: # cores for sync. schedulers or # cores - 2 for async. "
+         "schedulers)\n");
   printf("  -m, --model-name <model_name>\n");
-  printf(
-      "  --lpos <x, y, z> specify point light position. (512.0, "
-      "512.0, 2048.0)\n");
-  printf(
-      "  --lcolor <x, y, z> specify point light color (default: 100.0, "
-      "100.0, 500.0).\n");
-  printf(
-      "  --eye <x, y, z> specify camera position. (default: 512.0 512.0 "
-      "4096.0)\n");
-  printf(
-      "  --look <x, y, z> specify lookat position (default: 512.0 512.0 "
-      "0.0).\n");
+  printf("  --lpos <x, y, z> specify point light position. (512.0, "
+         "512.0, 2048.0)\n");
+  printf("  --lcolor <x, y, z> specify point light color (default: 100.0, "
+         "100.0, 500.0).\n");
+  printf("  --eye <x, y, z> specify camera position. (default: 512.0 512.0 "
+         "4096.0)\n");
+  printf("  --look <x, y, z> specify lookat position (default: 512.0 512.0 "
+         "0.0).\n");
   printf("  --up <x, y, z> specify up vector (default: 0 1 0).\n");
   printf("  --fov <degree> specify field of view in degree (default: 25).\n");
   printf("  --ray-depth <value> specify ray max. depth (default: 1).\n");
@@ -189,8 +175,7 @@ void Parse(int argc, char **argv, Options *options) {
         printf("error: file not found. %s\n", options->infile.c_str());
         exit(1);
       }
-    } else if (strcmp(argv[i], "-a") == 0 ||
-               strcmp(argv[i], "--adapter") == 0) {
+    } else if (strcmp(argv[i], "-a") == 0 || strcmp(argv[i], "--adapter") == 0) {
       ++i;
       if (strcmp(argv[i], "embree") == 0) {
         options->adapter = Options::EMBREE;
@@ -208,8 +193,7 @@ void Parse(int argc, char **argv, Options *options) {
         printf("error: %s not defined\n", argv[i]);
         exit(1);
       }
-    } else if (strcmp(argv[i], "-n") == 0 ||
-               strcmp(argv[i], "--num-instances") == 0) {
+    } else if (strcmp(argv[i], "-n") == 0 || strcmp(argv[i], "--num-instances") == 0) {
       options->instanceCountX = atoi(argv[++i]);
       options->instanceCountY = atoi(argv[++i]);
       options->instanceCountZ = atoi(argv[++i]);
@@ -222,13 +206,11 @@ void Parse(int argc, char **argv, Options *options) {
       options->width = atoi(argv[++i]);
     } else if (strcmp(argv[i], "-H") == 0 || strcmp(argv[i], "--height") == 0) {
       options->height = atoi(argv[++i]);
-    } else if (strcmp(argv[i], "-N") == 0 ||
-               strcmp(argv[i], "--num-frames") == 0) {
+    } else if (strcmp(argv[i], "-N") == 0 || strcmp(argv[i], "--num-frames") == 0) {
       options->numFrames = atoi(argv[++i]);
     } else if (strcmp(argv[i], "--tbb") == 0) {
       options->numTbbThreads = atoi(argv[++i]);
-    } else if (strcmp(argv[i], "-m") == 0 ||
-               strcmp(argv[i], "--model-name") == 0) {
+    } else if (strcmp(argv[i], "-m") == 0 || strcmp(argv[i], "--model-name") == 0) {
       options->model_name = argv[++i];
     } else if (strcmp(argv[i], "--eye") == 0) {
       options->eye[0] = atof(argv[++i]);
@@ -268,8 +250,7 @@ void Parse(int argc, char **argv, Options *options) {
     }
   }
   if (options->numTbbThreads <= 0) {
-    if (options->tracer == Options::ASYNC_DOMAIN ||
-        options->tracer == Options::ASYNC_IMAGE) {
+    if (options->tracer == Options::ASYNC_DOMAIN || options->tracer == Options::ASYNC_IMAGE) {
       options->numTbbThreads = MAX(1, std::thread::hardware_concurrency() - 2);
     } else {
       options->numTbbThreads = MAX(1, std::thread::hardware_concurrency());
@@ -284,10 +265,10 @@ void Parse(int argc, char **argv, Options *options) {
   }
 }
 
-}  // namespace commandline
-}  // namespace mpi
-}  // namespace render
-}  // namespace apps
+} // namespace commandline
+} // namespace mpi
+} // namespace render
+} // namespace apps
 
 namespace apps {
 namespace render {
@@ -317,7 +298,7 @@ GLubyte *imagebuffer;
 int g_tracer_mode;
 int g_mpiRank;
 int g_mpiSize;
-gvt::render::unit::Worker* g_worker;
+gvt::render::unit::Worker *g_worker;
 gvt::render::algorithm::AbstractTrace *g_tracer;
 int g_num_frames = 0;
 
@@ -334,25 +315,23 @@ typedef struct Face {
 } Face;
 
 PlyProperty vert_props[] = {
-    /* list of property information for a vertex */
-    {"x", Float32, Float32, offsetof(Vertex, x), 0, 0, 0, 0},
-    {"y", Float32, Float32, offsetof(Vertex, y), 0, 0, 0, 0},
-    {"z", Float32, Float32, offsetof(Vertex, z), 0, 0, 0, 0},
-    {"nx", Float32, Float32, offsetof(Vertex, nx), 0, 0, 0, 0},
-    {"ny", Float32, Float32, offsetof(Vertex, ny), 0, 0, 0, 0},
-    {"nz", Float32, Float32, offsetof(Vertex, nz), 0, 0, 0, 0},
+  /* list of property information for a vertex */
+  { "x", Float32, Float32, offsetof(Vertex, x), 0, 0, 0, 0 },
+  { "y", Float32, Float32, offsetof(Vertex, y), 0, 0, 0, 0 },
+  { "z", Float32, Float32, offsetof(Vertex, z), 0, 0, 0, 0 },
+  { "nx", Float32, Float32, offsetof(Vertex, nx), 0, 0, 0, 0 },
+  { "ny", Float32, Float32, offsetof(Vertex, ny), 0, 0, 0, 0 },
+  { "nz", Float32, Float32, offsetof(Vertex, nz), 0, 0, 0, 0 },
 };
 
 PlyProperty face_props[] = {
-    /* list of property information for a face */
-    {"vertex_indices", Int32, Int32, offsetof(Face, verts), 1, Uint8, Uint8,
-     offsetof(Face, nverts)},
+  /* list of property information for a face */
+  { "vertex_indices", Int32, Int32, offsetof(Face, verts), 1, Uint8, Uint8, offsetof(Face, nverts) },
 };
 static Vertex **vlist;
 static Face **flist;
 
-template <class T>
-void DeallocatePly(std::map<T **, std::queue<T *>> &ply_mem_map) {
+template <class T> void DeallocatePly(std::map<T **, std::queue<T *> > &ply_mem_map) {
   for (auto &m : ply_mem_map) {
     T **pp = m.first;
     std::queue<T *> &q = m.second;
@@ -388,8 +367,7 @@ std::vector<std::string> FindPly(const std::string dirname) {
   return ret;
 }
 
-std::string GetTestName(const MpiInfo &mpi,
-                        const commandline::Options &options) {
+std::string GetTestName(const MpiInfo &mpi, const commandline::Options &options) {
   std::string tracer_name;
   if (options.tracer == commandline::Options::ASYNC_DOMAIN) {
     tracer_name = "async_domain";
@@ -407,8 +385,8 @@ std::string GetTestName(const MpiInfo &mpi,
   mpi_size_ss << mpi.size;
   std::string mpi_size_str = mpi_size_ss.str();
 
-  std::string filename("prof_" + options.model_name + "_" + tracer_name +
-                       "_size_" + mpi_size_str + "_rank_" + rank_str);
+  std::string filename("prof_" + options.model_name + "_" + tracer_name + "_size_" + mpi_size_str + "_rank_" +
+                       rank_str);
   return filename;
 }
 
@@ -435,8 +413,8 @@ void CreateDatabase(const MpiInfo &mpi, const commandline::Options &options) {
   // int rank = -1;
   // MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-  std::map<Vertex **, std::queue<Vertex *>> vlists_map;
-  std::map<Face **, std::queue<Face *>> flists_map;
+  std::map<Vertex **, std::queue<Vertex *> > vlists_map;
+  std::map<Face **, std::queue<Face *> > flists_map;
 
   gvt::render::RenderContext *cntxt = gvt::render::RenderContext::instance();
   if (cntxt == NULL) {
@@ -444,28 +422,23 @@ void CreateDatabase(const MpiInfo &mpi, const commandline::Options &options) {
     exit(0);
   }
   gvt::core::DBNodeH root = cntxt->getRootNode();
-  gvt::core::DBNodeH dataNodes =
-      cntxt->createNodeFromType("Data", "Data", root.UUID());
-  gvt::core::DBNodeH instNodes =
-      cntxt->createNodeFromType("Instances", "Instances", root.UUID());
+  gvt::core::DBNodeH dataNodes = cntxt->createNodeFromType("Data", "Data", root.UUID());
+  gvt::core::DBNodeH instNodes = cntxt->createNodeFromType("Instances", "Instances", root.UUID());
 
   if (!FileExists(rootdir.c_str())) {
-    std::cout << "File \"" << rootdir << "\" does not exist. Exiting."
-              << std::endl;
+    std::cout << "File \"" << rootdir << "\" does not exist. Exiting." << std::endl;
     exit(1);
   }
 
   if (!IsDir(rootdir.c_str())) {
-    std::cout << "File \"" << rootdir << "\" is not a directory. Exiting."
-              << std::endl;
+    std::cout << "File \"" << rootdir << "\" is not a directory. Exiting." << std::endl;
     exit(1);
   }
 
   std::vector<std::string> files = FindPly(rootdir);
 
   if (files.empty()) {
-    std::cout << "Directory \"" << rootdir
-              << "\" contains no .ply files. Exiting." << std::endl;
+    std::cout << "Directory \"" << rootdir << "\" contains no .ply files. Exiting." << std::endl;
     exit(1);
   }
 
@@ -473,13 +446,12 @@ void CreateDatabase(const MpiInfo &mpi, const commandline::Options &options) {
   std::vector<std::string>::const_iterator file;
 
   for (file = files.begin(), k = 0; file != files.end(); file++, k++) {
-    int owner_process = k % mpi.size;
+    // int owner_process = k % mpi.size;
 
     // sprintf(txt, "%d", k);
     // filename = "block";
     // filename += txt;
-    gvt::core::DBNodeH EnzoMeshNode =
-        cntxt->createNodeFromType("Mesh", *file, dataNodes.UUID());
+    gvt::core::DBNodeH EnzoMeshNode = cntxt->createNodeFromType("Mesh", *file, dataNodes.UUID());
     // read in some ply data and get ready to load it into the mesh
     // filepath = rootdir + "block" + std::string(txt) + ".ply";
     // filepath = rootdir + "/" + filename + ".ply";
@@ -514,22 +486,22 @@ void CreateDatabase(const MpiInfo &mpi, const commandline::Options &options) {
     // smoosh data into the mesh object
     {
       Mesh *mesh = NULL;
-      if (mpi.rank == owner_process) {
-        Material *m = new Material();
-        m->type = LAMBERT;
-        // m->type = EMBREE_MATERIAL_MATTE;
-        m->kd = glm::vec3(1.0, 1.0, 1.0);
-        m->ks = glm::vec3(1.0, 1.0, 1.0);
-        m->alpha = 0.5;
+      // if (mpi.rank == owner_process) {
+      Material *m = new Material();
+      m->type = LAMBERT;
+      // m->type = EMBREE_MATERIAL_MATTE;
+      m->kd = glm::vec3(1.0, 1.0, 1.0);
+      m->ks = glm::vec3(1.0, 1.0, 1.0);
+      m->alpha = 0.5;
 
-        // m->type = EMBREE_MATERIAL_METAL;
-        // copper metal
-        m->eta = glm::vec3(.19, 1.45, 1.50);
-        m->k = glm::vec3(3.06, 2.40, 1.88);
-        m->roughness = 0.05;
+      // m->type = EMBREE_MATERIAL_METAL;
+      // copper metal
+      m->eta = glm::vec3(.19, 1.45, 1.50);
+      m->k = glm::vec3(3.06, 2.40, 1.88);
+      m->roughness = 0.05;
 
-        mesh = new Mesh(m);
-      }
+      mesh = new Mesh(m);
+      // }
 
       vert = vlist[0];
       xmin = vert->x;
@@ -563,8 +535,7 @@ void CreateDatabase(const MpiInfo &mpi, const commandline::Options &options) {
         // add faces to mesh
         for (i = 0; i < nfaces; i++) {
           face = flist[i];
-          mesh->addFace(face->verts[0] + 1, face->verts[1] + 1,
-                        face->verts[2] + 1);
+          mesh->addFace(face->verts[0] + 1, face->verts[1] + 1, face->verts[2] + 1);
         }
         mesh->generateNormals();
         // add Enzo mesh to the database
@@ -577,8 +548,7 @@ void CreateDatabase(const MpiInfo &mpi, const commandline::Options &options) {
     }
 
     // add instance
-    gvt::core::DBNodeH instnode =
-        cntxt->createNodeFromType("Instance", "inst", instNodes.UUID());
+    gvt::core::DBNodeH instnode = cntxt->createNodeFromType("Instance", "inst", instNodes.UUID());
     gvt::core::DBNodeH meshNode = EnzoMeshNode;
     Box3D *mbox = (Box3D *)meshNode["bbox"].value().toULongLong();
     instnode["id"] = k;
@@ -605,15 +575,12 @@ void CreateDatabase(const MpiInfo &mpi, const commandline::Options &options) {
   }
 
   // add lights, camera, and film to the database
-  gvt::core::DBNodeH lightNodes =
-      cntxt->createNodeFromType("Lights", "Lights", root.UUID());
-  gvt::core::DBNodeH lightNode =
-      cntxt->createNodeFromType("PointLight", "conelight", lightNodes.UUID());
+  gvt::core::DBNodeH lightNodes = cntxt->createNodeFromType("Lights", "Lights", root.UUID());
+  gvt::core::DBNodeH lightNode = cntxt->createNodeFromType("PointLight", "conelight", lightNodes.UUID());
   lightNode["position"] = options.light_position;
   lightNode["color"] = options.light_color;
   // camera
-  gvt::core::DBNodeH camNode =
-      cntxt->createNodeFromType("Camera", "conecam", root.UUID());
+  gvt::core::DBNodeH camNode = cntxt->createNodeFromType("Camera", "conecam", root.UUID());
   camNode["eyePoint"] = options.eye;
   camNode["focus"] = options.look;
   camNode["upVector"] = options.up;
@@ -621,8 +588,7 @@ void CreateDatabase(const MpiInfo &mpi, const commandline::Options &options) {
   camNode["rayMaxDepth"] = static_cast<int>(options.ray_depth);
   camNode["raySamples"] = static_cast<int>(options.ray_samples);
   // film
-  gvt::core::DBNodeH filmNode =
-      cntxt->createNodeFromType("Film", "conefilm", root.UUID());
+  gvt::core::DBNodeH filmNode = cntxt->createNodeFromType("Film", "conefilm", root.UUID());
   filmNode["width"] = options.width;
   filmNode["height"] = options.height;
 
@@ -641,14 +607,12 @@ void CreateDatabase(const MpiInfo &mpi, const commandline::Options &options) {
   //  filmNode["height"] = wsize[1];
   //}
 
-  gvt::core::DBNodeH schedNode =
-      cntxt->createNodeFromType("Schedule", "Enzosched", root.UUID());
+  gvt::core::DBNodeH schedNode = cntxt->createNodeFromType("Schedule", "Enzosched", root.UUID());
   // if (cmd.isSet("domain"))
   //   schedNode["type"] = gvt::render::scheduler::Domain;
   // else
   //   schedNode["type"] = gvt::render::scheduler::Image;
-  if (options.tracer == commandline::Options::ASYNC_DOMAIN ||
-      options.tracer == commandline::Options::SYNC_DOMAIN) {
+  if (options.tracer == commandline::Options::ASYNC_DOMAIN || options.tracer == commandline::Options::SYNC_DOMAIN) {
     schedNode["type"] = gvt::render::scheduler::Domain;
   } else {
     schedNode["type"] = gvt::render::scheduler::Image;
@@ -691,10 +655,9 @@ void CreateDatabase(const MpiInfo &mpi, const commandline::Options &options) {
   g_camera->setMaxDepth(rayMaxDepth);
   g_camera->setSamples(raySamples);
   g_camera->setFOV(fov);
-  g_camera->setFilmsize(filmNode["width"].value().toInteger(),
-                        filmNode["height"].value().toInteger());
+  g_camera->setFilmsize(filmNode["width"].value().toInteger(), filmNode["height"].value().toInteger());
 
-}  // void CreateDatabase(const commandline::Options& options) {
+} // void CreateDatabase(const commandline::Options& options) {
 
 void Kill() {
   g_worker->Quit();
@@ -710,12 +673,12 @@ void Kill() {
 
 void KeyboardFunc(unsigned char key, int x, int y) {
   switch (key) {
-    case 'q':
-      printf("pressed q\n");
-      g_quit_key_entered = true;
-      break;
-    default:
-      break;
+  case 'q':
+    printf("pressed q\n");
+    g_quit_key_entered = true;
+    break;
+  default:
+    break;
   }
 }
 
@@ -731,10 +694,9 @@ void DisplayFunc(void) {
 
   if (g_num_frames == (g_num_warmup_frames + g_num_active_frames) || quit) {
     double elapsed = MPI_Wtime() - st;
-    double fps =
-        static_cast<double>(g_num_frames - g_num_warmup_frames) / elapsed;
-    std::cout << "elapsed time: " << elapsed << " seconds per " << g_num_frames
-              << " frames (" << fps << " fps) " << std::endl;
+    double fps = static_cast<double>(g_num_frames - g_num_warmup_frames) / elapsed;
+    std::cout << "elapsed time: " << elapsed << " seconds per " << g_num_frames << " frames (" << fps << " fps) "
+              << std::endl;
     glutDestroyWindow(g_window);
     Kill();
     MPI_Finalize();
@@ -777,48 +739,41 @@ void InitGlut(int width, int height) {
   glutMainLoop();
 }
 
-void CreateTracer(const commandline::Options &options,
-                  const gvt::render::unit::MpiInfo &mpi) {
+void CreateTracer(const commandline::Options &options, const gvt::render::unit::MpiInfo &mpi) {
   switch (options.tracer) {
-    case commandline::Options::ASYNC_DOMAIN: {
-      if (mpi.rank == 0) std::cout << "start ASYNC_DOMAIN" << std::endl;
+  case commandline::Options::ASYNC_DOMAIN: {
+    if (mpi.rank == 0) std::cout << "start ASYNC_DOMAIN" << std::endl;
 
-      g_image = new Image(g_camera->getFilmSizeWidth(),
-                          g_camera->getFilmSizeHeight(), GetTestName(mpi, options));
+    g_image = new Image(g_camera->getFilmSizeWidth(), g_camera->getFilmSizeHeight(), GetTestName(mpi, options));
 
-      g_worker = new Worker(mpi, options, g_camera, g_image);
+    g_worker = new Worker(mpi, options, g_camera, g_image);
 
-      // DomainTracer *domain_tracer =
-      //     static_cast<DomainTracer *>(worker.GetTracer());
-      // Profiler &profiler = domain_tracer->GetProfiler();
-    } break;
+    // DomainTracer *domain_tracer =
+    //     static_cast<DomainTracer *>(worker.GetTracer());
+    // Profiler &profiler = domain_tracer->GetProfiler();
+  } break;
 
-    case commandline::Options::SYNC_DOMAIN: {
+  case commandline::Options::SYNC_DOMAIN: {
 
-      if (mpi.rank == 0) std::cout << "start SYNC_DOMAIN" << std::endl;
+    if (mpi.rank == 0) std::cout << "start SYNC_DOMAIN" << std::endl;
 
-      g_image = new Image(g_camera->getFilmSizeWidth(),
-                          g_camera->getFilmSizeHeight(), GetTestName(mpi, options));
+    g_image = new Image(g_camera->getFilmSizeWidth(), g_camera->getFilmSizeHeight(), GetTestName(mpi, options));
 
-      // g_camera->AllocateCameraRays();
-      // g_camera->generateRays();
+    // g_camera->AllocateCameraRays();
+    // g_camera->generateRays();
 
-      g_tracer = new gvt::render::algorithm::Tracer<DomainScheduler>(
-          g_camera->rays, *g_image);
+    g_tracer = new gvt::render::algorithm::Tracer<DomainScheduler>(g_camera->rays, *g_image);
 
-    } break;
+  } break;
 
-    default: {
-      std::cout << "rank " << mpi.rank
-                << " error found unsupported tracer type " << options.tracer
-                << std::endl;
-      exit(1);
-    } break;
+  default: {
+    std::cout << "rank " << mpi.rank << " error found unsupported tracer type " << options.tracer << std::endl;
+    exit(1);
+  } break;
   }
 }
 
-void RenderInteractive(const commandline::Options &options,
-                       const gvt::render::unit::MpiInfo &mpi) {
+void RenderInteractive(const commandline::Options &options, const gvt::render::unit::MpiInfo &mpi) {
   CreateTracer(options, mpi);
   if (mpi.rank == 0) {
     InitGlut(options.width, options.height);
@@ -836,8 +791,7 @@ void RenderInteractive(const commandline::Options &options,
   }
 }
 
-void RenderFilm(const commandline::Options &options,
-                gvt::render::unit::MpiInfo &mpi) {
+void RenderFilm(const commandline::Options &options, gvt::render::unit::MpiInfo &mpi) {
   // MpiInfo mpi;
   // MPI_Comm_rank(MPI_COMM_WORLD, &mpi.rank);
   // MPI_Comm_size(MPI_COMM_WORLD, &mpi.size);
@@ -855,155 +809,155 @@ void RenderFilm(const commandline::Options &options,
   // // tbb::task_scheduler_init init(16);
 
   switch (options.tracer) {
-    case commandline::Options::PING_TEST: {
-      if (mpi.rank == 0) std::cout << "start PING_TEST" << std::endl;
+  case commandline::Options::PING_TEST: {
+    if (mpi.rank == 0) std::cout << "start PING_TEST" << std::endl;
 
-      Worker worker(mpi, options, NULL, NULL);
-      // mpi = worker.GetMpiInfo();
-      // worker.InitTracer(options, NULL, NULL);
+    Worker worker(mpi, options, NULL, NULL);
+    // mpi = worker.GetMpiInfo();
+    // worker.InitTracer(options, NULL, NULL);
+
+    worker.Render();
+    worker.Wait();
+  } break;
+
+  case commandline::Options::ASYNC_DOMAIN: {
+    if (mpi.rank == 0) std::cout << "start ASYNC_DOMAIN" << std::endl;
+
+    // std::cout << "rank " << mpi.rank << " creating database." << std::endl;
+    // t_database.start();
+    // CreateDatabase(mpi, options);
+    // t_database.stop();
+    // std::cout << "rank " << mpi.rank << " done creating database." << std::endl;
+
+    g_image = new Image(g_camera->getFilmSizeWidth(), g_camera->getFilmSizeHeight(), GetTestName(mpi, options));
+
+    Worker worker(mpi, options, g_camera, g_image);
+
+    // mpi = worker.GetMpiInfo();
+
+    // worker.InitTracer(options, g_camera, g_image);
+
+    DomainTracer *domain_tracer = static_cast<DomainTracer *>(worker.GetTracer());
+    Profiler &profiler = domain_tracer->GetProfiler();
+
+    gvt::render::RenderContext *cntxt = gvt::render::RenderContext::instance();
+    gvt::core::DBNodeH root = cntxt->getRootNode();
+    std::cout << "[INFO] rank " << mpi.rank << " num domains: " << root["Instances"].getChildren().size() << "\n";
+    profiler.SetNumDomains(root["Instances"].getChildren().size());
+
+    // warm up
+    // #ifndef NDEBUG
+    // std::cout << "rank " << mpi.rank << " start warming up\n\n";
+    // #endif
+    for (int i = 0; i < options.warmup_frames; i++) {
+      // std::cout << "rank " << mpi.rank << " warm up frame " << i << " start\n\n";
+      g_camera->AllocateCameraRays();
+      // std::cout << "rank " << mpi.rank << " w g_camera->AllocateCameraRays done\n\n";
+      g_camera->generateRays();
+      // std::cout << "rank " << mpi.rank << " w g_camera->generateRays done\n\n";
+      g_image->clear();
+      // std::cout << "rank " << mpi.rank << " w g_image->clear done\n\n";
+      worker.Render();
+      // #ifndef NDEBUG
+      std::cout << "rank " << mpi.rank << " warm up frame " << i << " done\n\n";
+      // #endif
+    }
+
+    // #ifndef NDEBUG
+    // std::cout << "rank " << mpi.rank << " start active frames" << std::endl;
+    // #endif
+    profiler.Reset();
+    profiler.Start(Profiler::TOTAL_TIME);
+
+    for (int i = 0; i < options.active_frames; i++) {
+      // std::cout << "rank " << mpi.rank << " active frame " << i << " start\n\n";
+      profiler.Start(Profiler::CAMERA_RAY);
+      g_camera->AllocateCameraRays();
+      // std::cout << "rank " << mpi.rank << " a g_camera->AllocateCameraRays done\n\n";
+      g_camera->generateRays();
+      // std::cout << "rank " << mpi.rank << " a g_camera->generateRays done\n\n";
+      g_image->clear();
+      // std::cout << "rank " << mpi.rank << " a g_image->clear done\n\n";
+      profiler.Stop(Profiler::CAMERA_RAY);
 
       worker.Render();
-      worker.Wait();
-    } break;
+      // #ifndef NDEBUG
+      std::cout << "rank " << mpi.rank << " active frame " << i << " done\n\n";
+      // #endif
+    }
 
-    case commandline::Options::ASYNC_DOMAIN: {
-      if (mpi.rank == 0) std::cout << "start ASYNC_DOMAIN" << std::endl;
+    profiler.Stop(Profiler::TOTAL_TIME);
 
-      // std::cout << "rank " << mpi.rank << " creating database." << std::endl;
-      // t_database.start();
-      // CreateDatabase(mpi, options);
-      // t_database.stop();
-      // std::cout << "rank " << mpi.rank << " done creating database." << std::endl;
+    if (mpi.rank == 0) {
+      g_image->Write();
+      worker.Quit();
+    }
+    worker.Wait();
 
-      g_image = new Image(g_camera->getFilmSizeWidth(),
-                          g_camera->getFilmSizeHeight(), GetTestName(mpi, options));
+    profiler.WriteToFile(GetTestName(mpi, options) + ".txt", mpi.rank);
 
-      Worker worker(mpi, options, g_camera, g_image);
+  } break;
 
-      // mpi = worker.GetMpiInfo();
+  case commandline::Options::SYNC_DOMAIN: {
+    // MPI_Init(&argc, &argv);
+    // MPI_Comm_rank(MPI_COMM_WORLD, &mpi.rank);
+    // MPI_Comm_size(MPI_COMM_WORLD, &mpi.size);
 
-      // worker.InitTracer(options, g_camera, g_image);
+    if (mpi.rank == 0) std::cout << "start SYNC_DOMAIN" << std::endl;
 
-      DomainTracer *domain_tracer =
-          static_cast<DomainTracer *>(worker.GetTracer());
-      Profiler &profiler = domain_tracer->GetProfiler();
+    // std::cout << "rank " << mpi.rank << " creating database." << std::endl;
+    // t_database.start();
+    // CreateDatabase(mpi, options);
+    // t_database.stop();
+    // std::cout << "rank " << mpi.rank << " done creating database." << std::endl;
 
-      gvt::render::RenderContext *cntxt = gvt::render::RenderContext::instance();
-      gvt::core::DBNodeH root = cntxt->getRootNode();
-      std::cout << "[INFO] num domains: " << root["Instances"].getChildren().size() << "\n";
-      profiler.SetNumDomains(root["Instances"].getChildren().size());
+    g_image = new Image(g_camera->getFilmSizeWidth(), g_camera->getFilmSizeHeight(), GetTestName(mpi, options));
 
-// warm up
-#ifndef NDEBUG
-      std::cout << "rank " << mpi.rank << " start warming up\n\n";
-#endif
-      for (int i = 0; i < options.warmup_frames; i++) {
-        g_camera->AllocateCameraRays();
-        g_camera->generateRays();
-        g_image->clear();
-        worker.Render();
-#ifndef NDEBUG
-        std::cout << "rank " << mpi.rank << " warm up frame " << i
-                  << " done\n\n";
-#endif
-      }
+    g_camera->AllocateCameraRays();
+    g_camera->generateRays();
 
-#ifndef NDEBUG
-      std::cout << "rank " << mpi.rank << " start active frames" << std::endl;
-#endif
-      profiler.Reset();
-      profiler.Start(Profiler::TOTAL_TIME);
+    gvt::render::algorithm::Tracer<DomainScheduler> tracer(g_camera->rays, *g_image);
+    Profiler &profiler = tracer.GetProfiler();
 
-      for (int i = 0; i < options.active_frames; i++) {
-        profiler.Start(Profiler::CAMERA_RAY);
-        g_camera->AllocateCameraRays();
-        g_camera->generateRays();
-        g_image->clear();
-        profiler.Stop(Profiler::CAMERA_RAY);
-
-        worker.Render();
-#ifndef NDEBUG
-        std::cout << "rank " << mpi.rank << " active frame " << i
-                  << " done\n\n";
-#endif
-      }
-
-      profiler.Stop(Profiler::TOTAL_TIME);
-
-      if (mpi.rank == 0) {
-        g_image->Write();
-        worker.Quit();
-      }
-      worker.Wait();
-
-      profiler.WriteToFile(GetTestName(mpi, options) + ".txt", mpi.rank);
-
-    } break;
-
-    case commandline::Options::SYNC_DOMAIN: {
-      // MPI_Init(&argc, &argv);
-      // MPI_Comm_rank(MPI_COMM_WORLD, &mpi.rank);
-      // MPI_Comm_size(MPI_COMM_WORLD, &mpi.size);
-
-      if (mpi.rank == 0) std::cout << "start SYNC_DOMAIN" << std::endl;
-
-      // std::cout << "rank " << mpi.rank << " creating database." << std::endl;
-      // t_database.start();
-      // CreateDatabase(mpi, options);
-      // t_database.stop();
-      // std::cout << "rank " << mpi.rank << " done creating database." << std::endl;
-
-      g_image = new Image(g_camera->getFilmSizeWidth(),
-                          g_camera->getFilmSizeHeight(), GetTestName(mpi, options));
-
+    for (int z = 0; z < options.warmup_frames; z++) {
       g_camera->AllocateCameraRays();
       g_camera->generateRays();
+      g_image->clear();
+      tracer();
+    }
 
-      gvt::render::algorithm::Tracer<DomainScheduler> tracer(g_camera->rays,
-                                                             *g_image);
-      Profiler &profiler = tracer.GetProfiler();
+    profiler.Reset();
+    profiler.Start(Profiler::TOTAL_TIME);
+    for (int z = 0; z < options.active_frames; z++) {
+      profiler.Start(Profiler::CAMERA_RAY);
+      g_camera->AllocateCameraRays();
+      g_camera->generateRays();
+      g_image->clear();
+      profiler.Stop(Profiler::CAMERA_RAY);
 
-      for (int z = 0; z < options.warmup_frames; z++) {
-        g_camera->AllocateCameraRays();
-        g_camera->generateRays();
-        g_image->clear();
-        tracer();
-      }
+      tracer();
+    }
+    profiler.Stop(Profiler::TOTAL_TIME);
 
-      profiler.Reset();
-      profiler.Start(Profiler::TOTAL_TIME);
-      for (int z = 0; z < options.active_frames; z++) {
-        profiler.Start(Profiler::CAMERA_RAY);
-        g_camera->AllocateCameraRays();
-        g_camera->generateRays();
-        g_image->clear();
-        profiler.Stop(Profiler::CAMERA_RAY);
+    g_image->Write();
 
-        tracer();
-      }
-      profiler.Stop(Profiler::TOTAL_TIME);
+    profiler.WriteToFile(GetTestName(mpi, options) + ".txt", mpi.rank);
 
-      g_image->Write();
+  } break;
 
-      profiler.WriteToFile(GetTestName(mpi, options) + ".txt", mpi.rank);
-
-    } break;
-
-    default: {
-      std::cout << "rank " << mpi.rank
-                << " error found unsupported tracer type " << options.tracer
-                << std::endl;
-      exit(1);
-    } break;
+  default: {
+    std::cout << "rank " << mpi.rank << " error found unsupported tracer type " << options.tracer << std::endl;
+    exit(1);
+  } break;
   }
   // clean up
   if (g_image) delete g_image;
   if (g_camera) delete g_camera;
 }
 
-}  // namespace mpi
-}  // namespace render
-}  // namespace apps
+} // namespace mpi
+} // namespace render
+} // namespace apps
 
 using namespace gvt::render::unit;
 using namespace apps::render::mpi;
@@ -1035,7 +989,10 @@ int main(int argc, char **argv) {
   g_num_active_frames = options.active_frames;
 
   // initialize tbb
-  tbb::task_scheduler_init init(options.numTbbThreads);
+  // tbb::task_scheduler_init init(1);
+  // tbb::task_scheduler_init init(tbb::task_scheduler_init::default_num_threads()/4);
+  // tbb::task_scheduler_init init(1);
+  tbb::task_scheduler_init init;
   // tbb::task_scheduler_init init(tbb::task_scheduler_init::automatic);
   // tbb::task_scheduler_init init(16);
 
@@ -1054,7 +1011,8 @@ int main(int argc, char **argv) {
   } else {
     RenderFilm(options, mpi);
   }
-
+  // std::cout<<"rank "<<mpi.rank<<"Finalize start"<<std::endl;
   MPI_Finalize();
+  // std::cout<<"rank "<<mpi.rank<<"Finalize done"<<std::endl;
 }
 

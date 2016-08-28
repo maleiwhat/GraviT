@@ -94,21 +94,46 @@ public:
       : origin(_origin), t_min(gvt::render::actor::Ray::RAY_EPSILON), direction(glm::normalize(_direction)),
         t_max(FLT_MAX), t(FLT_MAX), id(-1), w(contribution), type(type) {}
 
-  inline Ray(const Ray &r) { std::memcpy(data, r.data, packedSize()); }
+  // inline Ray(const Ray &r) { std::memcpy(data, r.data, packedSize()); }
 
-  inline Ray(Ray &&r) { std::memmove(data, r.data, packedSize()); }
+  // inline Ray(Ray &&r) { std::memmove(data, r.data, packedSize()); }
+  inline Ray(const Ray &other) {
+    this->origin = other.origin;
+    this->t_min = other.t_min;
+    this->direction = other.direction;
+    this->t_max = other.t_max;
+    this->color = other.color;
+    this->t = other.t;
+    this->id = other.id;
+    this->depth = other.depth;
+    this->w = other.w;
+    this->type = other.type;
+  }
 
   inline Ray(const unsigned char *buf) { std::memcpy(data, buf, packedSize()); }
 
-  inline Ray &operator=(const Ray &r) {
-    std::memcpy(data, r.data, packedSize());
+  // inline Ray &operator=(const Ray &r) {
+  //   std::memcpy(data, r.data, packedSize());
+  //   return *this;
+  // }
+  inline Ray &operator=(const Ray &other) {
+    this->origin = other.origin;
+    this->t_min = other.t_min;
+    this->direction = other.direction;
+    this->t_max = other.t_max;
+    this->color = other.color;
+    this->t = other.t;
+    this->id = other.id;
+    this->depth = other.depth;
+    this->w = other.w;
+    this->type = other.type;
     return *this;
   }
 
-  inline Ray &operator=(Ray &&r) {
-    std::memmove(data, r.data, packedSize());
-    return *this;
-  }
+  // inline Ray &operator=(Ray &&r) {
+  //   std::memmove(data, r.data, packedSize());
+  //   return *this;
+  // }
   ~Ray(){};
 
   /// returns size in bytes for the ray information to be sent via MPI

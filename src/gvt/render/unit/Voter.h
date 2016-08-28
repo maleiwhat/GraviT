@@ -22,52 +22,72 @@
    ACI-1339881 and ACI-1339840
    ======================================================================================= */
 //
-// RayTracer.h
+// Voter.h
 //
-#ifndef GVT_RENDER_UNIT_RAY_TRACER_H
-#define GVT_RENDER_UNIT_RAY_TRACER_H
+#ifndef GVT_RENDER_UNIT_VOTER_H
+#define GVT_RENDER_UNIT_VOTER_H
 
+#include <pthread.h>
+#include <map>
+#include "gvt/render/actor/Ray.h"
 #include "gvt/render/unit/Types.h"
-
-#include <cassert>
 
 namespace gvt {
 namespace render {
 namespace unit {
 
-class Work;
 class Worker;
-class Voter;
 class Communicator;
 
-class RayTracer {
- public:
-  RayTracer(const MpiInfo& mpi, Worker* worker, Communicator* comm)
-      : mpiInfo(mpi), worker(worker), comm(comm) {}
-  virtual ~RayTracer() {}
+class Vote;
+class RayTracer;
 
-  virtual void Trace() = 0;
-  virtual Voter* GetVoter() { return NULL; }
-  virtual void CompositeFrameBuffers() { assert(false); }
+/**
+ * Two phase commit voter.
+ */
+class Voter {
+public:
+  Voter(const MpiInfo &mpi, const RayTracer &tracer, Communicator *comm);
 
-  // helper functions
-  // TODO: avoid this (tbd)
-  // virtual void CopyRays(const RayBuffer& ray_buffer) { assert(false); }
+  bool isDone();
+  void updateRayRx(int numRaysAck);
+  void updateRayTx(int numRaysSent);
+  // void UpdateVote(const Vote &vote);
+  void updateState(int receivedVoteType, bool checkDone);
+  bool isCommAllowed() const;
 
-  virtual void EnqueWork(Work* work) { assert(false); }
-  virtual bool IsRayQueueEmpty() const {
-    assert(false);
-    return false;
-  }
+private:
+  friend class DomainTracer;
 
- protected:
-  const MpiInfo mpiInfo;
-  Worker* worker;
-  Communicator* comm;
+  enum State {
+    IDLE_COORDINATOR,
+    IDLE_COHORT,
+    WAIT_VOTE,
+    WAIT_VOTE_RESULT,
+    TERMINATE,
+    NUM_STATES
+  };
+  enum Role { COORDINATOR = 0 };
+
+  void sendVote(int voteWorkType) const;
+  void reset();
+  bool isTimeToVote() const;
+  bool hasWork() const;
+  bool allVotesReceived() const;
+  bool achievedConsensus() const;
+  void broadcast(int voteWorkType) const;
+
+  Communicator *comm;
+  const MpiInfo mpi;
+  const RayTracer &tracer;
+
+  int state;
+  int numVotesReceived;
+  int numCommitVotes;
+  int numPendingRays;
 };
-
-}  // namespace unit
-}  // namespace render
-}  // namespace gvt
+}
+}
+}
 
 #endif

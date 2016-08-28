@@ -115,7 +115,8 @@ public:
 
   float sample_ratio = 1.f;
 
-  tbb::mutex *queue_mutex;                            // array of mutexes - one per instance
+  tbb::mutex *queue_mutex; // array of mutexes - one per instance
+  tbb::mutex qmutex;
   std::map<int, gvt::render::actor::RayVector> queue; ///< Node rays working
   tbb::mutex *colorBuf_mutex;                         ///< buffer for color accumulation
   glm::vec4 *colorBuf;
@@ -191,40 +192,99 @@ public:
    * Given a queue of rays, intersects them against the accel structure
    * to find out what instance they will hit next
    */
+  //    inline void shuffleRays(gvt::render::actor::RayVector &rays, const int domID) {
+  //
+  //      GVT_DEBUG(DBG_ALWAYS, "[" << mpi.rank << "] Shuffle: start");
+  //      GVT_DEBUG(DBG_ALWAYS, "[" << mpi.rank << "] Shuffle: rays: " << rays.size());
+  //
+  //      const size_t chunksize = MAX(2, rays.size() / (std::thread::hardware_concurrency() * 4));
+  //      static gvt::render::data::accel::BVH &acc = *dynamic_cast<gvt::render::data::accel::BVH *>(acceleration);
+  //      static tbb::simple_partitioner ap;
+  //      tbb::parallel_for(tbb::blocked_range<gvt::render::actor::RayVector::iterator>(rays.begin(), rays.end(),
+  // chunksize),
+  //                        [&](tbb::blocked_range<gvt::render::actor::RayVector::iterator> raysit) {
+  //                          std::vector<gvt::render::data::accel::BVH::hit> hits =
+  //                              acc.intersect<GVT_SIMD_WIDTH>(raysit.begin(), raysit.end(), domID);
+  //                          std::map<int, gvt::render::actor::RayVector> local_queue;
+  //                          for (size_t i = 0; i < hits.size(); i++) {
+  //                            gvt::render::actor::Ray &r = *(raysit.begin() + i);
+  //                            if (hits[i].next != -1) {
+  //                              r.origin = r.origin + r.direction * (hits[i].t * 0.95f);
+  //                              local_queue[hits[i].next].push_back(r);
+  //                            } else if (r.type == gvt::render::actor::Ray::SHADOW && glm::length(r.color) > 0) {
+  //                              tbb::mutex::scoped_lock fbloc(colorBuf_mutex[r.id % width]);
+  //                              // if (r.id >= (width * height)) std::cout << r.id << " colorBuf out of bound\n";
+  //                              colorBuf[r.id] += glm::vec4(r.color, r.w);
+  //                              // colorBuf[r.id] += r.color;
+  //                            }
+  //                          }
+  //                          for (auto &q : local_queue) {
+  //                            queue_mutex[q.first].lock();
+  //                            queue[q.first].insert(queue[q.first].end(),
+  //                                                  std::make_move_iterator(local_queue[q.first].begin()),
+  //                                                  std::make_move_iterator(local_queue[q.first].end()));
+  //                            queue_mutex[q.first].unlock();
+  //                          }
+  //                        },
+  //                        ap);
+  //      rays.clear();
+  //    }
+
+  /**
+   * Given a queue of rays, intersects them against the accel structure
+   * to find out what instance they will hit next
+   */
   inline void shuffleRays(gvt::render::actor::RayVector &rays, const int domID) {
 
     GVT_DEBUG(DBG_ALWAYS, "[" << mpi.rank << "] Shuffle: start");
     GVT_DEBUG(DBG_ALWAYS, "[" << mpi.rank << "] Shuffle: rays: " << rays.size());
 
-    const size_t chunksize = MAX(2, rays.size() / (std::thread::hardware_concurrency() * 4));
-    static gvt::render::data::accel::BVH &acc = *dynamic_cast<gvt::render::data::accel::BVH *>(acceleration);
-    static tbb::simple_partitioner ap;
-    tbb::parallel_for(tbb::blocked_range<gvt::render::actor::RayVector::iterator>(rays.begin(), rays.end(), chunksize),
-                      [&](tbb::blocked_range<gvt::render::actor::RayVector::iterator> raysit) {
-                        std::vector<gvt::render::data::accel::BVH::hit> hits =
-                            acc.intersect<GVT_SIMD_WIDTH>(raysit.begin(), raysit.end(), domID);
-                        std::map<int, gvt::render::actor::RayVector> local_queue;
-                        for (size_t i = 0; i < hits.size(); i++) {
-                          gvt::render::actor::Ray &r = *(raysit.begin() + i);
-                          if (hits[i].next != -1) {
-                            r.origin = r.origin + r.direction * (hits[i].t * 0.95f);
-                            local_queue[hits[i].next].push_back(r);
-                          } else if (r.type == gvt::render::actor::Ray::SHADOW && glm::length(r.color) > 0) {
-                            tbb::mutex::scoped_lock fbloc(colorBuf_mutex[r.id % width]);
-                            colorBuf[r.id] += glm::vec4(r.color, r.w);
-                            // colorBuf[r.id] += r.color;
-                          }
-                        }
-                        for (auto &q : local_queue) {
+    // gvt::render::actor::RayVector::iterator rbegin = rays.begin();
+    // gvt::render::actor::RayVector::iterator rend = rays.end();
+    // std::size_t rsize = rays.size();
 
-                          queue_mutex[q.first].lock();
-                          queue[q.first].insert(queue[q.first].end(),
-                                                std::make_move_iterator(local_queue[q.first].begin()),
-                                                std::make_move_iterator(local_queue[q.first].end()));
-                          queue_mutex[q.first].unlock();
-                        }
-                      },
-                      ap);
+    // const size_t chunksize = MAX(2, rays.size() / (std::thread::hardware_concurrency() * 4));
+    static gvt::render::data::accel::BVH &acc = *dynamic_cast<gvt::render::data::accel::BVH *>(acceleration);
+    tbb::parallel_for(tbb::blocked_range<gvt::render::actor::RayVector::iterator>(rays.begin(), rays.end()),
+                      [&](tbb::blocked_range<gvt::render::actor::RayVector::iterator> &raysit) {
+      // std::size_t ray_start = raysit.begin() - rbegin;
+      // std::size_t ray_end = raysit.end() - rbegin;
+      // printf("rank %lu dom_%d id_%lu %lu %lu start\n", mpi.rank, domID, rsize, ray_start, ray_end);
+      std::vector<gvt::render::data::accel::BVH::hit> hits =
+          acc.intersect<GVT_SIMD_WIDTH>(raysit.begin(), raysit.end(), domID);
+      // printf("rank %lu dom_%d id_%lu %lu %lu mid0\n", mpi.rank, domID, rsize, ray_start, ray_end);
+      std::map<int, gvt::render::actor::RayVector> local_queue;
+      for (size_t i = 0; i < hits.size(); i++) {
+        gvt::render::actor::Ray &r = *(raysit.begin() + i);
+        if (hits[i].next != -1) {
+          r.origin = r.origin + r.direction * (hits[i].t * 0.95f);
+          local_queue[hits[i].next].push_back(r);
+        } else if (r.type == gvt::render::actor::Ray::SHADOW && glm::length(r.color) > 0) {
+          tbb::mutex::scoped_lock fbloc(colorBuf_mutex[r.id % width]);
+          colorBuf[r.id] += glm::vec4(r.color, r.w);
+          // colorBuf[r.id] += r.color;
+        }
+      }
+      // printf("rank %lu dom_%d id_%lu %lu %lu mid1\n", mpi.rank, domID, rsize, ray_start, ray_end);
+      for (auto &q : local_queue) {
+        // tbb::mutex::scoped_lock lock(qmutex);
+        // tbb::mutex::scoped_lock lock(queue_mutex[q.first]);
+        tbb::mutex::scoped_lock lock(qmutex);
+        // queue_mutex[q.first].lock();
+        // queue[q.first].insert(queue[q.first].end(), std::make_move_iterator(local_queue[q.first].begin()),
+        //                       std::make_move_iterator(local_queue[q.first].end()));
+        // queue[q.first].insert(queue[q.first].end(), local_queue[q.first].begin(), local_queue[q.first].end());
+        for (auto &rr : local_queue[q.first]) {
+          // if (queue.find(q.first) == queue.end()) {
+          //   gvt::render::actor::RayVector rv;
+          //   queue[q.first] = rv;
+          // }
+          queue[q.first].push_back(rr);
+        }
+        // queue_mutex[q.first].unlock();
+      }
+      // printf("rank %lu dom_%d id_%lu %lu %lu done\n", mpi.rank, domID, rsize, ray_start, ray_end);
+    });
     rays.clear();
   }
 
