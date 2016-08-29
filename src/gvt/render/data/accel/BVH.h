@@ -36,8 +36,6 @@
 #include <gvt/render/data/accel/AbstractAccel.h>
 #include <gvt/render/data/primitives/BBox.h>
 
-#define GVT_BRUTEFORCE // debug (hpark)
-
 namespace gvt {
 namespace render {
 namespace data {

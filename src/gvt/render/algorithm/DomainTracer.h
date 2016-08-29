@@ -176,11 +176,10 @@ public:
                           }
                         }
                         for (auto &q : local_queue) {
-                          queue_mutex[q.first].lock();
+                          tbb::mutex::scoped_lock lock(qmutex);
                           queue[q.first].insert(queue[q.first].end(),
                                                 std::make_move_iterator(local_queue[q.first].begin()),
                                                 std::make_move_iterator(local_queue[q.first].end()));
-                          queue_mutex[q.first].unlock();
                         }
                       },
                       ap);
