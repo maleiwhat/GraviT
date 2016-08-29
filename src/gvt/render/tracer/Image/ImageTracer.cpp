@@ -40,6 +40,24 @@
 #include "ImageTracer.h"
 
 #include <gvt/render/composite/ImageComposite.h>
+#include <gvt/render/Types.h>
+
+#include <gvt/render/adapter/AdapterCache.h>
+#ifdef GVT_RENDER_ADAPTER_EMBREE
+#include <gvt/render/adapter/embree/Wrapper.h>
+#endif
+
+#ifdef GVT_RENDER_ADAPTER_MANTA
+#include <gvt/render/adapter/manta/Wrapper.h>
+#endif
+
+#ifdef GVT_RENDER_ADAPTER_OPTIX
+#include <gvt/render/adapter/optix/Wrapper.h>
+#endif
+
+#if defined(GVT_RENDER_ADAPTER_OPTIX) && defined(GVT_RENDER_ADAPTER_EMBREE)
+#include <gvt/render/adapter/heterogeneous/Wrapper.h>
+#endif
 
 namespace gvt {
 namespace tracer {
@@ -76,6 +94,7 @@ void ImageTracer::operator()() {
   gvt::core::DBNodeH rootnode = cntxt.getRootNode();
   size_t width = cntxt.getRootNode()["Film"]["width"].value().toInteger();
   size_t height = cntxt.getRootNode()["Film"]["height"].value().toInteger();
+  size_t adapterType = cntxt.getRootNode()["Schedule"]["adapter"].value().toInteger();
 
   std::shared_ptr<gvt::render::data::scene::gvtCameraBase> _cam = cntxt.getCamera();
   std::shared_ptr<gvt::render::composite::ImageComposite> composite_buffer =
@@ -137,36 +156,77 @@ void ImageTracer::operator()() {
   processRayQueue(_cam->rays);
 
   bool GlobalFrameFinished = false;
-  while (!GlobalFrameFinished) {
-    if (!_queue.empty()) {
-      int target = -1;
-      gvt::render::actor::RayVector toprocess;
-      _queue.dequeue<ImageTracer>(target, toprocess);
-      if (target != -1) {
-        // Check cache if adpter exists;
-        // Call adapter
-        // Process rays
-      }
-    }
 
+  while (!GlobalFrameFinished) {
+
+    int target = -1;
+    gvt::render::actor::RayVector toprocess, moved_rays;
+    _queue.dequeue<ImageTracer>(target, toprocess);
+    if (target != -1) {
+      std::shared_ptr<gvt::render::Adapter> adapter = 0;
+      gvt::render::data::primitives::Mesh *mesh = meshRef[target];
+
+      if (_cache.keyExists(target)) {
+        adapter = _cache.get(target);
+      } else {
+        GVT_DEBUG(DBG_ALWAYS, "image scheduler: creating new adapter");
+        switch (adapterType) {
+#ifdef GVT_RENDER_ADAPTER_EMBREE
+        case gvt::render::adapter::Embree:
+          adapter =
+              std::make_shared<gvt::render::adapter::embree::data::EmbreeMeshAdapter>(
+                  mesh);
+          break;
+#endif
+#ifdef GVT_RENDER_ADAPTER_MANTA
+        case gvt::render::adapter::Manta:
+          adapter =
+              std::make_shared<gvt::render::adapter::manta::data::MantaMeshAdapter>(mesh);
+          break;
+#endif
+#ifdef GVT_RENDER_ADAPTER_OPTIX
+        case gvt::render::adapter::Optix:
+          adapter =
+              std::make_shared<gvt::render::adapter::optix::data::OptixMeshAdapter>(mesh);
+          break;
+#endif
+
+#if defined(GVT_RENDER_ADAPTER_OPTIX) && defined(GVT_RENDER_ADAPTER_EMBREE)
+        case gvt::render::adapter::Heterogeneous:
+          adapter = std::make_shared<
+              gvt::render::adapter::heterogeneous::data::HeterogeneousMeshAdapter>(mesh);
+          break;
+#endif
+        default:
+          GVT_DEBUG(DBG_SEVERE, "image scheduler: unknown adapter type: " << adapterType);
+        }
+
+        _cache.set(target, adapter);
+        //    [mesh] = adapter;
+      }
+      adapter->trace(toprocess, moved_rays, instM[target], instMinv[target],
+                     instMinvN[target], lights);
+      processRayQueue(moved_rays, target);
+    }
     if (_queue.empty()) {
       // Ask if done;
       GlobalFrameFinished = true;
+      break;
     }
   }
   // Start composite
 
-  float * final = composite_buffer->composite();
+  float *img_final = composite_buffer->composite();
 
-  const size_t size = width * height;
-  const size_t chunksize = MAX(2, size / (std::thread::hardware_concurrency() * 4));
-  static tbb::simple_partitioner ap;
-  tbb::parallel_for(tbb::blocked_range<size_t>(0, size, chunksize),
-                    [&](tbb::blocked_range<size_t> chunk) {
-                      for (size_t i = chunk.begin(); i < chunk.end(); i++)
-                        image->Add(i, & final[i * 4]);
-                    },
-                    ap);
+  // const size_t size = width * height;
+  // const size_t chunksize = MAX(2, size / (std::thread::hardware_concurrency() * 4));
+  // static tbb::simple_partitioner ap;
+  // tbb::parallel_for(tbb::blocked_range<size_t>(0, size, chunksize),
+  //                   [&](tbb::blocked_range<size_t> chunk) {
+  //                     for (size_t i = chunk.begin(); i < chunk.end(); i++)
+  //                       image->Add(i, & final[i * 4]);
+  //                   },
+  //                   ap);
 };
 
 bool ImageTracer::MessageManager(std::shared_ptr<gvt::comm::Message> msg) {

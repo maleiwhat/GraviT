@@ -26,7 +26,11 @@
 
 #ifndef GVT_IMAGE_COMPOSITE_H
 #define GVT_IMAGE_COMPOSITE_H
+
+#include <string>
+
 #include <gvt/core/composite/Composite.h>
+
 namespace gvt {
 namespace render {
 namespace composite {
@@ -53,6 +57,7 @@ struct ImageComposite : gvt::core::composite::Buffer<float> {
                         float t = 0.f);
   virtual void localAdd(size_t i, const glm::vec3 &color, float alpha = 1.f,
                         float t = 0.f);
+  virtual void write(std::string filename) {}
 };
 }
 }

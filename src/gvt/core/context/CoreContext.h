@@ -127,7 +127,7 @@ public:
   // one to all communication model
   void syncContext();
 
-  std::shared_ptr<gvt::comm::acommunicator> comm() { return _comm; };
+  // std::shared_ptr<gvt::comm::acommunicator> comm() { return _comm; };
   std::shared_ptr<gvt::tracer::Tracer> tracer() { return _tracer; };
 
   void setTracer(std::shared_ptr<gvt::tracer::Tracer> &tracer) {
@@ -142,7 +142,7 @@ protected:
 
   std::vector<DBNodeH> __nodesToSync;
 
-  std::shared_ptr<gvt::comm::acommunicator> _comm;
+  // std::shared_ptr<gvt::comm::acommunicator> _comm;
   std::shared_ptr<gvt::tracer::Tracer> _tracer;
 };
 }

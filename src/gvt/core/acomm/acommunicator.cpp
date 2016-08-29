@@ -18,9 +18,11 @@
    See the License for the specific language governing permissions and limitations under
    limitations under the License.
 
-   GraviT is funded in part by the US National Science Foundation under awards ACI-1339863,
+   GraviT is funded in part by the US National Science Foundation under awards
+   ACI-1339863,
    ACI-1339881 and ACI-1339840
-   ======================================================================================= */
+   =======================================================================================
+   */
 
 #include <gvt/core/Debug.h>
 #include <gvt/core/acomm/acommunicator.h>
@@ -43,8 +45,9 @@ std::shared_ptr<acommunicator> acommunicator::instance(int argc, char *argv[]) {
 
   std::lock_guard<std::mutex> lg(acommunicator::m);
   if (acommunicator::_singleton == nullptr) {
-    acommunicator::_singleton = std::shared_ptr<acommunicator>(new acommunicator(argc, argv));
-    g.run([&]() { acommunicator::launch(acommunicator::_singleton); });
+    acommunicator::_singleton =
+        std::shared_ptr<acommunicator>(new acommunicator(argc, argv));
+    // g.run([&]() { acommunicator::launch(acommunicator::_singleton); });
   }
 
   return acommunicator::_singleton;
@@ -77,7 +80,8 @@ void acommunicator::send(std::shared_ptr<Message> msg, size_t target, bool sync)
   msg->_dst = target;
 
   if (sync) {
-    MPI::COMM_WORLD.Isend(msg->msg_ptr(), msg->size(), MPI::UNSIGNED_CHAR, target, USER_DEFINED_MSG);
+    MPI::COMM_WORLD.Isend(msg->msg_ptr(), msg->size(), MPI::UNSIGNED_CHAR, target,
+                          USER_DEFINED_MSG);
   } else {
     _outbox.push_back(msg);
   }
@@ -107,7 +111,8 @@ void acommunicator::run() {
 
   // std::cout << "Communication started : " << id() << std::endl;
   //
-  // std::cout << "C[" << id() << "] : " << ((!_outbox.empty() || !_inbox.empty() || !_terminate) ? "T" : "F")
+  // std::cout << "C[" << id() << "] : " << ((!_outbox.empty() || !_inbox.empty() ||
+  // !_terminate) ? "T" : "F")
   //           << std::endl;
   //
   // std::cout << "I[" << id() << "] : " << ((_inbox.empty()) ? "T" : "F") << std::endl;
@@ -115,11 +120,14 @@ void acommunicator::run() {
   // std::cout << "T[" << id() << "] : " << ((_terminate) ? "T" : "F") << std::endl;
 
   while ((!_outbox.empty() || !_inbox.empty()) || !_terminate) {
-    // std::cout << "I[" << id() << "] : " << (!(_inbox.empty()) ? "T" : "F") << " : " << _inbox.size() << std::endl;
-    // std::cout << "O[" << id() << "] : " << (!(_outbox.empty()) ? "T" : "F") << " : " << _outbox.size() <<
+    // std::cout << "I[" << id() << "] : " << (!(_inbox.empty()) ? "T" : "F") << " : " <<
+    // _inbox.size() << std::endl;
+    // std::cout << "O[" << id() << "] : " << (!(_outbox.empty()) ? "T" : "F") << " : " <<
+    // _outbox.size() <<
     // std::endl;
     // std::cout << "T[" << id() << "] : " << (!(_terminate) ? "T" : "F") << std::endl;
-    // std::cout << "C[" << id() << "] : " << ((!_outbox.empty() || !_inbox.empty() || !_terminate) ? "T" : "F")
+    // std::cout << "C[" << id() << "] : " << ((!_outbox.empty() || !_inbox.empty() ||
+    // !_terminate) ? "T" : "F")
     //           << std::endl;
     // Process out box
     if (!_outbox.empty()) {
@@ -130,8 +138,10 @@ void acommunicator::run() {
         MPI::COMM_WORLD.Bcast(msg->msg_ptr(), msg->size(), MPI::UNSIGNED_CHAR, 0);
         // std::cout << "Broadcasted message on channel " << id() << std::endl;
       } else {
-        GVT_ASSERT(msg->dst() < maxid(), "Trying to send a message to a bad processor ID");
-        MPI::COMM_WORLD.Isend(msg->msg_ptr(), msg->size(), MPI::UNSIGNED_CHAR, msg->dst(), USER_DEFINED_MSG);
+        GVT_ASSERT(msg->dst() < maxid(),
+                   "Trying to send a message to a bad processor ID");
+        MPI::COMM_WORLD.Isend(msg->msg_ptr(), msg->size(), MPI::UNSIGNED_CHAR, msg->dst(),
+                              USER_DEFINED_MSG);
       }
     }
     // Check for messages and put on the inbox
@@ -144,7 +154,8 @@ void acommunicator::run() {
 
       if (n_bytes > 0) {
         // std::shared_ptr<Message> msg = std::make_shared<Message>(n_bytes);
-        // MPI::COMM_WORLD.Recv(msg->msg_ptr, n_bytes, MPI::UNSIGNED_CHAR, sender, COMMUNICATOR_CONTROL);
+        // MPI::COMM_WORLD.Recv(msg->msg_ptr, n_bytes, MPI::UNSIGNED_CHAR, sender,
+        // COMMUNICATOR_CONTROL);
       }
     }
 
@@ -154,7 +165,8 @@ void acommunicator::run() {
       // std::cout << "Get user messages " << id() << std::endl;
       if (n_bytes > 0) {
         std::shared_ptr<Message> msg = std::make_shared<Message>(n_bytes);
-        MPI::COMM_WORLD.Recv(msg->msg_ptr(), n_bytes, MPI::UNSIGNED_CHAR, sender, USER_DEFINED_MSG);
+        MPI::COMM_WORLD.Recv(msg->msg_ptr(), n_bytes, MPI::UNSIGNED_CHAR, sender,
+                             USER_DEFINED_MSG);
         std::lock_guard<std::mutex> lk(_inbox_mutex);
         _inbox.push_back(msg);
       }
@@ -167,7 +179,8 @@ void acommunicator::run() {
 
       if (n_bytes > 0) {
         // std::shared_ptr<Message> msg = std::make_shared<Message>(n_bytes);
-        // MPI::COMM_WORLD.Recv(msg->msg_ptr, n_bytes, MPI::UNSIGNED_CHAR, sender, VOTE_MSG_TAG);
+        // MPI::COMM_WORLD.Recv(msg->msg_ptr, n_bytes, MPI::UNSIGNED_CHAR, sender,
+        // VOTE_MSG_TAG);
       }
     }
 

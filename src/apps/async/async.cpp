@@ -6,6 +6,7 @@
 #include <gvt/render/Context.h>
 
 #include <gvt/render/composite/IceTComposite.h>
+#include <gvt/render/composite/ImageComposite.h>
 #include <gvt/render/tracer/Image/ImageTracer.h>
 
 #include "ParseCommandLine.h"
@@ -515,6 +516,10 @@ int main(int argc, char *argv[]) {
       std::make_shared<gvt::tracer::ImageTracer>();
 
   (*tracer)();
+
+  std::shared_ptr<gvt::render::composite::ImageComposite> composite_buffer =
+      cntxt->getComposite<gvt::render::composite::ImageComposite>();
+  composite_buffer->write("async");
   comm->terminate();
   return 0;
 }

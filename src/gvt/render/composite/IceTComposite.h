@@ -56,7 +56,7 @@ struct IceTComposite : gvt::render::composite::ImageComposite {
                         float t = 0.f);
   virtual void localAdd(size_t i, const glm::vec3 &color, float alpha = 1.f,
                         float t = 0.f);
-
+  virtual void write(std::string filename);
   // virtual T getCompositedBuffer() { return color_buffer_final; }
 };
 }

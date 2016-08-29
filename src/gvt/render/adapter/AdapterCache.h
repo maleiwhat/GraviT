@@ -68,10 +68,10 @@ public:
 
   AdapterCache() {}
   ~AdapterCache() {
-    GVT_ASSERT(_cache.empty(), "Something when wrong cache is not empty()");
+    // GVT_ASSERT(_cache.empty(), "Something when wrong cache is not empty()");
   }
   void clear() { _cache.clear(); }
-  bool keyExists(key _key) { return (_cache.find(_key) != _cache.enr()); }
+  bool keyExists(key _key) { return (_cache.find(_key) != _cache.end()); }
   value get(key _key) {
     GVT_ASSERT(keyExists(_key), "Trying to access an invalid element on the cache");
     std::lock_guard<std::mutex> _lock(_protect);
