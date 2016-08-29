@@ -377,7 +377,7 @@ struct embreeParallelTrace {
         lightPos = light->position;
       }
 
-      if (!gvt::render::data::primitives::Shade(material, r, normal, light, lightPos, c)) continue;
+      gvt::render::data::primitives::Shade(material, r, normal, light, lightPos, c);
 
       const float multiplier = 1.0f - gvt::render::actor::Ray::RAY_EPSILON * 16;
       const float t_shadow = multiplier * r.t;
