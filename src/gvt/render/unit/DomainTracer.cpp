@@ -469,17 +469,12 @@ inline void DomainTracer::recvVoteMsg() {
 bool DomainTracer::Communicate() {
   bool done = false;
   if (mpiInfo.size > 1) {
-    if (voter->isCommAllowed()) {
-      profiler.Start(Profiler::SEND);
-      sendRays();
-      profiler.Stop(Profiler::SEND);
-      // std::cout << "rank " << mpiInfo.rank << " send done\n";
-      profiler.Start(Profiler::RECV);
-      recvRayMsg();
-      profiler.Stop(Profiler::RECV);
-    }
-
+    profiler.Start(Profiler::SEND);
+    sendRays();
+    profiler.Stop(Profiler::SEND);
+    // std::cout << "rank " << mpiInfo.rank << " send done\n";
     profiler.Start(Profiler::RECV);
+    recvRayMsg();
     recvVoteMsg();
     profiler.Stop(Profiler::RECV);
     // std::cout << "rank " << mpiInfo.rank << " recv done\n";

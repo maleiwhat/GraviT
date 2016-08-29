@@ -54,9 +54,8 @@ public:
   void updateRayTx(int numRaysSent);
   // void UpdateVote(const Vote &vote);
   void updateState(int receivedVoteType, bool checkDone);
-  bool isCommAllowed() const;
+  // bool isCommAllowed() const;
 
-private:
   friend class DomainTracer;
 
   enum State {
@@ -67,6 +66,10 @@ private:
     TERMINATE,
     NUM_STATES
   };
+
+private:
+  static std::string stateNames[NUM_STATES];
+
   enum Role { COORDINATOR = 0 };
 
   void sendVote(int voteWorkType) const;

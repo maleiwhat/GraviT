@@ -104,8 +104,11 @@ public:
     DO_ABORT,
     VOTE_COMMIT,
     VOTE_ABORT,
-    UNKNOWN
+    UNKNOWN,
+    NUM_VOTE_TYPES
   };
+
+  static std::string names[NUM_VOTE_TYPES];
 
   struct Data {
     int vote_type;

@@ -84,6 +84,9 @@ bool RemoteRays::Action(Worker *worker) {
   //   return delete_this;
 }
 
+std::string Vote::names[Vote::NUM_VOTE_TYPES] = { "PROPOSE",     "DO_COMMIT",  "DO_ABORT",
+                                                  "VOTE_COMMIT", "VOTE_ABORT", "UNKNOWN" };
+
 bool Vote::Action(Worker *worker) {
   assert(false);
   //   TpcVoter* voter = worker->GetVoter();
