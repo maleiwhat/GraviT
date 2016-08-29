@@ -93,8 +93,6 @@ IceTComposite::IceTComposite(std::size_t width, std::size_t height)
     : gvt::render::composite::ImageComposite(width, height) {
   // if (MPI::COMM_WORLD.Get_size() < 2) return false;
 
-  std::cout << "Creating image buffer " << (size_t)this << std::endl;
-
   comm = icetCreateMPICommunicator(MPI_COMM_WORLD);
   icetCreateContext(comm);
   //

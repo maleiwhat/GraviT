@@ -90,6 +90,7 @@ ImageTracer::ImageTracer() : Tracer() {}
 ImageTracer::~ImageTracer() {}
 
 void ImageTracer::operator()() {
+  std::shared_ptr<gvt::comm::acommunicator> comm = gvt::comm::acommunicator::instance();
   gvt::render::RenderContext &cntxt = *gvt::render::RenderContext::instance();
   gvt::core::DBNodeH rootnode = cntxt.getRootNode();
   size_t width = cntxt.getRootNode()["Film"]["width"].value().toInteger();
@@ -151,9 +152,19 @@ void ImageTracer::operator()() {
 
   _cam->AllocateCameraRays();
   _cam->generateRays();
-  // _img->clear();
 
-  processRayQueue(_cam->rays);
+  int ray_portion = _cam->rays.size() / comm->maxid();
+  int rays_start = comm->id() * ray_portion;
+  size_t rays_end =
+      (comm->id() + 1) == comm->maxid()
+          ? _cam->rays.size()
+          : (comm->id() + 1) * ray_portion; // tack on any odd rays to last proc
+
+  gvt::render::actor::RayVector lrays;
+  lrays.assign(_cam->rays.begin() + rays_start, _cam->rays.begin() + rays_end);
+  _cam->rays.clear();
+
+  processRayQueue(lrays);
 
   bool GlobalFrameFinished = false;
 

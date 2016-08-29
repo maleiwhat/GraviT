@@ -18,9 +18,11 @@
    See the License for the specific language governing permissions and limitations under
    limitations under the License.
 
-   GraviT is funded in part by the US National Science Foundation under awards ACI-1339863,
+   GraviT is funded in part by the US National Science Foundation under awards
+   ACI-1339863,
    ACI-1339881 and ACI-1339840
-   ======================================================================================= */
+   =======================================================================================
+   */
 #include <boost/timer/timer.hpp>
 
 #include <gvt/core/utils/timer.h>
@@ -65,7 +67,9 @@ gvtCameraBase::gvtCameraBase(const gvtCameraBase &cam) {
   depth = cam.depth;
 }
 float gvtCameraBase::frand() { return ((float)rand()) * INVRAND_MAX; }
-void gvtCameraBase::SetCamera(gvt::render::actor::RayVector &rayvect, float _rate) { rays = rayvect; }
+void gvtCameraBase::SetCamera(gvt::render::actor::RayVector &rayvect, float _rate) {
+  rays = rayvect;
+}
 void gvtCameraBase::buildTransform() {
   //
   // Find the u, v, and w unit basis vectors for the camera coordinate system.
@@ -190,14 +194,15 @@ gvtCameraBase::~gvtCameraBase() {}
 
 // Perspective camera methods
 gvtPerspectiveCamera::gvtPerspectiveCamera() { field_of_view = 30.0; }
-gvtPerspectiveCamera::gvtPerspectiveCamera(const gvtPerspectiveCamera &cam) : gvtCameraBase(cam) {
+gvtPerspectiveCamera::gvtPerspectiveCamera(const gvtPerspectiveCamera &cam)
+    : gvtCameraBase(cam) {
   field_of_view = cam.field_of_view;
 }
 gvtPerspectiveCamera::~gvtPerspectiveCamera() {}
 // gvt::render::actor::RayVector gvtPerspectiveCamera::generateRays() {
 void gvtPerspectiveCamera::generateRays() {
 #ifdef GVT_USE_DEBUG
-  //boost::timer::auto_cpu_timer t("gvtPerspectiveCamera::generateRays: time: %w\n");
+// boost::timer::auto_cpu_timer t("gvtPerspectiveCamera::generateRays: time: %w\n");
 #endif
   gvt::core::time::timer t(true, "generate camera rays");
   // Generate rays direction in camera space and transform to world space.
@@ -228,45 +233,51 @@ void gvtPerspectiveCamera::generateRays() {
 
   const size_t chunksize = buffer_height / (std::thread::hardware_concurrency() * 4);
   static tbb::simple_partitioner ap;
-  tbb::parallel_for(tbb::blocked_range<size_t>(0, buffer_height, chunksize),
-                    [&](tbb::blocked_range<size_t> &chunk) {
-                      gvt::core::math::RandEngine randEngine;
-                      randEngine.SetSeed(chunk.begin());
-                      for (size_t j = chunk.begin(); j < chunk.end(); j++) {
-                        // multi - jittered samples
-                        // int i = idx;
-                        int idx = j * buffer_width;
-                        for (size_t i = 0; i < buffer_width; i++) {
-                          const float x0 = float(i) * wmult - 1.0, y0 = float(j) * hmult - 1.0;
-                          float x, y;
-                          // glm::vec4 camera_space_ray_direction;
-                          for (int k = 0; k < samples; k++) {
-                            for (int w = 0; w < samples; w++) {
-                              // calculate scale factors -1.0 < x,y < 1.0
-                              int ridx = idx * samples2 + k * samples + w;
-                              x = x0 + (w - half_sample) * offset; // + offset * (randEngine.fastrand(0, 1) - 0.5);
-                              x *= horz;
-                              y = y0 + (k - half_sample) * offset; // + offset * (randEngine.fastrand(0, 1) - 0.5);
-                              y *= vert;
-                              glm::vec3 camera_space_ray_direction;
-                              camera_space_ray_direction[0] = cam2wrld[0][0] * x + cam2wrld[0][1] * y + z[0];
-                              camera_space_ray_direction[1] = cam2wrld[1][0] * x + cam2wrld[1][1] * y + z[1];
-                              camera_space_ray_direction[2] = cam2wrld[2][0] * x + cam2wrld[2][1] * y + z[2];
-                              Ray &ray = rays[ridx];
-                              ray.id = idx;
-                              ray.t_min = gvt::render::actor::Ray::RAY_EPSILON;
-                              ray.t = ray.t_max = FLT_MAX;
-                              ray.w = contri;
-                              ray.origin = eye_point;
-                              ray.type = Ray::PRIMARY;
-                              ray.direction = glm::normalize(camera_space_ray_direction);
-                              ray.depth = depth;
-                            }
-                          }
-                          idx++;
-                        }
-                      }
-                    },
-                    ap);
+  tbb::parallel_for(
+      tbb::blocked_range<size_t>(0, buffer_height, chunksize),
+      [&](tbb::blocked_range<size_t> &chunk) {
+        gvt::core::math::RandEngine randEngine;
+        randEngine.SetSeed(chunk.begin());
+        for (size_t j = chunk.begin(); j < chunk.end(); j++) {
+          // multi - jittered samples
+          // int i = idx;
+          int idx = j * buffer_width;
+          for (size_t i = 0; i < buffer_width; i++) {
+            const float x0 = float(i) * wmult - 1.0, y0 = float(j) * hmult - 1.0;
+            float x, y;
+            // glm::vec4 camera_space_ray_direction;
+            for (int k = 0; k < samples; k++) {
+              for (int w = 0; w < samples; w++) {
+                // calculate scale factors -1.0 < x,y < 1.0
+                int ridx = idx * samples2 + k * samples + w;
+                x = x0 + (w - half_sample) * offset; // + offset * (randEngine.fastrand(0,
+                                                     // 1) - 0.5);
+                x *= horz;
+                y = y0 + (k - half_sample) * offset; // + offset * (randEngine.fastrand(0,
+                                                     // 1) - 0.5);
+                y *= vert;
+                glm::vec3 camera_space_ray_direction;
+                camera_space_ray_direction[0] =
+                    cam2wrld[0][0] * x + cam2wrld[0][1] * y + z[0];
+                camera_space_ray_direction[1] =
+                    cam2wrld[1][0] * x + cam2wrld[1][1] * y + z[1];
+                camera_space_ray_direction[2] =
+                    cam2wrld[2][0] * x + cam2wrld[2][1] * y + z[2];
+                Ray &ray = rays[ridx];
+                ray.id = idx;
+                ray.t_min = gvt::render::actor::Ray::RAY_EPSILON;
+                ray.t = ray.t_max = FLT_MAX;
+                ray.w = contri;
+                ray.origin = eye_point;
+                ray.type = Ray::PRIMARY;
+                ray.direction = glm::normalize(camera_space_ray_direction);
+                ray.depth = depth;
+              }
+            }
+            idx++;
+          }
+        }
+      },
+      ap);
 }
 void gvtPerspectiveCamera::setFOV(const float fov) { field_of_view = fov; }
