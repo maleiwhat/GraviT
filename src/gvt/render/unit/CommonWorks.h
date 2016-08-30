@@ -53,7 +53,11 @@ public:
     int type;
   };
 
-  Command() : Work() { Command(0); }
+  Command() {
+    Allocate(sizeof(Data));
+    GetBufferPtr<Data>()->type = -1;
+  }
+
   Command(int type) : Work() {
     Allocate(sizeof(Data));
     GetBufferPtr<Data>()->type = type;
@@ -76,7 +80,11 @@ public:
     int value;
   };
 
-  PingTest() : Work() { PingTest(0); }
+  PingTest() {
+    Allocate(sizeof(Data));
+    GetBufferPtr<Data>()->value = -1;
+  }
+
   PingTest(int value) : Work() {
     Allocate(sizeof(Data));
     GetBufferPtr<Data>()->value = value;
@@ -99,10 +107,14 @@ class Composite : public Work {
   };
 
 public:
-  Composite() : Work() { Composite(0); }
+  Composite() : Work() {
+    Allocate(sizeof(Data));
+    GetBufferPtr<Data>()->value = -1;
+  }
+
   Composite(int value) : Work() {
     Allocate(sizeof(Data));
-    GetBufferPtr<Data>()->value = 0;
+    GetBufferPtr<Data>()->value = value;
   }
 
   virtual bool Action(Worker *worker);

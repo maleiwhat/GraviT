@@ -69,7 +69,6 @@
 
 // #define VERIFY
 // #define DEBUG_TX
-#define GVT_MPI_THREAD_MULTIPLE_SUPPORT
 
 namespace gvt {
 namespace render {
@@ -92,6 +91,11 @@ DomainTracer::DomainTracer(const MpiInfo &mpiInfo, Worker *worker, Communicator 
   // pthread_mutex_init(&workQ_mutex, NULL);
   pthread_mutex_init(&rayMsgQ_mutex, NULL);
   pthread_mutex_init(&voteMsgQ_mutex, NULL);
+
+  compositeDone = false;
+  pthread_mutex_init(&compositeDone_mutex, NULL);
+  pthread_cond_init(&compositeDone_cond, NULL);
+
 #ifdef GVT_USE_MPE
   // MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPE_Log_get_state_eventIDs(&tracestart, &traceend);
@@ -214,8 +218,6 @@ inline void DomainTracer::Trace() {
 
   gvt::render::Adapter *adapter = 0;
 
-  // std::cout << "rank " << mpiInfo.rank << " filterRaysLocally done\n";
-
   while (!all_done) {
     profiler.Start(Profiler::SCHEDULE);
     // process domain with most rays queued
@@ -296,8 +298,6 @@ inline void DomainTracer::Trace() {
       }
       profiler.Stop(Profiler::ADAPTER);
 
-      // std::cout << "rank " << mpiInfo.rank << " adapter cache access done\n";
-
       // t_adapter.stop();
       GVT_ASSERT(adapter != nullptr, "image scheduler: adapter not set");
       // end getAdapterFromCache concept
@@ -321,30 +321,16 @@ inline void DomainTracer::Trace() {
       // printf("rank %d adapter.trace done moved_rays %lu inst %d\n", mpiInfo.rank, moved_rays.size(), instTarget);
 
       GVT_DEBUG(DBG_ALWAYS, "image scheduler: marching rays");
-      // t_shuffle.resume();
       profiler.Start(Profiler::SHUFFLE);
       shuffleRays(moved_rays, instTarget);
       moved_rays.clear();
       profiler.Stop(Profiler::SHUFFLE);
-      // std::cout << "rank " << mpiInfo.rank << " shuffleRays done\n";
-      // t_shuffle.stop();
     } else { // if (instTarget > 0)
       profiler.AddCounter(Profiler::INVALID_SCHEDULE, 1);
     }
 
     all_done = Communicate();
-    // std::cout << "rank " << mpiInfo.rank << " communmicate done\n";
-    // #ifndef NDEBUG
-    //     if (IsRayQueueEmpty())
-    //       std::cout << "rank " << mpiInfo.rank << " ray queue is empty"
-    //                 << std::endl;
-    // #endif
   } // while (!all_done)
-
-// std::cout << "domain scheduler: select time: " << t_sort.format();
-// std::cout << "domain scheduler: trace time: " << t_trace.format();
-// std::cout << "domain scheduler: shuffle time: " << t_shuffle.format();
-// std::cout << "domain scheduler: send time: " << t_send.format();
 
 #ifdef VERIFY
   for (auto &smap : send_map) {
@@ -363,65 +349,23 @@ inline void DomainTracer::Trace() {
 #ifdef GVT_USE_MPE
   MPE_Log_event(framebufferstart, 0, NULL);
 #endif
-  // t_gather.resume();
-  // // this->gatherFramebuffers(this->rays_end - this->rays_start);
-  // if (mpiInfo.rank == 0) {
-  //   Work *work = new Composite(0);  // 0 is a dummy value
-  //   work->SendAll(comm);
-  // }
-#ifdef GVT_MPI_THREAD_MULTIPLE_SUPPORT
+
+#ifdef SEND_COMPOSITE_MESSAGE
+  if (mpiInfo.rank == 0) {
+    Composite *work = new Composite();
+    work->SendCollective(comm);
+  }
+  waitCompositeDone();
+#else // default
   profiler.Start(Profiler::COMPOSITE);
   this->gatherFramebuffers(this->rays_end - this->rays_start);
   profiler.Stop(Profiler::COMPOSITE);
-#else
-  Composite *work = new Composite();
-  work->SendAll(comm);
 #endif
-// profiler.Start(Profiler::COMPOSITE);
-// CompositeFrameBuffers();
-// profiler.Stop(Profiler::COMPOSITE);
-#ifdef DEBUG_TX
-  std::cout << "rank " << mpiInfo.rank << " composite done" << std::endl;
-#endif
-// t_gather.stop();
+
 #ifdef GVT_USE_MPE
   MPE_Log_event(framebufferend, 0, NULL);
 #endif
-
-  // t_frame.stop();
-  // t_all = t_sort + t_trace + t_shuffle + t_gather + t_adapter + t_filter;
-  //         // t_send + t_recv + t_vote;
-  // t_diff = t_frame - t_all;
-  std::cout << "rank " << mpiInfo.rank << " trace done\n";
 }
-
-// inline void DomainTracer::RecvMessage() {
-//   pthread_mutex_lock(&workQ_mutex);
-//   while (!workQ.empty()) {
-//     Work *work = workQ.front();
-//     int tag = work->GetTag();
-//
-//     if (tag == RemoteRays::tag) { // handle rays message
-//       RemoteRays *rays = static_cast<RemoteRays *>(work);
-//       int tx_type = rays->GetTransferType();
-//       if (tx_type == RemoteRays::Request) {
-//         RecvRays(rays);
-//       } else if (tx_type == RemoteRays::Grant) {
-//         voter->updateRayRx(rays->GetNumRays());
-//       } else {
-//         assert(false);
-//       }
-//     } else if (tag == Vote::tag) { // handle vote message
-//       Vote *vote = static_cast<Vote *>(work);
-//       voter->updateState(vote->GetVoteType() /* receivedVoteType */, false /* checkDone */);
-//     } else {
-//       assert(false);
-//     }
-//     workQ.pop();
-//     delete work;
-//   }
-//   pthread_mutex_unlock(&workQ_mutex);
-// }
 
 inline void DomainTracer::recvRayMsg() {
   pthread_mutex_lock(&rayMsgQ_mutex);
@@ -466,17 +410,14 @@ bool DomainTracer::Communicate() {
     profiler.Start(Profiler::SEND);
     sendRays();
     profiler.Stop(Profiler::SEND);
-    // std::cout << "rank " << mpiInfo.rank << " send done\n";
     profiler.Start(Profiler::RECV);
     recvRayMsg();
     recvVoteMsg();
     profiler.Stop(Profiler::RECV);
-    // std::cout << "rank " << mpiInfo.rank << " recv done\n";
 
     profiler.Start(Profiler::VOTE);
     done = voter->isDone();
     profiler.Stop(Profiler::VOTE);
-    // std::cout << "rank " << mpiInfo.rank << " voter done\n";
   } else {
     profiler.Start(Profiler::VOTE);
     done = IsRayQueueEmpty();
@@ -496,7 +437,6 @@ void DomainTracer::sendRays() {
     size_t num_rays_to_send = rays.size();
 
     if (owner_process != mpiInfo.rank && num_rays_to_send > 0) {
-      // printf("sending rays...\n");
       ray_count += num_rays_to_send;
 
       voter->updateRayTx(num_rays_to_send);
@@ -516,12 +456,6 @@ void DomainTracer::sendRays() {
 #endif
 
       work->Send(owner_process, comm);
-
-      // RemoteRays *work = new RemoteRays(RemoteRays::getSize(
-      //     num_rays_to_send * sizeof(gvt::render::actor::Ray)));
-      // work->setup(RemoteRays::Request, rank, instance, rays);
-      // work.Send(owner_process);
-      // SendWork(work, owner_process);
 
       rays.clear();
 #ifdef DEBUG_TX
@@ -554,9 +488,6 @@ inline void DomainTracer::EnqueWork(Work *work) {
   } else {
     assert(false);
   }
-  // pthread_mutex_lock(&workQ_mutex);
-  // workQ.push(work);
-  // pthread_mutex_unlock(&workQ_mutex);
 }
 
 void DomainTracer::recvRays(const RemoteRays *rays) {
@@ -570,7 +501,7 @@ void DomainTracer::recvRays(const RemoteRays *rays) {
   }
   recv_map[rays->GetSender()] += rays->GetNumRays();
 #endif
-  CopyRays(*rays);
+  copyRays(*rays);
 
   RemoteRays::Header header;
   header.transfer_type = RemoteRays::Grant;
@@ -589,7 +520,7 @@ void DomainTracer::recvRays(const RemoteRays *rays) {
   if (ray_count > 0) profiler.AddCounter(Profiler::RECV_RAY, ray_count);
 }
 
-void DomainTracer::CopyRays(const RemoteRays &rays) {
+void DomainTracer::copyRays(const RemoteRays &rays) {
   int instance = rays.GetInstance();
   int num_rays = rays.GetNumRays();
 
@@ -600,23 +531,7 @@ void DomainTracer::CopyRays(const RemoteRays &rays) {
   printf("ray copy begin %p end %p instance %d num_rays %d\n", begin, end, instance, num_rays);
 #endif
 
-  //   if (queue.find(instance) != queue.end()) {
-  //     RayVector &r = queue[instance];
-  //     r.insert(r.end(), begin, end);
-  //   } else {
-  //     queue[instance] = RayVector();
-  //     RayVector &r = queue[instance];
-  //     r.insert(r.end(), begin, end);
-  //   }
-
-  for (int i = 0; i < num_rays; ++i) {
-    // if (queue.find(instance) == queue.end()) {
-    //   gvt::render::actor::RayVector rv;
-    //   queue[instance] = rv;
-    // }
-    const Ray &rr = *(begin + i);
-    queue[instance].push_back(rr);
-  }
+  queue[instance].insert(queue[instance].end(), begin, end);
 }
 
 void DomainTracer::LocalComposite() {
@@ -630,11 +545,26 @@ void DomainTracer::LocalComposite() {
                     ap);
 }
 
+void DomainTracer::SignalCompositeDone() {
+  pthread_mutex_lock(&compositeDone_mutex);
+  compositeDone = true;
+  pthread_cond_signal(&compositeDone_cond);
+  pthread_mutex_unlock(&compositeDone_mutex);
+}
+
+inline void DomainTracer::waitCompositeDone() {
+  pthread_mutex_lock(&compositeDone_mutex);
+  while (!compositeDone) {
+    pthread_cond_wait(&compositeDone_cond, &compositeDone_mutex);
+  }
+  compositeDone = false;
+  pthread_mutex_unlock(&compositeDone_mutex);
+}
+
 void DomainTracer::CompositeFrameBuffers() {
-  // #ifndef NDEBUG
-  //   std::cout << "rank " << mpiInfo.rank << " start " << __PRETTY_FUNCTION__
-  //             << std::endl;
-  // #endif
+#ifdef GVT_USE_ICET
+  gatherFramebuffers(0);
+#else
   LocalComposite();
   // for (size_t i = 0; i < size; i++) image.Add(i, colorBuf[i]);
 
@@ -666,10 +596,7 @@ void DomainTracer::CompositeFrameBuffers() {
     });
   }
   delete[] bufs;
-  // #ifndef NDEBUG
-  //   std::cout << "rank " << mpiInfo.rank << " done " << __PRETTY_FUNCTION__
-  //             << std::endl;
-  // #endif
+#endif
 }
 
 } // namespace unit

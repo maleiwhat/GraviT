@@ -70,7 +70,9 @@ public:
 private:
   static std::string stateNames[NUM_STATES];
 
-  enum Role { COORDINATOR = 0 };
+  enum Role {
+    COORDINATOR = 0
+  };
 
   void sendVote(int voteWorkType) const;
   void reset();

@@ -30,6 +30,7 @@ option(GVT_VOLUME 		 "Build GraviT volume rendering library" OFF)
 option(GVT_ADVECT 		 "Build GraviT particle advection library" OFF)
 option(GVT_DEBUG 		 "Build GraviT use debug prmimitives" OFF)
 option(GVT_TIMING 		 "Build GraviT use timing prmimitives" OFF)
+option(GVT_USE_ICET 		 "Build GraviT use timing prmimitives" ON)
 option(GVT_MPE "Use MPE Profileing" OFF)
 option(GVT_TESTING "Create testing and benchmark programs" OFF)
 

@@ -28,6 +28,7 @@
 #define GVT_RENDER_UNIT_RAY_TRACER_H
 
 #include "gvt/render/unit/Types.h"
+#include "gvt/render/unit/Profiler.h"
 
 #include <cassert>
 
@@ -59,6 +60,13 @@ class RayTracer {
     assert(false);
     return false;
   }
+  virtual profiler::Profiler *GetProfiler() {
+    assert(false);
+    return nullptr;
+  }
+
+  virtual void CompositeFramebuffers() { assert(false); }
+  virtual void SignalCompositeDone() { assert(false); }
 
  protected:
   const MpiInfo mpiInfo;

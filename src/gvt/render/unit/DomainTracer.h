@@ -37,7 +37,6 @@
 #include "gvt/render/unit/Profiler.h"
 
 #include "gvt/render/algorithm/TracerBase.h"
-// #include "gvt/render/unit/AbstractTrace.h"
 #include "gvt/render/actor/Ray.h"
 
 // #define VERIFY
@@ -105,12 +104,31 @@ public:
    */
   virtual void CompositeFrameBuffers();
 
+
   /**
-   * A getter that returns the profiler.
+   * A getter that returns the profiler reference.
    */
-  profiler::Profiler &GetProfiler() { return profiler; }
+  // profiler::Profiler &GetProfiler() { return profiler; }
+
+  /**
+   * A getter that returns the profiler pointer.
+   */
+  profiler::Profiler *GetProfiler() { return &profiler; }
+
+  /**
+   * Composite::Action() calls this function to notify that the composite is done.
+   */
+  virtual void SignalCompositeDone();
 
 private:
+  /**
+   * Wait until the composite is done.
+   */
+  void waitCompositeDone();
+  pthread_mutex_t compositeDone_mutex;
+  pthread_cond_t compositeDone_cond;
+  bool compositeDone;
+
   void shuffleDropRays(gvt::render::actor::RayVector &rays);
   void FilterRaysLocally();
 
@@ -140,18 +158,15 @@ private:
   void recvRays(const RemoteRays *rays);
 
   /**
-   * Receive vote from other nodes.
+   * Copy received rays from rayMsgQ to the ray queue.
    */
-  // void RecvVote(const Work* work);
-
-  void CopyRays(const RemoteRays &rays); // TODO: avoid this
+  void copyRays(const RemoteRays &rays); // TODO: avoid this
 
   Voter *voter;
 
   /**
    * A mutex for the work queue.
    */
-  // pthread_mutex_t workQ_mutex;
   pthread_mutex_t rayMsgQ_mutex;
   pthread_mutex_t voteMsgQ_mutex;
 
@@ -159,7 +174,6 @@ private:
    * A work queue for registering all the incoming work sent by other nodes.
    * This DomainTracer class is responsible for deleting pointers in the queue.
    */
-  // std::queue<Work *> workQ;
   std::queue<Work *> rayMsgQ;
   std::queue<Work *> voteMsgQ;
 

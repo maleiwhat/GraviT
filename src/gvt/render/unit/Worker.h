@@ -51,7 +51,6 @@ namespace scene {
 
 class gvtPerspectiveCamera;
 class Image;
-
 }
 }
 }
@@ -70,26 +69,17 @@ class Voter;
 class Work;
 
 class Worker {
- public:
+public:
   // Worker(int* argc, char*** argv, const commandline::Options& options,
-  Worker(const MpiInfo& mpi, const commandline::Options& options,
-         gvtPerspectiveCamera* camera, Image* image);
+  Worker(const MpiInfo &mpi, const commandline::Options &options, gvtPerspectiveCamera *camera, Image *image);
 
   ~Worker();
 
-  // void InitTracer(const commandline::Options& options,
-  //                 gvtPerspectiveCamera* camera, Image* image);
   void Render();
 
   // sync
   void Quit();
   void Wait();
-
-  // void IsQuit(bool* quit_detected) {
-  //   pthread_mutex_lock(&quit_mutex);
-  //   *quit_detected = quit;
-  //   pthread_mutex_unlock(&quit_mutex);
-  // }
 
   // get mpi info
   MpiInfo GetMpiInfo() const { return mpi; }
@@ -97,11 +87,11 @@ class Worker {
   int GetMpiSize() const { return mpi.size; }
 
   // get units
-  Communicator* GetCommunicator() const { return comm; }
-  RayTracer* GetTracer() { return tracer; }
-  Voter* GetVoter() { return voter; }
+  Communicator *GetCommunicator() const { return comm; }
+  RayTracer *GetTracer() { return tracer; }
+  Voter *GetVoter() { return voter; }
 
- private:
+private:
   friend class Command;
   void QuitCommunicator();
 
@@ -113,18 +103,18 @@ class Worker {
   void WaitMpiReady();
   void WaitTracerReady();
 
- private:
+private:
   // communication
   MpiInfo mpi;
-  Communicator* comm;
+  Communicator *comm;
 
   // scene
-  gvtPerspectiveCamera* camera;
-  Image* image;
+  gvtPerspectiveCamera *camera;
+  Image *image;
 
-  // processors 
-  RayTracer* tracer;
-  Voter* voter;
+  // processors
+  RayTracer *tracer;
+  Voter *voter;
 
   bool mpiReady;
   pthread_mutex_t mpiReady_mutex;

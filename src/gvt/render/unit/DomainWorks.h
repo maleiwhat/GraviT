@@ -115,7 +115,11 @@ public:
     int sender;
   };
 
-  Vote() : Work() { Vote(UNKNOWN, -1); }
+  Vote() {
+    Allocate(sizeof(Data));
+    GetBufferPtr<Data>()->vote_type = UNKNOWN;
+    GetBufferPtr<Data>()->sender = -1;
+  }
 
   Vote(int vote_type, int sender) : Work() {
     Allocate(sizeof(Data));

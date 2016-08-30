@@ -34,17 +34,9 @@
 #include <string>
 #include <iostream>
 
-// #define DEBUG_VOTER
-
 namespace gvt {
 namespace render {
 namespace unit {
-
-void DebugState(int rank, const std::string &old_state, const std::string &new_state) {
-#if 0
-  std::cout << "Rank " << rank << " " << old_state << "->" << new_state << std::endl;
-#endif
-}
 
 std::string Voter::stateNames[Voter::NUM_STATES] = { "IDLE_COORDINATOR", "IDLE_COHORT", "WAIT_VOTE",
                                                      "WAIT_VOTE_RESULT", "TERMINATE" };
@@ -63,21 +55,6 @@ void Voter::reset() {
   numCommitVotes = 0;
 }
 
-// bool Voter::isDone() {
-//   if (mpi.rank == COORDINATOR) {
-//     updateState(Vote::UNKNOWN /* unused */, isTimeToVote() /*checkDone */);
-//     if (isTimeToVote()) {
-//       assert(state == IDLE);
-//       state = WAIT_VOTE;
-//       DebugState(mpi.rank, "IDLE", "WAIT_VOTE");
-//       broadcast(Vote::PROPOSE);
-//     }
-//   }
-//   bool done = (state == TERMINATE);
-//   if (done) reset();
-//   return done;
-// }
-
 bool Voter::isDone() {
   if (mpi.rank == COORDINATOR) {
     updateState(Vote::UNKNOWN /* unused */, true /* checkDone */);
@@ -91,80 +68,11 @@ bool Voter::isDone() {
 }
 
 void Voter::updateRayRx(int numRaysAck) {
-  // #ifdef DEBUG_VOTER
-  //   printf("rank %d numPendingRays(before) %d. sent %d rays. numPendingRays(after) "
-  //          "%d in %s\n",
-  //          mpi.rank, numPendingRays, n, (numPendingRays - n), __PRETTY_FUNCTION__);
-  // #endif
   numPendingRays -= numRaysAck;
   assert(numPendingRays >= 0);
 }
 
 void Voter::updateRayTx(int numRaysSent) { numPendingRays += numRaysSent; }
-
-// void Voter::UpdateVote(const Vote& vote) {
-//   int type = vote->GetVoteType();
-//
-// #ifdef DEBUG_VOTER
-//   std::string name;
-//   if (type == Vote::PROPOSE) {
-//     name = "PROPOSE";
-//   } else if (type == Vote::DO_COMMIT) {
-//     name = "DO_COMMIT";
-//   } else if (type == Vote::DO_ABORT) {
-//     name = "DO_ABORT";
-//   } else if (type == Vote::VOTE_COMMIT) {
-//     name = "VOTE_COMMIT";
-//   } else if (type == Vote::VOTE_ABORT) {
-//     name = "VOTE_ABORT";
-//   }
-//   std::cout << "[VOTER] rank " << mpi.rank << " got vote_type " << name << std::endl;
-// #endif
-//
-//   if (type == Vote::PROPOSE) { // cohorts
-// #ifdef DEBUG_VOTER
-//     if (!(mpi.rank != COORDINATOR && state == IDLE)) {
-//       printf("assertion_error rank %d state %d\n", mpi.rank, state);
-//     }
-// #endif
-//     assert(mpi.rank != COORDINATOR && state == IDLE);
-//     state = WAIT_VOTE_RESULT;
-//     if (hasWork()) {
-//       sendVote(Vote::VOTE_ABORT);
-//     } else {
-//       sendVote(Vote::VOTE_COMMIT);
-//     }
-//     DebugState(mpi.rank, "IDLE", "WAIT_VOTE_RESULT");
-//   } else if (type == Vote::DO_COMMIT) { // cohorts
-//     assert(mpi.rank != COORDINATOR && state == WAIT_VOTE_RESULT);
-//     state = TERMINATE;
-//     DebugState(mpi.rank, "WAIT_VOTE_RESULT", "TERMINATE");
-//   } else if (type == Vote::DO_ABORT) { // cohorts
-//     assert(mpi.rank != COORDINATOR && state == WAIT_VOTE_RESULT);
-//     state = IDLE;
-//     DebugState(mpi.rank, "WAIT_VOTE_RESULT", "IDLE");
-//   } else if (type == Vote::VOTE_COMMIT || type == Vote::VOTE_ABORT) { // coordinator
-//     assert(mpi.rank == COORDINATOR && state == WAIT_VOTE);
-//     numCommitVotes += (type == Vote::VOTE_COMMIT);
-//     ++numVotesReceived;
-//     if (allVotesReceived()) {
-//       if (achievedConsensus()) {
-//         state = TERMINATE;
-//         DebugState(mpi.rank, "WAIT_VOTE", "TERMINATE");
-//         broadcast(Vote::DO_COMMIT);
-//       } else {
-//         state = IDLE;
-//         DebugState(mpi.rank, "WAIT_VOTE", "IDLE");
-//         broadcast(Vote::DO_ABORT);
-//       }
-//       numVotesReceived = 0;
-//       numCommitVotes = 0;
-//     }
-//   } else { // unknown vote type
-//     std::cout << "rank " << mpi.rank << " invalid vote type " << type << std::endl;
-//     exit(1);
-//   }
-// }
 
 void Voter::updateState(int receivedVoteType, bool checkDone) {
   assert((!checkDone && receivedVoteType != Vote::UNKNOWN) ||

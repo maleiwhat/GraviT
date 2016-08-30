@@ -25,6 +25,7 @@
 // CommonWorks.cpp
 //
 #include "gvt/render/unit/CommonWorks.h"
+#include "gvt/render/unit/Worker.h"
 #include <iostream>
 
 namespace gvt {
@@ -51,7 +52,11 @@ bool Composite::Action(Worker *worker) {
 #ifdef DEBUG_WORK
   std::cout << "rank " << worker->GetRank() << " " << __PRETTY_FUNCTION__ << std::endl;
 #endif
-  worker->GetTracer()->CompositeFrameBuffers();
+  RayTracer *tracer = worker->GetTracer();
+  tracer->GetProfiler()->Start(profiler::Profiler::COMPOSITE);
+  tracer->CompositeFrameBuffers();
+  tracer->SignalCompositeDone();
+  tracer->GetProfiler()->Stop(profiler::Profiler::COMPOSITE);
   return true;
 }
 
