@@ -54,7 +54,7 @@ public:
   void updateRayTx(int numRaysSent);
   // void UpdateVote(const Vote &vote);
   void updateState(int receivedVoteType, bool checkDone);
-  // bool isCommAllowed() const;
+  bool isCommAllowed() const;
 
   friend class DomainTracer;
 

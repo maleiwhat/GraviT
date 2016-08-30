@@ -352,7 +352,7 @@ inline void DomainTracer::trace() {
 
 #ifdef SEND_COMPOSITE_MESSAGE
   if (mpiInfo.rank == 0) {
-    Composite *work = new Composite();
+    Composite *work = new Composite(0);
     work->SendCollective(comm);
   }
   waitCompositeDone();
@@ -404,14 +404,16 @@ inline void DomainTracer::recvVoteMsg() {
   pthread_mutex_unlock(&voteMsgQ_mutex);
 }
 
-bool DomainTracer::communicate() {
+inline bool DomainTracer::communicate() {
   bool done = false;
   if (mpiInfo.size > 1) {
     profiler.Start(Profiler::SEND);
     sendRays();
     profiler.Stop(Profiler::SEND);
     profiler.Start(Profiler::RECV);
-    recvRayMsg();
+    if (voter->isCommAllowed()) {
+      recvRayMsg();
+    }
     recvVoteMsg();
     profiler.Stop(Profiler::RECV);
 
@@ -426,7 +428,7 @@ bool DomainTracer::communicate() {
   return done;
 }
 
-void DomainTracer::sendRays() {
+inline void DomainTracer::sendRays() {
   std::size_t ray_count = 0;
 
   for (auto &q : queue) {
@@ -490,7 +492,7 @@ inline void DomainTracer::enqueWork(Work *work) {
   }
 }
 
-void DomainTracer::recvRays(const RemoteRays *rays) {
+inline void DomainTracer::recvRays(const RemoteRays *rays) {
   std::size_t ray_count = 0;
 
 #ifdef VERIFY
@@ -520,18 +522,17 @@ void DomainTracer::recvRays(const RemoteRays *rays) {
   if (ray_count > 0) profiler.AddCounter(Profiler::RECV_RAY, ray_count);
 }
 
-void DomainTracer::copyRays(const RemoteRays &rays) {
+inline void DomainTracer::copyRays(const RemoteRays &rays) {
   int instance = rays.GetInstance();
   int num_rays = rays.GetNumRays();
 
   const Ray *begin = reinterpret_cast<const Ray *>(rays.GetRayBuffer());
   const Ray *end = begin + rays.GetNumRays();
 
-#ifdef DEBUG_TX
-  printf("ray copy begin %p end %p instance %d num_rays %d\n", begin, end, instance, num_rays);
-#endif
-
   queue[instance].insert(queue[instance].end(), begin, end);
+#ifdef DEBUG_TX
+  printf("rank %d received %d rays\n", mpiInfo.rank, num_rays);
+#endif
 }
 
 void DomainTracer::localComposite() {

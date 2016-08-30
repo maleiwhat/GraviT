@@ -40,12 +40,6 @@ using namespace gvt::render::actor;
 STATIC_WORK_TAG(RemoteRays)
 STATIC_WORK_TAG(Vote)
 
-RemoteRays::RemoteRays() : Work() {
-  Header h = { -1 /* transfer_type */, -1 /* sender */, -1 /* instance */, 0 /* num_rays */ };
-  Allocate(sizeof(Header));
-  memcpy(GetBufferPtr<void>(), &h, sizeof(Header));
-}
-
 RemoteRays::RemoteRays(const Header &header) : Work() {
   Allocate(sizeof(Header));
   memcpy(GetBufferPtr<void>(), &header, sizeof(Header));

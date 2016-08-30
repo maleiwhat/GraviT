@@ -154,7 +154,7 @@ void Voter::updateState(int receivedVoteType, bool checkDone) {
 #endif
 }
 
-// bool Voter::isCommAllowed() const { return (state == IDLE_COHORT || state == IDLE_COORDINATOR); }
+bool Voter::isCommAllowed() const { return (state == IDLE_COHORT || mpi.rank == COORDINATOR); }
 
 inline bool Voter::hasWork() const {
 #ifdef DEBUG_VOTER

@@ -74,7 +74,7 @@ public:
     Ray *rays;
   };
 
-  RemoteRays();
+  RemoteRays() : Work() {}
 
   RemoteRays(const Header &header);
 
@@ -115,11 +115,7 @@ public:
     int sender;
   };
 
-  Vote() {
-    Allocate(sizeof(Data));
-    GetBufferPtr<Data>()->vote_type = UNKNOWN;
-    GetBufferPtr<Data>()->sender = -1;
-  }
+  Vote() : Work() {}
 
   Vote(int vote_type, int sender) : Work() {
     Allocate(sizeof(Data));
