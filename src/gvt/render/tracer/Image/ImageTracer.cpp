@@ -228,16 +228,6 @@ void ImageTracer::operator()() {
   // Start composite
 
   float *img_final = composite_buffer->composite();
-
-  // const size_t size = width * height;
-  // const size_t chunksize = MAX(2, size / (std::thread::hardware_concurrency() * 4));
-  // static tbb::simple_partitioner ap;
-  // tbb::parallel_for(tbb::blocked_range<size_t>(0, size, chunksize),
-  //                   [&](tbb::blocked_range<size_t> chunk) {
-  //                     for (size_t i = chunk.begin(); i < chunk.end(); i++)
-  //                       image->Add(i, & final[i * 4]);
-  //                   },
-  //                   ap);
 };
 
 bool ImageTracer::MessageManager(std::shared_ptr<gvt::comm::Message> msg) {
@@ -278,24 +268,13 @@ void ImageTracer::processRayQueue(gvt::render::actor::RayVector &rays, const int
           } else if (r.type == gvt::render::actor::Ray::SHADOW &&
                      glm::length(r.color) > 0) {
             composite_buffer->localAdd(r.id, r.color, r.w);
-            // tbb::mutex::scoped_lock fbloc(colorBuf_mutex[r.id % width]);
-            // colorBuf[r.id] += glm::vec4(r.color, r.w);
-            // colorBuf[r.id][3] += r.w;
           }
         }
         for (auto &q : local_queue) {
           _queue.enqueue(q.first, local_queue[q.first]);
-          // queue_mutex[q.first].lock();
-          // queue[q.first].insert(queue[q.first].end(),
-          //                       std::make_move_iterator(local_queue[q.first].begin()),
-          //                       std::make_move_iterator(local_queue[q.first].end()));
-          // queue_mutex[q.first].unlock();
         }
       },
       ap);
-
-  // std::cout << "Finished shuffle" << std::endl;
-  rays.clear();
 }
 
 void ImageTracer::updateGeometry() {}

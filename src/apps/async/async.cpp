@@ -456,14 +456,7 @@ void setCamera() {
 
 void setImage() {
   gvt::render::RenderContext *cntxt = gvt::render::RenderContext::instance();
-  gvt::core::DBNodeH camNode = cntxt->getRootNode()["Camera"];
   gvt::core::DBNodeH filmNode = cntxt->getRootNode()["Film"];
-  std::shared_ptr<gvt::render::data::scene::Image> _img =
-      std::make_shared<gvt::render::data::scene::Image>(
-          filmNode["width"].value().toInteger(), filmNode["height"].value().toInteger(),
-          filmNode["outputPath"].value().toString());
-
-  cntxt->setImage(_img);
   cntxt->setComposite(std::make_shared<gvt::render::composite::IceTComposite>(
       filmNode["width"].value().toInteger(), filmNode["height"].value().toInteger()));
 }
@@ -514,12 +507,14 @@ int main(int argc, char *argv[]) {
 #endif
   std::shared_ptr<gvt::tracer::ImageTracer> tracer =
       std::make_shared<gvt::tracer::ImageTracer>();
-
-  (*tracer)();
-
   std::shared_ptr<gvt::render::composite::ImageComposite> composite_buffer =
       cntxt->getComposite<gvt::render::composite::ImageComposite>();
-  composite_buffer->write("async");
+  for (int ii = 0; ii < 10; ii++) {
+    composite_buffer->reset();
+    (*tracer)();
+  }
+
+  composite_buffer->write(cntxt->getRootNode()["Film"]["outputPath"].value().toString());
   comm->terminate();
   return 0;
 }
