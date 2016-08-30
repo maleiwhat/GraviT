@@ -188,20 +188,25 @@ void Communicator::MessageThread() {
     int flag;
     MPI_Status mpi_status;
     int mpi_error = MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &flag, &mpi_status);
+#ifdef DEBUG_COMM
     if (mpi_error != MPI_SUCCESS) {
       int len, eclass;
       char estring[MPI_MAX_ERROR_STRING];
       MPI_Error_class(mpi_error, &eclass);
       MPI_Error_string(mpi_error, estring, &len);
       printf("error %d: %s\n", eclass, estring);
+      exit(1);
     }
+#endif
 
     if (flag) {
       assert(mpi_status.MPI_TAG >= 0 && mpi_status.MPI_TAG < deserializers.size());
-      // debug
+#ifdef DEBUG_COMM
       if (!(mpi_status.MPI_TAG >= 0 && mpi_status.MPI_TAG < deserializers.size())) {
         printf("error mpi tag %d out of bound\n", mpi_status.MPI_TAG);
+        exit(1);
       }
+#endif
       Work *incoming_work = deserializers[mpi_status.MPI_TAG]();
       RecvWork(mpi_status, incoming_work);
     }
@@ -219,9 +224,7 @@ void Communicator::MessageThread() {
                 << ") from sendQ (size " << qsize << ")" << std::endl;
 #endif
       sendQ.pop();
-      // printf("rank %d msg sent\n", mpi.rank); // debug
       delete outgoing_work;
-      // printf("rank %d deleted msg just sent\n", mpi.rank); // debug
     }
     pthread_mutex_unlock(&sendQ_mutex);
   }
@@ -282,7 +285,6 @@ void Communicator::RecvWork(const MPI_Status &status, Work *work) {
   MPI_Status status_out;
   MPI_Recv(work->GetBufferPtr<unsigned char>(), count, MPI_UNSIGNED_CHAR, status.MPI_SOURCE, status.MPI_TAG,
            MPI_COMM_WORLD, &status_out);
-// printf("rank %d recv success\n", mpi.rank);
 
 #ifdef DEBUG_COMM
   int count_recved = 0;
@@ -377,14 +379,9 @@ void Communicator::SendWorkCopiesToAllOther(Work *work) {
   pthread_mutex_unlock(&sendQ_mutex);
 }
 
-void Communicator::HandleReceivedMessage(Work *work) {
-  int tag = work->GetTag();
-  if (tag == RemoteRays::tag || tag == Vote::tag) {
-    worker->GetTracer()->EnqueWork(work);
-  } else {
-    work->Action(worker);
-    delete work;
-  }
+inline void Communicator::HandleReceivedMessage(Work *work) {
+  bool delete_this = work->Action(worker);
+  if (delete_this) delete work;
 }
 
 } // namespace unit

@@ -57,75 +57,16 @@ RemoteRays::RemoteRays(const Header &header, const std::vector<Ray> &rays) : Wor
 }
 
 bool RemoteRays::Action(Worker *worker) {
-  assert(false);
-  //   TpcVoter* voter = worker->GetVoter();
-  //   int num_rays = GetNumRays();
-  //   int tx_type = GetTransferType();
-  //
-  // #ifdef DEBUG_TX
-  //   printf(
-  //       "ranks %d RayHeader (type %d sender %d instance %d num_rays %d) in %s\n",
-  //       worker->GetRank(), tx_type, GetSender(), GetInstance(), num_rays,
-  //       __PRETTY_FUNCTION__);
-  // #endif
-  //   // #endif
-  //
-  //   bool delete_this = true;
-  //
-  //   if (tx_type == Request) {
-  //     worker->GetTracer()->EnqueWork(this);
-  //     delete_this = false;
-  //   } else if (tx_type == Grant) {  // Grant
-  //     voter->subtractNumPendingRays(num_rays);
-  //   } else {
-  //     assert(false);
-  //   }
-  //
-  //   return delete_this;
+  worker->GetTracer()->EnqueWork(this);
+  return false;
 }
 
 std::string Vote::names[Vote::NUM_VOTE_TYPES] = { "PROPOSE",     "DO_COMMIT",  "DO_ABORT",
                                                   "VOTE_COMMIT", "VOTE_ABORT", "UNKNOWN" };
 
 bool Vote::Action(Worker *worker) {
-  assert(false);
-  //   TpcVoter* voter = worker->GetVoter();
-  //   int type = GetVoteType();
-  //
-  // #ifndef NDEBUG
-  //   std::string name;
-  //   if (type == PROPOSE) {
-  //     name = "PROPOSE";
-  //   } else if (type == DO_COMMIT) {
-  //     name = "DO_COMMIT";
-  //   } else if (type == DO_ABORT) {
-  //     name = "DO_ABORT";
-  //   } else if (type == VOTE_COMMIT) {
-  //     name = "VOTE_COMMIT";
-  //   } else if (type == VOTE_ABORT) {
-  //     name = "VOTE_ABORT";
-  //   }
-  //   std::cout << "[VOTER] rank " << worker->GetRank() << " got vote_type " << name
-  //             << std::endl;
-  // #endif
-  //
-  //   if (type == PROPOSE) {
-  //     voter->setProposeAvailable();
-  //   } else if (type == DO_COMMIT) {
-  //     voter->commit();
-  //   } else if (type == DO_ABORT) {
-  //     voter->abort();
-  //   } else if (type == VOTE_COMMIT) {
-  //     voter->voteCommit();
-  //   } else if (type == VOTE_ABORT) {
-  //     voter->voteAbort();
-  //   } else {
-  //     std::cout << "rank " << worker->GetRank() << " invalid vote type " << type
-  //               << std::endl;
-  //     exit(1);
-  //   }
-  //
-  //   return true;
+  worker->GetTracer()->EnqueWork(this);
+  return false;
 }
 
 } // namespace unit
