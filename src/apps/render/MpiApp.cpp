@@ -81,6 +81,8 @@
 #define MIN(a, b) ((a < b) ? (a) : (b))
 #endif
 
+#define PRINT_FRAME_NUMBER
+
 namespace apps {
 namespace render {
 namespace mpi {
@@ -788,11 +790,13 @@ void RenderFilm(const commandline::Options &options, gvt::render::unit::MpiInfo 
     Worker worker(mpi, options, g_camera, g_image);
 
     DomainTracer *domain_tracer = static_cast<DomainTracer *>(worker.GetTracer());
-    Profiler &profiler = *domain_tracer->GetProfiler();
+    Profiler &profiler = *domain_tracer->getProfiler();
 
     gvt::render::RenderContext *cntxt = gvt::render::RenderContext::instance();
     gvt::core::DBNodeH root = cntxt->getRootNode();
+#ifdef PRINT_NUM_DOMAINS
     std::cout << "[INFO] rank " << mpi.rank << " num domains: " << root["Instances"].getChildren().size() << "\n";
+#endif
     profiler.SetNumDomains(root["Instances"].getChildren().size());
 
     // warm up
@@ -843,7 +847,7 @@ void RenderFilm(const commandline::Options &options, gvt::render::unit::MpiInfo 
     g_camera->generateRays();
 
     gvt::render::algorithm::Tracer<DomainScheduler> tracer(g_camera->rays, *g_image);
-    Profiler &profiler = tracer.GetProfiler();
+    Profiler &profiler = *tracer.getProfiler();
 
     for (int z = 0; z < options.warmup_frames; z++) {
       g_camera->AllocateCameraRays();

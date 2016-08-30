@@ -47,26 +47,26 @@ class RayTracer {
       : mpiInfo(mpi), worker(worker), comm(comm) {}
   virtual ~RayTracer() {}
 
-  virtual void Trace() = 0;
-  virtual Voter* GetVoter() { return NULL; }
-  virtual void CompositeFrameBuffers() { assert(false); }
+  virtual void trace() = 0;
+  virtual Voter* getVoter() { return NULL; }
+  virtual void compositeFrameBuffers() { assert(false); }
 
   // helper functions
   // TODO: avoid this (tbd)
   // virtual void CopyRays(const RayBuffer& ray_buffer) { assert(false); }
 
-  virtual void EnqueWork(Work* work) { assert(false); }
-  virtual bool IsRayQueueEmpty() const {
+  virtual void enqueWork(Work* work) { assert(false); }
+  virtual bool isRayQueueEmpty() const {
     assert(false);
     return false;
   }
-  virtual profiler::Profiler *GetProfiler() {
+  virtual profiler::Profiler *getProfiler() {
     assert(false);
     return nullptr;
   }
 
-  virtual void CompositeFramebuffers() { assert(false); }
-  virtual void SignalCompositeDone() { assert(false); }
+  virtual void compositeFramebuffers() { assert(false); }
+  virtual void signalCompositeDone() { assert(false); }
 
  protected:
   const MpiInfo mpiInfo;

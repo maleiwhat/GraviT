@@ -77,22 +77,22 @@ public:
   /**
    * The main rendering function that traces rays.
    */
-  virtual void Trace();
+  virtual void trace();
 
   /**
    * A getter that returns the voter.
    */
-  virtual Voter *GetVoter() { return voter; }
+  virtual Voter *getVoter() { return voter; }
 
   /**
    * Push the incoming work sent by another node to the internal work queue (workQ).
    */
-  virtual void EnqueWork(Work *work);
+  virtual void enqueWork(Work *work);
 
   /**
    * Check if all the ray queues are empty. This is used by the voter's updateState function.
    */
-  virtual bool IsRayQueueEmpty() const {
+  virtual bool isRayQueueEmpty() const {
     int busy = 0;
     for (auto &q : queue) busy += q.second.size();
     return (busy == 0);
@@ -102,23 +102,18 @@ public:
    * Composite frame buffers from all the MPI nodes using MPI_Gather.
    * This has been replaced by the Canvas class that uses an image compositer in IceT.
    */
-  virtual void CompositeFrameBuffers();
+  virtual void compositeFrameBuffers();
 
-
-  /**
-   * A getter that returns the profiler reference.
-   */
-  // profiler::Profiler &GetProfiler() { return profiler; }
 
   /**
    * A getter that returns the profiler pointer.
    */
-  profiler::Profiler *GetProfiler() { return &profiler; }
+  profiler::Profiler *getProfiler() { return &profiler; }
 
   /**
    * Composite::Action() calls this function to notify that the composite is done.
    */
-  virtual void SignalCompositeDone();
+  virtual void signalCompositeDone();
 
 private:
   /**
@@ -130,15 +125,15 @@ private:
   bool compositeDone;
 
   void shuffleDropRays(gvt::render::actor::RayVector &rays);
-  void FilterRaysLocally();
+  void filterRaysLocally();
 
   // composite
-  void LocalComposite();
+  void localComposite();
 
   /**
    * The top-level communication function.
    */
-  bool Communicate();
+  bool communicate();
 
   /**
    * Send rays to the processes containing corresponding data.

@@ -158,10 +158,10 @@ void Voter::updateState(int receivedVoteType, bool checkDone) {
 
 inline bool Voter::hasWork() const {
 #ifdef DEBUG_VOTER
-  printf("rank %d voter states, rayQ_empty(%d) num_pending_rays(%d)\n", mpi.rank, tracer.IsRayQueueEmpty(),
+  printf("rank %d voter states, rayQ_empty(%d) num_pending_rays(%d)\n", mpi.rank, tracer.isRayQueueEmpty(),
          numPendingRays);
 #endif
-  return !(tracer.IsRayQueueEmpty() && numPendingRays == 0);
+  return !(tracer.isRayQueueEmpty() && numPendingRays == 0);
 }
 
 inline void Voter::sendVote(int voteWorkType) const {

@@ -156,7 +156,7 @@ public:
 
   virtual ~Tracer() {}
 
-  gvt::render::unit::profiler::Profiler &GetProfiler() { return profiler; }
+  gvt::render::unit::profiler::Profiler *getProfiler() { return &profiler; }
 
   void shuffleDropRays(gvt::render::actor::RayVector &rays) {
     const size_t chunksize = MAX(2, rays.size() / (std::thread::hardware_concurrency() * 4));

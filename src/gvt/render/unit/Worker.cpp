@@ -92,7 +92,7 @@ Worker::Worker(const MpiInfo &mpi, const commandline::Options &options, gvtPersp
   }
 
   // voter owned by tracer
-  voter = tracer->GetVoter();
+  voter = tracer->getVoter();
 
   // finally let the communicator serve incoming message
   SignalTracerReady();
@@ -103,7 +103,7 @@ Worker::~Worker() {
   if (tracer) delete tracer;
 }
 
-void Worker::Render() { tracer->Trace(); }
+void Worker::Render() { tracer->trace(); }
 
 void Worker::Quit() {
   if (mpi.rank == 0) {

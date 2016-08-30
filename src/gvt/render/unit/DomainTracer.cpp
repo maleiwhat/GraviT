@@ -172,9 +172,9 @@ void DomainTracer::shuffleDropRays(gvt::render::actor::RayVector &rays) {
   rays.clear();
 }
 
-inline void DomainTracer::FilterRaysLocally() { shuffleDropRays(rays); }
+inline void DomainTracer::filterRaysLocally() { shuffleDropRays(rays); }
 
-inline void DomainTracer::Trace() {
+inline void DomainTracer::trace() {
   GVT_DEBUG(DBG_ALWAYS, "domain scheduler: starting, num rays: " << rays.size());
   gvt::core::DBNodeH root = gvt::render::RenderContext::instance()->getRootNode();
 
@@ -194,7 +194,7 @@ inline void DomainTracer::Trace() {
 #endif
   // t_filter.resume();
   profiler.Start(Profiler::SHUFFLE);
-  FilterRaysLocally();
+  filterRaysLocally();
   profiler.Stop(Profiler::SHUFFLE);
 // t_filter.stop();
 #ifdef GVT_USE_MPE
@@ -329,7 +329,7 @@ inline void DomainTracer::Trace() {
       profiler.AddCounter(Profiler::INVALID_SCHEDULE, 1);
     }
 
-    all_done = Communicate();
+    all_done = communicate();
   } // while (!all_done)
 
 #ifdef VERIFY
@@ -404,7 +404,7 @@ inline void DomainTracer::recvVoteMsg() {
   pthread_mutex_unlock(&voteMsgQ_mutex);
 }
 
-bool DomainTracer::Communicate() {
+bool DomainTracer::communicate() {
   bool done = false;
   if (mpiInfo.size > 1) {
     profiler.Start(Profiler::SEND);
@@ -420,7 +420,7 @@ bool DomainTracer::Communicate() {
     profiler.Stop(Profiler::VOTE);
   } else {
     profiler.Start(Profiler::VOTE);
-    done = IsRayQueueEmpty();
+    done = isRayQueueEmpty();
     profiler.Stop(Profiler::VOTE);
   }
   return done;
@@ -475,7 +475,7 @@ void DomainTracer::sendRays() {
   if (ray_count > 0) profiler.AddCounter(Profiler::SEND_RAY, ray_count);
 }
 
-inline void DomainTracer::EnqueWork(Work *work) {
+inline void DomainTracer::enqueWork(Work *work) {
   int tag = work->GetTag();
   if (tag == RemoteRays::tag) {
     pthread_mutex_lock(&rayMsgQ_mutex);
@@ -534,7 +534,7 @@ void DomainTracer::copyRays(const RemoteRays &rays) {
   queue[instance].insert(queue[instance].end(), begin, end);
 }
 
-void DomainTracer::LocalComposite() {
+void DomainTracer::localComposite() {
   const size_t size = width * height;
   const size_t chunksize = MAX(2, size / (std::thread::hardware_concurrency() * 4));
   static tbb::simple_partitioner ap;
@@ -545,7 +545,7 @@ void DomainTracer::LocalComposite() {
                     ap);
 }
 
-void DomainTracer::SignalCompositeDone() {
+void DomainTracer::signalCompositeDone() {
   pthread_mutex_lock(&compositeDone_mutex);
   compositeDone = true;
   pthread_cond_signal(&compositeDone_cond);
@@ -561,11 +561,11 @@ inline void DomainTracer::waitCompositeDone() {
   pthread_mutex_unlock(&compositeDone_mutex);
 }
 
-void DomainTracer::CompositeFrameBuffers() {
+void DomainTracer::compositeFrameBuffers() {
 #ifdef GVT_USE_ICET
   gatherFramebuffers(0);
 #else
-  LocalComposite();
+  localComposite();
   // for (size_t i = 0; i < size; i++) image.Add(i, colorBuf[i]);
 
   // if (!mpiInfo) return;

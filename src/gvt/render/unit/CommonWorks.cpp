@@ -53,10 +53,10 @@ bool Composite::Action(Worker *worker) {
   std::cout << "rank " << worker->GetRank() << " " << __PRETTY_FUNCTION__ << std::endl;
 #endif
   RayTracer *tracer = worker->GetTracer();
-  tracer->GetProfiler()->Start(profiler::Profiler::COMPOSITE);
-  tracer->CompositeFrameBuffers();
-  tracer->SignalCompositeDone();
-  tracer->GetProfiler()->Stop(profiler::Profiler::COMPOSITE);
+  tracer->getProfiler()->Start(profiler::Profiler::COMPOSITE);
+  tracer->compositeFrameBuffers();
+  tracer->signalCompositeDone();
+  tracer->getProfiler()->Stop(profiler::Profiler::COMPOSITE);
   return true;
 }
 

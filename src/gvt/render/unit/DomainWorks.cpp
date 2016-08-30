@@ -63,7 +63,7 @@ RemoteRays::RemoteRays(const Header &header, const std::vector<Ray> &rays) : Wor
 }
 
 bool RemoteRays::Action(Worker *worker) {
-  worker->GetTracer()->EnqueWork(this);
+  worker->GetTracer()->enqueWork(this);
   return false;
 }
 
@@ -71,7 +71,7 @@ std::string Vote::names[Vote::NUM_VOTE_TYPES] = { "PROPOSE",     "DO_COMMIT",  "
                                                   "VOTE_COMMIT", "VOTE_ABORT", "UNKNOWN" };
 
 bool Vote::Action(Worker *worker) {
-  worker->GetTracer()->EnqueWork(this);
+  worker->GetTracer()->enqueWork(this);
   return false;
 }
 
