@@ -67,6 +67,7 @@ class Work {
   enum CommunicationType {
     P2P = 0, ///< Point-to-point communication.
     SEND_ALL, ///< Send message to all nodes including myself.
+    SEND_COLLECTIVE, ///< Same as SEND_ALL.
     SEND_ALL_OTHER ///< Send message to all other nodes excluding myself.
    };
 
@@ -90,7 +91,7 @@ class Work {
 
   /**
    * A function called by the work thread of the receiver's communicator class.
-   * @return true: delete this dynamically created work object, false: don't delete this.
+   * \return true: delete this dynamically created work object, false: don't delete this.
    */
   virtual bool Action(Worker* worker) {
     assert(false);
@@ -108,7 +109,7 @@ class Work {
   void Clone(Work* work) { contents = work->GetContents(); }
 
   /**
-   * @return the number of bytes for the MPI buffer.
+   * \return the number of bytes for the MPI buffer.
    */
   int GetSize() const {
     if (!contents) return 0;
@@ -117,8 +118,8 @@ class Work {
 
   /**
    * Send this work to the node specified by dest.
-   * @param dest destination node.
-   * @param comm a pointer to the communicator.
+   * \param dest destination node.
+   * \param comm a pointer to the communicator.
    */
   void Send(int dest, Communicator* comm) {
     comm->Send(dest, this);
@@ -126,15 +127,24 @@ class Work {
 
   /**
    * Send this work to all nodes including the node calling this function.
-   * @param comm a pointer to the communicator.
+   * \param comm a pointer to the communicator.
    */
   void SendAll(Communicator* comm) {
     comm->SendAll(this);
   }
 
   /**
+   * Send this work to all nodes including the node calling this function.
+   * Same as SendAll.
+   * \param comm a pointer to the communicator.
+   */
+  void SendCollective(Communicator* comm) {
+    comm->SendAll(this);
+  }
+
+  /**
    * Send this work to all nodes excluding the node calling this function.
-   * @param comm a pointer to the communicator.
+   * \param comm a pointer to the communicator.
    */
   void SendAllOther(Communicator* comm) {
     comm->SendAllOther(this);
@@ -145,7 +155,7 @@ class Work {
 
   /**
    * A getter.
-   * @return MPI request object.
+   * \return MPI request object.
    */
   MPI_Request& GetMpiRequest() { return mpiRequest; }
 

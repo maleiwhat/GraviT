@@ -270,11 +270,6 @@ void Communicator::RecvWork(const MPI_Status &status, Work *work) {
   int count = 0;
   MPI_Get_count(&status, MPI_UNSIGNED_CHAR, &count);
 
-  // #ifndef NDEBUG
-  //   std::cout << "rank " << mpi.rank << " count " << count << " "
-  //             << __PRETTY_FUNCTION__ << "\n";
-  // #endif
-
   assert(count > 0);
 
   work->Allocate(count);

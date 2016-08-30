@@ -69,6 +69,7 @@
 
 // #define VERIFY
 // #define DEBUG_TX
+#define GVT_MPI_THREAD_MULTIPLE_SUPPORT
 
 namespace gvt {
 namespace render {
@@ -368,9 +369,14 @@ inline void DomainTracer::Trace() {
   //   Work *work = new Composite(0);  // 0 is a dummy value
   //   work->SendAll(comm);
   // }
+#ifdef GVT_MPI_THREAD_MULTIPLE_SUPPORT
   profiler.Start(Profiler::COMPOSITE);
   this->gatherFramebuffers(this->rays_end - this->rays_start);
   profiler.Stop(Profiler::COMPOSITE);
+#else
+  Composite *work = new Composite();
+  work->SendAll(comm);
+#endif
 // profiler.Start(Profiler::COMPOSITE);
 // CompositeFrameBuffers();
 // profiler.Stop(Profiler::COMPOSITE);
