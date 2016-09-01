@@ -38,7 +38,7 @@
 #include <gvt/render/actor/Ray.h>
 #include <gvt/render/data/accel/AbstractAccel.h>
 
-#include <gvt/render/tracer/RayQueueManager.h>
+#include <gvt/render/tracer/QueueManager/RayQueueManager.h>
 
 #include <gvt/render/Adapter.h>
 #include <gvt/render/adapter/AdapterCache.h>

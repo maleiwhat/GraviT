@@ -62,28 +62,28 @@
 namespace gvt {
 namespace tracer {
 
-template <>
-void RayQueueManager::dequeue<ImageTracer>(int &target,
-                                           gvt::render::actor::RayVector &_raylist) {
-  int id = -1;
-  unsigned _total = 0;
-  {
-    std::lock_guard<std::mutex> _lock(_protect);
-    for (const auto &q : _queue) {
-      if (q.second.size() > _total) {
-        id = q.first;
-        _total = q.second.size();
-      }
-    }
-  }
-
-  target = id;
-  if (id == -1) return;
-  std::lock_guard<std::mutex> _lock(_protect);
-  std::swap(_queue[id], _raylist);
-  _queue.erase(id);
-  return;
-}
+// template <>
+// void RayQueueManager::dequeue<ImageTracer>(int &target,
+//                                            gvt::render::actor::RayVector &_raylist) {
+//   int id = -1;
+//   unsigned _total = 0;
+//   {
+//     std::lock_guard<std::mutex> _lock(_protect);
+//     for (const auto &q : _queue) {
+//       if (q.second.size() > _total) {
+//         id = q.first;
+//         _total = q.second.size();
+//       }
+//     }
+//   }
+//
+//   target = id;
+//   if (id == -1) return;
+//   std::lock_guard<std::mutex> _lock(_protect);
+//   std::swap(_queue[id], _raylist);
+//   _queue.erase(id);
+//   return;
+// }
 
 ImageTracer::ImageTracer() : Tracer() {}
 
@@ -172,7 +172,7 @@ void ImageTracer::operator()() {
 
     int target = -1;
     gvt::render::actor::RayVector toprocess, moved_rays;
-    _queue.dequeue<ImageTracer>(target, toprocess);
+    _queue.dequeue<HighestSizedQueueFirstPolicy>(target, toprocess);
     if (target != -1) {
       std::shared_ptr<gvt::render::Adapter> adapter = 0;
       gvt::render::data::primitives::Mesh *mesh = meshRef[target];

@@ -294,7 +294,7 @@ set(GVT_RENDER_HDRS ${GVT_RENDER_HDRS}
 
 
   src/gvt/render/adapter/AdapterCache.h
-  src/gvt/render/tracer/RayQueueManager.h
+  src/gvt/render/tracer/QueueManager/RayQueueManager.h
   src/gvt/render/tracer/Image/ImageTracer.h
   src/gvt/render/tracer/Domain/DomainTracer.h
 
@@ -317,6 +317,7 @@ set(GVT_RENDER_SRCS ${GVT_RENDER_SRCS}
   src/gvt/render/data/scene/Light.cpp
   src/gvt/render/data/accel/BVH.cpp
 
+  src/gvt/render/tracer/QueueManager/RayQueueManager.cpp
   src/gvt/render/tracer/Image/ImageTracer.cpp
   src/gvt/render/tracer/Domain/DomainTracer.cpp
   src/gvt/render/composite/ImageComposite.cpp
