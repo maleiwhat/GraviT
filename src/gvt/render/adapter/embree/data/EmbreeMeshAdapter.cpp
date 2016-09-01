@@ -174,8 +174,8 @@ EmbreeMeshAdapter::EmbreeMeshAdapter(gvt::render::data::primitives::Mesh *mesh) 
 }
 
 EmbreeMeshAdapter::~EmbreeMeshAdapter() {
-  rtcDeleteGeometry(scene, geomId);
-  rtcDeleteScene(scene);
+  // rtcDeleteGeometry(scene, geomId);
+  // rtcDeleteScene(scene);
   rtcDeleteDevice(device);
 }
 

@@ -7,6 +7,7 @@
 
 #include <gvt/render/composite/IceTComposite.h>
 #include <gvt/render/composite/ImageComposite.h>
+#include <gvt/render/tracer/Domain/DomainTracer.h>
 #include <gvt/render/tracer/Image/ImageTracer.h>
 
 #include "ParseCommandLine.h"
@@ -505,8 +506,8 @@ int main(int argc, char *argv[]) {
     std::cout << "Out of the loop " << comm->id() << std::endl;
   }
 #endif
-  std::shared_ptr<gvt::tracer::ImageTracer> tracer =
-      std::make_shared<gvt::tracer::ImageTracer>();
+  std::shared_ptr<gvt::tracer::DomainTracer> tracer =
+      std::make_shared<gvt::tracer::DomainTracer>();
   std::shared_ptr<gvt::render::composite::ImageComposite> composite_buffer =
       cntxt->getComposite<gvt::render::composite::ImageComposite>();
   for (int ii = 0; ii < 10; ii++) {
