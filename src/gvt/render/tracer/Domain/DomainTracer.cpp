@@ -60,7 +60,7 @@
 namespace gvt {
 namespace tracer {
 
-DomainTracer::DomainTracer() : Tracer() {}
+DomainTracer::DomainTracer() : RayTracer() {}
 
 DomainTracer::~DomainTracer() {}
 
@@ -149,49 +149,8 @@ void DomainTracer::operator()() {
     gvt::render::actor::RayVector toprocess, moved_rays;
     _queue.dequeue<HighestSizedQueueFirstPolicy>(target, toprocess);
     if (target != -1) {
-      std::shared_ptr<gvt::render::Adapter> adapter = 0;
-      gvt::render::data::primitives::Mesh *mesh = meshRef[target];
-
-      if (_cache.keyExists(target)) {
-        adapter = _cache.get(target);
-      } else {
-        GVT_DEBUG(DBG_ALWAYS, "image scheduler: creating new adapter");
-        switch (adapterType) {
-#ifdef GVT_RENDER_ADAPTER_EMBREE
-        case gvt::render::adapter::Embree:
-          adapter =
-              std::make_shared<gvt::render::adapter::embree::data::EmbreeMeshAdapter>(
-                  mesh);
-          break;
-#endif
-#ifdef GVT_RENDER_ADAPTER_MANTA
-        case gvt::render::adapter::Manta:
-          adapter =
-              std::make_shared<gvt::render::adapter::manta::data::MantaMeshAdapter>(mesh);
-          break;
-#endif
-#ifdef GVT_RENDER_ADAPTER_OPTIX
-        case gvt::render::adapter::Optix:
-          adapter =
-              std::make_shared<gvt::render::adapter::optix::data::OptixMeshAdapter>(mesh);
-          break;
-#endif
-
-#if defined(GVT_RENDER_ADAPTER_OPTIX) && defined(GVT_RENDER_ADAPTER_EMBREE)
-        case gvt::render::adapter::Heterogeneous:
-          adapter = std::make_shared<
-              gvt::render::adapter::heterogeneous::data::HeterogeneousMeshAdapter>(mesh);
-          break;
-#endif
-        default:
-          GVT_DEBUG(DBG_SEVERE, "image scheduler: unknown adapter type: " << adapterType);
-        }
-
-        _cache.set(target, adapter);
-        //    [mesh] = adapter;
-      }
-      adapter->trace(toprocess, moved_rays, instM[target], instMinv[target],
-                     instMinvN[target], lights);
+      trace(target, meshRef[target], toprocess, moved_rays, instM[target],
+            instMinv[target], instMinvN[target], lights);
       processRayQueue(moved_rays, target);
     }
     if (_queue.empty()) {
@@ -209,48 +168,49 @@ bool DomainTracer::MessageManager(std::shared_ptr<gvt::comm::Message> msg) {
   return Tracer::MessageManager(msg);
 }
 
-void DomainTracer::processRayQueue(gvt::render::actor::RayVector &rays, const int src,
-                                   const int dst) {
-  if (dst >= 0) {
-    _queue.enqueue(dst, rays);
-    return;
-  }
-
-  gvt::render::RenderContext &cntxt = *gvt::render::RenderContext::instance();
-  std::shared_ptr<gvt::render::composite::ImageComposite> composite_buffer =
-      cntxt.getComposite<gvt::render::composite::ImageComposite>();
-
-  const size_t chunksize =
-      MAX(2, rays.size() / (std::thread::hardware_concurrency() * 4));
-  // gvt::render::data::accel::BVH &acc = std::dynamic_casglobal_bvh;
-
-  gvt::render::data::accel::BVH &acc =
-      *dynamic_cast<gvt::render::data::accel::BVH *>(global_bvh.get());
-
-  static tbb::simple_partitioner ap;
-  tbb::parallel_for(
-      tbb::blocked_range<gvt::render::actor::RayVector::iterator>(rays.begin(),
-                                                                  rays.end(), chunksize),
-      [&](tbb::blocked_range<gvt::render::actor::RayVector::iterator> raysit) {
-        std::vector<gvt::render::data::accel::BVH::hit> hits =
-            acc.intersect<GVT_SIMD_WIDTH>(raysit.begin(), raysit.end(), src);
-        std::map<int, gvt::render::actor::RayVector> local_queue;
-        for (size_t i = 0; i < hits.size(); i++) {
-          gvt::render::actor::Ray &r = *(raysit.begin() + i);
-          if (hits[i].next != -1) {
-            r.origin = r.origin + r.direction * (hits[i].t * 0.95f);
-            local_queue[hits[i].next].push_back(r);
-          } else if (r.type == gvt::render::actor::Ray::SHADOW &&
-                     glm::length(r.color) > 0) {
-            composite_buffer->localAdd(r.id, r.color, r.w);
-          }
-        }
-        for (auto &q : local_queue) {
-          _queue.enqueue(q.first, local_queue[q.first]);
-        }
-      },
-      ap);
-}
+// void DomainTracer::processRayQueue(gvt::render::actor::RayVector &rays, const int src,
+//                                    const int dst) {
+//   if (dst >= 0) {
+//     _queue.enqueue(dst, rays);
+//     return;
+//   }
+//
+//   gvt::render::RenderContext &cntxt = *gvt::render::RenderContext::instance();
+//   std::shared_ptr<gvt::render::composite::ImageComposite> composite_buffer =
+//       cntxt.getComposite<gvt::render::composite::ImageComposite>();
+//
+//   const size_t chunksize =
+//       MAX(2, rays.size() / (std::thread::hardware_concurrency() * 4));
+//   // gvt::render::data::accel::BVH &acc = std::dynamic_casglobal_bvh;
+//
+//   gvt::render::data::accel::BVH &acc =
+//       *dynamic_cast<gvt::render::data::accel::BVH *>(global_bvh.get());
+//
+//   static tbb::simple_partitioner ap;
+//   tbb::parallel_for(
+//       tbb::blocked_range<gvt::render::actor::RayVector::iterator>(rays.begin(),
+//                                                                   rays.end(),
+//                                                                   chunksize),
+//       [&](tbb::blocked_range<gvt::render::actor::RayVector::iterator> raysit) {
+//         std::vector<gvt::render::data::accel::BVH::hit> hits =
+//             acc.intersect<GVT_SIMD_WIDTH>(raysit.begin(), raysit.end(), src);
+//         std::map<int, gvt::render::actor::RayVector> local_queue;
+//         for (size_t i = 0; i < hits.size(); i++) {
+//           gvt::render::actor::Ray &r = *(raysit.begin() + i);
+//           if (hits[i].next != -1) {
+//             r.origin = r.origin + r.direction * (hits[i].t * 0.95f);
+//             local_queue[hits[i].next].push_back(r);
+//           } else if (r.type == gvt::render::actor::Ray::SHADOW &&
+//                      glm::length(r.color) > 0) {
+//             composite_buffer->localAdd(r.id, r.color, r.w);
+//           }
+//         }
+//         for (auto &q : local_queue) {
+//           _queue.enqueue(q.first, local_queue[q.first]);
+//         }
+//       },
+//       ap);
+// }
 
 void DomainTracer::updateGeometry() {}
 }

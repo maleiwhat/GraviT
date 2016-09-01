@@ -24,49 +24,32 @@
    =======================================================================================
    */
 
-#ifndef GVT_DOMAINTRACER_H
-#define GVT_DOMAINTRACER_H
+#include "RayQueueManager.h"
 
-#include <map>
-#include <memory>
-#include <vector>
-
-#include <gvt/core/Debug.h>
-#include <gvt/core/tracer/tracer.h>
-
-#include <gvt/render/Adapter.h>
-#include <gvt/render/actor/Ray.h>
-#include <gvt/render/data/accel/AbstractAccel.h>
-#include <gvt/render/tracer/QueueManager/RayQueueManager.h>
-#include <gvt/render/tracer/RayTracer.h>
-
-#include <gvt/render/Adapter.h>
-#include <gvt/render/adapter/AdapterCache.h>
 namespace gvt {
 namespace tracer {
 
-class DomainTracer : public gvt::tracer::RayTracer {
-protected:
-public:
-  DomainTracer();
-  virtual ~DomainTracer();
-  virtual void operator()();
-  virtual bool MessageManager(std::shared_ptr<gvt::comm::Message> msg);
-
-  // virtual void processRayQueue(gvt::render::actor::RayVector &rays, const int src = -1,
-  //                              const int dst = -1);
-
-  virtual void updateGeometry();
-
-private:
-  // RayQueueManager _queue;
-  // gvt::render::actor::RayVector _rayqueue;
-  // gvt::render::AdapterCache<int, std::shared_ptr<gvt::render::Adapter> > _cache;
-  // std::shared_ptr<gvt::render::data::accel::AbstractAccel> global_bvh = nullptr;
-};
-
 template <>
-void RayQueueManager::dequeue<DomainTracer>(int &target, gvt::render::actor::RayVector &);
+void RayQueueManager::dequeue<HighestSizedQueueFirstPolicy>(
+    int &target, gvt::render::actor::RayVector &_raylist) {
+  int id = -1;
+  unsigned _total = 0;
+  {
+    std::lock_guard<std::mutex> _lock(_protect);
+    for (const auto &q : _queue) {
+      if (q.second.size() > _total) {
+        id = q.first;
+        _total = q.second.size();
+      }
+    }
+  }
+
+  target = id;
+  if (id == -1) return;
+  std::lock_guard<std::mutex> _lock(_protect);
+  std::swap(_queue[id], _raylist);
+  _queue.erase(id);
+  return;
 }
 }
-#endif /*GVT_DOMAINTRACER_H*/
+}
