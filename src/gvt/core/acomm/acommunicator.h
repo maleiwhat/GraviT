@@ -43,7 +43,7 @@ protected:
     GVT_ASSERT(false, "Communicator cannot be copied");
   }
 
-  enum COMM_TAG { COMMUNICATOR_CONTROL = 0x800, USER_DEFINED_MSG, VOTE_MSG_TAG };
+  enum COMM_TAG { COMMUNICATOR_CONTROL = 0x8000, USER_DEFINED_MSG, VOTE_MSG_TAG };
 
 public:
   static std::shared_ptr<acommunicator> _singleton;

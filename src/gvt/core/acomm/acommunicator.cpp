@@ -113,18 +113,7 @@ void acommunicator::launch(std::shared_ptr<acommunicator> com) { com->run(); }
 
 void acommunicator::run() {
 
-  // std::cout << "Communication started : " << id() << std::endl;
-  //
-  // std::cout << "C[" << id() << "] : " << ((!_outbox.empty() || !_inbox.empty() ||
-  // !_terminate) ? "T" : "F")
-  //           << std::endl;
-  //
-  // std::cout << "I[" << id() << "] : " << ((_inbox.empty()) ? "T" : "F") << std::endl;
-  // std::cout << "O[" << id() << "] : " << ((_inbox.empty()) ? "T" : "F") << std::endl;
-  // std::cout << "T[" << id() << "] : " << ((_terminate) ? "T" : "F") << std::endl;
-
   while ((!_outbox.empty() || !_inbox.empty()) || !_terminate) {
-
     if (!_outbox.empty()) {
       std::lock_guard<std::mutex> lk(_outbox_mutex);
       std::shared_ptr<Message> msg = _outbox.front();
@@ -147,17 +136,13 @@ void acommunicator::run() {
       const auto n_bytes = status.Get_count(MPI::BYTE);
 
       if (n_bytes > 0) {
-        // std::shared_ptr<Message> msg = std::make_shared<Message>(n_bytes);
-        // MPI::COMM_WORLD.Recv(msg->msg_ptr, n_bytes, MPI::UNSIGNED_CHAR, sender,
-        // COMMUNICATOR_CONTROL);
+        std::shared_ptr<Message> msg = std::make_shared<Message>(n_bytes);
+        MPI::COMM_WORLD.Recv(msg->msg_ptr(), n_bytes, MPI::UNSIGNED_CHAR, sender,
+                             COMMUNICATOR_CONTROL);
       }
     }
 
-#if 0
-
     // Check for messages and put on the inbox
-
-
 
     if (MPI::COMM_WORLD.Iprobe(MPI::ANY_SOURCE, USER_DEFINED_MSG, status)) {
       const auto sender = status.Get_source();
@@ -178,14 +163,11 @@ void acommunicator::run() {
       const auto n_bytes = status.Get_count(MPI::BYTE);
 
       if (n_bytes > 0) {
-        // std::shared_ptr<Message> msg = std::make_shared<Message>(n_bytes);
-        // MPI::COMM_WORLD.Recv(msg->msg_ptr, n_bytes, MPI::UNSIGNED_CHAR, sender,
-        // VOTE_MSG_TAG);
+        std::shared_ptr<Message> msg = std::make_shared<Message>(n_bytes);
+        MPI::COMM_WORLD.Recv(msg->msg_ptr(), n_bytes, MPI::UNSIGNED_CHAR, sender,
+                             VOTE_MSG_TAG);
       }
-
-  }
-#endif
-    // Send inbox to scheduler.
+    }
   }
 }
 }
