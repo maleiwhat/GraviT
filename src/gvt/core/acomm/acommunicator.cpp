@@ -47,17 +47,20 @@ std::shared_ptr<acommunicator> acommunicator::instance(int argc, char *argv[]) {
   if (acommunicator::_singleton == nullptr) {
     acommunicator::_singleton =
         std::shared_ptr<acommunicator>(new acommunicator(argc, argv));
-    // g.run([&]() { acommunicator::launch(acommunicator::_singleton); });
+    g.run([&]() { acommunicator::launch(acommunicator::_singleton); });
   }
 
   return acommunicator::_singleton;
 }
 
-acommunicator::acommunicator(int argc, char *argv[]) { MPI::Init(argc, argv); }
+acommunicator::acommunicator(int argc, char *argv[]) {
+  // MPI_Init(&argc, &argv);
+  _terminate = false;
+  MPI::Init_thread(argc, argv, MPI_THREAD_MULTIPLE);
+}
 acommunicator::~acommunicator() {
-
-  // MPI::Finalize();
-  //  MPI_Finalize();
+  MPI::Finalize();
+  // MPI_Finalize();
 }
 
 void acommunicator::terminate() {
@@ -65,7 +68,8 @@ void acommunicator::terminate() {
   _terminate = true;
   g.wait();
   // std::cout << "Terminate comm channel : " << id() << std::endl;
-  MPI::Finalize();
+  // MPI::Finalize();
+  // MPI_Finalize();
 }
 
 bool acommunicator::hasMessages() { return _inbox.size() > 0; }
@@ -120,16 +124,7 @@ void acommunicator::run() {
   // std::cout << "T[" << id() << "] : " << ((_terminate) ? "T" : "F") << std::endl;
 
   while ((!_outbox.empty() || !_inbox.empty()) || !_terminate) {
-    // std::cout << "I[" << id() << "] : " << (!(_inbox.empty()) ? "T" : "F") << " : " <<
-    // _inbox.size() << std::endl;
-    // std::cout << "O[" << id() << "] : " << (!(_outbox.empty()) ? "T" : "F") << " : " <<
-    // _outbox.size() <<
-    // std::endl;
-    // std::cout << "T[" << id() << "] : " << (!(_terminate) ? "T" : "F") << std::endl;
-    // std::cout << "C[" << id() << "] : " << ((!_outbox.empty() || !_inbox.empty() ||
-    // !_terminate) ? "T" : "F")
-    //           << std::endl;
-    // Process out box
+
     if (!_outbox.empty()) {
       std::lock_guard<std::mutex> lk(_outbox_mutex);
       std::shared_ptr<Message> msg = _outbox.front();
@@ -144,7 +139,6 @@ void acommunicator::run() {
                               USER_DEFINED_MSG);
       }
     }
-    // Check for messages and put on the inbox
 
     MPI::Status status;
     if (MPI::COMM_WORLD.Iprobe(MPI::ANY_SOURCE, COMMUNICATOR_CONTROL, status)) {
@@ -158,6 +152,12 @@ void acommunicator::run() {
         // COMMUNICATOR_CONTROL);
       }
     }
+
+#if 0
+
+    // Check for messages and put on the inbox
+
+
 
     if (MPI::COMM_WORLD.Iprobe(MPI::ANY_SOURCE, USER_DEFINED_MSG, status)) {
       const auto sender = status.Get_source();
@@ -182,8 +182,9 @@ void acommunicator::run() {
         // MPI::COMM_WORLD.Recv(msg->msg_ptr, n_bytes, MPI::UNSIGNED_CHAR, sender,
         // VOTE_MSG_TAG);
       }
-    }
 
+  }
+#endif
     // Send inbox to scheduler.
   }
 }

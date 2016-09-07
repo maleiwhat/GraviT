@@ -93,7 +93,7 @@ IceTComposite::IceTComposite(std::size_t width, std::size_t height)
     : gvt::render::composite::ImageComposite(width, height) {
   // if (MPI::COMM_WORLD.Get_size() < 2) return false;
 
-  comm = icetCreateMPICommunicator(MPI_COMM_WORLD);
+  comm = icetCreateMPICommunicator(MPI::COMM_WORLD);
   icetCreateContext(comm);
   //
   icetGetIntegerv(ICET_NUM_PROCESSES, &num_proc);

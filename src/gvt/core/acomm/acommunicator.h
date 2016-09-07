@@ -18,9 +18,11 @@
    See the License for the specific language governing permissions and limitations under
    limitations under the License.
 
-   GraviT is funded in part by the US National Science Foundation under awards ACI-1339863,
+   GraviT is funded in part by the US National Science Foundation under awards
+   ACI-1339863,
    ACI-1339881 and ACI-1339840
-   ======================================================================================= */
+   =======================================================================================
+   */
 
 #ifndef GVT_CORE_ACOMMUNICATOR_H
 #define GVT_CORE_ACOMMUNICATOR_H
@@ -37,9 +39,11 @@ namespace gvt {
 namespace comm {
 class acommunicator {
 protected:
-  acommunicator(acommunicator &comm) { GVT_ASSERT(false, "Communicator cannot be copied"); }
+  acommunicator(acommunicator &comm) {
+    GVT_ASSERT(false, "Communicator cannot be copied");
+  }
 
-  enum COMM_TAG { COMMUNICATOR_CONTROL, USER_DEFINED_MSG, VOTE_MSG_TAG };
+  enum COMM_TAG { COMMUNICATOR_CONTROL = 0x800, USER_DEFINED_MSG, VOTE_MSG_TAG };
 
 public:
   static std::shared_ptr<acommunicator> _singleton;
@@ -77,7 +81,7 @@ private:
 
   static tbb::task_group g;
 
-  bool _terminate = false;
+  volatile bool _terminate = false;
 };
 }
 }

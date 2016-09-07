@@ -18,9 +18,11 @@
    See the License for the specific language governing permissions and limitations under
    limitations under the License.
 
-   GraviT is funded in part by the US National Science Foundation under awards ACI-1339863,
+   GraviT is funded in part by the US National Science Foundation under awards
+   ACI-1339863,
    ACI-1339881 and ACI-1339840
-   ======================================================================================= */
+   =======================================================================================
+   */
 
 //
 // EmbreeMeshAdapter.cpp
@@ -131,7 +133,8 @@ void error_handler(const RTCError code, const char *str = nullptr) {
   exit(1);
 }
 
-EmbreeMeshAdapter::EmbreeMeshAdapter(gvt::render::data::primitives::Mesh *mesh) : Adapter(mesh) {
+EmbreeMeshAdapter::EmbreeMeshAdapter(gvt::render::data::primitives::Mesh *mesh)
+    : Adapter(mesh) {
   GVT_ASSERT(mesh, "EmbreeMeshAdapter: mesh pointer in the database is null");
   mesh->generateNormals();
 
@@ -143,8 +146,8 @@ EmbreeMeshAdapter::EmbreeMeshAdapter(gvt::render::data::primitives::Mesh *mesh) 
   int numVerts = mesh->vertices.size();
   int numTris = mesh->faces.size();
 
-  scene = rtcDeviceNewScene(device, RTC_SCENE_STATIC, GVT_EMBREE_ALGORITHM);
-  geomId = rtcNewTriangleMesh(scene, RTC_GEOMETRY_STATIC, numTris, numVerts);
+  scene = rtcDeviceNewScene(device, RTC_SCENE_DYNAMIC, GVT_EMBREE_ALGORITHM);
+  geomId = rtcNewTriangleMesh(scene, RTC_GEOMETRY_DYNAMIC, numTris, numVerts);
 
   embVertex *vertices = (embVertex *)rtcMapBuffer(scene, geomId, RTC_VERTEX_BUFFER);
   for (int i = 0; i < numVerts; i++) {
@@ -174,8 +177,8 @@ EmbreeMeshAdapter::EmbreeMeshAdapter(gvt::render::data::primitives::Mesh *mesh) 
 }
 
 EmbreeMeshAdapter::~EmbreeMeshAdapter() {
-  // rtcDeleteGeometry(scene, geomId);
-  // rtcDeleteScene(scene);
+  rtcDeleteGeometry(scene, geomId);
+  rtcDeleteScene(scene);
   rtcDeleteDevice(device);
 }
 
@@ -257,12 +260,15 @@ struct embreeParallelTrace {
    * to do its tracing
    */
   embreeParallelTrace(gvt::render::adapter::embree::data::EmbreeMeshAdapter *adapter,
-                      gvt::render::actor::RayVector &rayList, gvt::render::actor::RayVector &moved_rays,
-                      const size_t workSize, glm::mat4 *m, glm::mat4 *minv, glm::mat3 *normi,
-                      std::vector<gvt::render::data::scene::Light *> &lights, gvt::render::data::primitives::Mesh *mesh,
+                      gvt::render::actor::RayVector &rayList,
+                      gvt::render::actor::RayVector &moved_rays, const size_t workSize,
+                      glm::mat4 *m, glm::mat4 *minv, glm::mat3 *normi,
+                      std::vector<gvt::render::data::scene::Light *> &lights,
+                      gvt::render::data::primitives::Mesh *mesh,
                       std::atomic<size_t> &counter, const size_t begin, const size_t end)
-      : adapter(adapter), rayList(rayList), moved_rays(moved_rays), workSize(workSize), m(m), minv(minv), normi(normi),
-        lights(lights), counter(counter), begin(begin), end(end), mesh(mesh) {}
+      : adapter(adapter), rayList(rayList), moved_rays(moved_rays), workSize(workSize),
+        m(m), minv(minv), normi(normi), lights(lights), counter(counter), begin(begin),
+        end(end), mesh(mesh) {}
   /**
    * Convert a set of rays from a vector into a GVT_EMBREE_PACKET_TYPE ray packet.
    *
@@ -274,8 +280,10 @@ struct embreeParallelTrace {
    * \param rays          vector of rays to read from
    * \param startIdx      starting point to read from in `rays`
    */
-  void prepGVT_EMBREE_PACKET_TYPE(GVT_EMBREE_PACKET_TYPE &ray4, int valid[GVT_EMBREE_PACKET_SIZE],
-                                  const bool resetValid, const int localPacketSize, gvt::render::actor::RayVector &rays,
+  void prepGVT_EMBREE_PACKET_TYPE(GVT_EMBREE_PACKET_TYPE &ray4,
+                                  int valid[GVT_EMBREE_PACKET_SIZE],
+                                  const bool resetValid, const int localPacketSize,
+                                  gvt::render::actor::RayVector &rays,
                                   const size_t startIdx) {
     // reset valid to match the number of active rays in the packet
     if (resetValid) {
@@ -308,7 +316,9 @@ struct embreeParallelTrace {
     }
   }
 
-  glm::vec3 CosWeightedRandomHemisphereDirection2(glm::vec3 n, gvt::core::math::RandEngine &randEngine) {
+  glm::vec3
+  CosWeightedRandomHemisphereDirection2(glm::vec3 n,
+                                        gvt::core::math::RandEngine &randEngine) {
 
     float Xi1 = 0;
     float Xi2 = 0;
@@ -355,7 +365,8 @@ struct embreeParallelTrace {
    * \param mesh pointer to mesh struct [TEMPORARY]
    */
   void generateShadowRays(const gvt::render::actor::Ray &r, const glm::vec3 &normal,
-                          gvt::render::data::primitives::Material *material, unsigned int *randSeed,
+                          gvt::render::data::primitives::Material *material,
+                          unsigned int *randSeed,
                           gvt::render::actor::RayVector &shadowRays) {
 
     for (gvt::render::data::scene::Light *light : lights) {
@@ -373,7 +384,8 @@ struct embreeParallelTrace {
         lightPos = light->position;
       }
 
-      if (!gvt::render::data::primitives::Shade(material, r, normal, light, lightPos, c)) continue;
+      if (!gvt::render::data::primitives::Shade(material, r, normal, light, lightPos, c))
+        continue;
 
       const float multiplier = 1.0f - gvt::render::actor::Ray::RAY_EPSILON * 16;
       const float t_shadow = multiplier * r.t;
@@ -383,7 +395,8 @@ struct embreeParallelTrace {
       const float t_max = dir.length();
 
       // note: ray copy constructor is too heavy, so going to build it manually
-      shadowRays.push_back(Ray(r.origin + r.direction * t_shadow, dir, r.w, Ray::SHADOW, r.depth));
+      shadowRays.push_back(
+          Ray(r.origin + r.direction * t_shadow, dir, r.w, Ray::SHADOW, r.depth));
 
       Ray &shadow_ray = shadowRays.back();
       shadow_ray.t = r.t;
@@ -406,8 +419,9 @@ struct embreeParallelTrace {
     RTCORE_ALIGN(16) int valid[GVT_EMBREE_PACKET_SIZE] = { 0 };
 
     for (size_t idx = 0; idx < shadowRays.size(); idx += GVT_EMBREE_PACKET_SIZE) {
-      const size_t localPacketSize =
-          (idx + GVT_EMBREE_PACKET_SIZE > shadowRays.size()) ? (shadowRays.size() - idx) : GVT_EMBREE_PACKET_SIZE;
+      const size_t localPacketSize = (idx + GVT_EMBREE_PACKET_SIZE > shadowRays.size())
+                                         ? (shadowRays.size() - idx)
+                                         : GVT_EMBREE_PACKET_SIZE;
 
       // create a shadow packet and trace with rtcOccluded
       prepGVT_EMBREE_PACKET_TYPE(ray4, valid, true, localPacketSize, shadowRays, idx);
@@ -526,15 +540,18 @@ struct embreeParallelTrace {
     GVT_EMBREE_PACKET_TYPE ray4 = {};
     RTCORE_ALIGN(16) int valid[GVT_EMBREE_PACKET_SIZE] = { 0 };
 
-    // GVT_DEBUG(DBG_ALWAYS, "EmbreeMeshAdapter: working on rays [" << workStart << ", " << workEnd << "]");
+    // GVT_DEBUG(DBG_ALWAYS, "EmbreeMeshAdapter: working on rays [" << workStart << ", "
+    // << workEnd << "]");
 
-    // std::cout << "EmbreeMeshAdapter: working on rays [" << begin << ", " << end << "]" << std::endl;
+    // std::cout << "EmbreeMeshAdapter: working on rays [" << begin << ", " << end << "]"
+    // << std::endl;
 
     for (size_t localIdx = begin; localIdx < end; localIdx += GVT_EMBREE_PACKET_SIZE) {
       // this is the local packet size. this might be less than the main
       // packetSize due to uneven amount of rays
-      const size_t localPacketSize =
-          (localIdx + GVT_EMBREE_PACKET_SIZE > end) ? (end - localIdx) : GVT_EMBREE_PACKET_SIZE;
+      const size_t localPacketSize = (localIdx + GVT_EMBREE_PACKET_SIZE > end)
+                                         ? (end - localIdx)
+                                         : GVT_EMBREE_PACKET_SIZE;
 
       // trace a packet of rays, then keep tracing the generated secondary
       // rays to completion
@@ -551,7 +568,8 @@ struct embreeParallelTrace {
       while (validRayLeft) {
         validRayLeft = false;
 
-        prepGVT_EMBREE_PACKET_TYPE(ray4, valid, resetValid, localPacketSize, rayList, localIdx);
+        prepGVT_EMBREE_PACKET_TYPE(ray4, valid, resetValid, localPacketSize, rayList,
+                                   localIdx);
         GVT_EMBREE_INTERSECTION(valid, scene, ray4);
 
         resetValid = false;
@@ -582,17 +600,19 @@ struct embreeParallelTrace {
               // from gvt mesh
 
               glm::vec3 manualNormal;
-              glm::vec3 normalflat = glm::normalize((*normi) * -glm::vec3(ray4.Ngx[pi], ray4.Ngy[pi], ray4.Ngz[pi]));
+              glm::vec3 normalflat = glm::normalize(
+                  (*normi) * -glm::vec3(ray4.Ngx[pi], ray4.Ngy[pi], ray4.Ngz[pi]));
               {
                 const int triangle_id = ray4.primID[pi];
 #ifndef FLAT_SHADING
                 const float u = ray4.u[pi];
                 const float v = ray4.v[pi];
-                const Mesh::FaceToNormals &normals = mesh->faces_to_normals[triangle_id]; // FIXME: need to
-                                                                                          // figure out
-                                                                                          // to store
-                                                                                          // `faces_to_normals`
-                                                                                          // list
+                const Mesh::FaceToNormals &normals =
+                    mesh->faces_to_normals[triangle_id]; // FIXME: need to
+                                                         // figure out
+                                                         // to store
+                                                         // `faces_to_normals`
+                                                         // list
                 const glm::vec3 &a = mesh->normals[normals.get<1>()];
                 const glm::vec3 &b = mesh->normals[normals.get<2>()];
                 const glm::vec3 &c = mesh->normals[normals.get<0>()];
@@ -602,9 +622,13 @@ struct embreeParallelTrace {
                 //				int geomID = ray4.geomID[pi];
                 //				{
                 //					rtcInterpolate(scene, geomID,
-                //							ray4.primID[pi], ray4.u[pi],
-                //							ray4.v[pi], RTC_VERTEX_BUFFER0,
-                //							nullptr, &dPdu.x, &dPdv.x, 3);
+                //							ray4.primID[pi],
+                // ray4.u[pi],
+                //							ray4.v[pi],
+                // RTC_VERTEX_BUFFER0,
+                //							nullptr, &dPdu.x,
+                //&dPdv.x,
+                // 3);
                 //				}
                 //				manualNormal = glm::cross(dPdv, dPdu);
 
@@ -625,7 +649,8 @@ struct embreeParallelTrace {
               const glm::vec3 &normal = manualNormal;
 
               Material *mat;
-              if (mesh->faces_to_materials.size() && mesh->faces_to_materials[ray4.primID[pi]])
+              if (mesh->faces_to_materials.size() &&
+                  mesh->faces_to_materials[ray4.primID[pi]])
                 mat = mesh->faces_to_materials[ray4.primID[pi]];
               else
                 mat = mesh->getMaterial();
@@ -645,11 +670,14 @@ struct embreeParallelTrace {
               if (ndepth > 0 && r.w > p) {
                 r.type = gvt::render::actor::Ray::SECONDARY;
                 const float multiplier =
-                    1.0f - 16.0f * std::numeric_limits<float>::epsilon(); // TODO: move out somewhere / make static
+                    1.0f - 16.0f * std::numeric_limits<float>::epsilon(); // TODO: move
+                                                                          // out somewhere
+                                                                          // / make static
                 const float t_secondary = multiplier * r.t;
                 r.origin = r.origin + r.direction * t_secondary;
 
-                // TODO: remove this dependency on mesh, store material object in the database
+                // TODO: remove this dependency on mesh, store material object in the
+                // database
                 // r.setDirection(adapter->getMesh()->getMaterial()->CosWeightedRandomHemisphereDirection2(normal));
 
                 r.direction = CosWeightedRandomHemisphereDirection2(normal, randEngine);
@@ -697,8 +725,10 @@ struct embreeParallelTrace {
         break;
       }
     }
-    GVT_DEBUG(DBG_ALWAYS, "Local dispatch : " << localDispatch.size() << ", types: primary: " << primary_count
-                                              << ", shadow: " << shadow_count << ", secondary: " << secondary_count
+    GVT_DEBUG(DBG_ALWAYS, "Local dispatch : " << localDispatch.size()
+                                              << ", types: primary: " << primary_count
+                                              << ", shadow: " << shadow_count
+                                              << ", secondary: " << secondary_count
                                               << ", other: " << other_count);
 #endif
 
@@ -709,9 +739,11 @@ struct embreeParallelTrace {
   }
 };
 
-void EmbreeMeshAdapter::trace(gvt::render::actor::RayVector &rayList, gvt::render::actor::RayVector &moved_rays,
-                              glm::mat4 *m, glm::mat4 *minv, glm::mat3 *normi,
-                              std::vector<gvt::render::data::scene::Light *> &lights, size_t _begin, size_t _end) {
+void EmbreeMeshAdapter::trace(gvt::render::actor::RayVector &rayList,
+                              gvt::render::actor::RayVector &moved_rays, glm::mat4 *m,
+                              glm::mat4 *minv, glm::mat3 *normi,
+                              std::vector<gvt::render::data::scene::Light *> &lights,
+                              size_t _begin, size_t _end) {
 #ifdef GVT_USE_DEBUG
   boost::timer::auto_cpu_timer t_functor("EmbreeMeshAdapter: trace time: %w\n");
 #endif
@@ -721,9 +753,12 @@ void EmbreeMeshAdapter::trace(gvt::render::actor::RayVector &rayList, gvt::rende
   // (gvt::core::math::AffineTransformMatrix<float> *)node["mat"].value().toULongLong();
   glm::mat4 tt = glm::transpose(*m);
   float *n = glm::value_ptr(tt);
-  float mm[] = { n[0], n[4], n[8], n[1], n[5], n[9], n[2], n[6], n[10], n[3], n[7], n[11] };
+  float mm[] = {
+    n[0], n[4], n[8], n[1], n[5], n[9], n[2], n[6], n[10], n[3], n[7], n[11]
+  };
 
-  // float mm[] = { n[0], n[1], n[2], n[4], n[5], n[6], n[8], n[9], n[10], n[3], n[7], n[11] };
+  // float mm[] = { n[0], n[1], n[2], n[4], n[5], n[6], n[8], n[9], n[10], n[3], n[7],
+  // n[11] };
 
   // std::cout << "Embree zmat" << *m << std::endl;
 
@@ -736,16 +771,19 @@ void EmbreeMeshAdapter::trace(gvt::render::actor::RayVector &rayList, gvt::rende
   this->end = _end;
 
   const size_t numThreads = std::thread::hardware_concurrency();
-  const size_t workSize = std::max((size_t)4, (size_t)((end - begin) / (numThreads * 2))); // size of 'chunk'
-                                                                                           // of rays to work
-                                                                                           // on
+  const size_t workSize =
+      std::max((size_t)4, (size_t)((end - begin) / (numThreads * 2))); // size of 'chunk'
+                                                                       // of rays to work
+                                                                       // on
 
   static tbb::auto_partitioner ap;
   tbb::parallel_for(tbb::blocked_range<size_t>(begin, end, workSize),
                     [&](tbb::blocked_range<size_t> chunk) {
-                      // for (size_t i = chunk.begin(); i < chunk.end(); i++) image.Add(i, colorBuf[i]);
-                      embreeParallelTrace(this, rayList, moved_rays, chunk.end() - chunk.begin(), m, minv, normi,
-                                          lights, mesh, counter, chunk.begin(), chunk.end())();
+                      // for (size_t i = chunk.begin(); i < chunk.end(); i++) image.Add(i,
+                      // colorBuf[i]);
+                      embreeParallelTrace(
+                          this, rayList, moved_rays, chunk.end() - chunk.begin(), m, minv,
+                          normi, lights, mesh, counter, chunk.begin(), chunk.end())();
                     },
                     ap);
   rtcDeleteScene(global_scene);
