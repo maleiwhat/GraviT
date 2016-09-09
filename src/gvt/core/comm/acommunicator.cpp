@@ -25,8 +25,8 @@
    */
 
 #include <gvt/core/Debug.h>
-#include <gvt/core/acomm/acommunicator.h>
-#include <gvt/core/acomm/message.h>
+#include <gvt/core/comm/acommunicator.h>
+#include <gvt/core/comm/message.h>
 
 #include <mpi.h>
 #include <thread>
@@ -79,12 +79,12 @@ size_t acommunicator::id() const { return MPI::COMM_WORLD.Get_rank(); }
 size_t acommunicator::maxid() const { return MPI::COMM_WORLD.Get_size(); }
 
 void acommunicator::send(std::shared_ptr<Message> msg, size_t target, bool sync) {
-
   GVT_ASSERT(target < maxid(), "Trying to send a message to a bad processor ID");
   msg->_dst = target;
+  msg->msg_tag() = msg->msg_static_tag();
 
   if (sync) {
-    MPI::COMM_WORLD.Isend(msg->msg_ptr(), msg->size(), MPI::UNSIGNED_CHAR, target,
+    MPI::COMM_WORLD.Isend(msg->msg_ptr(), msg->msg_size(), MPI::UNSIGNED_CHAR, target,
                           USER_DEFINED_MSG);
   } else {
     _outbox.push_back(msg);
@@ -93,8 +93,9 @@ void acommunicator::send(std::shared_ptr<Message> msg, size_t target, bool sync)
 
 void acommunicator::broadcast(std::shared_ptr<Message> msg, bool sync) {
   msg->_dst = -1;
+  msg->msg_tag() = msg->msg_static_tag();
   if (sync) {
-    MPI::COMM_WORLD.Bcast(msg->msg_ptr(), msg->size(), MPI::UNSIGNED_CHAR, 0);
+    MPI::COMM_WORLD.Bcast(msg->msg_ptr(), msg->msg_size(), MPI::UNSIGNED_CHAR, 0);
   } else {
     std::lock_guard<std::mutex> lk(_outbox_mutex);
     _outbox.push_back(msg);
@@ -119,13 +120,13 @@ void acommunicator::run() {
       std::shared_ptr<Message> msg = _outbox.front();
       _outbox.pop_front();
       if (msg->dst() == -1) {
-        MPI::COMM_WORLD.Bcast(msg->msg_ptr(), msg->size(), MPI::UNSIGNED_CHAR, 0);
+        MPI::COMM_WORLD.Bcast(msg->msg_ptr(), msg->msg_size(), MPI::UNSIGNED_CHAR, 0);
         // std::cout << "Broadcasted message on channel " << id() << std::endl;
       } else {
         GVT_ASSERT(msg->dst() < maxid(),
                    "Trying to send a message to a bad processor ID");
-        MPI::COMM_WORLD.Isend(msg->msg_ptr(), msg->size(), MPI::UNSIGNED_CHAR, msg->dst(),
-                              USER_DEFINED_MSG);
+        MPI::COMM_WORLD.Isend(msg->msg_ptr(), msg->msg_size(), MPI::UNSIGNED_CHAR,
+                              msg->dst(), USER_DEFINED_MSG);
       }
     }
 
@@ -136,7 +137,7 @@ void acommunicator::run() {
       const auto n_bytes = status.Get_count(MPI::BYTE);
 
       if (n_bytes > 0) {
-        std::shared_ptr<Message> msg = std::make_shared<Message>(n_bytes);
+        std::shared_ptr<Message> msg = std::make_shared<Message>(n_bytes - sizeof(long));
         MPI::COMM_WORLD.Recv(msg->msg_ptr(), n_bytes, MPI::UNSIGNED_CHAR, sender,
                              COMMUNICATOR_CONTROL);
       }
@@ -149,7 +150,7 @@ void acommunicator::run() {
       const auto n_bytes = status.Get_count(MPI::BYTE);
       // std::cout << "Get user messages " << id() << std::endl;
       if (n_bytes > 0) {
-        std::shared_ptr<Message> msg = std::make_shared<Message>(n_bytes);
+        std::shared_ptr<Message> msg = std::make_shared<Message>(n_bytes - sizeof(long));
         MPI::COMM_WORLD.Recv(msg->msg_ptr(), n_bytes, MPI::UNSIGNED_CHAR, sender,
                              USER_DEFINED_MSG);
         std::lock_guard<std::mutex> lk(_inbox_mutex);
@@ -163,7 +164,7 @@ void acommunicator::run() {
       const auto n_bytes = status.Get_count(MPI::BYTE);
 
       if (n_bytes > 0) {
-        std::shared_ptr<Message> msg = std::make_shared<Message>(n_bytes);
+        std::shared_ptr<Message> msg = std::make_shared<Message>(n_bytes - sizeof(long));
         MPI::COMM_WORLD.Recv(msg->msg_ptr(), n_bytes, MPI::UNSIGNED_CHAR, sender,
                              VOTE_MSG_TAG);
       }

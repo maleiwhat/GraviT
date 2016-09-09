@@ -52,21 +52,25 @@ public:
   virtual ~DomainTracer();
   virtual void operator()();
   virtual bool MessageManager(std::shared_ptr<gvt::comm::Message> msg);
-
-  // virtual void processRayQueue(gvt::render::actor::RayVector &rays, const int src = -1,
-  //                              const int dst = -1);
-
   virtual void updateGeometry();
 
 private:
-  // RayQueueManager _queue;
-  // gvt::render::actor::RayVector _rayqueue;
-  // gvt::render::AdapterCache<int, std::shared_ptr<gvt::render::Adapter> > _cache;
-  // std::shared_ptr<gvt::render::data::accel::AbstractAccel> global_bvh = nullptr;
+  std::map<int, int> mpiInstanceMap;
 };
 
-template <>
-void RayQueueManager::dequeue<DomainTracer>(int &target, gvt::render::actor::RayVector &);
+struct InNodeLargestQueueFirst : public gvt::tracer::QueuePolicy {
+  std::vector<int> innode;
+  std::map<int, int> mpiInstanceMap;
+
+  InNodeLargestQueueFirst();
+
+  void refreshInNode();
+  void addToInNode(const int &id);
+
+  virtual int policyCheck(const std::map<int, gvt::render::actor::RayVector> &_queue);
+
+  const std::map<int, int> &getMpiMap() { return mpiInstanceMap; }
+};
 }
 }
 #endif /*GVT_DOMAINTRACER_H*/

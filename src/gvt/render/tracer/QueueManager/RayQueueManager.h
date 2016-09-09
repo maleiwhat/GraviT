@@ -30,19 +30,47 @@
 #include <gvt/render/actor/Ray.h>
 #include <map>
 #include <mutex>
+#include <type_traits>
 
 namespace gvt {
 namespace tracer {
+struct QueuePolicy {
+  virtual int policyCheck(const std::map<int, gvt::render::actor::RayVector> &_queue) {
+    int id = -1;
+    std::size_t _total = 0;
+    for (const auto &q : _queue) {
+      if (q.second.size() > _total) {
+        id = q.first;
+        _total = q.second.size();
+      }
+    }
+    return id;
+  }
+};
+
+struct LargestQueueFirst : public gvt::tracer::QueuePolicy {
+  virtual int policyCheck(const std::map<int, gvt::render::actor::RayVector> &_queue) {
+    int id = -1;
+    std::size_t _total = 0;
+    for (const auto &q : _queue) {
+      if (q.second.size() > _total) {
+        id = q.first;
+        _total = q.second.size();
+      }
+    }
+    return id;
+  }
+};
+
 struct RayQueueManager {
 
   std::mutex _protect;
-
   std::map<int, gvt::render::actor::RayVector> _queue;
 
-  RayQueueManager(){};
+  std::shared_ptr<QueuePolicy> QP;
 
+  RayQueueManager() { QP = std::make_shared<QueuePolicy>(); };
   ~RayQueueManager() {}
-
   virtual void enqueue(int id, gvt::render::actor::RayVector &_raylist) {
     std::lock_guard<std::mutex> _lock(_protect);
     if (_queue.find(id) == _queue.end()) {
@@ -55,27 +83,49 @@ struct RayQueueManager {
                         std::make_move_iterator(_raylist.end()));
     }
   }
+  virtual bool dequeue_send(const int id, gvt::render::actor::RayVector &_raylist) {
 
-  virtual gvt::render::actor::RayVector dequeue(int id) {
-    GVT_ASSERT(_queue.find(id) != _queue.end(), "Trying to access an invalid queue ["
-                                                    << id << "]");
+    if (_queue.find(id) == _queue.end()) return false;
+
     std::lock_guard<std::mutex> _lock(_protect);
-    return gvt::render::actor::RayVector();
+    std::swap(_queue[id], _raylist);
+    _queue.erase(id);
+    return true;
   }
-
-  bool empty() { return _queue.empty(); }
+  bool empty() {
+    if (!_queue.empty()) {
+      for (auto q : _queue)
+        if (q.second.size() > 0) return false;
+    }
+    return true;
+  }
   std::size_t size() { return _queue.size(); }
 
-  template <class scheduler> void dequeue(int &target, gvt::render::actor::RayVector &) {
-    GVT_ASSERT(false, "Queue policity not defined");
+  template <class Policy> void setQueuePolicy() {
+    static_assert(std::is_base_of<QueuePolicy, Policy>::value,
+                  "T must inherit from list");
+    QP.reset(new Policy());
+  }
+  void dequeue(int &target, gvt::render::actor::RayVector &_raylist) {
+    int id = -1;
+    unsigned _total = 0;
+    {
+      std::lock_guard<std::mutex> _lock(_protect);
+      id = QP->policyCheck(_queue);
+    }
+
+    target = id;
+    if (id == -1) return;
+    std::lock_guard<std::mutex> _lock(_protect);
+    std::swap(_queue[id], _raylist);
+    _queue.erase(id);
+    return;
   }
 };
 
-struct HighestSizedQueueFirstPolicy {};
-
-template <>
-void RayQueueManager::dequeue<HighestSizedQueueFirstPolicy>(
-    int &target, gvt::render::actor::RayVector &);
+// template <>
+// void RayQueueManager::dequeue<HighestSizedQueueFirstPolicy>(
+//     int &target, gvt::render::actor::RayVector &);
 }
 }
 

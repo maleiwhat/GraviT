@@ -24,33 +24,30 @@
    =======================================================================================
    */
 
-#include "RayQueueManager.h"
+#ifndef GVT_DOMAIN_SEND_RAY_LIST_H
+#define GVT_DOMAIN_SEND_RAY_LIST_H
+
+#include <gvt/core/comm/message.h>
+#include <gvt/render/actor/Ray.h>
 
 namespace gvt {
-namespace tracer {
+namespace comm {
 
-// template <>
-// void RayQueueManager::dequeue<HighestSizedQueueFirstPolicy>(
-//     int &target, gvt::render::actor::RayVector &_raylist) {
-//   int id = -1;
-//   unsigned _total = 0;
-//   {
-//     std::lock_guard<std::mutex> _lock(_protect);
-//     for (const auto &q : _queue) {
-//       if (q.second.size() > _total &&
-//           HighestSizedQueueFirstPolicy::policyCheck(_queue, q.first)) {
-//         id = q.first;
-//         _total = q.second.size();
-//       }
-//     }
-//   }
-//
-//   target = id;
-//   if (id == -1) return;
-//   std::lock_guard<std::mutex> _lock(_protect);
-//   std::swap(_queue[id], _raylist);
-//   _queue.erase(id);
-//   return;
-// }
+class SendRayList : public gvt::comm::Message {
+  MESSAGE_HEADER(SendRayList);
+
+protected:
+  size_t number_rays;
+  long src = -1;
+  long dst = -1;
+
+public:
+  SendRayList() : gvt::comm::Message(){};
+  SendRayList(const size_t &n) : gvt::comm::Message(n){};
+  SendRayList(const long src, const long dst,
+              const gvt::render::actor::RayVector &raylist);
+};
 }
 }
+
+#endif /*GVT_DOMAIN_SEND_RAY_LIST_H*/

@@ -24,33 +24,24 @@
    =======================================================================================
    */
 
-#include "RayQueueManager.h"
+#include "SendRayList.h"
 
 namespace gvt {
-namespace tracer {
+namespace comm {
 
-// template <>
-// void RayQueueManager::dequeue<HighestSizedQueueFirstPolicy>(
-//     int &target, gvt::render::actor::RayVector &_raylist) {
-//   int id = -1;
-//   unsigned _total = 0;
-//   {
-//     std::lock_guard<std::mutex> _lock(_protect);
-//     for (const auto &q : _queue) {
-//       if (q.second.size() > _total &&
-//           HighestSizedQueueFirstPolicy::policyCheck(_queue, q.first)) {
-//         id = q.first;
-//         _total = q.second.size();
-//       }
-//     }
-//   }
-//
-//   target = id;
-//   if (id == -1) return;
-//   std::lock_guard<std::mutex> _lock(_protect);
-//   std::swap(_queue[id], _raylist);
-//   _queue.erase(id);
-//   return;
-// }
+MESSAGE_HEADER_INIT(SendRayList);
+
+SendRayList::SendRayList(const long src, const long dst,
+                         const gvt::render::actor::RayVector &raylist)
+    : number_rays(raylist.size()), src(src), dst(dst),
+      Message(&raylist[0],
+              sizeof(gvt::render::actor::Ray) * number_rays + sizeof(long) * 2) {
+  long &s = *(long *)((unsigned char *)msg_ptr() +
+                      sizeof(gvt::render::actor::Ray) * number_rays);
+  long &d = *(long *)((unsigned char *)msg_ptr() +
+                      sizeof(gvt::render::actor::Ray) * number_rays + sizeof(long));
+  s = src;
+  d = dst;
+}
 }
 }

@@ -228,8 +228,8 @@ set(GVT_CORE_HDRS ${GVT_CORE_HDRS}
 
   src/gvt/core/data/primitives/BBox.h
 
-  src/gvt/core/acomm/acommunicator.h
-  src/gvt/core/acomm/message.h
+  src/gvt/core/comm/acommunicator.h
+  src/gvt/core/comm/message.h
 
   src/gvt/core/tracer/tracer.h
 
@@ -246,8 +246,8 @@ set(GVT_CORE_SRCS ${GVT_CORE_SRCS}
 
   src/gvt/core/data/primitives/BBox.cpp
 
-  src/gvt/core/acomm/acommunicator.cpp
-  src/gvt/core/acomm/message.cpp
+  src/gvt/core/comm/acommunicator.cpp
+  src/gvt/core/comm/message.cpp
 
 )
 
@@ -298,6 +298,7 @@ set(GVT_RENDER_HDRS ${GVT_RENDER_HDRS}
   src/gvt/render/tracer/RayTracer.h
   src/gvt/render/tracer/Image/ImageTracer.h
   src/gvt/render/tracer/Domain/DomainTracer.h
+  src/gvt/render/tracer/Domain/Messages/SendRayList.h
 
   src/gvt/render/composite/ImageComposite.h
   src/gvt/render/composite/IceTComposite.h
@@ -322,6 +323,8 @@ set(GVT_RENDER_SRCS ${GVT_RENDER_SRCS}
   src/gvt/render/tracer/RayTracer.cpp
   src/gvt/render/tracer/Image/ImageTracer.cpp
   src/gvt/render/tracer/Domain/DomainTracer.cpp
+  src/gvt/render/tracer/Domain/Messages/SendRayList.cpp
+
   src/gvt/render/composite/ImageComposite.cpp
   src/gvt/render/composite/IceTComposite.cpp
 )

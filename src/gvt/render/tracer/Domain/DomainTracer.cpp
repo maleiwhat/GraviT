@@ -33,6 +33,8 @@
 #include <tbb/partitioner.h>
 #include <tbb/tick_count.h>
 
+#include <set>
+
 #include <gvt/render/Context.h>
 #include <gvt/render/Types.h>
 #include <gvt/render/composite/ImageComposite.h>
@@ -55,18 +57,108 @@
 #include <gvt/render/adapter/heterogeneous/Wrapper.h>
 #endif
 
-#include <gvt/render/tracer/Image/ImageTracer.h>
+#include <gvt/render/tracer/Domain/Messages/SendRayList.h>
 
 namespace gvt {
 namespace tracer {
 
-DomainTracer::DomainTracer() : RayTracer() {}
+InNodeLargestQueueFirst::InNodeLargestQueueFirst() { refreshInNode(); }
+
+void InNodeLargestQueueFirst::addToInNode(const int &id) { innode.push_back(id); }
+void InNodeLargestQueueFirst::refreshInNode() {
+  std::shared_ptr<gvt::comm::acommunicator> comm = gvt::comm::acommunicator::instance();
+  gvt::render::RenderContext &cntxt = *gvt::render::RenderContext::instance();
+  gvt::core::DBNodeH rootnode = cntxt.getRootNode();
+  std::vector<gvt::core::DBNodeH> instancenodes = rootnode["Instances"].getChildren();
+
+  gvt::core::Vector<gvt::core::DBNodeH> dataNodes = rootnode["Data"].getChildren();
+  std::map<int, std::set<std::string> > meshAvailbyMPI; // where meshes are by mpi node
+  std::map<int, std::set<std::string> >::iterator lastAssigned; // instance-node
+                                                                // round-robin assigment
+
+  for (size_t i = 0; i < comm->maxid(); i++) meshAvailbyMPI[i].clear();
+
+  // build location map, where meshes are by mpi node
+  for (size_t i = 0; i < dataNodes.size(); i++) {
+    std::vector<gvt::core::DBNodeH> locations = dataNodes[i]["Locations"].getChildren();
+    for (auto loc : locations) {
+      meshAvailbyMPI[loc.value().toInteger()].insert(dataNodes[i].UUID().toString());
+    }
+  }
+  lastAssigned = meshAvailbyMPI.begin();
+  // create a map of instances to mpi rank
+  for (size_t i = 0; i < instancenodes.size(); i++) {
+    mpiInstanceMap[i] = -1;
+    if (instancenodes[i]["meshRef"].value().toUuid() != gvt::core::Uuid::null()) {
+      gvt::core::DBNodeH meshNode = instancenodes[i]["meshRef"].deRef();
+      // Instance to mpi-node Round robin assignment considering mesh availability
+      auto startedAt = lastAssigned;
+      do {
+        if (lastAssigned->second.size() > 0) { // if mpi-node has no meshes, don't bother
+          if (lastAssigned->second.find(meshNode.UUID().toString()) !=
+              lastAssigned->second.end()) {
+            mpiInstanceMap[i] = lastAssigned->first;
+            lastAssigned++;
+            if (lastAssigned == meshAvailbyMPI.end())
+              lastAssigned = meshAvailbyMPI.begin();
+            break;
+          } else {
+            // branch out from lastAssigned and search for a mpi-node with the mesh
+            // keep lastAssigned to continue with round robin
+            auto branchOutSearch = lastAssigned;
+            do {
+              if (branchOutSearch->second.find(meshNode.UUID().toString()) !=
+                  branchOutSearch->second.end()) {
+                mpiInstanceMap[i] = branchOutSearch->first;
+                break;
+              }
+              branchOutSearch++;
+              if (branchOutSearch == meshAvailbyMPI.end())
+                branchOutSearch = meshAvailbyMPI.begin();
+            } while (branchOutSearch != lastAssigned);
+            break; // If the branch-out didn't found a node, break the main loop, meaning
+                   // that no one has the mesh
+          }
+        }
+        lastAssigned++;
+        if (lastAssigned == meshAvailbyMPI.end()) lastAssigned = meshAvailbyMPI.begin();
+      } while (lastAssigned != startedAt);
+      if (mpiInstanceMap[i] == comm->id()) addToInNode(i);
+    }
+  }
+}
+
+int InNodeLargestQueueFirst::policyCheck(
+    const std::map<int, gvt::render::actor::RayVector> &_queue) {
+  std::shared_ptr<gvt::comm::acommunicator> comm = gvt::comm::acommunicator::instance();
+  int id = -1;
+  std::size_t _total = 0;
+  for (const auto &q : _queue) {
+    if (mpiInstanceMap[q.first] == comm->id() && q.second.size() > _total) {
+      id = q.first;
+      _total = q.second.size();
+    }
+  }
+  return id;
+}
+
+DomainTracer::DomainTracer() : RayTracer() { RegisterMessage<gvt::comm::SendRayList>(); }
 
 DomainTracer::~DomainTracer() {}
 
 void DomainTracer::operator()() {
+
+  std::shared_ptr<gvt::comm::Message> msg =
+      std::make_shared<gvt::comm::SendRayList>(sizeof(gvt::render::actor::Ray) * 12);
+
+  std::cout << " MEssgae " << msg->getNameTag() << std::endl;
+
+  std::shared_ptr<gvt::comm::SendRayList> srl =
+      std::dynamic_pointer_cast<gvt::comm::SendRayList>(msg);
+
   std::shared_ptr<gvt::comm::acommunicator> comm = gvt::comm::acommunicator::instance();
   gvt::render::RenderContext &cntxt = *gvt::render::RenderContext::instance();
+
   gvt::core::DBNodeH rootnode = cntxt.getRootNode();
   size_t width = cntxt.getRootNode()["Film"]["width"].value().toInteger();
   size_t height = cntxt.getRootNode()["Film"]["height"].value().toInteger();
@@ -125,6 +217,8 @@ void DomainTracer::operator()() {
     }
   }
 
+  _queue.setQueuePolicy<InNodeLargestQueueFirst>();
+
   _cam->AllocateCameraRays();
   _cam->generateRays();
 
@@ -141,76 +235,46 @@ void DomainTracer::operator()() {
 
   processRayQueue(lrays);
 
+  InNodeLargestQueueFirst *pp = dynamic_cast<InNodeLargestQueueFirst *>(_queue.QP.get());
+  std::vector<int> remote_instances;
+  if (pp) {
+    for (auto q : _queue._queue) {
+      if (pp->mpiInstanceMap[q.first] != comm->id() && !q.second.empty()) {
+        remote_instances.push_back(q.first);
+      }
+    }
+    for (auto id : remote_instances) _queue._queue.erase(id);
+  }
+
   bool GlobalFrameFinished = false;
 
   while (!GlobalFrameFinished) {
-
     int target = -1;
-    gvt::render::actor::RayVector toprocess, moved_rays;
-    _queue.dequeue<HighestSizedQueueFirstPolicy>(target, toprocess);
+    gvt::render::actor::RayVector toprocess, moved_rays, send_rays;
+    _queue.dequeue(target, toprocess);
     if (target != -1) {
       trace(target, meshRef[target], toprocess, moved_rays, instM[target],
             instMinv[target], instMinvN[target], lights);
       processRayQueue(moved_rays, target);
     }
+    for (auto id : remote_instances) {
+      if (_queue.dequeue_send(id, send_rays)) {
+        // TODO: Send rays
+        std::cout << "Send queue : " << id << std::endl;
+      }
+    }
+
     if (_queue.empty()) {
-      // Ask if done;
       GlobalFrameFinished = true;
       break;
     }
   }
-  // Start composite
-
   float *img_final = composite_buffer->composite();
 };
 
 bool DomainTracer::MessageManager(std::shared_ptr<gvt::comm::Message> msg) {
   return Tracer::MessageManager(msg);
 }
-
-// void DomainTracer::processRayQueue(gvt::render::actor::RayVector &rays, const int src,
-//                                    const int dst) {
-//   if (dst >= 0) {
-//     _queue.enqueue(dst, rays);
-//     return;
-//   }
-//
-//   gvt::render::RenderContext &cntxt = *gvt::render::RenderContext::instance();
-//   std::shared_ptr<gvt::render::composite::ImageComposite> composite_buffer =
-//       cntxt.getComposite<gvt::render::composite::ImageComposite>();
-//
-//   const size_t chunksize =
-//       MAX(2, rays.size() / (std::thread::hardware_concurrency() * 4));
-//   // gvt::render::data::accel::BVH &acc = std::dynamic_casglobal_bvh;
-//
-//   gvt::render::data::accel::BVH &acc =
-//       *dynamic_cast<gvt::render::data::accel::BVH *>(global_bvh.get());
-//
-//   static tbb::simple_partitioner ap;
-//   tbb::parallel_for(
-//       tbb::blocked_range<gvt::render::actor::RayVector::iterator>(rays.begin(),
-//                                                                   rays.end(),
-//                                                                   chunksize),
-//       [&](tbb::blocked_range<gvt::render::actor::RayVector::iterator> raysit) {
-//         std::vector<gvt::render::data::accel::BVH::hit> hits =
-//             acc.intersect<GVT_SIMD_WIDTH>(raysit.begin(), raysit.end(), src);
-//         std::map<int, gvt::render::actor::RayVector> local_queue;
-//         for (size_t i = 0; i < hits.size(); i++) {
-//           gvt::render::actor::Ray &r = *(raysit.begin() + i);
-//           if (hits[i].next != -1) {
-//             r.origin = r.origin + r.direction * (hits[i].t * 0.95f);
-//             local_queue[hits[i].next].push_back(r);
-//           } else if (r.type == gvt::render::actor::Ray::SHADOW &&
-//                      glm::length(r.color) > 0) {
-//             composite_buffer->localAdd(r.id, r.color, r.w);
-//           }
-//         }
-//         for (auto &q : local_queue) {
-//           _queue.enqueue(q.first, local_queue[q.first]);
-//         }
-//       },
-//       ap);
-// }
 
 void DomainTracer::updateGeometry() {}
 }

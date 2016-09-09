@@ -41,17 +41,18 @@ template <typename T> std::shared_ptr<T> make_shared_buffer(size_t size) {
 
 #define MESSAGE_HEADER(ClassName)                                                        \
 public:                                                                                  \
-  virtual int getTag() const { return ClassName::tag; }                                  \
-  virtual void setTag(const int _tag) const { ClassName::tag = _tag; }                   \
-  virtual std::string getNameTag() const { return "#ClassName"; }                        \
+  static long getTag() { return ClassName::tag; }                                        \
+  static void setTag(const long _tag) { ClassName::tag = _tag; }                         \
+  virtual std::string getNameTag() { return #ClassName; }                                \
+  virtual long msg_static_tag() { return ClassName::tag; }                               \
                                                                                          \
 private:                                                                                 \
-  static size_t tag;                                                                     \
+  static long tag;                                                                       \
   static std::string tagName
 
 #define MESSAGE_HEADER_INIT(ClassName)                                                   \
-  size_t ClassName::tag = -1;                                                            \
-  std::string ClassName::tagName = "#ClassName";
+  long ClassName::tag = -1;                                                              \
+  std::string ClassName::tagName = #ClassName;
 
 class Message {
   MESSAGE_HEADER(Message);
@@ -72,6 +73,12 @@ public:
   Message(const Message &other);
   Message(Message &&other);
 
+  template <class U> operator U *() {
+    static_assert(std::is_base_of<gvt::comm::Message, U>::value,
+                  "U must inherit from gvt::comm::Message");
+    return dynamic_cast<U>(this);
+  }
+
   virtual void setcontent(const void *_data, const size_t &size);
 
   bool sent();
@@ -81,7 +88,9 @@ public:
   // virtual void broadcast(bool wait = false);
 
   inline void *msg_ptr() { return (void *)(_buffer.get()); };
-  inline size_t size() { return _size; }
+  inline long &msg_tag() { return *(long *)(_buffer.get() + _size); };
+  inline size_t msg_size() { return _size; };
+  inline size_t size() { return _size - sizeof(long); }
   inline size_t dst() { return _dst; }
 
   // TO BE USED BY COMMUNICATOR

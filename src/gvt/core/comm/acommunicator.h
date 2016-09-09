@@ -33,7 +33,7 @@
 
 #include <tbb/task_group.h>
 
-#include <gvt/core/acomm/message.h>
+#include <gvt/core/comm/message.h>
 
 namespace gvt {
 namespace comm {

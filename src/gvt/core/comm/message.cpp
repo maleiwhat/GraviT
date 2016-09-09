@@ -25,7 +25,7 @@
    */
 
 #include <gvt/core/Debug.h>
-#include <gvt/core/acomm/message.h>
+#include <gvt/core/comm/message.h>
 
 namespace gvt {
 namespace comm {
@@ -35,9 +35,7 @@ MESSAGE_HEADER_INIT(Message);
 Message::Message() {}
 
 Message::Message(const size_t &size) : _size(size) {
-  _buffer = make_shared_buffer<unsigned char>(size);
-  // std::make_shared<unsigned char>(new unsigned char[size], std::default_delete<unsigned
-  // char[]>());
+  _buffer = make_shared_buffer<unsigned char>(size + sizeof(long));
   GVT_ASSERT(_buffer, "Error allocation message buffer");
 }
 

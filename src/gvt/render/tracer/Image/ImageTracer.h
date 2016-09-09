@@ -51,25 +51,11 @@ public:
   ImageTracer();
   virtual ~ImageTracer();
   virtual void operator()();
-  virtual bool MessageManager(std::shared_ptr<gvt::comm::Message> msg);
-
-  // virtual void processRayQueue(gvt::render::actor::RayVector &rays, const int src = -1,
-  //                              const int dst = -1);
-
+  // virtual bool MessageManager(std::shared_ptr<gvt::comm::Message> msg);
   virtual void updateGeometry();
 
 private:
-  // RayQueueManager _queue;
-  // gvt::render::actor::RayVector _rayqueue;
-  // gvt::render::AdapterCache<int, std::shared_ptr<gvt::render::Adapter> > _cache;
-  // std::shared_ptr<gvt::render::data::accel::AbstractAccel> global_bvh = nullptr;
-
-  // std::map<int, gvt::render::data::primitives::Mesh *> meshRef;
 };
-
-// template <>
-// void RayQueueManager::dequeue<ImageTracer>(int &target, gvt::render::actor::RayVector
-// &);
 }
 }
 

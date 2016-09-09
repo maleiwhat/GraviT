@@ -32,7 +32,7 @@
 #define GVT_CORE_SCHEDULE_SCHEDULER_BASE_H
 
 #include <gvt/core/Debug.h>
-#include <gvt/core/acomm/message.h>
+#include <gvt/core/comm/message.h>
 
 namespace gvt {
 namespace tracer {

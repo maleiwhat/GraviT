@@ -1,8 +1,8 @@
 #include <iostream>
 
 #include <gvt/core/Context.h>
-#include <gvt/core/acomm/acommunicator.h>
-#include <gvt/core/acomm/message.h>
+#include <gvt/core/comm/acommunicator.h>
+#include <gvt/core/comm/message.h>
 #include <gvt/render/Context.h>
 
 #include <gvt/render/composite/IceTComposite.h>
@@ -195,7 +195,7 @@ void setContext(int argc, char *argv[]) {
     coneMeshNode["bbox"] = (unsigned long long)meshbbox;
     coneMeshNode["ptr"] = (unsigned long long)mesh;
 
-    gvt::core::DBNodeH loc = cntxt->createNode("rank", (int)comm->id());
+    gvt::core::DBNodeH loc = cntxt->createNode("rank", 0); //(int)comm->id());
     coneMeshNode["Locations"] += loc;
 
     // cntxt->addToSync(coneMeshNode);
@@ -289,7 +289,7 @@ void setContext(int argc, char *argv[]) {
     cubeMeshNode["bbox"] = (unsigned long long)meshbbox;
     cubeMeshNode["ptr"] = (unsigned long long)mesh;
 
-    gvt::core::DBNodeH loc = cntxt->createNode("rank", (int)comm->id());
+    gvt::core::DBNodeH loc = cntxt->createNode("rank", 1); //(int)comm->id());
     cubeMeshNode["Locations"] += loc;
 
     // cntxt->addToSync(cubeMeshNode);

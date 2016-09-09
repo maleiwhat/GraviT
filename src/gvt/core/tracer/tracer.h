@@ -28,8 +28,9 @@
 #define GVT_TRACER_H
 
 #include <gvt/core/Debug.h>
-#include <gvt/core/acomm/message.h>
+#include <gvt/core/comm/message.h>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 namespace gvt {
@@ -44,6 +45,16 @@ public:
   virtual void operator()() { GVT_ASSERT(false, "Tracer not implemented"); };
 
   virtual bool MessageManager(std::shared_ptr<gvt::comm::Message> msg) { return false; }
+
+  template <class M> int RegisterMessage() {
+    static_assert(std::is_base_of<gvt::comm::Message, M>::value,
+                  "M must inherit from gvt::comm::Message");
+
+    M msg;
+    _registered_messages.push_back(msg.getNameTag());
+    M::setTag(_registered_messages.size() - 1);
+    return M::getTag();
+  }
 
   virtual bool isDone() {
     GVT_ASSERT(false, "Tracer not implemented");
