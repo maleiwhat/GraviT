@@ -44,7 +44,10 @@ public:
   virtual ~Tracer() {}
   virtual void operator()() { GVT_ASSERT(false, "Tracer not implemented"); };
 
-  virtual bool MessageManager(std::shared_ptr<gvt::comm::Message> msg) { return false; }
+  virtual bool MessageManager(std::shared_ptr<gvt::comm::Message> msg) {
+    std::cout << "aaa" << std::endl;
+    return false;
+  }
 
   template <class M> int RegisterMessage() {
     static_assert(std::is_base_of<gvt::comm::Message, M>::value,

@@ -508,8 +508,10 @@ int main(int argc, char *argv[]) {
     std::cout << "Out of the loop " << comm->id() << std::endl;
   }
 #endif
-  std::shared_ptr<gvt::tracer::DomainTracer> tracer =
+  std::shared_ptr<gvt::tracer::Tracer> tracer =
       std::make_shared<gvt::tracer::DomainTracer>();
+
+  cntxt->setTracer(tracer);
   std::shared_ptr<gvt::render::composite::ImageComposite> composite_buffer =
       cntxt->getComposite<gvt::render::composite::ImageComposite>();
   for (int ii = 0; ii < 10; ii++) {

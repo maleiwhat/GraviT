@@ -56,7 +56,9 @@ public:
   RayTracer() : Tracer(){};
   virtual ~RayTracer(){};
   virtual void operator()() = 0;
-  virtual bool MessageManager(std::shared_ptr<gvt::comm::Message> msg) = 0;
+  virtual bool MessageManager(std::shared_ptr<gvt::comm::Message> msg) {
+    return Tracer::MessageManager(msg);
+  };
 
   virtual void processRayQueue(gvt::render::actor::RayVector &rays, const int src = -1,
                                const int dst = -1);

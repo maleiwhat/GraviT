@@ -55,6 +55,11 @@ private:                                                                        
   long ClassName::tag = -1;                                                              \
   std::string ClassName::tagName = #ClassName;
 
+struct MessageHeaderInfo {
+  long tag = -1;
+  MessageHeaderInfo() : tag(-1) {}
+};
+
 class Message {
   MESSAGE_HEADER(Message);
 
@@ -74,11 +79,11 @@ public:
   Message(const Message &other);
   Message(Message &&other);
 
-  template <class U> operator U *() {
-    static_assert(std::is_base_of<gvt::comm::Message, U>::value,
-                  "U must inherit from gvt::comm::Message");
-    return dynamic_cast<U>(this);
-  }
+  // template <class U> operator U *() {
+  //   static_assert(std::is_base_of<gvt::comm::Message, U>::value,
+  //                 "U must inherit from gvt::comm::Message");
+  //   return dynamic_cast<U>(this);
+  // }
 
   virtual void setcontent(const void *_data, const size_t &size);
 
@@ -89,9 +94,13 @@ public:
   // virtual void broadcast(bool wait = false);
 
   inline void *msg_ptr() { return (void *)(_buffer.get()); };
-  inline long &msg_tag() { return *(long *)(_buffer.get() + _size); };
-  inline size_t msg_size() { return _size; };
-  inline size_t size() { return _size - sizeof(long); }
+  inline long msg_tag() { return getHeaderInfo().tag; };
+  inline size_t msg_size() { return _size + sizeof(long); };
+
+  MessageHeaderInfo getHeaderInfo();
+  void setHeaderInfo(const MessageHeaderInfo &mhi);
+
+  inline size_t size() { return _size; }
   inline size_t dst() { return _dst; }
 
   // TO BE USED BY COMMUNICATOR

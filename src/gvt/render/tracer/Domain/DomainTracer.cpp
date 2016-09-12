@@ -57,6 +57,7 @@
 #include <gvt/render/adapter/heterogeneous/Wrapper.h>
 #endif
 
+#include <gvt/render/tracer/Domain/Messages/EmptyMessage.h>
 #include <gvt/render/tracer/Domain/Messages/SendRayList.h>
 
 namespace gvt {
@@ -142,7 +143,10 @@ int InNodeLargestQueueFirst::policyCheck(
   return id;
 }
 
-DomainTracer::DomainTracer() : RayTracer() { RegisterMessage<gvt::comm::SendRayList>(); }
+DomainTracer::DomainTracer() : RayTracer() {
+  RegisterMessage<gvt::comm::EmptyMessage>();
+  RegisterMessage<gvt::comm::SendRayList>();
+}
 
 DomainTracer::~DomainTracer() {}
 
@@ -276,7 +280,10 @@ void DomainTracer::operator()() {
 };
 
 bool DomainTracer::MessageManager(std::shared_ptr<gvt::comm::Message> msg) {
-  return Tracer::MessageManager(msg);
+  std::cout << "Here" << msg->getHeaderInfo().tag << std::endl;
+
+  return true;
+  // return Tracer::MessageManager(msg);
 }
 
 void DomainTracer::updateGeometry() {}

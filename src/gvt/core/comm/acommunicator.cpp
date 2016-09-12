@@ -27,11 +27,12 @@
 #include <gvt/core/Debug.h>
 #include <gvt/core/comm/acommunicator.h>
 #include <gvt/core/comm/message.h>
-
-#include <mpi.h>
-#include <thread>
+#include <gvt/core/context/CoreContext.h>
 
 #include <iostream>
+#include <memory>
+#include <mpi.h>
+#include <thread>
 
 namespace gvt {
 namespace comm {
@@ -81,21 +82,29 @@ size_t acommunicator::maxid() const { return MPI::COMM_WORLD.Get_size(); }
 void acommunicator::send(std::shared_ptr<Message> msg, size_t target, bool sync) {
   GVT_ASSERT(target < maxid(), "Trying to send a message to a bad processor ID");
   msg->_dst = target;
-  msg->msg_tag() = msg->msg_static_tag();
+  MessageHeaderInfo mhi;
+  mhi.tag = msg->msg_static_tag();
+  msg->setHeaderInfo(mhi);
 
   if (sync) {
-    MPI::COMM_WORLD.Isend(msg->msg_ptr(), msg->msg_size(), MPI::UNSIGNED_CHAR, target,
-                          USER_DEFINED_MSG);
+    MPI::COMM_WORLD.Isend(msg->msg_ptr(), msg->size() + sizeof(MessageHeaderInfo),
+                          MPI::UNSIGNED_CHAR, target, USER_DEFINED_MSG);
   } else {
     _outbox.push_back(msg);
   }
+  // mhi = msg->getHeaderInfo();
+  // std::cout << "Message tag: " << mhi.tag << std::endl;
 }
 
 void acommunicator::broadcast(std::shared_ptr<Message> msg, bool sync) {
   msg->_dst = -1;
-  msg->msg_tag() = msg->msg_static_tag();
+  MessageHeaderInfo mhi;
+  mhi.tag = msg->msg_static_tag();
+  msg->setHeaderInfo(mhi);
+
   if (sync) {
-    MPI::COMM_WORLD.Bcast(msg->msg_ptr(), msg->msg_size(), MPI::UNSIGNED_CHAR, 0);
+    MPI::COMM_WORLD.Bcast(msg->msg_ptr(), msg->msg_size() + sizeof(MessageHeaderInfo),
+                          MPI::UNSIGNED_CHAR, 0);
   } else {
     std::lock_guard<std::mutex> lk(_outbox_mutex);
     _outbox.push_back(msg);
@@ -120,7 +129,8 @@ void acommunicator::run() {
       std::shared_ptr<Message> msg = _outbox.front();
       _outbox.pop_front();
       if (msg->dst() == -1) {
-        MPI::COMM_WORLD.Bcast(msg->msg_ptr(), msg->msg_size(), MPI::UNSIGNED_CHAR, 0);
+        MPI::COMM_WORLD.Bcast(msg->msg_ptr(), msg->msg_size() + sizeof(MessageHeaderInfo),
+                              MPI::UNSIGNED_CHAR, 0);
         // std::cout << "Broadcasted message on channel " << id() << std::endl;
       } else {
         GVT_ASSERT(msg->dst() < maxid(),
@@ -137,7 +147,8 @@ void acommunicator::run() {
       const auto n_bytes = status.Get_count(MPI::BYTE);
 
       if (n_bytes > 0) {
-        std::shared_ptr<Message> msg = std::make_shared<Message>(n_bytes - sizeof(long));
+        std::shared_ptr<Message> msg =
+            std::make_shared<Message>(n_bytes - sizeof(MessageHeaderInfo));
         MPI::COMM_WORLD.Recv(msg->msg_ptr(), n_bytes, MPI::UNSIGNED_CHAR, sender,
                              COMMUNICATOR_CONTROL);
       }
@@ -150,12 +161,20 @@ void acommunicator::run() {
       const auto n_bytes = status.Get_count(MPI::BYTE);
       std::cout << "Get user messages " << id() << " size " << n_bytes << std::endl;
       if (n_bytes > 0) {
-        std::shared_ptr<Message> msg = std::make_shared<Message>(n_bytes - sizeof(long));
+        std::shared_ptr<Message> msg =
+            std::make_shared<Message>(n_bytes - sizeof(MessageHeaderInfo));
         MPI::COMM_WORLD.Recv(msg->msg_ptr(), n_bytes, MPI::UNSIGNED_CHAR, sender,
                              USER_DEFINED_MSG);
-
-        gvt::render::RenderContext &cntxt = *gvt::core::Context::instance();
-        cntxt.tracer()->MessageManager(msg);
+        std::cout << "Msg tag rec" << msg->msg_tag() << std::endl;
+        gvt::core::CoreContext *cntxt = gvt::core::CoreContext::instance();
+        if (cntxt) {
+          std::cout << "CNTXT Found" << std::endl;
+          if (cntxt->tracer()) {
+            std::cout << "Tracer Found" << std::endl;
+            cntxt->tracer()->MessageManager(msg);
+          }
+        }
+        // cntxt.tracer()->MessageManager(msg);
 
         // std::lock_guard<std::mutex> lk(_inbox_mutex);
         //_inbox.push_back(msg);
@@ -168,7 +187,8 @@ void acommunicator::run() {
       const auto n_bytes = status.Get_count(MPI::BYTE);
 
       if (n_bytes > 0) {
-        std::shared_ptr<Message> msg = std::make_shared<Message>(n_bytes - sizeof(long));
+        std::shared_ptr<Message> msg =
+            std::make_shared<Message>(n_bytes - sizeof(MessageHeaderInfo));
         MPI::COMM_WORLD.Recv(msg->msg_ptr(), n_bytes, MPI::UNSIGNED_CHAR, sender,
                              VOTE_MSG_TAG);
       }

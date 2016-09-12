@@ -35,16 +35,16 @@ MESSAGE_HEADER_INIT(Message);
 Message::Message() {}
 
 Message::Message(const size_t &size) : _size(size) {
-  _buffer = make_shared_buffer<unsigned char>(size + sizeof(long));
+  _buffer = make_shared_buffer<unsigned char>(size + sizeof(MessageHeaderInfo));
   GVT_ASSERT(_buffer, "Error allocation message buffer");
 }
 
 Message::Message(const void *message, const size_t &size) : Message(_size) {
-  std::memcpy(_buffer.get(), message, _size);
+  std::memcpy(_buffer.get(), message, _size + +sizeof(MessageHeaderInfo));
 }
 
 Message::Message(const Message &other) : Message(other._buffer.get(), other._size) {
-  std::memcpy(_buffer.get(), other._buffer.get(), _size);
+  std::memcpy(_buffer.get(), other._buffer.get(), _size + sizeof(MessageHeaderInfo));
 }
 
 Message::Message(Message &&other) {
@@ -63,6 +63,14 @@ bool Message::wait() {
 void Message::setcontent(const void *_data, const size_t &size) {
   GVT_ASSERT(size <= _size, "Wrong size buffer");
   std::memcpy(_buffer.get(), _data, _size);
+}
+
+MessageHeaderInfo Message::getHeaderInfo() {
+  return *reinterpret_cast<MessageHeaderInfo *>(_buffer.get() + _size);
+}
+void Message::setHeaderInfo(const MessageHeaderInfo &mhi) {
+  unsigned char *target = _buffer.get() + _size;
+  std::memcpy(target, &mhi, sizeof(MessageHeaderInfo));
 }
 
 // virtual void Message::sendto(size_t target, bool wait) {
