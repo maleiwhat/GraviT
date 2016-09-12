@@ -44,8 +44,7 @@ protected:
 public:
   SendRayList() : gvt::comm::Message(){};
   SendRayList(const size_t &n) : gvt::comm::Message(n){};
-  SendRayList(const long src, const long dst,
-              const gvt::render::actor::RayVector &raylist);
+  SendRayList(const long src, const long dst, gvt::render::actor::RayVector &raylist);
 };
 }
 }

@@ -59,7 +59,7 @@ acommunicator::acommunicator(int argc, char *argv[]) {
   MPI::Init_thread(argc, argv, MPI_THREAD_MULTIPLE);
 }
 acommunicator::~acommunicator() {
-  MPI::Finalize();
+  // MPI::Finalize();
   // MPI_Finalize();
 }
 
@@ -68,7 +68,7 @@ void acommunicator::terminate() {
   _terminate = true;
   g.wait();
   // std::cout << "Terminate comm channel : " << id() << std::endl;
-  // MPI::Finalize();
+  MPI::Finalize();
   // MPI_Finalize();
 }
 
@@ -148,13 +148,17 @@ void acommunicator::run() {
     if (MPI::COMM_WORLD.Iprobe(MPI::ANY_SOURCE, USER_DEFINED_MSG, status)) {
       const auto sender = status.Get_source();
       const auto n_bytes = status.Get_count(MPI::BYTE);
-      // std::cout << "Get user messages " << id() << std::endl;
+      std::cout << "Get user messages " << id() << " size " << n_bytes << std::endl;
       if (n_bytes > 0) {
         std::shared_ptr<Message> msg = std::make_shared<Message>(n_bytes - sizeof(long));
         MPI::COMM_WORLD.Recv(msg->msg_ptr(), n_bytes, MPI::UNSIGNED_CHAR, sender,
                              USER_DEFINED_MSG);
-        std::lock_guard<std::mutex> lk(_inbox_mutex);
-        _inbox.push_back(msg);
+
+        gvt::render::RenderContext &cntxt = *gvt::core::Context::instance();
+        cntxt.tracer()->MessageManager(msg);
+
+        // std::lock_guard<std::mutex> lk(_inbox_mutex);
+        //_inbox.push_back(msg);
       }
     }
 

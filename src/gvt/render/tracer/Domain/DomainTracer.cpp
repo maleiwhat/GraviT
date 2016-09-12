@@ -151,8 +151,6 @@ void DomainTracer::operator()() {
   std::shared_ptr<gvt::comm::Message> msg =
       std::make_shared<gvt::comm::SendRayList>(sizeof(gvt::render::actor::Ray) * 12);
 
-  std::cout << " MEssgae " << msg->getNameTag() << std::endl;
-
   std::shared_ptr<gvt::comm::SendRayList> srl =
       std::dynamic_pointer_cast<gvt::comm::SendRayList>(msg);
 
@@ -229,17 +227,17 @@ void DomainTracer::operator()() {
           ? _cam->rays.size()
           : (comm->id() + 1) * ray_portion; // tack on any odd rays to last proc
 
-  gvt::render::actor::RayVector lrays;
-  lrays.assign(_cam->rays.begin() + rays_start, _cam->rays.begin() + rays_end);
-  _cam->rays.clear();
+  // gvt::render::actor::RayVector lrays;
+  // lrays.assign(_cam->rays.begin() + rays_start, _cam->rays.begin() + rays_end);
+  // _cam->rays.clear();
 
-  processRayQueue(lrays);
+  processRayQueue(_cam->rays);
 
   InNodeLargestQueueFirst *pp = dynamic_cast<InNodeLargestQueueFirst *>(_queue.QP.get());
   std::vector<int> remote_instances;
   if (pp) {
     for (auto q : _queue._queue) {
-      if (pp->mpiInstanceMap[q.first] != comm->id() && !q.second.empty()) {
+      if (pp->mpiInstanceMap[q.first] != comm->id()) {
         remote_instances.push_back(q.first);
       }
     }
@@ -260,7 +258,12 @@ void DomainTracer::operator()() {
     for (auto id : remote_instances) {
       if (_queue.dequeue_send(id, send_rays)) {
         // TODO: Send rays
-        std::cout << "Send queue : " << id << std::endl;
+        // std::cout << "Send queue : " << id << " " << send_rays.size() << std::endl;
+        std::shared_ptr<gvt::comm::Message> msg =
+            std::make_shared<gvt::comm::SendRayList>(comm->id(), mpiInstanceMap[id],
+                                                     send_rays);
+
+        comm->send(msg, mpiInstanceMap[id]);
       }
     }
 

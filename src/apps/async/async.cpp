@@ -195,7 +195,8 @@ void setContext(int argc, char *argv[]) {
     coneMeshNode["bbox"] = (unsigned long long)meshbbox;
     coneMeshNode["ptr"] = (unsigned long long)mesh;
 
-    gvt::core::DBNodeH loc = cntxt->createNode("rank", 0); //(int)comm->id());
+    gvt::core::DBNodeH loc =
+        cntxt->createNode("rank", (comm->id() & 1 == 0) ? (int)comm->id() : 0);
     coneMeshNode["Locations"] += loc;
 
     // cntxt->addToSync(coneMeshNode);
@@ -289,7 +290,8 @@ void setContext(int argc, char *argv[]) {
     cubeMeshNode["bbox"] = (unsigned long long)meshbbox;
     cubeMeshNode["ptr"] = (unsigned long long)mesh;
 
-    gvt::core::DBNodeH loc = cntxt->createNode("rank", 1); //(int)comm->id());
+    gvt::core::DBNodeH loc =
+        cntxt->createNode("rank", (comm->id() & 1 == 1) ? (int)comm->id() : 1);
     cubeMeshNode["Locations"] += loc;
 
     // cntxt->addToSync(cubeMeshNode);

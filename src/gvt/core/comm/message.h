@@ -31,6 +31,7 @@
 #include <cstddef>
 #include <memory>
 #include <mutex>
+#include <string>
 
 namespace gvt {
 namespace comm {

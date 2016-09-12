@@ -31,15 +31,17 @@ namespace comm {
 
 MESSAGE_HEADER_INIT(SendRayList);
 
-SendRayList::SendRayList(const long src, const long dst,
-                         const gvt::render::actor::RayVector &raylist)
-    : number_rays(raylist.size()), src(src), dst(dst),
-      Message(&raylist[0],
-              sizeof(gvt::render::actor::Ray) * number_rays + sizeof(long) * 2) {
+SendRayList::SendRayList(const long _src, const long _dst,
+                         gvt::render::actor::RayVector &raylist) {
+
+  std::size_t size = sizeof(gvt::render::actor::Ray) * raylist.size() + sizeof(long) * 2;
+  _buffer = make_shared_buffer<unsigned char>(size + sizeof(long));
+  _size = size;
+
   long &s = *(long *)((unsigned char *)msg_ptr() +
-                      sizeof(gvt::render::actor::Ray) * number_rays);
+                      sizeof(gvt::render::actor::Ray) * raylist.size());
   long &d = *(long *)((unsigned char *)msg_ptr() +
-                      sizeof(gvt::render::actor::Ray) * number_rays + sizeof(long));
+                      sizeof(gvt::render::actor::Ray) * raylist.size() + sizeof(long));
   s = src;
   d = dst;
 }
