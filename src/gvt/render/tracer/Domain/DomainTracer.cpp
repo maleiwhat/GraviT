@@ -57,7 +57,6 @@
 #include <gvt/render/adapter/heterogeneous/Wrapper.h>
 #endif
 
-#include <gvt/render/tracer/Domain/Messages/EmptyMessage.h>
 #include <gvt/render/tracer/Domain/Messages/SendRayList.h>
 
 namespace gvt {
@@ -151,12 +150,6 @@ DomainTracer::DomainTracer() : RayTracer() {
 DomainTracer::~DomainTracer() {}
 
 void DomainTracer::operator()() {
-
-  std::shared_ptr<gvt::comm::Message> msg =
-      std::make_shared<gvt::comm::SendRayList>(sizeof(gvt::render::actor::Ray) * 12);
-
-  std::shared_ptr<gvt::comm::SendRayList> srl =
-      std::dynamic_pointer_cast<gvt::comm::SendRayList>(msg);
 
   std::shared_ptr<gvt::comm::acommunicator> comm = gvt::comm::acommunicator::instance();
   gvt::render::RenderContext &cntxt = *gvt::render::RenderContext::instance();
@@ -280,10 +273,8 @@ void DomainTracer::operator()() {
 };
 
 bool DomainTracer::MessageManager(std::shared_ptr<gvt::comm::Message> msg) {
-  std::cout << "Here" << msg->getHeaderInfo().tag << std::endl;
-
-  return true;
-  // return Tracer::MessageManager(msg);
+  std::cout << "TAG : " << msg->getHeaderInfo().tag << std::endl;
+  return Tracer::MessageManager(msg);
 }
 
 void DomainTracer::updateGeometry() {}

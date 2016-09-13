@@ -29,6 +29,7 @@
 namespace gvt {
 namespace comm {
 
+MESSAGE_HEADER_INIT(EmptyMessage);
 MESSAGE_HEADER_INIT(SendRayList);
 
 SendRayList::SendRayList(const long _src, const long _dst,

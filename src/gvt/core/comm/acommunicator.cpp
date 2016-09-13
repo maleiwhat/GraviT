@@ -165,7 +165,6 @@ void acommunicator::run() {
             std::make_shared<Message>(n_bytes - sizeof(MessageHeaderInfo));
         MPI::COMM_WORLD.Recv(msg->msg_ptr(), n_bytes, MPI::UNSIGNED_CHAR, sender,
                              USER_DEFINED_MSG);
-        std::cout << "Msg tag rec" << msg->msg_tag() << std::endl;
         gvt::core::CoreContext *cntxt = gvt::core::CoreContext::instance();
         if (cntxt) {
           std::cout << "CNTXT Found" << std::endl;
@@ -174,10 +173,6 @@ void acommunicator::run() {
             cntxt->tracer()->MessageManager(msg);
           }
         }
-        // cntxt.tracer()->MessageManager(msg);
-
-        // std::lock_guard<std::mutex> lk(_inbox_mutex);
-        //_inbox.push_back(msg);
       }
     }
 

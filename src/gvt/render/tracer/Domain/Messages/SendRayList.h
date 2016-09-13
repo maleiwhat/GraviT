@@ -33,6 +33,16 @@
 namespace gvt {
 namespace comm {
 
+class EmptyMessage : public gvt::comm::Message {
+  MESSAGE_HEADER(EmptyMessage);
+
+protected:
+public:
+  EmptyMessage() : gvt::comm::Message(){};
+  EmptyMessage(const size_t &n) : gvt::comm::Message(n){};
+  // EmptyMessage(const long src, const long dst, gvt::render::actor::RayVector &raylist);
+};
+
 class SendRayList : public gvt::comm::Message {
   MESSAGE_HEADER(SendRayList);
 
