@@ -35,7 +35,7 @@
 
 #include <gvt/core/Types.h>
 #include <gvt/core/mpi/Wrapper.h>
-#include <gvt/core/utils/timer.h>
+// #include <gvt/core/utils/timer.h>
 #include <gvt/render/Schedulers.h>
 #include <gvt/render/Types.h>
 #include <gvt/render/algorithm/TracerBase.h>
@@ -56,7 +56,8 @@
 #include <gvt/render/adapter/heterogeneous/Wrapper.h>
 #endif
 
-#include <boost/timer/timer.hpp>
+// #include <boost/timer/timer.hpp>
+#include "gvt/render/unit/Profiler.h"
 
 namespace gvt {
 namespace render {
@@ -77,6 +78,8 @@ namespace algorithm {
    */
 template <> class Tracer<gvt::render::schedule::ImageScheduler> : public AbstractTrace {
 public:
+  gvt::render::unit::profiler::Profiler profiler;
+
   // ray range [used when mpi is enabled]
   size_t rays_start, rays_end;
 
@@ -89,6 +92,8 @@ public:
     rays_end = (mpi.rank + 1) == mpi.world_size ? rays.size()
                                                 : (mpi.rank + 1) * ray_portion; // tack on any odd rays to last proc
   }
+
+  gvt::render::unit::profiler::Profiler *getProfiler() { return &profiler; }
 
   // organize the rays into queues
   // if using mpi, only keep the rays for the current rank
@@ -109,15 +114,15 @@ public:
 
   inline void operator()() {
 
-    gvt::core::time::timer t_diff(false, "image tracer: diff timers/frame:");
-    gvt::core::time::timer t_all(false, "image tracer: all timers:");
-    gvt::core::time::timer t_frame(true, "image tracer: frame :");
-    gvt::core::time::timer t_gather(false, "image tracer: gather :");
-    gvt::core::time::timer t_shuffle(false, "image tracer: shuffle :");
-    gvt::core::time::timer t_trace(false, "image tracer: trace :");
-    gvt::core::time::timer t_sort(false, "image tracer: select :");
-    gvt::core::time::timer t_adapter(false, "image tracer: adapter :");
-    gvt::core::time::timer t_filter(false, "image tracer: filter :");
+    // gvt::core::time::timer t_diff(false, "image tracer: diff timers/frame:");
+    // gvt::core::time::timer t_all(false, "image tracer: all timers:");
+    // gvt::core::time::timer t_frame(true, "image tracer: frame :");
+    // gvt::core::time::timer t_gather(false, "image tracer: gather :");
+    // gvt::core::time::timer t_shuffle(false, "image tracer: shuffle :");
+    // gvt::core::time::timer t_trace(false, "image tracer: trace :");
+    // gvt::core::time::timer t_sort(false, "image tracer: select :");
+    // gvt::core::time::timer t_adapter(false, "image tracer: adapter :");
+    // gvt::core::time::timer t_filter(false, "image tracer: filter :");
 
     GVT_DEBUG(DBG_ALWAYS, "image scheduler: starting, num rays: " << rays.size());
     gvt::core::DBNodeH root = gvt::render::RenderContext::instance()->getRootNode();
@@ -128,19 +133,22 @@ public:
     clearBuffer();
 
     // sort rays into queues
-    t_filter.resume();
+    // t_filter.resume();
+    profiler.Start(gvt::render::unit::profiler::Profiler::SHUFFLE);
     FilterRaysLocally();
-    t_filter.stop();
+    profiler.Stop(gvt::render::unit::profiler::Profiler::SHUFFLE);
+    // t_filter.stop();
 
     gvt::render::actor::RayVector moved_rays;
     int instTarget = -1, instTargetCount = 0;
     // process domains until all rays are terminated
     do {
+      profiler.Start(gvt::render::unit::profiler::Profiler::SCHEDULE);
       // process domain with most rays queued
       instTarget = -1;
       instTargetCount = 0;
 
-      t_sort.resume();
+      // t_sort.resume();
       GVT_DEBUG(DBG_ALWAYS, "image scheduler: selecting next instance, num queues: " << this->queue.size());
       for (std::map<int, gvt::render::actor::RayVector>::iterator q = this->queue.begin(); q != this->queue.end();
            ++q) {
@@ -149,11 +157,15 @@ public:
           instTarget = q->first;
         }
       }
-      t_sort.stop();
+      // t_sort.stop();
+      profiler.Stop(gvt::render::unit::profiler::Profiler::SCHEDULE);
       GVT_DEBUG(DBG_ALWAYS, "image scheduler: next instance: " << instTarget << ", rays: " << instTargetCount);
 
       if (instTarget >= 0) {
-        t_adapter.resume();
+        // t_adapter.resume();
+        profiler.Start(gvt::render::unit::profiler::Profiler::ADAPTER);
+        profiler.AddCounter(gvt::render::unit::profiler::Profiler::PROCESS_RAY, instTargetCount);
+        profiler.AddCounter(gvt::render::unit::profiler::Profiler::VALID_SCHEDULE, 1);
         gvt::render::Adapter *adapter = 0;
         // gvt::core::DBNodeH meshNode = instancenodes[instTarget]["meshRef"].deRef();
 
@@ -164,8 +176,10 @@ public:
         auto it = adapterCache.find(mesh);
         if (it != adapterCache.end()) {
           adapter = it->second;
+          profiler.AddCounter(gvt::render::unit::profiler::Profiler::ADAPTER_HIT, 1);
         } else {
           adapter = 0;
+          profiler.AddCounter(gvt::render::unit::profiler::Profiler::ADAPTER_MISS, 1);
         }
         if (!adapter) {
           GVT_DEBUG(DBG_ALWAYS, "image scheduler: creating new adapter");
@@ -197,38 +211,45 @@ public:
 
           adapterCache[mesh] = adapter;
         }
-        t_adapter.stop();
+        profiler.Stop(gvt::render::unit::profiler::Profiler::ADAPTER);
+        // t_adapter.stop();
         GVT_ASSERT(adapter != nullptr, "image scheduler: adapter not set");
         // end getAdapterFromCache concept
 
         GVT_DEBUG(DBG_ALWAYS, "image scheduler: calling process queue");
         {
-          t_trace.resume();
+          profiler.Start(gvt::render::unit::profiler::Profiler::TRACE);
+          // t_trace.resume();
           moved_rays.reserve(this->queue[instTarget].size() * 10);
-#ifdef GVT_USE_DEBUG
-          boost::timer::auto_cpu_timer t("Tracing rays in adapter: %w\n");
-#endif
+// #ifdef GVT_USE_DEBUG
+//           boost::timer::auto_cpu_timer t("Tracing rays in adapter: %w\n");
+// #endif
           adapter->trace(this->queue[instTarget], moved_rays, instM[instTarget], instMinv[instTarget],
                          instMinvN[instTarget], lights);
 
           this->queue[instTarget].clear();
 
-          t_trace.stop();
+          profiler.Stop(gvt::render::unit::profiler::Profiler::TRACE);
+          // t_trace.stop();
         }
 
         GVT_DEBUG(DBG_ALWAYS, "image scheduler: marching rays");
-        t_shuffle.resume();
+        // t_shuffle.resume();
+        profiler.Start(gvt::render::unit::profiler::Profiler::SHUFFLE);
         shuffleRays(moved_rays, instTarget);
         moved_rays.clear();
-        t_shuffle.stop();
+        profiler.Stop(gvt::render::unit::profiler::Profiler::SHUFFLE);
+        // t_shuffle.stop();
       }
     } while (instTarget != -1);
     GVT_DEBUG(DBG_ALWAYS, "image scheduler: gathering buffers");
-    t_gather.resume();
+    // t_gather.resume();
+    profiler.Start(gvt::render::unit::profiler::Profiler::COMPOSITE);
     this->gatherFramebuffers(this->rays.size());
+    profiler.Stop(gvt::render::unit::profiler::Profiler::COMPOSITE);
 
-    t_gather.stop();
-    t_frame.stop();
+    // t_gather.stop();
+    // t_frame.stop();
     GVT_DEBUG(DBG_ALWAYS, "image scheduler: adapter cache size: " << adapterCache.size());
     // std::cout << "Timers ---------------------------------------------------------------" << std::endl;
     // std::cout << "image scheduler: filter time: " << t_filter.format() << std::endl;
@@ -239,8 +260,8 @@ public:
     // std::cout << "image scheduler: gather time: " << t_gather.format() << std::endl;
     // std::cout << "image scheduler: frame time: " << t_frame.format() << std::endl;
 
-    t_all = t_sort + t_trace + t_shuffle + t_gather + t_adapter + t_filter;
-    t_diff = t_frame - t_all;
+    // t_all = t_sort + t_trace + t_shuffle + t_gather + t_adapter + t_filter;
+    // t_diff = t_frame - t_all;
     // std::cout << "image scheduler: added time: " << a.format() << " { unaccounted time: " << (t_frame - a).format()
     //           << " }" << std::endl;
   }

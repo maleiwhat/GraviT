@@ -414,10 +414,10 @@ inline bool DomainTracer::communicate() {
     if (voter->isCommAllowed()) {
       recvRayMsg();
     }
-    recvVoteMsg();
     profiler.Stop(Profiler::RECV);
 
     profiler.Start(Profiler::VOTE);
+    recvVoteMsg();
     done = voter->isDone();
     profiler.Stop(Profiler::VOTE);
   } else {

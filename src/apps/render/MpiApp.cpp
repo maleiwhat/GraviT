@@ -890,7 +890,7 @@ void RenderFilm(const commandline::Options &options, gvt::render::unit::MpiInfo 
     g_camera->generateRays();
 
     gvt::render::algorithm::Tracer<ImageScheduler> tracer(g_camera->rays, *g_image);
-    // Profiler &profiler = *tracer.getProfiler();
+    Profiler &profiler = *tracer.getProfiler();
 
     for (int z = 0; z < options.warmup_frames; z++) {
       g_camera->AllocateCameraRays();
@@ -899,22 +899,22 @@ void RenderFilm(const commandline::Options &options, gvt::render::unit::MpiInfo 
       tracer();
     }
 
-    // profiler.Reset();
-    // profiler.Start(Profiler::TOTAL_TIME);
+    profiler.Reset();
+    profiler.Start(Profiler::TOTAL_TIME);
     for (int z = 0; z < options.active_frames; z++) {
-      // profiler.Start(Profiler::CAMERA_RAY);
+      profiler.Start(Profiler::CAMERA_RAY);
       g_camera->AllocateCameraRays();
       g_camera->generateRays();
       g_image->clear();
-      // profiler.Stop(Profiler::CAMERA_RAY);
+      profiler.Stop(Profiler::CAMERA_RAY);
 
       tracer();
     }
-    // profiler.Stop(Profiler::TOTAL_TIME);
+    profiler.Stop(Profiler::TOTAL_TIME);
 
     g_image->Write();
 
-    // profiler.WriteToFile(GetTestName(mpi, options) + ".txt", mpi.rank);
+    profiler.WriteToFile(GetTestName(mpi, options) + ".txt", mpi.rank);
 
   } break;
 
