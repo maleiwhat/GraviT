@@ -372,6 +372,8 @@ std::string GetTestName(const MpiInfo &mpi, const commandline::Options &options)
     tracer_name = "async_domain";
   } else if (options.tracer == commandline::Options::SYNC_DOMAIN) {
     tracer_name = "sync_domain";
+  } else if (options.tracer == commandline::Options::SYNC_IMAGE) {
+    tracer_name = "sync_image";
   } else {
     tracer_name = "unknown_tracer";
   }
@@ -448,7 +450,10 @@ void CreateDatabase(const MpiInfo &mpi, const commandline::Options &options) {
     int instanceId = k;
     // WARNING (hpark): this data distribution must be consistent with the instance-data mapper in the tracer.
     // TODO duplicating the same scheme for now.
-    int ownerProcess = instanceId % mpi.size;
+    int ownerProcess = mpi.rank;
+    if (options.tracer == commandline::Options::ASYNC_DOMAIN || options.tracer == commandline::Options::SYNC_DOMAIN) {
+      ownerProcess = instanceId % mpi.size;
+    }
 
     // sprintf(txt, "%d", k);
     // filename = "block";
