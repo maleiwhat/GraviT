@@ -61,6 +61,7 @@
 
 // sync schedule
 #include "gvt/render/algorithm/DomainTracer.h"
+#include "gvt/render/algorithm/ImageTracer.h"
 
 #include "apps/render/MpiApp.h"
 
@@ -872,6 +873,43 @@ void RenderFilm(const commandline::Options &options, gvt::render::unit::MpiInfo 
     g_image->Write();
 
     profiler.WriteToFile(GetTestName(mpi, options) + ".txt", mpi.rank);
+
+  } break;
+
+  case commandline::Options::SYNC_IMAGE: {
+    if (mpi.rank == 0) std::cout << "start SYNC_IMAGE" << std::endl;
+
+    g_image = new Image(g_camera->getFilmSizeWidth(), g_camera->getFilmSizeHeight(), GetTestName(mpi, options));
+
+    g_camera->AllocateCameraRays();
+    g_camera->generateRays();
+
+    gvt::render::algorithm::Tracer<ImageScheduler> tracer(g_camera->rays, *g_image);
+    // Profiler &profiler = *tracer.getProfiler();
+
+    for (int z = 0; z < options.warmup_frames; z++) {
+      g_camera->AllocateCameraRays();
+      g_camera->generateRays();
+      g_image->clear();
+      tracer();
+    }
+
+    // profiler.Reset();
+    // profiler.Start(Profiler::TOTAL_TIME);
+    for (int z = 0; z < options.active_frames; z++) {
+      // profiler.Start(Profiler::CAMERA_RAY);
+      g_camera->AllocateCameraRays();
+      g_camera->generateRays();
+      g_image->clear();
+      // profiler.Stop(Profiler::CAMERA_RAY);
+
+      tracer();
+    }
+    // profiler.Stop(Profiler::TOTAL_TIME);
+
+    g_image->Write();
+
+    // profiler.WriteToFile(GetTestName(mpi, options) + ".txt", mpi.rank);
 
   } break;
 
