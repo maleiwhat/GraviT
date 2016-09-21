@@ -33,7 +33,7 @@
 #include <gvt/core/context/Database.h>
 #include <mpi.h>
 
-#include <gvt/core/comm/acommunicator.h>
+#include <gvt/core/comm/comm.h>
 #include <gvt/core/tracer/tracer.h>
 
 #ifndef MAX

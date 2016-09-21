@@ -1,8 +1,7 @@
 #include <iostream>
 
 #include <gvt/core/Context.h>
-#include <gvt/core/comm/acommunicator.h>
-#include <gvt/core/comm/message.h>
+#include <gvt/core/comm/comm.h>
 #include <gvt/render/Context.h>
 
 #include <gvt/render/composite/IceTComposite.h>
@@ -112,8 +111,7 @@ void setContext(int argc, char *argv[]) {
   //   MPE_Log_event(readstart, 0, NULL);
   // #endif
 
-  std::shared_ptr<gvt::comm::acommunicator> comm =
-      gvt::comm::acommunicator::instance(argc, argv);
+  std::shared_ptr<gvt::comm::communicator> comm = gvt::comm::communicator::singleton();
   gvt::render::RenderContext *cntxt = gvt::render::RenderContext::instance();
   if (cntxt == NULL) {
     std::cout << "Something went wrong initializing the context" << std::endl;
@@ -465,10 +463,8 @@ void setImage() {
 }
 
 int main(int argc, char *argv[]) {
-
-  std::shared_ptr<gvt::comm::acommunicator> comm =
-      gvt::comm::acommunicator::instance(argc, argv);
-
+  gvt::comm::scomm::init(argc, argv);
+  std::shared_ptr<gvt::comm::communicator> comm = gvt::comm::communicator::singleton();
   gvt::render::RenderContext *cntxt = gvt::render::RenderContext::instance();
 
   setContext(argc, argv);
@@ -482,7 +478,7 @@ int main(int argc, char *argv[]) {
     int data = 0;
     while (data < 9) {
       msg->setcontent(&data, sizeof(int));
-      comm->send(msg, comm->maxid() - 1);
+      comm->send(msg, comm->lastid() - 1);
       while (!comm->hasMessages())
         ;
       std::shared_ptr<gvt::comm::Message> msg2 = comm->popMessage();
@@ -492,7 +488,7 @@ int main(int argc, char *argv[]) {
     std::cout << "Out of the loop " << comm->id() << std::endl;
   }
 
-  if (comm->maxid() > 1 && comm->id() == comm->maxid() - 1) {
+  if (comm->lastid() > 1 && comm->id() == comm->lastid() - 1) {
     std::shared_ptr<gvt::comm::Message> msg =
         std::make_shared<gvt::comm::Message>(sizeof(int));
     int data = 0;

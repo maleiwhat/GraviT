@@ -33,23 +33,25 @@
 namespace gvt {
 namespace comm {
 
-class EmptyMessage : public gvt::comm::Message {
-  MESSAGE_HEADER(EmptyMessage);
+struct EmptyMessage : public gvt::comm::Message {
+  REGISTERABLE_MESSAGE(EmptyMessage);
 
 protected:
 public:
-  EmptyMessage() : gvt::comm::Message(){};
-  EmptyMessage(const size_t &n) : gvt::comm::Message(n){};
+  EmptyMessage() : gvt::comm::Message() { tag(COMMUNICATOR_MESSAGE_TAG); };
+  EmptyMessage(const size_t &n) : gvt::comm::Message(n) {
+    tag(COMMUNICATOR_MESSAGE_TAG);
+  };
   // EmptyMessage(const long src, const long dst, gvt::render::actor::RayVector &raylist);
 };
 
-class SendRayList : public gvt::comm::Message {
-  MESSAGE_HEADER(SendRayList);
+struct SendRayList : public gvt::comm::Message {
+  REGISTERABLE_MESSAGE(SendRayList);
 
 protected:
-  size_t number_rays;
-  long src = -1;
-  long dst = -1;
+  // size_t number_rays;
+  // long src = -1;
+  // long dst = -1;
 
 public:
   SendRayList() : gvt::comm::Message(){};

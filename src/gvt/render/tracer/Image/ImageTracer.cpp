@@ -67,7 +67,7 @@ ImageTracer::ImageTracer() : RayTracer() { _queue.setQueuePolicy<LargestQueueFir
 ImageTracer::~ImageTracer() {}
 
 void ImageTracer::operator()() {
-  std::shared_ptr<gvt::comm::acommunicator> comm = gvt::comm::acommunicator::instance();
+  std::shared_ptr<gvt::comm::communicator> comm = gvt::comm::communicator::singleton();
   gvt::render::RenderContext &cntxt = *gvt::render::RenderContext::instance();
   gvt::core::DBNodeH rootnode = cntxt.getRootNode();
   size_t width = cntxt.getRootNode()["Film"]["width"].value().toInteger();
@@ -130,10 +130,10 @@ void ImageTracer::operator()() {
   _cam->AllocateCameraRays();
   _cam->generateRays();
 
-  int ray_portion = _cam->rays.size() / comm->maxid();
+  int ray_portion = _cam->rays.size() / comm->lastid();
   int rays_start = comm->id() * ray_portion;
   size_t rays_end =
-      (comm->id() + 1) == comm->maxid()
+      (comm->id() + 1) == comm->lastid()
           ? _cam->rays.size()
           : (comm->id() + 1) * ray_portion; // tack on any odd rays to last proc
 
@@ -145,26 +145,18 @@ void ImageTracer::operator()() {
 
   bool GlobalFrameFinished = false;
 
-  while (!GlobalFrameFinished) {
-
+  while (!_queue.empty()) {
     int target = -1;
     gvt::render::actor::RayVector toprocess, moved_rays;
     _queue.dequeue(target, toprocess);
     if (target != -1) {
-
       trace(target, meshRef[target], toprocess, moved_rays, instM[target],
             instMinv[target], instMinvN[target], lights);
 
       processRayQueue(moved_rays, target);
     }
-    if (_queue.empty()) {
-      // Ask if done;
-      GlobalFrameFinished = true;
-      break;
-    }
   }
   // Start composite
-
   float *img_final = composite_buffer->composite();
 };
 

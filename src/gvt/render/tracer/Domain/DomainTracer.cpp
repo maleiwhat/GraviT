@@ -66,7 +66,7 @@ InNodeLargestQueueFirst::InNodeLargestQueueFirst() { refreshInNode(); }
 
 void InNodeLargestQueueFirst::addToInNode(const int &id) { innode.push_back(id); }
 void InNodeLargestQueueFirst::refreshInNode() {
-  std::shared_ptr<gvt::comm::acommunicator> comm = gvt::comm::acommunicator::instance();
+  std::shared_ptr<gvt::comm::communicator> comm = gvt::comm::communicator::singleton();
   gvt::render::RenderContext &cntxt = *gvt::render::RenderContext::instance();
   gvt::core::DBNodeH rootnode = cntxt.getRootNode();
   std::vector<gvt::core::DBNodeH> instancenodes = rootnode["Instances"].getChildren();
@@ -76,7 +76,7 @@ void InNodeLargestQueueFirst::refreshInNode() {
   std::map<int, std::set<std::string> >::iterator lastAssigned; // instance-node
                                                                 // round-robin assigment
 
-  for (size_t i = 0; i < comm->maxid(); i++) meshAvailbyMPI[i].clear();
+  for (size_t i = 0; i < comm->lastid(); i++) meshAvailbyMPI[i].clear();
 
   // build location map, where meshes are by mpi node
   for (size_t i = 0; i < dataNodes.size(); i++) {
@@ -130,7 +130,7 @@ void InNodeLargestQueueFirst::refreshInNode() {
 
 int InNodeLargestQueueFirst::policyCheck(
     const std::map<int, gvt::render::actor::RayVector> &_queue) {
-  std::shared_ptr<gvt::comm::acommunicator> comm = gvt::comm::acommunicator::instance();
+  std::shared_ptr<gvt::comm::communicator> comm = gvt::comm::communicator::singleton();
   int id = -1;
   std::size_t _total = 0;
   for (const auto &q : _queue) {
@@ -142,16 +142,40 @@ int InNodeLargestQueueFirst::policyCheck(
   return id;
 }
 
+bool DomainTracer::areWeDone() {
+  gvt::render::RenderContext &cntxt = *gvt::render::RenderContext::instance();
+  std::shared_ptr<DomainTracer> tracer =
+      std::dynamic_pointer_cast<DomainTracer>(cntxt.tracer());
+  std::cout << "Check " << std::endl;
+  if (!tracer) return false;
+
+  std::cout << "Check " << (tracer->_queue.empty() ? "T" : "F") << std::endl;
+
+  return (tracer->_queue.empty());
+}
+
+void DomainTracer::Done(bool T) {
+  gvt::render::RenderContext &cntxt = *gvt::render::RenderContext::instance();
+  std::shared_ptr<DomainTracer> tracer =
+      std::dynamic_pointer_cast<DomainTracer>(cntxt.tracer());
+  if (!tracer) return;
+  tracer->GlobalFrameFinished = T;
+}
+
 DomainTracer::DomainTracer() : RayTracer() {
   RegisterMessage<gvt::comm::EmptyMessage>();
   RegisterMessage<gvt::comm::SendRayList>();
+  std::shared_ptr<gvt::comm::communicator> comm = gvt::comm::communicator::singleton();
+
+  v = std::make_shared<comm::vote::vote>(DomainTracer::areWeDone, DomainTracer::Done);
+  comm->setVote(v);
 }
 
 DomainTracer::~DomainTracer() {}
 
 void DomainTracer::operator()() {
 
-  std::shared_ptr<gvt::comm::acommunicator> comm = gvt::comm::acommunicator::instance();
+  std::shared_ptr<gvt::comm::communicator> comm = gvt::comm::communicator::singleton();
   gvt::render::RenderContext &cntxt = *gvt::render::RenderContext::instance();
 
   gvt::core::DBNodeH rootnode = cntxt.getRootNode();
@@ -217,10 +241,10 @@ void DomainTracer::operator()() {
   _cam->AllocateCameraRays();
   _cam->generateRays();
 
-  int ray_portion = _cam->rays.size() / comm->maxid();
+  int ray_portion = _cam->rays.size() / comm->lastid();
   int rays_start = comm->id() * ray_portion;
   size_t rays_end =
-      (comm->id() + 1) == comm->maxid()
+      (comm->id() + 1) == comm->lastid()
           ? _cam->rays.size()
           : (comm->id() + 1) * ray_portion; // tack on any odd rays to last proc
 
@@ -241,7 +265,7 @@ void DomainTracer::operator()() {
     for (auto id : remote_instances) _queue._queue.erase(id);
   }
 
-  bool GlobalFrameFinished = false;
+  GlobalFrameFinished = false;
 
   while (!GlobalFrameFinished) {
     int target = -1;
@@ -252,6 +276,7 @@ void DomainTracer::operator()() {
             instMinv[target], instMinvN[target], lights);
       processRayQueue(moved_rays, target);
     }
+
     for (auto id : remote_instances) {
       if (_queue.dequeue_send(id, send_rays)) {
         // TODO: Send rays
@@ -265,15 +290,19 @@ void DomainTracer::operator()() {
     }
 
     if (_queue.empty()) {
+      std::cout << " + " << std::endl;
       GlobalFrameFinished = true;
-      break;
+      v->PorposeVoting();
+      // break;
     }
   }
+
   float *img_final = composite_buffer->composite();
+  std::cout << "lllll" << std::endl;
 };
 
 bool DomainTracer::MessageManager(std::shared_ptr<gvt::comm::Message> msg) {
-  std::cout << "TAG : " << msg->getHeaderInfo().tag << std::endl;
+  std::cout << "TAG : " << msg->tag() << std::endl;
   return Tracer::MessageManager(msg);
 }
 

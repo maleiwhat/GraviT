@@ -228,11 +228,16 @@ set(GVT_CORE_HDRS ${GVT_CORE_HDRS}
 
   src/gvt/core/data/primitives/BBox.h
 
-  src/gvt/core/comm/acommunicator.h
+  src/gvt/core/comm/comm.h
   src/gvt/core/comm/message.h
+  src/gvt/core/comm/communicator.h
+  src/gvt/core/comm/communicator/scomm.h
+  src/gvt/core/comm/communicator/acomm.h
+  src/gvt/core/comm/vote/vote.h
+  src/gvt/core/comm/vote/votebooth.h
+
 
   src/gvt/core/tracer/tracer.h
-
   src/gvt/core/composite/Composite.h
 
 )
@@ -246,8 +251,14 @@ set(GVT_CORE_SRCS ${GVT_CORE_SRCS}
 
   src/gvt/core/data/primitives/BBox.cpp
 
-  src/gvt/core/comm/acommunicator.cpp
+  src/gvt/core/tracer/tracer.cpp
+
   src/gvt/core/comm/message.cpp
+  src/gvt/core/comm/communicator.cpp
+  src/gvt/core/comm/communicator/scomm.cpp
+  src/gvt/core/comm/communicator/acomm.cpp
+  src/gvt/core/comm/vote/vote.cpp
+  src/gvt/core/comm/vote/votebooth.cpp
 
 )
 
@@ -291,6 +302,8 @@ set(GVT_RENDER_HDRS ${GVT_RENDER_HDRS}
   src/gvt/render/schedule/ImageScheduler.h
   src/gvt/render/Schedulers.h
   src/gvt/render/Types.h
+
+
 
 
   src/gvt/render/adapter/AdapterCache.h

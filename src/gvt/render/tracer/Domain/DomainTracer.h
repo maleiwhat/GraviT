@@ -54,8 +54,13 @@ public:
   virtual bool MessageManager(std::shared_ptr<gvt::comm::Message> msg);
   virtual void updateGeometry();
 
+  static bool areWeDone();
+  static void Done(bool);
+
 private:
+  bool GlobalFrameFinished = false;
   std::map<int, int> mpiInstanceMap;
+  std::shared_ptr<comm::vote::vote> v;
 };
 
 struct InNodeLargestQueueFirst : public gvt::tracer::QueuePolicy {

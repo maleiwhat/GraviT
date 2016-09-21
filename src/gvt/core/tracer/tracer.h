@@ -28,7 +28,8 @@
 #define GVT_TRACER_H
 
 #include <gvt/core/Debug.h>
-#include <gvt/core/comm/message.h>
+#include <gvt/core/comm/comm.h>
+#include <map>
 #include <string>
 #include <type_traits>
 #include <vector>
@@ -50,13 +51,14 @@ public:
   }
 
   template <class M> int RegisterMessage() {
-    static_assert(std::is_base_of<gvt::comm::Message, M>::value,
-                  "M must inherit from gvt::comm::Message");
-
-    M msg;
-    _registered_messages.push_back(msg.getNameTag());
-    M::setTag(_registered_messages.size() - 1);
-    return M::getTag();
+    // static_assert(std::is_base_of<gvt::comm::Message, M>::value,
+    //               "M must inherit from gvt::comm::Message");
+    //
+    // M msg;
+    // _registered_messages.push_back(msg.getNameTag());
+    // M::setTag(_registered_messages.size() - 1);
+    // return M::getTag();
+    return gvt::comm::communicator::RegisterMessageType<M>();
   }
 
   virtual bool isDone() {
@@ -73,6 +75,32 @@ public:
     GVT_ASSERT(false, "Tracer not implemented");
     return nullptr;
   };
+
+  // template <class M> static int RegisterMessageType() {
+  //   static_assert(std::is_base_of<comm::Message, M>::value,
+  //                 "M must inherit from comm::Message");
+  //   std::string classname = typeid(M).name();
+  //   if (registry_ids.find(classname) != registry_ids.end()) {
+  //     return registry_ids[classname];
+  //   }
+  //   registry_names.push_back(classname);
+  //   std::size_t idx = registry_names.size() - 1;
+  //   registry_ids[classname] = idx;
+  //   M::COMMUNICATOR_MESSAGE_TAG = idx;
+  //   return idx;
+  // }
+  //
+  // template <class M>
+  // static std::shared_ptr<M> SAFE_DOWN_CAST(const std::shared_ptr<comm::Message> &msg) {
+  //   if (msg->tag() >= registry_names.size()) return nullptr;
+  //   std::string classname = registry_names[msg->tag()];
+  //   if (registry_ids.find(classname) == registry_ids.end()) return nullptr;
+  //   if (registry_ids[classname] == msg->tag()) return std::static_pointer_cast<M>(msg);
+  //   return nullptr;
+  // }
+  //
+  // static std::vector<std::string> registry_names;
+  // static std::map<std::string, std::size_t> registry_ids;
 
 private:
 };

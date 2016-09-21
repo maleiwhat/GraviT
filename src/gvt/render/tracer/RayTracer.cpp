@@ -69,7 +69,7 @@ void RayTracer::trace(int target, gvt::render::data::primitives::Mesh *mesh,
                       std::vector<gvt::render::data::scene::Light *> &lights,
                       size_t begin, size_t end) {
 
-  std::shared_ptr<gvt::comm::acommunicator> comm = gvt::comm::acommunicator::instance();
+  std::shared_ptr<gvt::comm::communicator> comm = gvt::comm::communicator::singleton();
   gvt::render::RenderContext &cntxt = *gvt::render::RenderContext::instance();
   gvt::core::DBNodeH rootnode = cntxt.getRootNode();
   size_t width = cntxt.getRootNode()["Film"]["width"].value().toInteger();
