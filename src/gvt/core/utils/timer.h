@@ -27,7 +27,8 @@ struct timer {
   bool running;
   std::string text;
 
-  inline timer(bool running = true, std::string text = "") : text(text), total_elapsed(0), running(running) {
+  inline timer(bool running = true, std::string text = "")
+      : text(text), total_elapsed(0), running(running) {
     if (running) {
       t_end = clock_type::now();
       t_start = clock_type::now();
@@ -71,7 +72,9 @@ struct timer {
   }
   inline std::string format() const {
     double elapsed = total_elapsed;
-    if (running) elapsed += std::chrono::duration<double, std::milli>(clock_type::now() - t_start).count();
+    if (running)
+      elapsed +=
+          std::chrono::duration<double, std::milli>(clock_type::now() - t_start).count();
 
     std::ostringstream os;
     os << elapsed << " ms";
@@ -116,7 +119,9 @@ struct timer {
   // 	return std::chrono::duration<double,
   // std::milli>(t_end-t.t_start)).count();
   // }
-  friend std::ostream &operator<<(std::ostream &os, const timer &t) { return os << t.text << " :" << t.format(); }
+  friend std::ostream &operator<<(std::ostream &os, const timer &t) {
+    return os << t.text << " :" << t.format();
+  }
 };
 #else
 struct timer {

@@ -104,7 +104,7 @@ IceTComposite::IceTComposite(std::size_t width, std::size_t height)
   icetCompositeMode(ICET_COMPOSITE_MODE_BLEND);
   // icetCompositeMode(ICET_COMPOSITE_MODE_Z_BUFFER);
   icetStrategy(ICET_STRATEGY_VTREE);
-  icetSingleImageStrategy(ICET_SINGLE_IMAGE_STRATEGY_AUTOMATIC);
+  icetSingleImageStrategy(ICET_SINGLE_IMAGE_STRATEGY_BSWAP);
 
   color_buffer = static_cast<IceTFloat *>(malloc(width * height * 4 * sizeof(IceTFloat)));
   depth_buffer = static_cast<IceTFloat *>(malloc(width * height * sizeof(IceTFloat)));

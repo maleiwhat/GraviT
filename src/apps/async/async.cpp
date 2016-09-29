@@ -525,6 +525,8 @@ int main(int argc, char *argv[]) {
   std::shared_ptr<gvt::render::composite::ImageComposite> composite_buffer =
       cntxt->getComposite<gvt::render::composite::ImageComposite>();
   for (int ii = 0; ii < 10; ii++) {
+    std::cout << ".";
+    gvt::core::time::timer t(true, "Frame timer");
     composite_buffer->reset();
     (*tracer)();
   }
