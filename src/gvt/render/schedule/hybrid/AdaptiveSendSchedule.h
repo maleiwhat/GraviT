@@ -284,12 +284,12 @@ struct AdaptiveSendSchedule : public HybridScheduleBase {
       }
     }
 
-    GVT_DEBUG_CODE(DBG_LOW, std::cerr << "new map size is " << size << std::endl;
-                   for (int i = 0; i < size; ++i) std::cerr << "    " << i << " -> " << newMap[i] << std::endl;);
-    GVT_DEBUG_CODE(DBG_LOW, std::cerr << "data_send buffer is" << std::endl;
+    GVT_DEBUG_CODE(DBG_LOW, std::cerr << "new map size is " << size << std::endl << std::flush;
+                   for (int i = 0; i < size; ++i) std::cerr << "    " << i << " -> " << newMap[i] << std::endl << std::flush;);
+    GVT_DEBUG_CODE(DBG_LOW, std::cerr << "data_send buffer is" << std::endl << std::flush;
                    for (int i = 0; i < size; ++i) if (data_send_buf[i] < 0) std::cerr << "    " << i << " keeps"
-                                                                                      << std::endl;
-                   else std::cerr << "    " << i << " <-- " << data_send_buf[i] << std::endl;);
+                                                                                      << std::endl << std::flush;
+                   else std::cerr << "    " << i << " <-- " << data_send_buf[i] << std::endl << std::flush;);
   }
 };
 }

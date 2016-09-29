@@ -3,6 +3,7 @@
 
 #include <gvt/core/comm/message.h>
 
+#include <atomic>
 #include <functional>
 #include <memory>
 #include <mutex>
@@ -21,27 +22,25 @@ struct vote {
   enum ClientType { COORDINATOR, COHORT };
 
   enum VoteState {
-    VOTE_UNKNOWN,
+    VOTE_UNKNOWN = 0,
     PROPOSE,
-    DO_COMMIT,
-    DO_ABORT,
-    COORD_FINISHED,
-    VOTE_COMMIT,
     VOTE_ABORT,
+    VOTE_COMMIT,
     VOTER_FINISED,
-    COMMIT,
-    ABORT,
+    DO_ABORT,
+    DO_COMMIT,
+    COORD_FINISHED,
     NUM_VOTE_TYPES
   };
 
   const static char *state_names[];
 
   struct Ballot {
-    long coordinator_id = -1;
+    long ballotnumber = 0;
     VoteState vote = VOTE_UNKNOWN;
   } _ballot;
 
-  std::size_t _count = 0;
+  std::atomic<std::size_t> _count = 0;
 
   vote(std::function<bool(void)> CallBackCheck = nullptr,
        std::function<void(bool)> CallBackUpdate = nullptr);

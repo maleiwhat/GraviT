@@ -195,7 +195,7 @@ public:
       //    if (mpi.rank==0)
       //          std::cout << "[" << mpi.rank << "] domain scheduler: instId: " << i <<
       //          ", target mpi node: " << mpiInstanceMap[i] << ", world size: " << mpi.world_size <<
-      //                                                 std::endl;
+      //                                                 std::endl << std::flush;
     }
   }
 
@@ -469,13 +469,13 @@ public:
         outbound[n_ptr + 1] += sizeof(int); // bds add space for the queue number
         outbound[n_ptr + 1] += sizeof(int); // bds add space for the number of rays in queue
         GVT_DEBUG(DBG_ALWAYS, " neighbor! Added " << q.second.size() << " rays (" << buf_size << " bytes)"
-                                                  << std::endl);
+                                                  << std::endl << std::flush);
       }
     }
 
     // let the neighbors know what's coming
     // and find out what's coming here
-    GVT_DEBUG(DBG_ALWAYS, "[" << mpi.rank << "]: sending neighbor info" << std::endl);
+    GVT_DEBUG(DBG_ALWAYS, "[" << mpi.rank << "]: sending neighbor info" << std::endl << std::flush);
 
     int tag = 0;
     for (size_t n = 0; n < mpi.world_size; ++n) // bds sends to self?
@@ -484,15 +484,15 @@ public:
       MPI_Isend(&outbound[2 * n], 2, MPI_INT, n, tag, MPI_COMM_WORLD, &reqs[2 * n + 1]);
 
     MPI_Waitall(2 * mpi.world_size, reqs, stat);
-    GVT_DEBUG(DBG_ALWAYS, "[" << mpi.rank << "]:GOT HEADS UP " << std::endl);
+    GVT_DEBUG(DBG_ALWAYS, "[" << mpi.rank << "]:GOT HEADS UP " << std::endl << std::flush);
 #ifdef GVT_USE_DEBUG
-    std::cerr << mpi.rank << ": sent neighbor info" << std::endl;
+    std::cerr << mpi.rank << ": sent neighbor info" << std::endl << std::flush;
     std::cerr << mpi.rank << ": inbound ";
     for (size_t i = 0; i < mpi.world_size; ++i) std::cerr << "(" << inbound[2 * i] << "," << inbound[2 * i + 1] << ") ";
-    std::cerr << std::endl << mpi.rank << ": outbound ";
+    std::cerr << std::endl << std::flush << mpi.rank << ": outbound ";
     for (size_t i = 0; i < mpi.world_size; ++i)
       std::cerr << "(" << outbound[2 * i] << "," << outbound[2 * i + 1] << ") ";
-    std::cerr << std::endl;
+    std::cerr << std::endl << std::flush;
 #endif
 
     // set up send and recv buffers
@@ -514,9 +514,9 @@ public:
     for (size_t n = 0; n < mpi.world_size; ++n) { // bds loop through all ranks
       if (inbound[2 * n] > 0) {
         GVT_DEBUG(DBG_ALWAYS, "[" << mpi.rank << "]: recv " << inbound[2 * n] << " rays (" << inbound[2 * n + 1]
-                                  << " bytes) from " << n << std::endl);
+                                  << " bytes) from " << n << std::endl << std::flush);
         MPI_Irecv(recv_buf[n], inbound[2 * n + 1], MPI_UNSIGNED_CHAR, n, tag, MPI_COMM_WORLD, &reqs[2 * n]);
-        GVT_DEBUG(DBG_ALWAYS, "[" << mpi.rank << ": recv posted from " << n << std::endl);
+        GVT_DEBUG(DBG_ALWAYS, "[" << mpi.rank << ": recv posted from " << n << std::endl << std::flush);
       }
     }
     // ******************** pack the send buffers *********************************
@@ -529,7 +529,7 @@ public:
         send_buf_ptr[n] += sizeof(int);                              // bds advance pointer
         *((int *)(send_buf[n] + send_buf_ptr[n])) = q.second.size(); // bds load number of rays into send buffer
         send_buf_ptr[n] += sizeof(int);                              // bds advance pointer
-        GVT_DEBUG(DBG_ALWAYS, "[" << mpi.rank << "]: loading queue " << q.first << std::endl);
+        GVT_DEBUG(DBG_ALWAYS, "[" << mpi.rank << "]: loading queue " << q.first << std::endl << std::flush);
         for (size_t r = 0; r < q.second.size(); ++r) { // load the rays in this queue
           gvt::render::actor::Ray ray = (q.second)[r];
           send_buf_ptr[n] += ray.pack(send_buf[n] + send_buf_ptr[n]);
@@ -541,25 +541,25 @@ public:
     for (size_t n = 0; n < mpi.world_size; ++n) { // bds loop over all
       if (outbound[2 * n] > 0) {
         MPI_Isend(send_buf[n], outbound[2 * n + 1], MPI_UNSIGNED_CHAR, n, tag, MPI_COMM_WORLD, &reqs[2 * n + 1]);
-        GVT_DEBUG(DBG_ALWAYS, "[" << mpi.rank << "]: send done to " << n << std::endl);
+        GVT_DEBUG(DBG_ALWAYS, "[" << mpi.rank << "]: send done to " << n << std::endl << std::flush);
       }
     }
 
     // GVT_DEBUG(DBG_ALWAYS, "[" << mpi.rank << ": q(" << queue.size()
     //                            << ") erasing " << to_del.size());
     // for (int i = 0; i < to_del.size(); ++i) queue.erase(to_del[i]);
-    // GVT_DEBUG(DBG_ALWAYS,  " q(" << queue.size() << ")" << std::endl);
+    // GVT_DEBUG(DBG_ALWAYS,  " q(" << queue.size() << ")" << std::endl << std::flush);
 
     MPI_Waitall(2 * mpi.world_size, reqs, stat); // XXX TODO refactor to use Waitany?
 
     // ******************* unpack rays into the queues **************************
     for (int n = 0; n < mpi.world_size; ++n) { // bds loop over all
-      GVT_DEBUG(DBG_ALWAYS, "[" << mpi.rank << "] " << n << " inbound[2*n] " << inbound[2 * n] << std::endl);
+      GVT_DEBUG(DBG_ALWAYS, "[" << mpi.rank << "] " << n << " inbound[2*n] " << inbound[2 * n] << std::endl << std::flush);
       if (inbound[2 * n] > 0) {
         // clang-format off
         GVT_DEBUG(DBG_ALWAYS, "[" << mpi.rank << "]: adding " << inbound[2 * n] << " rays (" << inbound[2 * n + 1]
-                                  << " B) from " << n << std::endl << "    recv buf: " << (long)recv_buf[n]
-                                  << std::endl);
+                                  << " B) from " << n << std::endl << std::flush << "    recv buf: " << (long)recv_buf[n]
+                                  << std::endl << std::flush);
         // clang-format on
         int ptr = 0;
         while (ptr < inbound[2 * n + 1]) {
@@ -567,7 +567,7 @@ public:
           ptr += sizeof(int);
           int raysinqueue = *((int *)(recv_buf[n] + ptr)); // bds get rays in this queue
           ptr += sizeof(int);
-          GVT_DEBUG(DBG_ALWAYS, "[" << mpi.rank << "]: unpacking queue " << q_number << std::endl);
+          GVT_DEBUG(DBG_ALWAYS, "[" << mpi.rank << "]: unpacking queue " << q_number << std::endl << std::flush);
           for (int c = 0; c < raysinqueue; ++c) {
             gvt::render::actor::Ray r(recv_buf[n] + ptr);
             queue[q_number].push_back(r);
@@ -576,7 +576,7 @@ public:
         }
       }
     }
-    GVT_DEBUG(DBG_ALWAYS, "[" << mpi.rank << "]: sent and received rays" << std::endl);
+    GVT_DEBUG(DBG_ALWAYS, "[" << mpi.rank << "]: sent and received rays" << std::endl << std::flush);
 
     // clean up
     for (size_t i = 0; i < mpi.world_size; ++i) {

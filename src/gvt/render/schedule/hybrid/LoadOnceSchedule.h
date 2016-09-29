@@ -110,8 +110,8 @@ struct LoadOnceSchedule : public HybridScheduleBase {
       }
     }
 
-    GVT_DEBUG_CODE(DBG_OFF, std::cerr << "new map size is " << size << std::endl;
-                   for (int i = 0; i < size; ++i) std::cerr << "    " << i << " -> " << newMap[i] << std::endl;);
+    GVT_DEBUG_CODE(DBG_OFF, std::cerr << "new map size is " << size << std::endl << std::flush;
+                   for (int i = 0; i < size; ++i) std::cerr << "    " << i << " -> " << newMap[i] << std::endl << std::flush;);
   }
 };
 }

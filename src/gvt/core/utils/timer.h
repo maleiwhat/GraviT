@@ -78,7 +78,7 @@ struct timer {
     return os.str();
   }
 
-  inline void print() { std::cout << text << " " << format() << std::endl; }
+  inline void print() { std::cout << text << " " << format() << std::endl << std::flush; }
 
   inline timer operator+=(timer &other) {
     timer ret(false);

@@ -201,18 +201,18 @@ void Mesh::writeobj(std::string filename) {
   std::ofstream file;
   file.open(filename);
   {
-    file << "#vertices " << vertices.size() << std::endl;
+    file << "#vertices " << vertices.size() << std::endl << std::flush;
     for (auto &v : vertices)
-      file << "v " << v[0] << " " << v[1] << " " << v[2] << std::endl;
+      file << "v " << v[0] << " " << v[1] << " " << v[2] << std::endl << std::flush;
 
-    file << "#vertices normal " << normals.size() << std::endl;
+    file << "#vertices normal " << normals.size() << std::endl << std::flush;
     for (auto &vn : normals)
-      file << "vn " << vn[0] << " " << vn[1] << " " << vn[2] << std::endl;
+      file << "vn " << vn[0] << " " << vn[1] << " " << vn[2] << std::endl << std::flush;
 
-    file << "#vertices " << faces.size() << std::endl;
+    file << "#vertices " << faces.size() << std::endl << std::flush;
     for (auto &f : faces)
       file << "f " << f.get<0>() + 1 << " " << f.get<1>() + 1 << " " << f.get<2>() + 1
-           << std::endl;
+           << std::endl << std::flush;
     file.close();
   }
 }

@@ -8,6 +8,7 @@ namespace comm {
 scomm::scomm() {}
 void scomm::init(int argc, char *argv[]) {
   assert(!communicator::_instance);
+  MPI::Init_thread(argc, argv, MPI_THREAD_MULTIPLE);
   communicator::_instance = std::make_shared<scomm>();
   communicator::init(argc, argv);
 }
@@ -17,7 +18,7 @@ void scomm::run() {
     {
       MPI::Status status;
       if (MPI::COMM_WORLD.Iprobe(MPI::ANY_SOURCE, CONTROL_SYSTEM_TAG, status)) {
-        // std::cout << "Got user msg" << std::endl;
+        // std::cout << "Got user msg" << std::endl << std::flush;
         auto sender = status.Get_source();
         auto n_bytes = status.Get_count(MPI::BYTE);
         const auto data_size = n_bytes - sizeof(Message::header);

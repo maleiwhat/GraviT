@@ -67,7 +67,7 @@ gvt::render::data::accel::BVH::BVH(gvt::core::Vector<gvt::core::DBNodeH> &instan
   }
 
   // std::cout << "BVH has " << instanceSet.size() << " instances " << root->bbox <<
-  // std::endl;
+  // std::endl << std::flush;
 }
 
 gvt::render::data::accel::BVH::~BVH() {

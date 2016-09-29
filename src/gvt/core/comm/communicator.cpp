@@ -12,13 +12,16 @@ tbb::task_group communicator::tg;
 std::vector<std::string> communicator::registry_names;
 std::map<std::string, std::size_t> communicator::registry_ids;
 
+communicator::communicator() {
+  _id = MPI::COMM_WORLD.Get_rank();
+  _size = MPI::COMM_WORLD.Get_size();
+}
 communicator::~communicator() {}
 
 void communicator::init(int argc, char *argv[]) {
   assert(communicator::_instance);
-  MPI::Init_thread(argc, argv, MPI_THREAD_MULTIPLE);
   tg.run([&]() { communicator::_instance->run(); });
-  std::cout << "CC " << RegisterMessageType<gvt::comm::Message>() << std::endl;
+  RegisterMessageType<gvt::comm::Message>();
 }
 
 std::shared_ptr<communicator> communicator::singleton() {
@@ -33,11 +36,12 @@ communicator &communicator::instance() {
 
 std::size_t communicator::id() {
   assert(communicator::_instance);
-  return MPI::COMM_WORLD.Get_rank();
+  return _id;
 }
+
 std::size_t communicator::lastid() {
   assert(communicator::_instance);
-  return MPI::COMM_WORLD.Get_size();
+  return _size;
 }
 
 void communicator::terminate() {

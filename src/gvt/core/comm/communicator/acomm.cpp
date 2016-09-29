@@ -10,6 +10,7 @@ acomm::acomm() {}
 
 void acomm::init(int argc, char *argv[]) {
   assert(!communicator::_instance);
+  MPI::Init_thread(argc, argv, MPI_THREAD_MULTIPLE);
   communicator::_instance = std::make_shared<acomm>();
   communicator::init(argc, argv);
 }
@@ -20,7 +21,6 @@ void acomm::run() {
 
       if (!_outbox.empty()) {
         std::lock_guard<std::mutex> l(moutbox);
-        // if (_outbox.empty()) continue;
         std::shared_ptr<Message> msg = _outbox.front();
         _outbox.erase(_outbox.begin());
         MPI::COMM_WORLD.Send(msg->getMessage<void>(), msg->buffer_size(), MPI::BYTE,
@@ -29,7 +29,6 @@ void acomm::run() {
 
       MPI::Status status;
       if (MPI::COMM_WORLD.Iprobe(MPI::ANY_SOURCE, CONTROL_SYSTEM_TAG, status)) {
-        // std::cout << "Got user msg" << std::endl;
         auto sender = status.Get_source();
         auto n_bytes = status.Get_count(MPI::BYTE);
         const auto data_size = n_bytes - sizeof(Message::header);
@@ -46,7 +45,7 @@ void acomm::run() {
 }
 
 void acomm::send(std::shared_ptr<comm::Message> msg, std::size_t to) {
-  std::cout << " ." << std::endl;
+  std::cout << " ." << std::endl << std::flush;
   assert(msg->tag() >= 0 && msg->tag() < registry_names.size());
   const std::string classname = registry_names[msg->tag()];
   assert(registry_ids.find(classname) != registry_ids.end());
@@ -55,6 +54,7 @@ void acomm::send(std::shared_ptr<comm::Message> msg, std::size_t to) {
   std::lock_guard<std::mutex> l(moutbox);
   _outbox.push_back(msg);
 };
+
 void acomm::broadcast(std::shared_ptr<comm::Message> msg) {
   assert(msg->tag() >= 0 && msg->tag() < registry_names.size());
   const std::string classname = registry_names[msg->tag()];

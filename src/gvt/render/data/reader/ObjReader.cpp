@@ -125,7 +125,7 @@ ObjReader::ObjReader(const std::string filename) : computeNormals(false) {
   std::string err;
 
   if (!tinyobj::LoadObj(shapes, materials, err, filename.c_str(), path.c_str())) {
-    std::cerr << err << std::endl;
+    std::cerr << err << std::endl << std::flush;
     exit(1);
   }
 
@@ -187,11 +187,11 @@ ObjReader::ObjReader(const std::string filename) : computeNormals(false) {
   }
 
   computeNormals = (objMesh->normals.size() == objMesh->vertices.size());
-  std::cout << "Found : " << objMesh->vertices.size() << " vertices" << std::endl;
-  std::cout << "Found : " << objMesh->normals.size() << " normals" << std::endl;
-  std::cout << "Found : " << objMesh->faces.size() << " normals" << std::endl;
-  std::cout << "Bound : " << objMesh->boundingBox.bounds_min << " x " << objMesh->boundingBox.bounds_max << std::endl;
-  std::cout << "Center : " << ((objMesh->boundingBox.bounds_min + objMesh->boundingBox.bounds_max) * .5f) << std::endl;
+  std::cout << "Found : " << objMesh->vertices.size() << " vertices" << std::endl << std::flush;
+  std::cout << "Found : " << objMesh->normals.size() << " normals" << std::endl << std::flush;
+  std::cout << "Found : " << objMesh->faces.size() << " normals" << std::endl << std::flush;
+  std::cout << "Bound : " << objMesh->boundingBox.bounds_min << " x " << objMesh->boundingBox.bounds_max << std::endl << std::flush;
+  std::cout << "Center : " << ((objMesh->boundingBox.bounds_min + objMesh->boundingBox.bounds_max) * .5f) << std::endl << std::flush;
 
   if (computeNormals) objMesh->generateNormals();
   objMesh->computeBoundingBox();

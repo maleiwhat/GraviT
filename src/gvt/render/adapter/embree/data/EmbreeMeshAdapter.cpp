@@ -544,7 +544,7 @@ struct embreeParallelTrace {
     // << workEnd << "]");
 
     // std::cout << "EmbreeMeshAdapter: working on rays [" << begin << ", " << end << "]"
-    // << std::endl;
+    // << std::endl << std::flush;
 
     for (size_t localIdx = begin; localIdx < end; localIdx += GVT_EMBREE_PACKET_SIZE) {
       // this is the local packet size. this might be less than the main
@@ -760,7 +760,7 @@ void EmbreeMeshAdapter::trace(gvt::render::actor::RayVector &rayList,
   // float mm[] = { n[0], n[1], n[2], n[4], n[5], n[6], n[8], n[9], n[10], n[3], n[7],
   // n[11] };
 
-  // std::cout << "Embree zmat" << *m << std::endl;
+  // std::cout << "Embree zmat" << *m << std::endl << std::flush;
 
   rtcSetTransform(global_scene, instID, RTC_MATRIX_COLUMN_MAJOR, mm);
   rtcUpdate(global_scene, instID);

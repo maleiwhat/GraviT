@@ -58,7 +58,7 @@ public:
   static void Done(bool);
 
 private:
-  bool GlobalFrameFinished = false;
+  volatile bool GlobalFrameFinished = false;
   std::map<int, int> mpiInstanceMap;
   std::shared_ptr<comm::vote::vote> v;
 };

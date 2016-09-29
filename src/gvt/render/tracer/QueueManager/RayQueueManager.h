@@ -93,9 +93,14 @@ struct RayQueueManager {
     return true;
   }
   bool empty() {
+    std::lock_guard<std::mutex> _lock(_protect);
     if (!_queue.empty()) {
       for (auto q : _queue)
-        if (q.second.size() > 0) return false;
+        if (q.second.size() > 0) {
+          // std::cout << "Queue " << q.first << " has " << q.second.size() << std::endl
+          // << std::flush;
+          return false;
+        }
     }
     return true;
   }

@@ -141,7 +141,7 @@ public:
     }
 
     if (instTargetCount == 0) {
-      // std::cout << "No work to start with" << std::endl;
+      // std::cout << "No work to start with" << std::endl << std::flush;
     }
 
     // process domains until all rays are terminated
@@ -161,7 +161,7 @@ public:
       }
       t_sort.stop();
 
-      // std::cout << "Instance[" << instTarget << "] " << instTargetCount << std::endl;
+      // std::cout << "Instance[" << instTarget << "] " << instTargetCount << std::endl << std::flush;
 
       GVT_DEBUG(DBG_ALWAYS, "image scheduler: next instance: " << instTarget << ", rays: " << instTargetCount);
 
@@ -235,7 +235,7 @@ public:
         moved_rays.clear();
         t_shuffle.stop();
       } else {
-        // std::cout << "No more work" << std::endl;
+        // std::cout << "No more work" << std::endl << std::flush;
       }
     } while (instTarget != -1);
     GVT_DEBUG(DBG_ALWAYS, "image scheduler: gathering buffers");
@@ -245,19 +245,19 @@ public:
     t_gather.stop();
     t_frame.stop();
     GVT_DEBUG(DBG_ALWAYS, "image scheduler: adapter cache size: " << adapterCache.size());
-    // std::cout << "Timers ---------------------------------------------------------------" << std::endl;
-    // std::cout << "image scheduler: filter time: " << t_filter.format() << std::endl;
-    // std::cout << "image scheduler: select time: " << t_sort.format() << std::endl;
-    // std::cout << "image scheduler: adapter time: " << t_adapter.format() << std::endl;
-    // std::cout << "image scheduler: trace time: " << t_trace.format() << std::endl;
-    // std::cout << "image scheduler: shuffle time: " << t_shuffle.format() << std::endl;
-    // std::cout << "image scheduler: gather time: " << t_gather.format() << std::endl;
-    // std::cout << "image scheduler: frame time: " << t_frame.format() << std::endl;
+    // std::cout << "Timers ---------------------------------------------------------------" << std::endl << std::flush;
+    // std::cout << "image scheduler: filter time: " << t_filter.format() << std::endl << std::flush;
+    // std::cout << "image scheduler: select time: " << t_sort.format() << std::endl << std::flush;
+    // std::cout << "image scheduler: adapter time: " << t_adapter.format() << std::endl << std::flush;
+    // std::cout << "image scheduler: trace time: " << t_trace.format() << std::endl << std::flush;
+    // std::cout << "image scheduler: shuffle time: " << t_shuffle.format() << std::endl << std::flush;
+    // std::cout << "image scheduler: gather time: " << t_gather.format() << std::endl << std::flush;
+    // std::cout << "image scheduler: frame time: " << t_frame.format() << std::endl << std::flush;
 
     t_all = t_sort + t_trace + t_shuffle + t_gather + t_adapter + t_filter;
     t_diff = t_frame - t_all;
     // std::cout << "image scheduler: added time: " << a.format() << " { unaccounted time: " << (t_frame - a).format()
-    //           << " }" << std::endl;
+    //           << " }" << std::endl << std::flush;
   }
 };
 }

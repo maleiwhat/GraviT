@@ -46,7 +46,7 @@ public:
   virtual void operator()() { GVT_ASSERT(false, "Tracer not implemented"); };
 
   virtual bool MessageManager(std::shared_ptr<gvt::comm::Message> msg) {
-    std::cout << "aaa" << std::endl;
+    std::cout << "aaa" << std::endl << std::flush;
     return false;
   }
 

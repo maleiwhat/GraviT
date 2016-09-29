@@ -85,7 +85,7 @@ void Database::removeItem(Uuid uuid) {
     children = &__tree[cnode->parentUUID()];
     GVT_DEBUG_CODE(DBG_LOW,
                    for (it = children->begin(); it != children->end(); it++) std::cerr
-                       << "tree item: " << (*it)->UUID().toString() << std::endl;);
+                       << "tree item: " << (*it)->UUID().toString() << std::endl << std::flush;);
     for (it = children->begin(); it != children->end(); ++it) {
       if ((*it)->UUID() == uuid) break;
     }
@@ -119,13 +119,13 @@ void Database::print(const Uuid &parent, const int depth, std::ostream &os) {
   std::string offset = "";
   for (int i = 0; i < depth; i++) offset += "-";
   os << offset << pnode->UUID().toString() << " : " << pnode->name() << " : "
-     << pnode->value() << std::endl;
+     << pnode->value() << std::endl << std::flush;
   offset += "-";
   ChildList children = __tree[parent];
   for (ChildList::iterator it = children.begin(); it != children.end(); ++it) {
     DatabaseNode *node = (*it);
     os << offset << node->UUID().toString() << " : " << node->name() << " : "
-       << node->value() << std::endl;
+       << node->value() << std::endl << std::flush;
   }
 
   os.flush();
@@ -134,8 +134,8 @@ void Database::print(const Uuid &parent, const int depth, std::ostream &os) {
 void Database::printTree(const Uuid &parent, int rank, const int depth,
                          std::ostream &os) {
   if (MPI::COMM_WORLD.Get_rank() == rank) {
-    std::cout << std::endl
-              << "Rank " << MPI::COMM_WORLD.Get_rank() << " tree:" << std::endl;
+    std::cout << std::endl << std::flush
+              << "Rank " << MPI::COMM_WORLD.Get_rank() << " tree:" << std::endl << std::flush;
     printTree(parent, depth, os);
   }
   MPI::COMM_WORLD.Barrier();
@@ -151,7 +151,7 @@ void Database::printTree(const Uuid &parent, const int depth, std::ostream &os) 
   for (int i = 0; i < depth; i++) offset += "-";
   offset += "|";
   os << offset << pnode->UUID().toString() << " : " << pnode->name() << " : "
-     << pnode->value() << std::endl;
+     << pnode->value() << std::endl << std::flush;
   ChildList children = __tree[parent];
   for (ChildList::iterator it = children.begin(); it != children.end(); ++it) {
     DatabaseNode *node = (*it);

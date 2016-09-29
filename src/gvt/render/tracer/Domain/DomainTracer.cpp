@@ -143,22 +143,27 @@ int InNodeLargestQueueFirst::policyCheck(
 }
 
 bool DomainTracer::areWeDone() {
+  std::shared_ptr<gvt::comm::communicator> comm = gvt::comm::communicator::singleton();
   gvt::render::RenderContext &cntxt = *gvt::render::RenderContext::instance();
   std::shared_ptr<DomainTracer> tracer =
       std::dynamic_pointer_cast<DomainTracer>(cntxt.tracer());
-  std::cout << "Check " << std::endl;
   if (!tracer) return false;
-
-  std::cout << "Check " << (tracer->_queue.empty() ? "T" : "F") << std::endl;
-
-  return (tracer->_queue.empty());
+  bool ret = tracer->_queue.empty();
+  // std::cout << "[" << comm->id() << "] Check " << ((tracer->_queue.empty()) ? "T" :
+  // "F")
+  //           << std::endl << std::flush;
+  return ret;
 }
 
 void DomainTracer::Done(bool T) {
+  std::shared_ptr<gvt::comm::communicator> comm = gvt::comm::communicator::singleton();
   gvt::render::RenderContext &cntxt = *gvt::render::RenderContext::instance();
   std::shared_ptr<DomainTracer> tracer =
       std::dynamic_pointer_cast<DomainTracer>(cntxt.tracer());
   if (!tracer) return;
+  // if (T)
+  //   std::cout << "[" << comm->id() << "] Done ... " << (T ? "T" : "F") << std::endl
+  //             << std::flush;
   tracer->GlobalFrameFinished = T;
 }
 
@@ -275,34 +280,30 @@ void DomainTracer::operator()() {
       trace(target, meshRef[target], toprocess, moved_rays, instM[target],
             instMinv[target], instMinvN[target], lights);
       processRayQueue(moved_rays, target);
-    }
+    } else if (!_queue.empty()) {
+      for (auto id : remote_instances) {
+        if (_queue.dequeue_send(id, send_rays)) {
+          // TODO: Send rays
+          // std::cout << "Send queue : " << id << " " << send_rays.size() << std::endl <<
+          // std::flush;
+          std::shared_ptr<gvt::comm::Message> msg =
+              std::make_shared<gvt::comm::SendRayList>(comm->id(), mpiInstanceMap[id],
+                                                       send_rays);
 
-    for (auto id : remote_instances) {
-      if (_queue.dequeue_send(id, send_rays)) {
-        // TODO: Send rays
-        // std::cout << "Send queue : " << id << " " << send_rays.size() << std::endl;
-        std::shared_ptr<gvt::comm::Message> msg =
-            std::make_shared<gvt::comm::SendRayList>(comm->id(), mpiInstanceMap[id],
-                                                     send_rays);
-
-        comm->send(msg, mpiInstanceMap[id]);
+          comm->send(msg, mpiInstanceMap[id]);
+        }
       }
     }
-
     if (_queue.empty()) {
-      std::cout << " + " << std::endl;
-      GlobalFrameFinished = true;
       v->PorposeVoting();
-      // break;
     }
   }
 
   float *img_final = composite_buffer->composite();
-  std::cout << "lllll" << std::endl;
 };
 
 bool DomainTracer::MessageManager(std::shared_ptr<gvt::comm::Message> msg) {
-  std::cout << "TAG : " << msg->tag() << std::endl;
+  std::cout << "TAG : " << msg->tag() << std::endl << std::flush;
   return Tracer::MessageManager(msg);
 }
 

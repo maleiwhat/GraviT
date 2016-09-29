@@ -49,7 +49,7 @@ inline void print_trace() {
   int child_pid = fork();
   if (!child_pid) {
     dup2(2, 1); // redirect output to stderr
-    std::cerr << "stack trace for " << name_buf << " pid= " << pid_buf << std::endl;
+    std::cerr << "stack trace for " << name_buf << " pid= " << pid_buf << std::endl << std::flush;
 #ifndef __APPLE__
     execlp("gdb", "gdb", "--batch", "-n", "-ex", "thread", "-ex", "bt", name_buf, pid_buf, NULL);
 #else
@@ -66,7 +66,7 @@ inline void print_trace() {
 
 using std::cout;
 using std::cerr;
-using std::endl;
+using std::endl << std::flush;
 using std::flush;
 
 /// GraviT debug level.
@@ -104,7 +104,7 @@ template <typename T> inline std::string to_string(T value) {
     if (!(condition)) {                                                                                                \
       std::cerr << DBG_COLOR_RED << "Failed assertion `" << DBG_COLOR_BLUE << #condition << DBG_COLOR_RED << " ["      \
                 << DBG_COLOR_NORMAL << __FILE_SHORT__ << " : " << __LINE__ << DBG_COLOR_RED << "]: " << DBG_COLOR_GRAY \
-                << message << DBG_COLOR_NORMAL << std::endl;                                                           \
+                << message << DBG_COLOR_NORMAL << std::endl << std::flush;                                                           \
       std::exit(EXIT_FAILURE);                                                                                         \
     }                                                                                                                  \
   } while (false)
@@ -114,7 +114,7 @@ template <typename T> inline std::string to_string(T value) {
     if (!(condition)) {                                                                                                \
       std::cerr << DBG_COLOR_RED << "Failed assertion `" << DBG_COLOR_BLUE << #condition << DBG_COLOR_RED << " ["      \
                 << DBG_COLOR_NORMAL << __FILE_SHORT__ << " : " << __LINE__ << DBG_COLOR_RED << "]: " << DBG_COLOR_GRAY \
-                << message << DBG_COLOR_NORMAL << std::endl;                                                           \
+                << message << DBG_COLOR_NORMAL << std::endl << std::flush;                                                           \
       print_trace();                                                                                                   \
       std::exit(EXIT_FAILURE);                                                                                         \
     }                                                                                                                  \
@@ -124,7 +124,7 @@ template <typename T> inline std::string to_string(T value) {
   do {                                                                                                                 \
     if ((level <= DEBUG_LEVEL)) {                                                                                      \
       std::cerr << DBG_COLOR_GREEN << "Debug[" << DBG_COLOR_NORMAL << __FILE_SHORT__ << ":" << __LINE__                \
-                << DBG_COLOR_GREEN << "]: " << DBG_COLOR_GRAY << message << DBG_COLOR_NORMAL << std::endl;             \
+                << DBG_COLOR_GREEN << "]: " << DBG_COLOR_GRAY << message << DBG_COLOR_NORMAL << std::endl << std::flush;             \
     }                                                                                                                  \
   } while (false)
 
@@ -133,7 +133,7 @@ template <typename T> inline std::string to_string(T value) {
     if (!(condition)) {                                                                                                \
       std::cerr << DBG_COLOR_YELLOW << "Warning `" << DBG_COLOR_BLUE << #condition << DBG_COLOR_YELLOW << "` failed [" \
                 << DBG_COLOR_NORMAL << __FILE_SHORT__ << ":" << __LINE__ << DBG_COLOR_YELLOW                           \
-                << "]: " << DBG_COLOR_GRAY << message << DBG_COLOR_NORMAL << std::endl;                                \
+                << "]: " << DBG_COLOR_GRAY << message << DBG_COLOR_NORMAL << std::endl << std::flush;                                \
     }                                                                                                                  \
   } while (false)
 
@@ -142,7 +142,7 @@ template <typename T> inline std::string to_string(T value) {
     if (!(condition)) {                                                                                                \
       std::cerr << DBG_COLOR_YELLOW << "Warning `" << DBG_COLOR_BLUE << #condition << DBG_COLOR_YELLOW << "` failed [" \
                 << DBG_COLOR_NORMAL << __FILE_SHORT__ << ":" << __LINE__ << DBG_COLOR_YELLOW                           \
-                << "]: " << DBG_COLOR_GRAY << message << DBG_COLOR_NORMAL << std::endl;                                \
+                << "]: " << DBG_COLOR_GRAY << message << DBG_COLOR_NORMAL << std::endl << std::flush;                                \
       print_trace();                                                                                                   \
     }                                                                                                                  \
   } while (false)
@@ -163,7 +163,7 @@ template <typename T> inline std::string to_string(T value) {
   do {                                                                                                                 \
     if (!(condition)) {                                                                                                \
       std::cerr << DBG_COLOR_RED << "ERROR:`" << DBG_COLOR_BLUE << #condition << DBG_COLOR_RED << ":"                  \
-                << DBG_COLOR_GRAY << message << DBG_COLOR_NORMAL << std::endl;                                         \
+                << DBG_COLOR_GRAY << message << DBG_COLOR_NORMAL << std::endl << std::flush;                                         \
       std::exit(EXIT_FAILURE);                                                                                         \
     }                                                                                                                  \
   } while (false)
@@ -173,7 +173,7 @@ template <typename T> inline std::string to_string(T value) {
     if (!(condition)) {                                                                                                \
       std::cerr << DBG_COLOR_RED << "ERROR: `" << DBG_COLOR_BLUE << #condition << DBG_COLOR_RED << " ["                \
                 << DBG_COLOR_NORMAL << __FILE_SHORT__ << " : " << __LINE__ << DBG_COLOR_RED << "]: " << DBG_COLOR_GRAY \
-                << message << DBG_COLOR_NORMAL << std::endl;                                                           \
+                << message << DBG_COLOR_NORMAL << std::endl << std::flush;                                                           \
       print_trace();                                                                                                   \
       std::exit(EXIT_FAILURE);                                                                                         \
     }                                                                                                                  \

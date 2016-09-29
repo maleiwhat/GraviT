@@ -292,7 +292,7 @@ void cudaGetLights(std::vector<gvt::render::data::scene::Light *> gvtLights,
       cudaLights[i].type = gvt::render::data::cuda_primitives::LIGH_TYPE::POINT;
 
     } else {
-      std::cout << "Unknown light" << std::endl;
+      std::cout << "Unknown light" << std::endl << std::flush;
       return;
     }
   }

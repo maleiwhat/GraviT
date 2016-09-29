@@ -59,6 +59,9 @@
 #include <TAU.h>
 #endif
 
+#include <fstream>
+#include <iostream>
+
 /* NEED TO REDUCE INCLUDES ABOVE */
 
 using namespace std;
@@ -462,10 +465,21 @@ void setImage() {
       filmNode["width"].value().toInteger(), filmNode["height"].value().toInteger()));
 }
 
+//#define _GVT_REDIRECT_ 1
+
 int main(int argc, char *argv[]) {
   gvt::comm::scomm::init(argc, argv);
   std::shared_ptr<gvt::comm::communicator> comm = gvt::comm::communicator::singleton();
   gvt::render::RenderContext *cntxt = gvt::render::RenderContext::instance();
+#ifdef _GVT_REDIRECT_
+  std::ofstream out("o" + std::to_string(comm->id()) + ".out");
+  std::streambuf *coutbuf = std::cout.rdbuf(); // save old buf
+  std::cout.rdbuf(out.rdbuf());                // redirect std::cout to out.txt!
+
+  std::ofstream err("e" + std::to_string(comm->id()) + ".err");
+  std::streambuf *cerrbuf = std::cerr.rdbuf(); // save old buf
+  std::cerr.rdbuf(err.rdbuf());                // redirect std::cout to out.txt!
+#endif
 
   setContext(argc, argv);
   setCamera();
@@ -517,5 +531,10 @@ int main(int argc, char *argv[]) {
 
   composite_buffer->write(cntxt->getRootNode()["Film"]["outputPath"].value().toString());
   comm->terminate();
+
+#ifdef _GVT_REDIRECT_
+  out.close();
+  err.close();
+#endif
   return 0;
 }

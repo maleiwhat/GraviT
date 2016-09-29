@@ -51,15 +51,15 @@ void Image::Write() {
   }
 
   std::stringstream header;
-  header << "P6" << std::endl;
-  header << width << " " << height << std::endl;
-  header << "255" << std::endl;
+  header << "P6" << std::endl << std::flush;
+  header << width << " " << height << std::endl << std::flush;
+  header << "255" << std::endl << std::flush;
 
   std::fstream file;
   file.open((filename + ext).c_str(), std::fstream::out | std::fstream::trunc | std::fstream::binary);
   file << header.str();
 
-  std::cout << "Image write " << width << " x " << height << std::endl;
+  std::cout << "Image write " << width << " x " << height << std::endl << std::flush;
   // reverse row order so image is correctly oriented
   for (int j = height - 1; j >= 0; j--) {
     int offset = j * width;
@@ -69,6 +69,6 @@ void Image::Write() {
       file << rgb[index + 0] << rgb[index + 1] << rgb[index + 2];
     }
   }
-  std::cout << std::endl;
+  std::cout << std::endl << std::flush;
   file.close();
 }

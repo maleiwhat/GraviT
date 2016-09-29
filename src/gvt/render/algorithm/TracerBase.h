@@ -90,7 +90,7 @@ struct GVT_COMM {
 
     if (world_size <= 1) return buf;
 
-    // std::cout << "World size : " << world_size << std::endl;
+    // std::cout << "World size : " << world_size << std::endl << std::flush;
 
     size_t partition_size = size / world_size;
     size_t next_neighbor = rank;
@@ -105,7 +105,7 @@ struct GVT_COMM {
 
       if (next_neighbor != rank) {
         // std::cout << "Node[" << rank << "] send to Node[" << next_neighbor << "]" <<
-        // std::endl;
+        // std::endl << std::flush;
         B *send = &buf[next_neighbor * partition_size];
         MPI::COMM_WORLD.Isend(send, sizeof(B) * partition_size, MPI::BYTE, next_neighbor,
                               rank | 0xF00000000000000);
@@ -115,7 +115,7 @@ struct GVT_COMM {
 
       if (prev_neighbor != rank) {
         // std::cout << "Node[" << rank << "] recv to Node[" << prev_neighbor << "]" <<
-        // std::endl;
+        // std::endl << std::flush;
         B *recv = &gather[prev_neighbor * partition_size];
         Irecv_requests_status.push_back(
             MPI::COMM_WORLD.Irecv(recv, sizeof(B) * partition_size, MPI::BYTE,
@@ -253,7 +253,7 @@ public:
     }
     colorBuf_mutex = new tbb::mutex[width];
     // colorBuf = new glm::vec4[width * height];
-    // std::cout << "Resized buffer" << std::endl;
+    // std::cout << "Resized buffer" << std::endl << std::flush;
     img.reset(new gvt::render::composite::IceTComposite(w, h));
   }
 
@@ -332,7 +332,7 @@ public:
     GVT_DEBUG(DBG_ALWAYS, "[" << mpi.rank << "] Shuffle: start");
     GVT_DEBUG(DBG_ALWAYS, "[" << mpi.rank << "] Shuffle: rays: " << rays.size());
 
-    // std::cout << "Suffle rays" << rays.size() << std::endl;
+    // std::cout << "Suffle rays" << rays.size() << std::endl << std::flush;
 
     const size_t chunksize =
         MAX(2, rays.size() / (std::thread::hardware_concurrency() * 4));
@@ -368,7 +368,7 @@ public:
         },
         ap);
 
-    // std::cout << "Finished shuffle" << std::endl;
+    // std::cout << "Finished shuffle" << std::endl << std::flush;
     rays.clear();
   }
 

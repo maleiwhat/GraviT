@@ -19,10 +19,14 @@ namespace gvt {
 namespace comm {
 
 struct communicator {
+
   static std::shared_ptr<communicator> _instance;
   std::mutex mcomm;
   static tbb::task_group tg;
   volatile bool _terminate = false;
+
+  std::size_t _id = 0;
+  std::size_t _size = -1;
 
   std::vector<std::shared_ptr<Message> > _inbox;
   std::shared_ptr<comm::vote::vote> voting;
@@ -32,7 +36,7 @@ struct communicator {
   static std::vector<std::string> registry_names;
   static std::map<std::string, std::size_t> registry_ids;
 
-  communicator() {}
+  communicator();
   virtual ~communicator();
 
   static std::shared_ptr<communicator> singleton();
