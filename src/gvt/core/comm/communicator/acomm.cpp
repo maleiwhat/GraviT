@@ -31,6 +31,7 @@ void acomm::run() {
       if (MPI::COMM_WORLD.Iprobe(MPI::ANY_SOURCE, CONTROL_SYSTEM_TAG, status)) {
         auto sender = status.Get_source();
         auto n_bytes = status.Get_count(MPI::BYTE);
+        if (n_bytes == 0) continue;
         const auto data_size = n_bytes - sizeof(Message::header);
         std::shared_ptr<Message> msg = std::make_shared<Message>(data_size);
         MPI::COMM_WORLD.Recv(msg->getMessage<void>(), n_bytes, MPI::BYTE, sender,
