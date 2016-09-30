@@ -57,6 +57,7 @@
 #include <gvt/render/adapter/heterogeneous/Wrapper.h>
 #endif
 
+#include <gvt/core/utils/timer.h>
 #include <gvt/render/tracer/Domain/Messages/SendRayList.h>
 
 namespace gvt {
@@ -271,35 +272,41 @@ void DomainTracer::operator()() {
   }
 
   GlobalFrameFinished = false;
+  {
+    gvt::core::time::timer t(true, "Tracing");
+    while (!GlobalFrameFinished) {
+      int target = -1;
+      gvt::render::actor::RayVector toprocess, moved_rays, send_rays;
+      _queue.dequeue(target, toprocess);
+      if (target != -1) {
+        trace(target, meshRef[target], toprocess, moved_rays, instM[target],
+              instMinv[target], instMinvN[target], lights);
+        processRayQueue(moved_rays, target);
+      } else if (!_queue.empty()) {
+        for (auto id : remote_instances) {
+          if (_queue.dequeue_send(id, send_rays)) {
+            // TODO: Send rays
+            // std::cout << "Send queue : " << id << " " << send_rays.size() << std::endl
+            // <<
+            // std::flush;
+            std::shared_ptr<gvt::comm::Message> msg =
+                std::make_shared<gvt::comm::SendRayList>(comm->id(), mpiInstanceMap[id],
+                                                         send_rays);
 
-  while (!GlobalFrameFinished) {
-    int target = -1;
-    gvt::render::actor::RayVector toprocess, moved_rays, send_rays;
-    _queue.dequeue(target, toprocess);
-    if (target != -1) {
-      trace(target, meshRef[target], toprocess, moved_rays, instM[target],
-            instMinv[target], instMinvN[target], lights);
-      processRayQueue(moved_rays, target);
-    } else if (!_queue.empty()) {
-      for (auto id : remote_instances) {
-        if (_queue.dequeue_send(id, send_rays)) {
-          // TODO: Send rays
-          // std::cout << "Send queue : " << id << " " << send_rays.size() << std::endl <<
-          // std::flush;
-          std::shared_ptr<gvt::comm::Message> msg =
-              std::make_shared<gvt::comm::SendRayList>(comm->id(), mpiInstanceMap[id],
-                                                       send_rays);
-
-          comm->send(msg, mpiInstanceMap[id]);
+            comm->send(msg, mpiInstanceMap[id]);
+          }
         }
       }
+      if (_queue.empty()) {
+        v->PorposeVoting();
+      }
     }
-    if (_queue.empty()) {
-      v->PorposeVoting();
-    }
+    t.stop();
   }
-
-  float *img_final = composite_buffer->composite();
+  {
+    gvt::core::time::timer c(true, "Composite");
+    float *img_final = composite_buffer->composite();
+  }
 };
 
 bool DomainTracer::MessageManager(std::shared_ptr<gvt::comm::Message> msg) {
