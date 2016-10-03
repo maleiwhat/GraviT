@@ -13,8 +13,10 @@ std::vector<std::string> communicator::registry_names;
 std::map<std::string, std::size_t> communicator::registry_ids;
 
 communicator::communicator() {
-  _id = MPI::COMM_WORLD.Get_rank();
-  _size = MPI::COMM_WORLD.Get_size();
+  // _id = MPI::COMM_WORLD.Get_rank();
+  // _size = MPI::COMM_WORLD.Get_size();
+  MPI_Comm_rank(MPI_COMM_WORLD, &_id);
+  MPI_Comm_size(MPI_COMM_WORLD, &_size);
 }
 communicator::~communicator() {}
 
@@ -47,7 +49,7 @@ std::size_t communicator::lastid() {
 void communicator::terminate() {
   _terminate = true;
   tg.wait();
-  MPI::Finalize();
+  MPI_Finalize();
 }
 
 void communicator::send(std::shared_ptr<comm::Message> msg, std::size_t to) {
@@ -56,8 +58,11 @@ void communicator::send(std::shared_ptr<comm::Message> msg, std::size_t to) {
   assert(registry_ids.find(classname) != registry_ids.end());
   msg->src(id());
   msg->dst(to);
-  MPI::COMM_WORLD.Send(msg->getMessage<void>(), msg->buffer_size(), MPI::BYTE, to,
-                       CONTROL_SYSTEM_TAG);
+
+  std::cout << "Send : " << msg->buffer_size() << " on " << id() << " to " << to
+            << std::flush << std::endl;
+  MPI_Send(msg->getMessage<void>(), msg->buffer_size(), MPI_BYTE, to, CONTROL_SYSTEM_TAG,
+           MPI_COMM_WORLD);
 };
 void communicator::broadcast(std::shared_ptr<comm::Message> msg) {
   assert(msg->tag() >= 0 && msg->tag() < registry_names.size());
@@ -67,8 +72,8 @@ void communicator::broadcast(std::shared_ptr<comm::Message> msg) {
   for (int i = 0; i < lastid(); i++) {
     if (i == id()) continue;
     msg->dst(i);
-    MPI::COMM_WORLD.Send(msg->getMessage<void>(), msg->buffer_size(), MPI::BYTE, i,
-                         CONTROL_SYSTEM_TAG);
+    MPI_Send(msg->getMessage<void>(), msg->buffer_size(), MPI_BYTE, i, CONTROL_SYSTEM_TAG,
+             MPI_COMM_WORLD);
   }
 };
 }

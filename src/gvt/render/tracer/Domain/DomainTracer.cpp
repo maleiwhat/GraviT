@@ -162,9 +162,9 @@ void DomainTracer::Done(bool T) {
   std::shared_ptr<DomainTracer> tracer =
       std::dynamic_pointer_cast<DomainTracer>(cntxt.tracer());
   if (!tracer) return;
-  // if (T)
-  //   std::cout << "[" << comm->id() << "] Done ... " << (T ? "T" : "F") << std::endl
-  //             << std::flush;
+  if (T)
+    std::cout << "[" << comm->id() << "] Done ... " << (T ? "T" : "F") << std::endl
+              << std::flush;
   tracer->GlobalFrameFinished = T;
 }
 
@@ -293,7 +293,7 @@ void DomainTracer::operator()() {
                 std::make_shared<gvt::comm::SendRayList>(
                     comm->id(), pp->mpiInstanceMap[id], send_rays);
 
-            comm->send(msg, mpiInstanceMap[id]);
+            comm->send(msg, pp->mpiInstanceMap[id]);
           }
         }
       }

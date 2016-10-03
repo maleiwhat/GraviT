@@ -25,8 +25,8 @@ struct communicator {
   static tbb::task_group tg;
   volatile bool _terminate = false;
 
-  std::size_t _id = 0;
-  std::size_t _size = -1;
+  int _id = 0;
+  int _size = -1;
 
   std::vector<std::shared_ptr<Message> > _inbox;
   std::shared_ptr<comm::vote::vote> voting;
