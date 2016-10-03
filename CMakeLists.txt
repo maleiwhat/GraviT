@@ -63,6 +63,7 @@ if (GVT_RENDER)
   option(GVT_SIMPLE_FILE_LOAD_APP		"Build the simple application (load obj file)" ON)
   option(GVT_PLY_APP "Build the ply reader application (load ply file)" ON)
   option(GVT_CTEST "Build CTEST Unit and Integration tests" ON)
+  option(GVT_ERIC_TEST "some custome test" ON)
   # option(GVT_MPI_RENDERER_APP "Build the MPI renderer application (load obj file)" ON)
   option(GVT_MPI_APP "Build the MPI renderer application" ON)
   add_definitions(-DGVT_RENDER)
@@ -501,6 +502,28 @@ if (GVT_CTEST)
   add_executable(gvtImageDiff ${GVTIMAGE_DIFF_SRCS})
 
 endif(GVT_CTEST)
+
+## eric/ in Test/
+if (GVT_ERIC_TEST)
+
+  enable_testing()
+
+  ## using MPI (???)
+  SET(runConfig "")
+  if (GVT_USE_MPI)
+    set(no_mpi_proc 2)
+    set(runConfig ibrun -np ${no_mpi_proc})
+  endif (GVT_USE_MPI)
+
+  ## enable gvtSimple
+ 
+  ## testing config
+  
+  ## some test
+  add_test( eric_test
+
+endif (GVT_ERIC_TEST)
+
 
 if (GVT_SIMPLE_APP)
   if (GVT_MPE)
