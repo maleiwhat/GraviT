@@ -290,8 +290,8 @@ void DomainTracer::operator()() {
             // <<
             // std::flush;
             std::shared_ptr<gvt::comm::Message> msg =
-                std::make_shared<gvt::comm::SendRayList>(comm->id(), mpiInstanceMap[id],
-                                                         send_rays);
+                std::make_shared<gvt::comm::SendRayList>(
+                    comm->id(), pp->mpiInstanceMap[id], send_rays);
 
             comm->send(msg, mpiInstanceMap[id]);
           }
