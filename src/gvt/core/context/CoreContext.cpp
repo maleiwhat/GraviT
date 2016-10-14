@@ -84,6 +84,26 @@ DBNodeH CoreContext::createNodeFromType(String type, String name, Uuid parent) {
   return n;
 }
 
+DBNodeH CoreContext::findChildNodeByName(String childName, Uuid parent) {
+  DatabaseNode * np = __database->getChildByName(parent, childName);
+  if (np) {
+    return DBNodeH(np->UUID());
+  } else {
+    return DBNodeH();
+  }
+}
+
+
+void CoreContext::deleteChildren(Uuid node) {
+  DatabaseNode * n = __database->getItem(node);
+  Vector<DatabaseNode *> children = n->getChildren();
+  for ( int i = 0; i < children.size(); i++) {
+    Uuid childUUID = children[i]->UUID();
+    __database->removeItem(childUUID);
+
+  }
+}
+
 void CoreContext::marsh(gvt::core::Vector<MarshedDatabaseNode> &messagesBuffer, DatabaseNode &node) {
 
   messagesBuffer.push_back(MarshedDatabaseNode());

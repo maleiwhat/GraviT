@@ -78,6 +78,10 @@ public:
   /// that is a child of the parent with the given uuid
   DatabaseNode *getChildByName(Uuid, String);
 
+  DBNodeH findChildNodeByName(String childName, Uuid parent);
+
+  DBNodeH findChildNodeByNameAndVariant(String childName, Uuid parent, Variant val);
+
   /// return the value of the node with the given uuid
   Variant getValue(Uuid);
   /// set the value of the node with the given uuid

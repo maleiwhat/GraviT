@@ -97,6 +97,12 @@ public:
       */
   DBNodeH createNodeFromType(String type, String name, Uuid parent = Uuid::null());
 
+  //find a child node by name
+  DBNodeH findChildNodeByName(String childName, Uuid parent);
+
+  /// delete all childen of a node
+  void deleteChildren(Uuid node);
+
   /**
    * Packs a node and its children in a buffer
    * assigned UUIDs are guaranteed to be unique across all nodes, e.g. camera node will have the same

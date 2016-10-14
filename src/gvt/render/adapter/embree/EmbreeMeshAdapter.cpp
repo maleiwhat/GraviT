@@ -434,6 +434,16 @@ struct embreeParallelTrace {
    * thread is complete.
    */
   void operator()() {
+#ifdef GVT_USE_DEBUG
+    boost::timer::auto_cpu_timer t_functor("EmbreeMeshAdapter: thread trace time: %w\n");
+#endif
+    GVT_DEBUG(DBG_ALWAYS, "EmbreeMeshAdapter: started thread");
+
+    GVT_DEBUG(DBG_ALWAYS, "EmbreeMeshAdapter: getting mesh [hack for now]");
+
+    // TODO: don't use gvt mesh. need to figure out way to do per-vertex-normals
+    // and shading calculations
+    // auto mesh = (Mesh *)instNode["meshRef"].deRef()["ptr"].value().toULongLong();
 
     RTCScene scene = adapter->global_scene;
     localDispatch.reserve((end - begin) * 2);
@@ -607,8 +617,7 @@ void EmbreeMeshAdapter::trace(gvt::render::actor::RayVector &rayList, gvt::rende
   const size_t numThreads =  gvt::core::CoreContext::instance()->getRootNode()["threads"].value().toInteger();
   const size_t workSize = std::max((size_t)4096, (size_t)((end - begin) / (numThreads * 2))); // size of 'chunk'
                                                                                            // of rays to work
-                                                                   // on
-
+                                                                                           // on
   static tbb::auto_partitioner ap;
   tbb::parallel_for(tbb::blocked_range<size_t>(begin, end, workSize),
                     [&](tbb::blocked_range<size_t> chunk) {
