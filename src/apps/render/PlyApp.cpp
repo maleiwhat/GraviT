@@ -78,7 +78,6 @@
 #include <TAU.h>
 #endif
 
-
 using namespace std;
 using namespace gvt::render;
 
@@ -144,9 +143,8 @@ static Face **flist;
 
 int main(int argc, char **argv) {
 #ifdef __USE_TAU
-TAU_PROFILE("main","",TAU_DEFAULT);
+  TAU_PROFILE("main","",TAU_DEFAULT);
 #endif
-
   ParseCommandLine cmd("gvtPly");
 
   cmd.addoption("wsize", ParseCommandLine::INT, "Window size", 2);
@@ -209,15 +207,11 @@ TAU_PROFILE("main","",TAU_DEFAULT);
 
 
   // Enzo isosurface...
-#ifdef __USE_TAU
- {
- TAU_PROFILE("Enzo isosurface setup","",TAU_DEFAULT);
-#endif
   if(!file_exists(rootdir.c_str())) {
     cout << "File \"" << rootdir << "\" does not exist. Exiting." << endl;
     return 0;
   }
-
+  
   if(!isdir(rootdir.c_str())) {
     cout << "File \"" << rootdir << "\" is not a directory. Exiting." << endl;
     return 0;
@@ -227,7 +221,7 @@ TAU_PROFILE("main","",TAU_DEFAULT);
     cout << "Directory \"" << rootdir << "\" contains no .ply files. Exiting." << endl;
     return 0;
   }
-  // read 'em
+  // read 'em 
   vector<string>::const_iterator file;
   //for (k = 0; k < 8; k++) {
   for (file = files.begin(),k = 0; file != files.end(); file++, k++) {
@@ -319,9 +313,6 @@ TAU_PROFILE("main","",TAU_DEFAULT);
     }
 
   }
-#ifdef __USE_TAU
- }
-#endif
    cntxt->syncContext();
 
    // context has the location information of the domain, so for simplicity only one mpi will create the instances
@@ -436,9 +427,6 @@ TAU_PROFILE("main","",TAU_DEFAULT);
   int schedType = root["Schedule"]["type"].value().toInteger();
   switch (schedType) {
   case gvt::render::scheduler::Image: {
-#ifdef __USE_TAU
-TAU_PROFILE("case gvt::render::scheduler::Image","",TAU_DEFAULT);
-#endif
     std::cout << "starting image scheduler" << std::endl;
     gvt::render::algorithm::Tracer<ImageScheduler> tracer(mycamera.rays, myimage);
     for (int z = 0; z < 10; z++) {
@@ -450,9 +438,6 @@ TAU_PROFILE("case gvt::render::scheduler::Image","",TAU_DEFAULT);
     break;
   }
   case gvt::render::scheduler::Domain: {
-#ifdef __USE_TAU
-TAU_PROFILE("gvt::render::scheduler::Domain:","",TAU_DEFAULT);
-#endif
     std::cout << "starting domain scheduler" << std::endl;
 #ifdef GVT_USE_MPE
     MPE_Log_event(renderstart, 0, NULL);
