@@ -113,6 +113,8 @@ int main(int argc, char **argv) {
 
   gvt::core::DBNodeH bunnyMeshNode = dataNodes.getChildren()[0];
 
+  Box3D *meshbbox;
+  gvt::core::DBNodeH bunnyMeshNode = cntxt->createNodeFromType("Mesh", "bunny", dataNodes.UUID());
   {
 
     std::string objPath = std::string("../data/geom/bunny.obj");
@@ -128,7 +130,7 @@ int main(int argc, char **argv) {
     mesh->generateNormals();
 
     mesh->computeBoundingBox();
-    Box3D *meshbbox = mesh->getBoundingBox();
+    meshbbox = mesh->getBoundingBox();
 
     // add bunny mesh to the database
 
@@ -149,7 +151,7 @@ int main(int argc, char **argv) {
   if (rank ==0 ) {
   gvt::core::DBNodeH instnode = cntxt->createNodeFromType("Instance", "inst", instNodes.UUID());
   gvt::core::DBNodeH meshNode = bunnyMeshNode;
-  Box3D *mbox = (Box3D *)meshNode["bbox"].value().toULongLong();
+  Box3D *mbox = meshbbox;
 
   instnode["id"] = 0; // unique id per instance
   instnode["meshRef"] = meshNode.UUID();
@@ -277,7 +279,7 @@ int main(int argc, char **argv) {
   mycamera.setJitterWindowSize(jitterWindowSize);
   mycamera.lookAt(cameraposition, focus, up);
   mycamera.setFOV(fov);
-  
+
   mycamera.setFilmsize(filmNode["width"].value().toInteger(), filmNode["height"].value().toInteger());
 
   // setup image from database sizes
