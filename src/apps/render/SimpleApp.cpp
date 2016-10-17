@@ -30,16 +30,17 @@
  * used by changing line 242.
  *
 */
+#include <gvt/render/RenderContext.h>
+#include <gvt/render/Types.h>
+#include <vector>
 #include <algorithm>
+#include <set>
+#include <gvt/core/mpi/Wrapper.h>
 #include <gvt/core/Math.h>
 #include <gvt/core/Variant.h>
-#include <gvt/core/mpi/Wrapper.h>
-#include <gvt/render/RenderContext.h>
-#include <gvt/render/Schedulers.h>
-#include <gvt/render/Types.h>
+#include <gvt/render/data/Dataset.h>
 #include <gvt/render/data/Domains.h>
-#include <set>
-#include <vector>
+#include <gvt/render/Schedulers.h>
 
 #include <tbb/task_scheduler_init.h>
 #include <thread>
@@ -60,9 +61,9 @@
 #include "mpe.h"
 #endif
 #include <gvt/render/algorithm/Tracers.h>
-#include <gvt/render/data/Primitives.h>
-#include <gvt/render/data/scene/Image.h>
 #include <gvt/render/data/scene/gvtCamera.h>
+#include <gvt/render/data/scene/Image.h>
+#include <gvt/render/data/Primitives.h>
 
 #include <boost/range/algorithm.hpp>
 
@@ -334,8 +335,9 @@ int main(int argc, char **argv) {
       instnode["matInv"] = (unsigned long long)minv;
       *normi = glm::transpose(glm::inverse(glm::mat3(*m)));
       instnode["normi"] = (unsigned long long)normi;
-      auto il = glm::vec3((*m) * glm::vec4(mbox->bounds_min, 1.f));
-      auto ih = glm::vec3((*m) * glm::vec4(mbox->bounds_max, 1.f));
+
+      auto il = (*m) * mbox->bounds[0];
+      auto ih = (*m) * mbox->bounds[1];
       Box3D *ibox = new gvt::render::data::primitives::Box3D(il, ih);
       instnode["bbox"] = (unsigned long long)ibox;
       instnode["centroid"] = ibox->centroid();
@@ -434,7 +436,7 @@ int main(int argc, char **argv) {
 
   // end db setup
 
-  // cntxt->database()->printTree(root.UUID(), 10, std::cout);
+  cntxt->database()->printTree(root.UUID(), 10, std::cout);
 
   // use db to create structs needed by system
 
