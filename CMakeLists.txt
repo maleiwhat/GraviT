@@ -63,7 +63,8 @@ if (GVT_RENDER)
   option(GVT_SIMPLE_FILE_LOAD_APP		"Build the simple application (load obj file)" ON)
   option(GVT_PLY_APP "Build the ply reader application (load ply file)" ON)
   option(GVT_CTEST "Build CTEST Unit and Integration tests" ON)
-  option(GVT_ERIC_TEST "some custome test" ON)
+  option(GVT_ERIC_APP "some custom app" ON)
+  option(GVT_ERIC_TEST "some custom test" ON)
   # option(GVT_MPI_RENDERER_APP "Build the MPI renderer application (load obj file)" ON)
   option(GVT_MPI_APP "Build the MPI renderer application" ON)
   add_definitions(-DGVT_RENDER)
@@ -515,15 +516,59 @@ if (GVT_ERIC_TEST)
     set(runConfig ibrun -np ${no_mpi_proc})
   endif (GVT_USE_MPI)
 
-  ## enable gvtSimple
- 
+  ## enable gvtSimple 
+  set(GVT_SIMPLE_APP ON CACHE BOOL "Build libfoo shared library" FORCE)
+  set(GVT_SIMPLE_FILE_LOAD_APP ON CACHE BOOL "Build libfoo shared library" FORCE)
+  set(GVT_BIN_DIR ${PROJECT_BINARY_DIR}/bin)
+
   ## testing config
+  set(SimpleFileLoadObjLocation ${PROJECT_SOURCE_DIR}/data/geom/bunny.obj)
+  set(TestOutputFolder ${PROJECT_SOURCE_DIR}/Test/CTESTtest/testOutput)
+  file(MAKE_DIRECTORY ${TestOutputFolder})
+  set(ImageDiffTolerance 300)
   
   ## some test
-  add_test( eric_test
+  # add_test( eric_test
+  # add_test diff
 
 endif (GVT_ERIC_TEST)
 
+if (GVT_ERIC_APP)
+
+  find_package(MPI REQUIRED)
+  find_package(Threads REQUIRED)
+  find_package(OpenGL REQUIRED)
+  find_package(GLUT REQUIRED)
+  include_directories(${MPI_INCLUDE_PATH} src src/apps/render ${PLYPATH})
+  set(GVT_MPI_LIBS ${GVT_MPI_LIBS} ${MPI_LIBRARIES} ${ICET_CORE_LIBS} ${ICET_MPI_LIBS} ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES})
+  set(GVT_MPI_SRCS ${GVT_MPI_SRCS} src/apps/render/EricApp.cpp ${PLYPATH}/ply.c)
+  add_executable(gvtEricMpi ${GVT_MPI_SRCS})
+  target_link_libraries(gvtEricMpi gvtCore gvtRender ${GVT_MPI_LIBS} ${CMAKE_THREAD_LIBS_INIT})
+
+#  if (GVT_MPE)
+#    if (DEFINED ENV{MPEHOME})
+#      set(MPE_HOME_DIR $ENV{MPEHOME})
+#      set (MPE_INCLUDE_DIR ${MPE_HOME_DIR}/include)
+#      include_directories(${MPE_INCLUDE_DIR})
+#      FIND_LIBRARY(MPE_LIB1 NAME mpe PATHS ${MPE_HOME_DIR} PATH_SUFFIXES lib )
+#      FIND_LIBRARY(MPE_LIB2 NAME lmpe PATHS ${MPE_HOME_DIR} PATH_SUFFIXES lib)
+#      set(GVTSIMPLE_RENDER_LIBS ${GVTSIMPLE_RENDER_LIBS} ${MPE_LIB2})
+#      set(GVTSIMPLE_RENDER_LIBS ${GVTSIMPLE_RENDER_LIBS} ${MPE_LIB1})
+#    endif(DEFINED ENV{MPEHOME})
+#  endif (GVT_MPE)
+#
+#  find_package(MPI REQUIRED)
+#  find_package(Threads REQUIRED)
+#  include_directories(${MPI_INCLUDE_PATH})
+#
+#  find_package(MPI REQUIRED)
+#  find_package(Threads REQUIRED)
+#  include_directories(${MPI_INCLUDE_PATH})
+#  set(GVTERIC_RENDER_LIBS ${GVTERIC_RENDER_LIBS} ${MPI_LIBRARIES})
+#  set(GVTERIC_RENDER_SRCS ${GVTERIC_RENDER_SRCS} src/apps/render/EricApp.cpp)
+#  add_executable(gvtEric ${GVTERIC_RENDER_SRCS})
+#  target_link_libraries(gvtEric gvtCore gvtRender ${GVTERIC_RENDER_LIBS} ${GVT_CORE_LIBS} ${CMAKE_THREAD_LIBS_INIT})
+endif (GVT_ERIC_APP)
 
 if (GVT_SIMPLE_APP)
   if (GVT_MPE)
