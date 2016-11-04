@@ -26,6 +26,7 @@
 #include <gvt/core/utils/timer.h>
 
 #include <gvt/render/data/scene/gvtCamera.h>
+#include <gvt/core/context/CoreContext.h>
 
 #include <tbb/blocked_range.h>
 #include <tbb/parallel_for.h>
@@ -182,6 +183,7 @@ void gvtCameraBase::setJitterWindowSize(int windowSize) { jitterWindowSize = win
 
 // gvt::render::actor::RayVector gvtCameraBase::AllocateCameraRays() {
 void gvtCameraBase::AllocateCameraRays() {
+<<<<<<< HEAD
 #ifdef __USE_TAU
 TAU_PROFILE("gvtCameraBase::AllocateCameraRays()","",TAU_DEFAULT);
 #endif
@@ -189,6 +191,8 @@ TAU_PROFILE("gvtCameraBase::AllocateCameraRays()","",TAU_DEFAULT);
 #ifdef GVT_USE_DEBUG
   boost::timer::auto_cpu_timer t("gvtCameraBase::AllocateCameraRays: time: %w\n");
 #endif
+=======
+>>>>>>> 6a961567e9a96e1b079725945dcd2b5e9db26128
   size_t nrays = filmsize[0] * filmsize[1] * samples * samples;
   rays.clear();
   rays.resize(nrays);
@@ -204,6 +208,7 @@ gvtPerspectiveCamera::gvtPerspectiveCamera(const gvtPerspectiveCamera &cam) : gv
 gvtPerspectiveCamera::~gvtPerspectiveCamera() {}
 // gvt::render::actor::RayVector gvtPerspectiveCamera::generateRays() {
 void gvtPerspectiveCamera::generateRays() {
+<<<<<<< HEAD
 #ifdef __USE_TAU
 TAU_PROFILE("gvtPerspectiveCamera::generateRays()","",TAU_DEFAULT);
 #endif
@@ -211,6 +216,8 @@ TAU_PROFILE("gvtPerspectiveCamera::generateRays()","",TAU_DEFAULT);
 #ifdef GVT_USE_DEBUG
   //boost::timer::auto_cpu_timer t("gvtPerspectiveCamera::generateRays: time: %w\n");
 #endif
+=======
+>>>>>>> 6a961567e9a96e1b079725945dcd2b5e9db26128
   gvt::core::time::timer t(true, "generate camera rays");
   // Generate rays direction in camera space and transform to world space.
   int buffer_width = filmsize[0];
@@ -238,8 +245,8 @@ TAU_PROFILE("gvtPerspectiveCamera::generateRays()","",TAU_DEFAULT);
   // for (j = 0; j < buffer_height; j++)
   //   for (i = 0; i < buffer_width; i++) {
 
-  const size_t chunksize = buffer_height / (std::thread::hardware_concurrency() * 4);
-  static tbb::simple_partitioner ap;
+  const size_t chunksize = buffer_height / (gvt::core::CoreContext::instance()->getRootNode()["threads"].value().toInteger() * 4);
+  static tbb::auto_partitioner ap;
   tbb::parallel_for(tbb::blocked_range<size_t>(0, buffer_height, chunksize),
                     [&](tbb::blocked_range<size_t> &chunk) {
 #ifdef __USE_TAU

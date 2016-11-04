@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // OpenGL Mathematics Copyright (c) 2005 - 2014 G-Truc Creation (www.g-truc.net)
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -10,31 +11,33 @@
 #ifdef __USE_TAU
 #include <TAU.h>
 #endif
+=======
+/// @ref gtx_simd_vec4
+/// @file glm/gtx/simd_vec4.inl
+>>>>>>> 6a961567e9a96e1b079725945dcd2b5e9db26128
 
 namespace glm{
 namespace detail{
 
-template <int Value>
-struct shuffle_mask
-{
-	enum{value = Value};
-};
-
 //////////////////////////////////////
 // Implicit basic constructors
 
-GLM_FUNC_QUALIFIER fvec4SIMD::fvec4SIMD()
-#	ifdef GLM_FORCE_NO_CTOR_INIT
-		: Data(_mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f))
-#	endif
-{}
+#if !GLM_HAS_DEFAULTED_FUNCTIONS || !defined(GLM_FORCE_NO_CTOR_INIT)
+	GLM_FUNC_QUALIFIER fvec4SIMD::fvec4SIMD()
+#		ifdef GLM_FORCE_NO_CTOR_INIT
+			: Data(_mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f))
+#		endif
+	{}
+#endif//!GLM_HAS_DEFAULTED_FUNCTIONS
+
+#if !GLM_HAS_DEFAULTED_FUNCTIONS
+	GLM_FUNC_QUALIFIER fvec4SIMD::fvec4SIMD(fvec4SIMD const & v) :
+		Data(v.Data)
+	{}
+#endif//!GLM_HAS_DEFAULTED_FUNCTIONS
 
 GLM_FUNC_QUALIFIER fvec4SIMD::fvec4SIMD(__m128 const & Data) :
 	Data(Data)
-{}
-
-GLM_FUNC_QUALIFIER fvec4SIMD::fvec4SIMD(fvec4SIMD const & v) :
-	Data(v.Data)
 {}
 
 GLM_FUNC_QUALIFIER fvec4SIMD::fvec4SIMD(vec4 const & v) :
@@ -96,11 +99,13 @@ GLM_FUNC_QUALIFIER fvec4SIMD::fvec4SIMD(vec2 const & v1, vec2 const & v2) :
 //////////////////////////////////////
 // Unary arithmetic operators
 
-GLM_FUNC_QUALIFIER fvec4SIMD& fvec4SIMD::operator=(fvec4SIMD const & v)
-{
-	this->Data = v.Data;
-	return *this;
-}
+#if !GLM_HAS_DEFAULTED_FUNCTIONS
+	GLM_FUNC_QUALIFIER fvec4SIMD& fvec4SIMD::operator=(fvec4SIMD const & v)
+	{
+		this->Data = v.Data;
+		return *this;
+	}
+#endif//!GLM_HAS_DEFAULTED_FUNCTIONS
 
 GLM_FUNC_QUALIFIER fvec4SIMD& fvec4SIMD::operator+=(float const & s)
 {
@@ -165,21 +170,21 @@ GLM_FUNC_QUALIFIER fvec4SIMD& fvec4SIMD::operator--()
 //////////////////////////////////////
 // Swizzle operators
 
-template <comp X, comp Y, comp Z, comp W>
+template <comp X_, comp Y_, comp Z_, comp W_>
 GLM_FUNC_QUALIFIER fvec4SIMD fvec4SIMD::swizzle() const
 {
 	__m128 Data = _mm_shuffle_ps(
 		this->Data, this->Data, 
-		shuffle_mask<(W << 6) | (Z << 4) | (Y << 2) | (X << 0)>::value);
+		shuffle_mask<(W_ << 6) | (Z_ << 4) | (Y_ << 2) | (X_ << 0)>::value);
 	return fvec4SIMD(Data);
 }
 
-template <comp X, comp Y, comp Z, comp W>
+template <comp X_, comp Y_, comp Z_, comp W_>
 GLM_FUNC_QUALIFIER fvec4SIMD& fvec4SIMD::swizzle()
 {
 	this->Data = _mm_shuffle_ps(
 		this->Data, this->Data, 
-		shuffle_mask<(W << 6) | (Z << 4) | (Y << 2) | (X << 0)>::value);
+		shuffle_mask<(W_ << 6) | (Z_ << 4) | (Y_ << 2) | (X_ << 0)>::value);
 	return *this;
 }
 

@@ -35,8 +35,8 @@ option(GVT_CORE 		 "Build GraviT core library" ON)
 option(GVT_RENDER 		 "Build GraviT geometry rendering library" ON)
 option(GVT_VOLUME 		 "Build GraviT volume rendering library" OFF)
 option(GVT_ADVECT 		 "Build GraviT particle advection library" OFF)
-option(GVT_DEBUG 		 "Build GraviT use debug prmimitives" OFF)
-option(GVT_MPE "Use MPE Profileing" OFF)
+option(GVT_TIMING 		 "Build GraviT use timing prmimitives" OFF)
+option(GVT_TESTING "Create testing and benchmark programs" OFF)
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
 SET(HOST_NAME $ENV{HOSTNAME})
@@ -104,9 +104,13 @@ endif(GVT_MPE)
 # the compiler is ususally set through environment vars outside the cmake file
 # so this is redundant. CMake detects the compiler.
 set(GVT_USE_ICC OFF CACHE BOOL "Use Intel Compiler?")
-set(GVT_VECTOR_TARGET "AVX" CACHE STRING "Target Vector ISA on host (SSE,AVX,AVX2)")
-mark_as_advanced(GVT_USE_ICC)
-mark_as_advanced(GVT_VECTOR_TARGET)
+set(GVT_VECTOR_TARGET "AVX" CACHE STRING "Target Vector ISA on host (SSE,AVX,AVX2, AVX512)")
+# /mark_as_advanced(GVT_USE_ICC)
+# mark_as_advanced(GVT_VECTOR_TARGET)
+
+find_package(TBB REQUIRED)
+include_directories(${TBB_INCLUDE_DIRS})
+link_directories(${TBB_LIBRARY_DIRS})
 
 set(GVT_THIRDPARTY_GLM "third-party/glm")
 set(GLM_ROOT_DIR "${PROJECT_SOURCE_DIR}/third-party/glm")
@@ -152,51 +156,67 @@ include(CMake/mpi.cmake)
 include(CMake/boost.cmake)
 include(CMake/doxygen.cmake)
 
+set(GVT_USE_MPI ON CACHE BOOL "Use MPI") # TODO: should MPI always be required?
+
+IF(${GVT_VECTOR_TARGET} STREQUAL "AVX")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GVT_ARCH_FLAGS__AVX} -DGVT_AVX_TARGET")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${GVT_ARCH_FLAGS__AVX} -DGVT_AVX_TARGET")
+ENDIF()
+
+IF(${GVT_VECTOR_TARGET} STREQUAL "AVX2")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GVT_ARCH_FLAGS__AVX2} -DGVT_AVX2_TARGET")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${GVT_ARCH_FLAGS__AVX2} -DGVT_AVX2_TARGET")
+ENDIF()
+
+IF(${GVT_VECTOR_TARGET} STREQUAL "AVX512")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GVT_ARCH_FLAGS__AVX} -DGVT_AVX512_TARGET")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${GVT_ARCH_FLAGS__AVX} -DGVT_AVX512_TARGET")
+ENDIF()
+
+IF(${GVT_VECTOR_TARGET} STREQUAL "SSE")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GVT_ARCH_FLAGS__SSE42} -DGVT_SSE_TARGET")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${GVT_ARCH_FLAGS__SSE42} -DGVT_SSE_TARGET")
+ENDIF()
+
+if(GVT_TIMING)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGVT_USE_TIMING=1")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DGVT_USE_TIMING=1")
+endif(GVT_TIMING)
+
+# show all warnings, but disable c11 warnings
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-reorder -Wno-unused-variable")
+# use C++11 foo explicitly
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+IF(APPLE)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+ENDIF(APPLE)
+
 set(GVT_SRC_DIR ${PROJECT_SOURCE_DIR}/src)
 include_directories(${GVT_SRC_DIR})
 
 
 set(GVT_CORE_HDRS ${GVT_CORE_HDRS}
-	src/gvt/core/Actor.h
-	src/gvt/core/Adapter.h
-	src/gvt/core/Algorithm.h
-	src/gvt/core/CoreContext.h
-	src/gvt/core/data/Transform.h
-	src/gvt/core/Data.h
-	src/gvt/core/Database.h
-	src/gvt/core/DatabaseNode.h
-	src/gvt/core/Debug.h
-	src/gvt/core/math/Angle.h
-	src/gvt/core/math/Constants.h
-	src/gvt/core/math/Function.h
-	src/gvt/core/math/Matrix.h
-	src/gvt/core/math/MatrixOperation.inl
-	src/gvt/core/math/Unit.h
-	src/gvt/core/math/Vector.h
-	src/gvt/core/math/VectorOperators.inl
-	src/gvt/core/Math.h
-	src/gvt/core/mpi/Comm.h
-	src/gvt/core/mpi/CommData.h
-	src/gvt/core/mpi/SingleNode.h
-	src/gvt/core/mpi/Wrapper.h
-	src/gvt/core/schedule/SchedulerBase.h
-	src/gvt/core/schedule/TaskScheduling.h
-	src/gvt/core/Schedule.h
-	src/gvt/core/String.h
-	src/gvt/core/Types.h
-	src/gvt/core/Uuid.h
-	src/gvt/core/Variant.h
-	)
-
+  src/gvt/core/Actor.h
+  src/gvt/core/context/CoreContext.h
+  src/gvt/core/data/Transform.h
+  src/gvt/core/context/Database.h
+  src/gvt/core/context/DatabaseNode.h
+  src/gvt/core/Debug.h
+  src/gvt/core/math/RandEngine.h
+  src/gvt/core/Math.h
+  src/gvt/core/schedule/SchedulerBase.h
+  src/gvt/core/Types.h
+  src/gvt/core/context/Uuid.h
+  src/gvt/core/context/Variant.h
+)
 
 set(GVT_CORE_SRCS ${GVT_CORE_SRCS}
-	src/gvt/core/CoreContext.cpp
-	src/gvt/core/Database.cpp
-	src/gvt/core/DatabaseNode.cpp
-	src/gvt/core/schedule/TaskScheduling.cpp
-	src/gvt/core/Uuid.cpp
-	src/gvt/core/Variant.cpp
-	)
+  src/gvt/core/context/CoreContext.cpp
+  src/gvt/core/context/Database.cpp
+  src/gvt/core/context/DatabaseNode.cpp
+  src/gvt/core/context/Uuid.cpp
+  src/gvt/core/context/Variant.cpp
+)
 
 
 set(GVT_RENDER_HDRS ${GVT_RENDER_HDRS}
@@ -272,35 +292,35 @@ set(GVT_RENDER_SRCS ${GVT_RENDER_SRCS}
 
 if (GVT_RENDER_ADAPTER_MANTA)
   add_definitions(-DGVT_RENDER_ADAPTER_MANTA)
-	set(GVT_RENDER_HDRS ${GVT_RENDER_HDRS}
-		src/gvt/render/adapter/manta/data/domain/MantaDomain.h
-		src/gvt/render/adapter/manta/data/MantaMeshAdapter.h
-		src/gvt/render/adapter/manta/data/Transforms.h
-		src/gvt/render/adapter/manta/override/DynBVH.h
-		src/gvt/render/adapter/manta/Wrapper.h
-		)
-
-	set(GVT_RENDER_SRCS ${GVT_RENDER_SRCS}
-		src/gvt/render/adapter/manta/data/domain/MantaDomain.cpp
-		src/gvt/render/adapter/manta/data/MantaMeshAdapter.cpp
-		)
-
+  set(GVT_RENDER_HDRS ${GVT_RENDER_HDRS}
+      src/gvt/render/adapter/manta/MantaMeshAdapter.h
+      src/gvt/render/adapter/manta/DynBVH.h
+ )
+  set(GVT_RENDER_SRCS ${GVT_RENDER_SRCS} src/gvt/render/adapter/manta/MantaMeshAdapter.cpp)
 endif(GVT_RENDER_ADAPTER_MANTA)
 
 
 if (GVT_RENDER_ADAPTER_OPTIX_PRIME)
   add_definitions(-DGVT_RENDER_ADAPTER_OPTIX)
 	set(GVT_RENDER_CUDA_HDRS ${GVT_RENDER_CUDA_HDRS}
-		src/gvt/render/adapter/optix/data/Formats.h
-		src/gvt/render/adapter/optix/data/Transforms.h
-		src/gvt/render/adapter/optix/data/OptixMeshAdapter.h
-		src/gvt/render/adapter/optix/Wrapper.h
+                src/gvt/render/adapter/optix/Formats.h
+                src/gvt/render/adapter/optix/Transforms.h
+                src/gvt/render/adapter/optix/OptixMeshAdapter.h
+                src/gvt/render/adapter/optix/Mesh.cuh
+                src/gvt/render/adapter/optix/Light.cuh
+                src/gvt/render/adapter/optix/Material.cuh
+                src/gvt/render/adapter/optix/Ray.cuh
+                src/gvt/render/adapter/optix/cutil_math.h
 		)
 
 	set(GVT_RENDER_CUDA_SRCS ${GVT_RENDER_CUDA_SRCS}
+                src/gvt/render/adapter/optix/OptixMeshAdapter.cu
+                src/gvt/render/adapter/optix/Light.cu
+                src/gvt/render/adapter/optix/Material.cu
+                src/gvt/render/adapter/optix/Ray.cu
 		)
 	set(GVT_RENDER_SRCS ${GVT_RENDER_SRCS}
-		src/gvt/render/adapter/optix/data/OptixMeshAdapter.cpp
+                src/gvt/render/adapter/optix/OptixMeshAdapter.cpp
 		)
 	set(GVT_RENDER_HDRS ${GVT_RENDER_HDRS}
 		)
@@ -309,23 +329,21 @@ endif(GVT_RENDER_ADAPTER_OPTIX_PRIME)
 
 if (GVT_RENDER_ADAPTER_EMBREE)
   add_definitions(-DGVT_RENDER_ADAPTER_EMBREE)
-	set (GVT_RENDER_HDRS ${GVT_RENDER_HDRS}
-		src/gvt/render/adapter/embree/data/EmbreeMeshAdapter.h
-		src/gvt/render/adapter/embree/Wrapper.h
-		)
-	set(GVT_RENDER_SRCS ${GVT_RENDER_SRCS}
-		src/gvt/render/adapter/embree/data/EmbreeMeshAdapter.cpp
-		)
+  set (GVT_RENDER_HDRS ${GVT_RENDER_HDRS}
+    src/gvt/render/adapter/embree/EmbreeMeshAdapter.h
+  )
+  set(GVT_RENDER_SRCS ${GVT_RENDER_SRCS}
+    src/gvt/render/adapter/embree/EmbreeMeshAdapter.cpp
+  )
 endif(GVT_RENDER_ADAPTER_EMBREE)
 
 if (GVT_RENDER_ADAPTER_EMBREE AND GVT_RENDER_ADAPTER_OPTIX_PRIME)
-	set (GVT_RENDER_HDRS ${GVT_RENDER_HDRS}
-		src/gvt/render/adapter/heterogeneous/data/HeterogeneousMeshAdapter.h
-		src/gvt/render/adapter/heterogeneous/Wrapper.h
-		)
-	set(GVT_RENDER_SRCS ${GVT_RENDER_SRCS}
-		src/gvt/render/adapter/heterogeneous/data/HeterogeneousMeshAdapter.cpp
-		)
+  set (GVT_RENDER_HDRS ${GVT_RENDER_HDRS}
+    src/gvt/render/adapter/heterogeneous/HeterogeneousMeshAdapter.h
+  )
+  set(GVT_RENDER_SRCS ${GVT_RENDER_SRCS}
+    src/gvt/render/adapter/heterogeneous/HeterogeneousMeshAdapter.cpp
+  )
 endif(GVT_RENDER_ADAPTER_EMBREE AND GVT_RENDER_ADAPTER_OPTIX_PRIME)
 
 
@@ -339,7 +357,89 @@ if (GVT_CORE)
 		${GVT_CORE_SRCS}
 		)
 
-	target_link_libraries(gvtCore ${GVT_CORE_LIBS})
+  set(GVT_RENDER_LIBS ${GVT_RENDER_LIBS} tinyobjloader ${ICET_CORE_LIBS}
+    ${ICET_MPI_LIBS})
+  include_directories(${TINYOBJPATH})
+
+  find_package(Boost REQUIRED COMPONENTS thread timer system)
+  include_directories(${Boost_INCLUDE_DIRS})
+  set(GVT_RENDER_LIBS ${GVT_RENDER_LIBS} ${Boost_LIBRARIES} ${GVT_CORE_LIBS})
+
+  if(GVT_RENDER_ADAPTER_MANTA)
+    find_package(Manta REQUIRED)
+    set(GVT_RENDER_LIBS ${GVT_RENDER_LIBS} ${MANTA_TARGET_LINK_LIBRARIES})
+  endif(GVT_RENDER_ADAPTER_MANTA)
+
+  if (GVT_RENDER_ADAPTER_OPTIX_PRIME)
+    find_package(CUDA REQUIRED)
+    find_package(OptiX REQUIRED)
+
+    set(CUDA_SEPARABLE_COMPILATION ON)
+    set(CUDA_PROPAGATE_HOST_FLAGS OFF)
+
+    include_directories(${CUDA_INCLUDE_DIRS})
+    include_directories(${OptiX_INCLUDE})
+    set(OptiX_LIBRARIES ${optix_LIBRARY} ${optix_prime_LIBRARY})
+    set(GVT_RENDER_LIBS ${GVT_RENDER_LIBS} ${CUDA_LIBRARIES} ${OptiX_LIBRARIES})
+    set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS}
+    	--compiler-options -fno-strict-aliasing -lineinfo -use_fast_math
+        -gencode arch=compute_20,code=sm_20
+    	-gencode arch=compute_30,code=sm_30
+    	-gencode arch=compute_35,code=sm_35
+    	-gencode arch=compute_50,code=sm_50
+        --compiler-options -fPIC )
+    #cuda_compile(GVT_RENDER_CUDA_OBJS ${GVT_RENDER_CUDA_HDRS} ${GVT_RENDER_CUDA_SRCS})
+    CUDA_ADD_LIBRARY(gvtCudaOptix ${GVT_RENDER_CUDA_SRCS}  OPTIONS ${CUDA_NVCC_FLAGS})
+
+    set(GVT_RENDER_SRCS ${GVT_RENDER_SRCS} ${GVT_RENDER_CUDA_OBJS})
+    set(GVT_RENDER_LIBS ${GVT_RENDER_LIBS} gvtCudaOptix)
+
+  endif(GVT_RENDER_ADAPTER_OPTIX_PRIME)
+
+  include_directories(${OptiX_INCLUDE})
+  include_directories(${GVT_THIRDPARTY_EMBREESHADERS})
+
+  if (GVT_RENDER_ADAPTER_EMBREE)
+    find_package(Embree REQUIRED)
+    set(GVT_RENDER_LIBS ${GVT_RENDER_LIBS} ${EMBREE_TARGET_LINK_LIBRARIES})
+  endif(GVT_RENDER_ADAPTER_EMBREE)
+
+  add_library(gvtRender STATIC
+              ${GVT_CORE_HDRS}
+              ${GVT_CORE_SRCS}
+              ${GVT_RENDER_HDRS}
+              ${GVT_RENDER_SRCS})
+
+  target_link_libraries(gvtRender ${GVT_RENDER_LIBS})
+
+  install(TARGETS gvtRender
+          LIBRARY DESTINATION lib
+          ARCHIVE DESTINATION lib)
+endif(GVT_RENDER)
+
+
+## CTEST
+if (GVT_CTEST)
+
+  enable_testing()
+  ## Check if run in mpi
+
+  SET(runConfig "" )
+  if (GVT_USE_MPI)
+    set (no_mpi_proc 2)
+    set (runConfig ibrun -np ${no_mpi_proc})
+  endif(GVT_USE_MPI)
+
+  ## Enable gvtSimple and gvtFileLoad, needed for tests
+  set(GVT_SIMPLE_APP ON CACHE BOOL "Build libfoo shared library" FORCE)
+  set(GVT_SIMPLE_FILE_LOAD_APP ON CACHE BOOL "Build libfoo shared library" FORCE)
+  set(GVT_BIN_DIR ${PROJECT_BINARY_DIR}/bin)
+
+  ## Testing Configuration
+  set(SimpleFileLoadObjLocation ${PROJECT_SOURCE_DIR}/data/geom/bunny.obj)
+  set(TestOutputFolder ${PROJECT_SOURCE_DIR}/Test/CTESTtest/testOutput)
+  file(MAKE_DIRECTORY ${TestOutputFolder})
+  set(ImageDiffTolerance 300)
 
 	install(TARGETS gvtCore
 		LIBRARY DESTINATION lib
@@ -406,23 +506,12 @@ if (GVT_RENDER)
 endif(GVT_RENDER)
 
 if (GVT_SIMPLE_APP)
-  if (GVT_MPE)
-    if (DEFINED ENV{MPEHOME})
-      set(MPE_HOME_DIR $ENV{MPEHOME})
-      set (MPE_INCLUDE_DIR ${MPE_HOME_DIR}/include)
-      include_directories(${MPE_INCLUDE_DIR})
-      FIND_LIBRARY(MPE_LIB1 NAME mpe PATHS ${MPE_HOME_DIR} PATH_SUFFIXES lib )
-      FIND_LIBRARY(MPE_LIB2 NAME lmpe PATHS ${MPE_HOME_DIR} PATH_SUFFIXES lib)
-      set(GVTSIMPLE_RENDER_LIBS ${GVTSIMPLE_RENDER_LIBS} ${MPE_LIB2})
-      set(GVTSIMPLE_RENDER_LIBS ${GVTSIMPLE_RENDER_LIBS} ${MPE_LIB1})
-    endif(DEFINED ENV{MPEHOME})
-  endif (GVT_MPE)
-	find_package(MPI REQUIRED)
-	include_directories(${MPI_INCLUDE_PATH})
-	set(GVTSIMPLE_RENDER_LIBS ${GVTSIMPLE_RENDER_LIBS}  ${MPI_LIBRARIES})
-	set(GVTSIMPLE_RENDER_SRCS ${GVTSIMPLE_RENDER_SRCS} src/apps/render/SimpleApp.cpp)
-	add_executable(gvtSimple ${GVTSIMPLE_RENDER_SRCS})
-	target_link_libraries(gvtSimple gvtCore gvtRender ${GVTSIMPLE_RENDER_LIBS} )
+  find_package(MPI REQUIRED)
+  include_directories(${MPI_INCLUDE_PATH})
+  set(GVTSIMPLE_RENDER_LIBS ${GVTSIMPLE_RENDER_LIBS}  ${MPI_LIBRARIES})
+  set(GVTSIMPLE_RENDER_SRCS ${GVTSIMPLE_RENDER_SRCS} src/apps/render/SimpleApp.cpp)
+  add_executable(gvtSimple ${GVTSIMPLE_RENDER_SRCS})
+  target_link_libraries(gvtSimple gvtCore gvtRender ${GVTSIMPLE_RENDER_LIBS} ${GVT_CORE_LIBS})
 endif(GVT_SIMPLE_APP)
 
 #if (GVT_OBJLOADER_APP)
@@ -446,45 +535,23 @@ endif(GVT_SIMPLE_APP)
 #endif(GVT_OBJLOADER_APP)
 
 if (GVT_PLY_APP)
-  if (GVT_MPE)
-    if (DEFINED ENV{MPEHOME})
-      set(MPE_HOME_DIR $ENV{MPEHOME})
-      set (MPE_INCLUDE_DIR ${MPE_HOME_DIR}/include)
-      include_directories(${MPE_INCLUDE_DIR})
-      FIND_LIBRARY(MPE_LIB1 NAME mpe PATHS ${MPE_HOME_DIR} PATH_SUFFIXES lib )
-      FIND_LIBRARY(MPE_LIB2 NAME lmpe PATHS ${MPE_HOME_DIR} PATH_SUFFIXES lib)
-      set(GVTPLY_RENDER_LIBS ${GVTPLY_RENDER_LIBS} ${MPE_LIB2})
-      set(GVTPLY_RENDER_LIBS ${GVTPLY_RENDER_LIBS} ${MPE_LIB1})
-    endif(DEFINED ENV{MPEHOME})
-  endif (GVT_MPE)
-	find_package(MPI REQUIRED)
-	include_directories(${MPI_INCLUDE_PATH} ${PLYPATH})
-	set(GVTPLY_RENDER_LIBS ${GVTPLY_RENDER_LIBS}  ${MPI_LIBRARIES})
-	set(GVTPLY_RENDER_SRCS ${GVTPLY_RENDER_SRCS}
-		src/apps/render/PlyApp.cpp
-		${PLYPATH}/ply.c)
-	add_executable(gvtPly ${GVTPLY_RENDER_SRCS})
-	target_link_libraries(gvtPly gvtCore gvtRender ${GVTPLY_RENDER_LIBS} )
+  find_package(MPI REQUIRED)
+  include_directories(${MPI_INCLUDE_PATH} ${PLYPATH})
+  set(GVTPLY_RENDER_LIBS ${GVTPLY_RENDER_LIBS}  ${MPI_LIBRARIES} ${GVT_CORE_LIBS})
+  set(GVTPLY_RENDER_SRCS ${GVTPLY_RENDER_SRCS}
+    src/apps/render/PlyApp.cpp
+  ${PLYPATH}/ply.c)
+  add_executable(gvtPly ${GVTPLY_RENDER_SRCS})
+  target_link_libraries(gvtPly gvtCore gvtRender ${GVTPLY_RENDER_LIBS} )
 endif(GVT_PLY_APP)
 
 if (GVT_SIMPLE_FILE_LOAD_APP)
-  if (GVT_MPE)
-    if (DEFINED ENV{MPEHOME})
-      set(MPE_HOME_DIR $ENV{MPEHOME})
-      set (MPE_INCLUDE_DIR ${MPE_HOME_DIR}/include)
-      include_directories(${MPE_INCLUDE_DIR})
-      FIND_LIBRARY(MPE_LIB1 NAME mpe PATHS ${MPE_HOME_DIR} PATH_SUFFIXES lib )
-      FIND_LIBRARY(MPE_LIB2 NAME lmpe PATHS ${MPE_HOME_DIR} PATH_SUFFIXES lib)
-      set(GVTSIMPLEFILE_RENDER_LIBS ${GVTSIMPLEFILE_RENDER_LIBS} ${MPE_LIB2})
-      set(GVTSIMPLEFILE_RENDER_LIBS ${GVTSIMPLEFILE_RENDER_LIBS} ${MPE_LIB1})
-    endif(DEFINED ENV{MPEHOME})
-  endif (GVT_MPE)
-	find_package(MPI REQUIRED)
-	include_directories(${MPI_INCLUDE_PATH})
-	set(GVTSIMPLEFILE_RENDER_LIBS ${GVTSIMPLEFILE_RENDER_LIBS}  ${MPI_LIBRARIES})
-	set(GVTSIMPLEFILE_RENDER_SRCS ${GVTSIMPLEFILE_RENDER_SRCS} src/apps/render/SimpleFileLoadApp.cpp)
-	add_executable(gvtFileLoad ${GVTSIMPLEFILE_RENDER_SRCS})
-	target_link_libraries(gvtFileLoad gvtCore gvtRender ${GVTSIMPLEFILE_RENDER_LIBS} )
+  find_package(MPI REQUIRED)
+  include_directories(${MPI_INCLUDE_PATH})
+  set(GVTSIMPLEFILE_RENDER_LIBS ${GVTSIMPLEFILE_RENDER_LIBS}  ${MPI_LIBRARIES})
+  set(GVTSIMPLEFILE_RENDER_SRCS ${GVTSIMPLEFILE_RENDER_SRCS} src/apps/render/SimpleFileLoadApp.cpp)
+  add_executable(gvtFileLoad ${GVTSIMPLEFILE_RENDER_SRCS})
+  target_link_libraries(gvtFileLoad gvtCore gvtRender ${GVTSIMPLEFILE_RENDER_LIBS} )
 endif(GVT_SIMPLE_FILE_LOAD_APP)
 
 if (GVT_GLRENDER_APP)
