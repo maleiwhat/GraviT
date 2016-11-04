@@ -183,7 +183,6 @@ void gvtCameraBase::setJitterWindowSize(int windowSize) { jitterWindowSize = win
 
 // gvt::render::actor::RayVector gvtCameraBase::AllocateCameraRays() {
 void gvtCameraBase::AllocateCameraRays() {
-<<<<<<< HEAD
 #ifdef __USE_TAU
 TAU_PROFILE("gvtCameraBase::AllocateCameraRays()","",TAU_DEFAULT);
 #endif
@@ -191,8 +190,6 @@ TAU_PROFILE("gvtCameraBase::AllocateCameraRays()","",TAU_DEFAULT);
 #ifdef GVT_USE_DEBUG
   boost::timer::auto_cpu_timer t("gvtCameraBase::AllocateCameraRays: time: %w\n");
 #endif
-=======
->>>>>>> 6a961567e9a96e1b079725945dcd2b5e9db26128
   size_t nrays = filmsize[0] * filmsize[1] * samples * samples;
   rays.clear();
   rays.resize(nrays);
@@ -208,17 +205,10 @@ gvtPerspectiveCamera::gvtPerspectiveCamera(const gvtPerspectiveCamera &cam) : gv
 gvtPerspectiveCamera::~gvtPerspectiveCamera() {}
 // gvt::render::actor::RayVector gvtPerspectiveCamera::generateRays() {
 void gvtPerspectiveCamera::generateRays() {
-<<<<<<< HEAD
 #ifdef __USE_TAU
 TAU_PROFILE("gvtPerspectiveCamera::generateRays()","",TAU_DEFAULT);
 #endif
 
-#ifdef GVT_USE_DEBUG
-  //boost::timer::auto_cpu_timer t("gvtPerspectiveCamera::generateRays: time: %w\n");
-#endif
-=======
->>>>>>> 6a961567e9a96e1b079725945dcd2b5e9db26128
-  gvt::core::time::timer t(true, "generate camera rays");
   // Generate rays direction in camera space and transform to world space.
   int buffer_width = filmsize[0];
   int buffer_height = filmsize[1];
