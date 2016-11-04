@@ -65,7 +65,6 @@
 #include <TAU.h>
 #endif
 
-
 using namespace std;
 using namespace gvt::render;
 using namespace gvt::render::data::scene;
@@ -78,9 +77,8 @@ using namespace gvt::render::data::primitives;
 
 int main(int argc, char **argv) {
 #ifdef __USE_TAU
-TAU_PROFILE("main","",TAU_DEFAULT);
+  TAU_PROFILE("main","",TAU_DEFAULT);
 #endif
-
   ParseCommandLine cmd("gvtPly");
 
   cmd.addoption("wsize", ParseCommandLine::INT, "Window size", 2);
@@ -274,9 +272,6 @@ TAU_PROFILE("main","",TAU_DEFAULT);
   int schedType = root["Schedule"]["type"].value().toInteger();
   switch (schedType) {
   case gvt::render::scheduler::Image: {
-#ifdef __USE_TAU
-TAU_PROFILE("case gvt::render::scheduler::Image","",TAU_DEFAULT);
-#endif
     std::cout << "starting image scheduler" << std::endl;
     gvt::render::algorithm::Tracer<ImageScheduler> tracer(mycamera.rays, myimage);
     for (int z = 0; z < 10; z++) {
@@ -288,9 +283,6 @@ TAU_PROFILE("case gvt::render::scheduler::Image","",TAU_DEFAULT);
     break;
   }
   case gvt::render::scheduler::Domain: {
-#ifdef __USE_TAU
-TAU_PROFILE("gvt::render::scheduler::Domain:","",TAU_DEFAULT);
-#endif
     std::cout << "starting domain scheduler" << std::endl;
 
     // gvt::render::algorithm::Tracer<DomainScheduler>(mycamera.rays, myimage)();

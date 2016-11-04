@@ -8,22 +8,15 @@ set(VERSION_MINOR 1)
 set(VERSION_PATCH 0)
 
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 if(COMMAND cmake_policy)
-	# required for mixing libraries with full paths and not...
-    cmake_policy(SET CMP0003 NEW)
+  # required for mixing libraries with full paths and not...
+  cmake_policy(SET CMP0003 NEW)
 
-    # use rpath on MacOS
-    #cmake_policy(SET CMP0042 NEW)
+  # use rpath on MacOS
+  #cmake_policy(SET CMP0042 NEW)
 endif(COMMAND cmake_policy)
-
-# show all warnings, but disable c11 warnings
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-reorder -Wno-unused-variable")
-
-# use C++11 foo explicitly
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-IF(APPLE)
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
-ENDIF(APPLE)
 
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Choose the build type: Debug Release RelWithDebInfo MinSizeRel." FORCE)
@@ -39,37 +32,35 @@ option(GVT_TIMING 		 "Build GraviT use timing prmimitives" OFF)
 option(GVT_TESTING "Create testing and benchmark programs" OFF)
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
-SET(HOST_NAME $ENV{HOSTNAME})
-if(HOST_NAME MATCHES "(.)*maverick(.)*")
+  SET(HOST_NAME $ENV{HOSTNAME})
+  if(HOST_NAME MATCHES "(.)*maverick(.)*")
     set(CMAKE_CXX_FLAGS "-cxxlib=/opt/apps/gcc/4.9.1/ ${CMAKE_CXX_FLAGS}")
     set(CMAKE_C_FLAGS "-cxxlib=/opt/apps/gcc/4.9.1/ ${CMAKE_C_FLAGS}")
     SET(GVT_HOST "Maverick" CACHE STRING "Choose Stampede | Maverick | Other")
-else()
-if(HOST_NAME MATCHES "(.)*stampede(.)*")
-    set(CMAKE_CXX_FLAGS "-cxxlib=/opt/apps/gcc/4.9.1/ ${CMAKE_CXX_FLAGS}")
-    set(CMAKE_C_FLAGS "-cxxlib=/opt/apps/gcc/4.9.1/ ${CMAKE_C_FLAGS}")
-    SET(GVT_HOST "Stampede" CACHE STRING "Choose Stampede | Maverick | Other")
-else()
-    SET(GVT_HOST "Other (${HOST_NAME})" CACHE STRING "Choose Stampede | Maverick | Other")
-endif()
-endif()
+  else()
+    if(HOST_NAME MATCHES "(.)*stampede(.)*")
+      set(CMAKE_CXX_FLAGS "-cxxlib=/opt/apps/gcc/4.9.1/ ${CMAKE_CXX_FLAGS}")
+      set(CMAKE_C_FLAGS "-cxxlib=/opt/apps/gcc/4.9.1/ ${CMAKE_C_FLAGS}")
+      SET(GVT_HOST "Stampede" CACHE STRING "Choose Stampede | Maverick | Other")
+    else()
+      SET(GVT_HOST "Other (${HOST_NAME})" CACHE STRING "Choose Stampede | Maverick | Other")
+    endif()
+  endif()
 endif()
 
-if(GVT_DEBUG)
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGVT_USE_DEBUG=1")
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DGVT_USE_DEBUG=1")
-endif(GVT_DEBUG)
+
 
 if (GVT_RENDER)
-	option(GVT_RENDER_ADAPTER_MANTA  		"Build the SCI Manta ray tracing engine adapter" ON)
-	option(GVT_RENDER_ADAPTER_EMBREE 		"Build the Intel Embree ray tracing engine adapter" OFF)
-	option(GVT_RENDER_ADAPTER_OPTIX_PRIME 	"Build the NVIDIA Optix Prime ray tracing engine adapter" ON)
-	option(GVT_RENDER_APP 					"Build the GraviT example renderer application" ON)
-	option(GVT_GLRENDER_APP			"Build the interactive X application" OFF)
-	option(GVT_SIMPLE_APP			"Build the simple application" ON)
-	option(GVT_SIMPLE_FILE_LOAD_APP		"Build the simple application (load obj file)" ON)
-	option(GVT_PLY_APP "Build the ply reader application (load ply file)" ON)
-	add_definitions(-DGVT_RENDER)
+  option(GVT_RENDER_ADAPTER_MANTA  		"Build the SCI Manta ray tracing engine adapter" OFF)
+  option(GVT_RENDER_ADAPTER_EMBREE 		"Build the Intel Embree ray tracing engine adapter" ON)
+  option(GVT_RENDER_ADAPTER_OPTIX_PRIME 	"Build the NVIDIA Optix Prime ray tracing engine adapter" OFF)
+  option(GVT_RENDER_APP 					"Build the GraviT example renderer application" ON)
+  option(GVT_GLRENDER_APP			"Build the interactive X application" ON)
+  option(GVT_SIMPLE_APP			"Build the simple application" ON)
+  option(GVT_SIMPLE_FILE_LOAD_APP		"Build the simple application (load obj file)" ON)
+  option(GVT_PLY_APP "Build the ply reader application (load ply file)" ON)
+  option(GVT_CTEST "Build CTEST Unit and Integration tests" ON)
+  add_definitions(-DGVT_RENDER)
 endif(GVT_RENDER)
 
 
@@ -85,7 +76,7 @@ SET(EXECUTABLE_OUTPUT_PATH ${GVT_BIN_DIR})
 # keep the library path in installed executables
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 if (APPLE)
-	set(MACOSX_RPATH ${LIBRARY_OUTPUT_PATH})
+  set(MACOSX_RPATH ${LIBRARY_OUTPUT_PATH})
 endif(APPLE)
 
 #link_directories(${GVT_LIB_DIR})
@@ -96,11 +87,7 @@ endif(APPLE)
 #MARK_AS_ADVANCED(CMAKE_BACKWARDS_COMPATIBILITY)
 
 # compiler options
-set(GVT_USE_MPI ON CACHE BOOL "Use MPI") # TODO: should MPI always be required?
-if(GVT_MPE)
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGVT_USE_MPE=1")
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DGVT_USE_MPE=1")
-endif(GVT_MPE)
+
 # the compiler is ususally set through environment vars outside the cmake file
 # so this is redundant. CMake detects the compiler.
 set(GVT_USE_ICC OFF CACHE BOOL "Use Intel Compiler?")
@@ -117,11 +104,8 @@ set(GLM_ROOT_DIR "${PROJECT_SOURCE_DIR}/third-party/glm")
 set(GLM_DIR "${PROJECT_SOURCE_DIR}/third-party/glm")
 SET(CMAKE_PREFIX_PATH ${PROJECT_SOURCE_DIR}/third-party/glm)
 find_package(GLM REQUIRED)
-find_package(TBB REQUIRED)
-
-include_directories(${TBB_INCLUDE_DIRS})
-
-
+include_directories(${GLM_DIR})
+include(CMake/glm.cmake)
 #set(GVT_THIRDPARTY_TOBJ "/home/01197/semeraro/Projects/Gravity/gravit/third-party/tinyobjloader-master")
 set(GVT_THIRDPARTY_TOBJ "${CMAKE_SOURCE_DIR}/third-party/tinyobjloader-master")
 
@@ -129,25 +113,36 @@ add_subdirectory(${GVT_THIRDPARTY_TOBJ})
 
 find_path(TINYOBJPATH "tiny_obj_loader.h" ${GVT_THIRDPARTY_TOBJ})
 if (${TINYOBJPATH} MATCHES "TINYOBJPATH-NOTFOUND")
-	MESSAGE(SEND_ERRORS "tiny obj reader not found")
+  MESSAGE(SEND_ERRORS "tiny obj reader not found")
 endif (${TINYOBJPATH} MATCHES "TINYOBJPATH-NOTFOUND")
 
 set(GVT_THIRDPARTY_PLY "${CMAKE_SOURCE_DIR}/third-party/ply")
 find_path(PLYPATH "ply.h" ${GVT_THIRDPARTY_PLY})
 if (${PLYPATH} MATCHES "PLYPATH-NOTFOUND")
-	MESSAGE(SEND ERRORS "ply reader header not found")
+  MESSAGE(SEND ERRORS "ply reader header not found")
 endif (${PLYPATH} MATCHES "PLYPATH-NOTFOUND")
 
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-  set(GVT_COMPILER ${CMAKE_CXX_COMPILER_ID} CACHE STRING "GraviT Compiler?")
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-  set(GVT_COMPILER ${CMAKE_CXX_COMPILER_ID} CACHE STRING "GraviT Compiler?")
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
-  #set(CMAKE_CXX_FLAGS "-Wall  -Wno-reorder -Wno-unused-variable")
-  set(GVT_COMPILER ${CMAKE_CXX_COMPILER_ID} CACHE STRING "GraviT Compiler?")
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-  set(GVT_COMPILER ${CMAKE_CXX_COMPILER_ID} CACHE STRING "GraviT Compiler?")
-endif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+#TODO best way to just include embre folder ?
+set(GVT_THIRDPARTY_EMBREESHADERS "${CMAKE_SOURCE_DIR}/third-party/embree-shaders")
+#find_path(PLYPATH "ply.h" ${GVT_THIRDPARTY_EMBREE})
+#if (${PLYPATH} MATCHES "PLYPATH-NOTFOUND")
+#  MESSAGE(SEND ERRORS "ply reader header not found")
+#endif (${PLYPATH} MATCHES "PLYPATH-NOTFOUND")
+
+# if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+#   set(GVT_COMPILER ${CMAKE_CXX_COMPILER_ID} CACHE STRING "GraviT Compiler?")
+# elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+#   set(GVT_COMPILER ${CMAKE_CXX_COMPILER_ID} CACHE STRING "GraviT Compiler?")
+# elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
+#   #set(CMAKE_CXX_FLAGS "-Wall  -Wno-reorder -Wno-unused-variable")
+#   set(GVT_COMPILER ${CMAKE_CXX_COMPILER_ID} CACHE STRING "GraviT Compiler?")
+# set(GVT_USE_ICC ON CACHE BOOL "Use Intel Compiler?")
+# elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+#   set(GVT_COMPILER ${CMAKE_CXX_COMPILER_ID} CACHE STRING "GraviT Compiler?")
+# endif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+
+FIND_PACKAGE(IceT REQUIRED)
+include_directories(${ICET_INCLUDE_DIRS})
 
 
 # modules
@@ -220,75 +215,63 @@ set(GVT_CORE_SRCS ${GVT_CORE_SRCS}
 
 
 set(GVT_RENDER_HDRS ${GVT_RENDER_HDRS}
-	src/gvt/render/actor/Ray.h
-	src/gvt/render/algorithm/DomainTracer.h
-	src/gvt/render/algorithm/HybridTracer.h
-	src/gvt/render/algorithm/ImageTracer.h
-	src/gvt/render/algorithm/TracerBase.h
-	src/gvt/render/algorithm/Tracers.h
-	src/gvt/render/Attributes.h
-	src/gvt/render/RenderContext.h
-	src/gvt/render/data/Dataset.h
-	src/gvt/render/data/DerivedTypes.h
-	src/gvt/render/data/domain/AbstractDomain.h
-	src/gvt/render/data/domain/Cell.h
-	src/gvt/render/data/domain/GeometryDomain.h
-	src/gvt/render/data/domain/reader/ObjReader.h
-	src/gvt/render/data/domain/reader/PlyReader.h
-#	src/gvt/render/data/domain/reader/TinyObjReaderAdapter.h
-	src/gvt/render/data/Domains.h
-	src/gvt/render/data/Primitives.h
-	src/gvt/render/data/primitives/BBox.h
-	src/gvt/render/data/primitives/Material.h
-	src/gvt/render/data/primitives/Mesh.h
-	src/gvt/render/data/scene/Camera.h
-	src/gvt/render/data/scene/gvtCamera.h
-	src/gvt/render/data/scene/CameraConfig.h
-	src/gvt/render/data/scene/ColorAccumulator.h
-	src/gvt/render/data/scene/Image.h
-	src/gvt/render/data/scene/Light.h
-	src/gvt/render/data/accel/AbstractAccel.h
-	src/gvt/render/data/accel/BVH.h
-	src/gvt/render/schedule/DomainScheduler.h
-	src/gvt/render/schedule/hybrid/AdaptiveSendSchedule.h
-	src/gvt/render/schedule/hybrid/GreedySchedule.h
-	src/gvt/render/schedule/hybrid/HybridScheduleBase.h
-	src/gvt/render/schedule/hybrid/LoadAnotherSchedule.h
-	src/gvt/render/schedule/hybrid/LoadAnyOnceSchedule.h
-	src/gvt/render/schedule/hybrid/LoadManySchedule.h
-	src/gvt/render/schedule/hybrid/LoadOnceSchedule.h
-	src/gvt/render/schedule/hybrid/RayWeightedSpreadSchedule.h
-	src/gvt/render/schedule/hybrid/SpreadSchedule.h
-	src/gvt/render/schedule/HybridScheduler.h
-	src/gvt/render/schedule/ImageScheduler.h
-	src/gvt/render/Schedulers.h
-	src/gvt/render/Types.h
-
-	)
+  src/gvt/render/actor/Ray.h
+  src/gvt/render/algorithm/DomainTracer.h
+  src/gvt/render/algorithm/HybridTracer.h
+  src/gvt/render/algorithm/ImageTracer.h
+  src/gvt/render/algorithm/TracerBase.h
+  src/gvt/render/algorithm/Tracers.h
+  src/gvt/render/RenderContext.h
+  src/gvt/render/data/DerivedTypes.h
+  src/gvt/render/data/reader/ObjReader.h
+  src/gvt/render/data/reader/PlyReader.h
+  src/gvt/render/data/Domains.h
+  src/gvt/render/data/Primitives.h
+  src/gvt/render/data/primitives/BBox.h
+  src/gvt/render/data/primitives/Material.h
+  src/gvt/render/data/primitives/Shade.h
+  src/gvt/render/data/primitives/EmbreeMaterial.h
+  src/gvt/render/data/primitives/Mesh.h
+  src/gvt/render/data/scene/gvtCamera.h
+  src/gvt/render/data/scene/CameraConfig.h
+  src/gvt/render/data/scene/ColorAccumulator.h
+  src/gvt/render/data/scene/Image.h
+  src/gvt/render/data/scene/Light.h
+  src/gvt/render/data/accel/AbstractAccel.h
+  src/gvt/render/data/accel/BVH.h
+  src/gvt/render/schedule/DomainScheduler.h
+  src/gvt/render/schedule/hybrid/AdaptiveSendSchedule.h
+  src/gvt/render/schedule/hybrid/GreedySchedule.h
+  src/gvt/render/schedule/hybrid/HybridScheduleBase.h
+  src/gvt/render/schedule/hybrid/LoadAnotherSchedule.h
+  src/gvt/render/schedule/hybrid/LoadAnyOnceSchedule.h
+  src/gvt/render/schedule/hybrid/LoadManySchedule.h
+  src/gvt/render/schedule/hybrid/LoadOnceSchedule.h
+  src/gvt/render/schedule/hybrid/RayWeightedSpreadSchedule.h
+  src/gvt/render/schedule/hybrid/SpreadSchedule.h
+  src/gvt/render/schedule/HybridScheduler.h
+  src/gvt/render/schedule/ImageScheduler.h
+  src/gvt/render/composite/composite.h
+  src/gvt/render/Schedulers.h
+  src/gvt/render/Types.h
+)
 
 
 set(GVT_RENDER_SRCS ${GVT_RENDER_SRCS}
-	src/gvt/render/actor/Ray.cpp
-	src/gvt/render/Attributes.cpp
-	src/gvt/render/RenderContext.cpp
-	src/gvt/render/data/Dataset.cpp
-	src/gvt/render/data/domain/AbstractDomain.cpp
-	src/gvt/render/data/domain/Cell.cpp
-	src/gvt/render/data/domain/GeometryDomain.cpp
-	src/gvt/render/data/domain/reader/ObjReader.cpp
-	src/gvt/render/data/domain/reader/PlyReader.cpp
-#	src/gvt/render/data/domain/reader/TinyObjReaderAdapter.cpp
-	src/gvt/render/data/primitives/BBox.cpp
-	src/gvt/render/data/primitives/Material.cpp
-	src/gvt/render/data/primitives/Mesh.cpp
-	src/gvt/render/data/scene/Camera.cpp
-	src/gvt/render/data/scene/gvtCamera.cpp
-	src/gvt/render/data/scene/ColorAccumulator.cpp
-	src/gvt/render/data/scene/Image.cpp
-	src/gvt/render/data/scene/Light.cpp
-	src/gvt/render/data/accel/BVH.cpp
-	)
-
+  src/gvt/render/actor/Ray.cpp
+  src/gvt/render/RenderContext.cpp
+  src/gvt/render/data/reader/ObjReader.cpp
+  src/gvt/render/data/reader/PlyReader.cpp
+  src/gvt/render/data/primitives/BBox.cpp
+  src/gvt/render/data/primitives/Material.cpp
+  src/gvt/render/data/primitives/Mesh.cpp
+  src/gvt/render/data/scene/gvtCamera.cpp
+  src/gvt/render/data/scene/ColorAccumulator.cpp
+  src/gvt/render/data/scene/Image.cpp
+  src/gvt/render/data/scene/Light.cpp
+  src/gvt/render/data/accel/BVH.cpp
+  src/gvt/render/composite/composite.cpp
+)
 
 if (GVT_RENDER_ADAPTER_MANTA)
   add_definitions(-DGVT_RENDER_ADAPTER_MANTA)
@@ -298,7 +281,6 @@ if (GVT_RENDER_ADAPTER_MANTA)
  )
   set(GVT_RENDER_SRCS ${GVT_RENDER_SRCS} src/gvt/render/adapter/manta/MantaMeshAdapter.cpp)
 endif(GVT_RENDER_ADAPTER_MANTA)
-
 
 if (GVT_RENDER_ADAPTER_OPTIX_PRIME)
   add_definitions(-DGVT_RENDER_ADAPTER_OPTIX)
@@ -449,61 +431,113 @@ endif(GVT_CORE)
 
 
 if (GVT_RENDER)
-	# TODO: PlyReader in gvtRender requires Manta,
-	#       should only need Manta if including Manta adapter
-	find_package(Manta REQUIRED)
-	set(GVT_RENDER_LIBS ${GVT_RENDER_LIBS} ${MANTA_TARGET_LINK_LIBRARIES})
-	set(GVT_RENDER_LIBS ${GVT_RENDER_LIBS} tinyobjloader)
+  set(GVT_RENDER_LIBS ${GVT_RENDER_LIBS})
+
+
+  set(GVT_RENDER_LIBS ${GVT_RENDER_LIBS} tinyobjloader ${ICET_CORE_LIBS}
+    ${ICET_MPI_LIBS})
   include_directories(${TINYOBJPATH})
 
-	##include TinyObjLoader into libs
-	set(GVT_RENDER_LIBS ${GVT_RENDER_LIBS} ${TINYOBJPATH}/libtinyobjloader.a)
-	include_directories(${TINYOBJPATH})
+  find_package(Boost REQUIRED COMPONENTS thread timer system)
+  include_directories(${Boost_INCLUDE_DIRS})
+  set(GVT_RENDER_LIBS ${GVT_RENDER_LIBS} ${Boost_LIBRARIES} ${GVT_CORE_LIBS})
 
-    find_package(Boost REQUIRED COMPONENTS thread timer system)
-    include_directories(${Boost_INCLUDE_DIRS})
-    set(GVT_RENDER_LIBS ${GVT_RENDER_LIBS} ${Boost_LIBRARIES})
+  if(GVT_RENDER_ADAPTER_MANTA)
+    find_package(Manta REQUIRED)
+    set(GVT_RENDER_LIBS ${GVT_RENDER_LIBS} ${MANTA_TARGET_LINK_LIBRARIES})
+  endif(GVT_RENDER_ADAPTER_MANTA)
 
-    if (GVT_RENDER_ADAPTER_OPTIX_PRIME)
-    	find_package(CUDA REQUIRED)
-    	find_package(OptiX REQUIRED)
+  if (GVT_RENDER_ADAPTER_OPTIX_PRIME)
+    find_package(CUDA REQUIRED)
+    find_package(OptiX REQUIRED)
 
-    	include_directories(${CUDA_INCLUDE_DIRS})
-    	include_directories(${OptiX_INCLUDE})
-	set(OptiX_LIBRARIES ${optix_LIBRARY} ${optix_prime_LIBRARY})
-    	set(GVT_RENDER_LIBS ${GVT_RENDER_LIBS} ${CUDA_LIBRARIES} ${OptiX_LIBRARIES})
-    	set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS}
-    		--compiler-options -fno-strict-aliasing -lineinfo -use_fast_math
-    		-gencode arch=compute_30,code=sm_30
-    		-gencode arch=compute_35,code=sm_35
-    		)
-    	cuda_compile(GVT_RENDER_CUDA_OBJS ${GVT_RENDER_CUDA_HDRS} ${GVT_RENDER_CUDA_SRCS})
-    	set(GVT_RENDER_SRCS ${GVT_RENDER_SRCS}
-    		${GVT_RENDER_CUDA_OBJS}
-    		)
-    endif(GVT_RENDER_ADAPTER_OPTIX_PRIME)
+    set(CUDA_SEPARABLE_COMPILATION ON)
+    set(CUDA_PROPAGATE_HOST_FLAGS OFF)
 
-	include_directories(${OptiX_INCLUDE})
+    include_directories(${CUDA_INCLUDE_DIRS})
+    include_directories(${OptiX_INCLUDE})
+    set(OptiX_LIBRARIES ${optix_LIBRARY} ${optix_prime_LIBRARY})
+    set(GVT_RENDER_LIBS ${GVT_RENDER_LIBS} ${CUDA_LIBRARIES} ${OptiX_LIBRARIES})
+    set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS}
+    	--compiler-options -fno-strict-aliasing -lineinfo -use_fast_math
+        -gencode arch=compute_20,code=sm_20
+    	-gencode arch=compute_30,code=sm_30
+    	-gencode arch=compute_35,code=sm_35
+        --compiler-options '-fPIC')
+    #cuda_compile(GVT_RENDER_CUDA_OBJS ${GVT_RENDER_CUDA_HDRS} ${GVT_RENDER_CUDA_SRCS})
+    CUDA_ADD_LIBRARY(gvtCudaOptix ${GVT_RENDER_CUDA_SRCS}  OPTIONS "${CUDA_NVCC_FLAGS}")
 
-	if (GVT_RENDER_ADAPTER_EMBREE)
-		find_package(Embree REQUIRED)
-		set(GVT_RENDER_LIBS ${GVT_RENDER_LIBS} ${EMBREE_TARGET_LINK_LIBRARIES})
-	endif(GVT_RENDER_ADAPTER_EMBREE)
+    set(GVT_RENDER_SRCS ${GVT_RENDER_SRCS} ${GVT_RENDER_CUDA_OBJS})
+    set(GVT_RENDER_LIBS ${GVT_RENDER_LIBS} gvtCudaOptix)
 
-	add_library(gvtRender STATIC
-		${GVT_CORE_HDRS}
-		${GVT_CORE_SRCS}
-		${GVT_RENDER_HDRS}
-		${GVT_RENDER_SRCS}
-		)
+  endif(GVT_RENDER_ADAPTER_OPTIX_PRIME)
 
-	target_link_libraries(gvtRender ${GVT_RENDER_LIBS})
+  include_directories(${OptiX_INCLUDE})
+  include_directories(${GVT_THIRDPARTY_EMBREESHADERS})
 
-	install(TARGETS gvtRender
-		LIBRARY DESTINATION lib
-		ARCHIVE DESTINATION lib
-		)
+  if (GVT_RENDER_ADAPTER_EMBREE)
+    find_package(Embree REQUIRED)
+    set(GVT_RENDER_LIBS ${GVT_RENDER_LIBS} ${EMBREE_TARGET_LINK_LIBRARIES})
+  endif(GVT_RENDER_ADAPTER_EMBREE)
+
+  add_library(gvtRender STATIC
+              ${GVT_CORE_HDRS}
+              ${GVT_CORE_SRCS}
+              ${GVT_RENDER_HDRS}
+              ${GVT_RENDER_SRCS})
+
+  target_link_libraries(gvtRender ${GVT_RENDER_LIBS})
+
+  install(TARGETS gvtRender
+          LIBRARY DESTINATION lib
+          ARCHIVE DESTINATION lib)
 endif(GVT_RENDER)
+
+
+## CTEST
+if (GVT_CTEST)
+
+  enable_testing()
+  ## Check if run in mpi
+
+  SET(runConfig "" )
+  if (GVT_USE_MPI)
+    set (no_mpi_proc 2)
+    set (runConfig ibrun -np ${no_mpi_proc})
+  endif(GVT_USE_MPI)
+
+  ## Enable gvtSimple and gvtFileLoad, needed for tests
+  set(GVT_SIMPLE_APP ON CACHE BOOL "Build libfoo shared library" FORCE)
+  set(GVT_SIMPLE_FILE_LOAD_APP ON CACHE BOOL "Build libfoo shared library" FORCE)
+  set(GVT_BIN_DIR ${PROJECT_BINARY_DIR}/bin)
+
+  ## Testing Configuration
+  set(SimpleFileLoadObjLocation ${PROJECT_SOURCE_DIR}/data/geom/bunny.obj)
+  set(TestOutputFolder ${PROJECT_SOURCE_DIR}/Test/CTESTtest/testOutput)
+  file(MAKE_DIRECTORY ${TestOutputFolder})
+  set(ImageDiffTolerance 300)
+
+  ## Integration Test for SimpleApp --Image Scheduler
+  add_test( SimpleApp_ImageScheduler  ${runConfig} ${PROJECT_BINARY_DIR}/bin/gvtSimple -image -output ${TestOutputFolder}/test1)
+  add_test( SimpleAppImageDiff_ImageScheduler ${PROJECT_BINARY_DIR}/bin/gvtImageDiff -tolerance ${ImageDiffTolerance} -diff "${PROJECT_SOURCE_DIR}/Test/CTESTtest/data/simple.ppm,${TestOutputFolder}/test1.ppm")
+
+  ## Integration Test for SimpleFileLoad --Image Scheduler
+    add_test( SimpleFileLoad_ImageScheduler  ${runConfig} ${GVT_BIN_DIR}/gvtFileLoad -image -obj ${SimpleFileLoadObjLocation} -output ${TestOutputFolder}/test2)
+    add_test( SimpleFileLoadImageDiff_ImageScheduler ${GVT_BIN_DIR}/gvtImageDiff -tolerance ${ImageDiffTolerance} -diff "${PROJECT_SOURCE_DIR}/Test//CTESTtest/data/bunny.ppm,${TestOutputFolder}/test2.ppm")
+
+  ## Integration Test for SimpleApp --Domain Scheduler
+    add_test( SimpleApp_DomainScheduler   ${runConfig} ${GVT_BIN_DIR}/gvtSimple -domain -output ${TestOutputFolder}/test3)
+    add_test( SimpleAppImageDiff_DomainScheduler  ${GVT_BIN_DIR}/gvtImageDiff -tolerance ${ImageDiffTolerance} -diff "${PROJECT_SOURCE_DIR}/Test/CTESTtest/data/simple.ppm,${TestOutputFolder}/test3.ppm")
+
+  ## Integration Test for SimpleFileLoad --Domain Scheduler
+    add_test( SimpleFileLoad_DomainScheduler ${runConfig} ${GVT_BIN_DIR}/gvtFileLoad -domain -obj ${SimpleFileLoadObjLocation} -output ${TestOutputFolder}/test4)
+    add_test( SimpleFileLoadImageDiff_DomainScheduler ${GVT_BIN_DIR}/gvtImageDiff -tolerance ${ImageDiffTolerance} -diff "${PROJECT_SOURCE_DIR}/Test//CTESTtest/data/bunny.ppm,${TestOutputFolder}/test4.ppm")
+
+  ## Image difference program to verify integration tests
+  set(GVTIMAGE_DIFF_SRCS  src/apps/render/ImageDiff.cpp)
+  add_executable(gvtImageDiff ${GVTIMAGE_DIFF_SRCS})
+
+endif(GVT_CTEST)
 
 if (GVT_SIMPLE_APP)
   find_package(MPI REQUIRED)
@@ -514,25 +548,17 @@ if (GVT_SIMPLE_APP)
   target_link_libraries(gvtSimple gvtCore gvtRender ${GVTSIMPLE_RENDER_LIBS} ${GVT_CORE_LIBS})
 endif(GVT_SIMPLE_APP)
 
-#if (GVT_OBJLOADER_APP)
-#  if (GVT_MPE)
-#    if (DEFINED ENV{MPEHOME})
-#      set(MPE_HOME_DIR $ENV{MPEHOME})
-#      set (MPE_INCLUDE_DIR ${MPE_HOME_DIR}/include)
-#      include_directories(${MPE_INCLUDE_DIR})
-#      FIND_LIBRARY(MPE_LIB1 NAME mpe PATHS ${MPE_HOME_DIR} PATH_SUFFIXES lib )
-#      FIND_LIBRARY(MPE_LIB2 NAME lmpe PATHS ${MPE_HOME_DIR} PATH_SUFFIXES lib)
-#      set(GVTOBJ_RENDER_LIBS ${GVTSIMPLE_RENDER_LIBS} ${MPE_LIB2})
-#      set(GVTOBJ_RENDER_LIBS ${GVTSIMPLE_RENDER_LIBS} ${MPE_LIB1})
-#    endif(DEFINED ENV{MPEHOME})
-#  endif (GVT_MPE)
-#	find_package(MPI REQUIRED)
-#	include_directories(${MPI_INCLUDE_PATH})
-#	set(GVTOBJ_RENDER_LIBS ${GVTOBJ_RENDER_LIBS}  ${MPI_LIBRARIES})
-#	set(GVTOBJ_RENDER_SRCS ${GVTOBJ_RENDER_SRCS} src/apps/render/ObjLoaderApp.cpp)
-#	add_executable(gvtObjLoaderApp ${GVTOBJ_RENDER_SRCS})
-#	target_link_libraries(gvtObjLoaderApp gvtCore gvtRender ${GVTSIMPLE_RENDER_LIBS} )
-#endif(GVT_OBJLOADER_APP)
+if(GVT_TESTING)
+  find_package(OSPRay)
+  include_directories(${OSPRAY_INCLUDE_DIRS} ${PLYPATH})
+  set(GVT_TESTING_SRCS ${GVT_TESTING_SRCS} Test/timer.c ${PLYPATH}/ply.c)
+  add_executable(osptest ${GVT_TESTING_SRCS} Test/OSPRayTest/BenchOspray.cpp)
+  target_link_libraries(osptest ${OSPRAY_LIBRARIES})
+  find_package(MPI REQUIRED)
+  include_directories(${MPI_INCLUDE_PATH})
+  add_executable(gvttest ${GVT_TESTING_SRCS} Test/GVTTest/GVTTest.cpp)
+  target_link_libraries(gvttest gvtCore gvtRender ${MPI_LIBRARIES} ${OSPRAY_LIBRARIES} ${GVT_CORE_LIBS})
+endif(GVT_TESTING)
 
 if (GVT_PLY_APP)
   find_package(MPI REQUIRED)
@@ -555,38 +581,38 @@ if (GVT_SIMPLE_FILE_LOAD_APP)
 endif(GVT_SIMPLE_FILE_LOAD_APP)
 
 if (GVT_GLRENDER_APP)
-	find_package(MPI REQUIRED)
-	find_package(OpenGL REQUIRED)
-	include_directories(${MPI_INCLUDE_PATH})
-	set(GVTGLAPP_RENDER_LIBS ${GVTGLAPP_RENDER_LIBS}  ${MPI_LIBRARIES})
+  find_package(MPI REQUIRED)
+  find_package(OpenGL REQUIRED)
+  include_directories(${MPI_INCLUDE_PATH})
+  set(GVTGLAPP_RENDER_LIBS ${GVTGLAPP_RENDER_LIBS}  ${MPI_LIBRARIES})
 
-	find_library(GLUTLIB glut)
-	if(GLUTLIB)
-          set(GVTGLAPP_RENDER_LIBS ${GVTGLAPP_RENDER_LIBS} ${OpenGL_LIBRARIES} ${GLUTLIB})
-	endif(GLUTLIB)
-	find_library(GLULIB GLU)
-	if(GLULIB)
-        	set(GVTGLAPP_RENDER_LIBS ${GVTGLAPP_RENDER_LIBS} ${GLULIB})
-	endif(GLULIB)
+  find_library(GLUTLIB glut)
+  if(GLUTLIB)
+    set(GVTGLAPP_RENDER_LIBS ${GVTGLAPP_RENDER_LIBS} ${OpenGL_LIBRARIES} ${GLUTLIB} ${GVT_CORE_LIBS})
+  endif(GLUTLIB)
+  find_library(GLULIB GLU)
+  if(GLULIB)
+    set(GVTGLAPP_RENDER_LIBS ${GVTGLAPP_RENDER_LIBS} ${GLULIB})
+  endif(GLULIB)
 
-	set(GVTGLAPP_RENDER_HDRS ${GVTGLAPP_RENDER_HDRS}
-		src/apps/render/ConfigFileLoader.h
-		)
+  set(GVTGLAPP_RENDER_HDRS ${GVTGLAPP_RENDER_HDRS}
+    src/apps/render/ConfigFileLoader.h
+  )
 
-	set(GVTGLAPP_RENDER_SRCS ${GVTGLAPP_RENDER_SRCS}
-		src/apps/render/ConfigFileLoader.cpp
-		src/apps/render/GLTrace.cpp
-                ${PLYPATH}/ply.c
-		)
+  set(GVTGLAPP_RENDER_SRCS ${GVTGLAPP_RENDER_SRCS}
+    src/apps/render/ConfigFileLoader.cpp
+    src/apps/render/GLTrace.cpp
+    ${PLYPATH}/ply.c
+  )
 
-	add_executable(glTracer
-		${GVTGLAPP_RENDER_HDRS}
-		${GVTGLAPP_RENDER_SRCS}
-		)
+  add_executable(glTracer
+    ${GVTGLAPP_RENDER_HDRS}
+    ${GVTGLAPP_RENDER_SRCS}
+  )
 
-              target_link_libraries(glTracer ${OPENGL_gl_LIBRARY} ${GVTGLAPP_RENDER_LIBS} gvtCore gvtRender)
+  target_link_libraries(glTracer ${OPENGL_gl_LIBRARY} ${GVTGLAPP_RENDER_LIBS} gvtCore gvtRender)
 
-	install(TARGETS glTracer
-		RUNTIME DESTINATION bin
-		)
+  install(TARGETS glTracer
+    RUNTIME DESTINATION bin
+  )
 endif(GVT_GLRENDER_APP)
