@@ -77,7 +77,7 @@ using namespace gvt::render::data::primitives;
 
 int main(int argc, char **argv) {
 #ifdef __USE_TAU
-  TAU_PROFILE("main","",TAU_DEFAULT);
+  TAU_PROFILE("MAIN","",TAU_DEFAULT);
 #endif
   ParseCommandLine cmd("gvtPly");
 
