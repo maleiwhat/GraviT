@@ -72,6 +72,19 @@ using namespace gvt::render::data::scene;
 using namespace gvt::render::schedule;
 using namespace gvt::render::data::primitives;
 
+
+void Rotate(glm::vec3& point, glm::vec3 center, const float angle, const glm::vec3 axis) {
+  glm::vec3 p = center - point;
+  glm::vec3 t = angle * axis;
+
+  glm::mat4 mAA = glm::rotate(glm::mat4(1.f), t[0], glm::vec3(1, 0, 0)) *
+                  glm::rotate(glm::mat4(1.f), t[1], glm::vec3(0, 1, 0)) *
+                  glm::rotate(glm::mat4(1.f), t[2], glm::vec3(0, 0, 1));
+
+
+  point = center + glm::vec3(mAA * glm::vec4(-p, 0.f));
+}
+
 void setContext(int argc, char *argv[]) {
 
   ParseCommandLine cmd("gvtSimple");
@@ -124,20 +137,23 @@ void setContext(int argc, char *argv[]) {
   gvt::core::DBNodeH root = cntxt->getRootNode();
 
   // mix of cones and cubes
-
-  // if (rank == 0) {
+#ifdef SYNC_CONTEXT
+   if (comm->id() == 0) {
+#endif
   gvt::core::DBNodeH dataNodes =
       cntxt->addToSync(cntxt->createNodeFromType("Data", "Data", root.UUID()));
   cntxt->addToSync(cntxt->createNodeFromType("Mesh", "conemesh", dataNodes.UUID()));
   cntxt->addToSync(cntxt->createNodeFromType("Mesh", "cubemesh", dataNodes.UUID()));
   gvt::core::DBNodeH instNodes =
       cntxt->addToSync(cntxt->createNodeFromType("Instances", "Instances", root.UUID()));
-  // }
+#ifdef SYNC_CONTEXT
+   }
 
-  // cntxt->syncContext();
+   cntxt->syncContext();
 
-  // gvt::core::DBNodeH dataNodes = root["Data"];
-  // gvt::core::DBNodeH instNodes = root["Instances"];
+   gvt::core::DBNodeH dataNodes = root["Data"];
+   gvt::core::DBNodeH instNodes = root["Instances"];
+#endif
 
   gvt::core::DBNodeH coneMeshNode = dataNodes.getChildren()[0];
   gvt::core::DBNodeH cubeMeshNode = dataNodes.getChildren()[1];
@@ -146,7 +162,7 @@ void setContext(int argc, char *argv[]) {
     Material *m = new Material();
     m->type = LAMBERT;
     // m->type = EMBREE_MATERIAL_MATTE;
-    m->kd = glm::vec3(1.0, 1.0, 1.0);
+    m->kd = glm::vec3(1.0f, 1.0f, 1.0f) ;
     m->ks = glm::vec3(1.0, 1.0, 1.0);
     m->alpha = 0.5;
 
@@ -197,10 +213,10 @@ void setContext(int argc, char *argv[]) {
     coneMeshNode["ptr"] = (unsigned long long)mesh;
 
     gvt::core::DBNodeH loc =
-        cntxt->createNode("rank", (comm->id() & 1 == 0) ? (int)comm->id() : 0);
+        cntxt->createNode("rank", (int)comm->id());
     coneMeshNode["Locations"] += loc;
 
-    // cntxt->addToSync(coneMeshNode);
+    cntxt->addToSync(coneMeshNode);
   }
 
   {
@@ -208,7 +224,8 @@ void setContext(int argc, char *argv[]) {
     Material *m = new Material();
     m->type = LAMBERT;
     // m->type = EMBREE_MATERIAL_MATTE;
-    m->kd = glm::vec3(1.0, 1.0, 1.0);
+
+    m->kd = glm::vec3(1.0f, 1.0f, 1.0f);
     m->ks = glm::vec3(1.0, 1.0, 1.0);
     m->alpha = 0.5;
 
@@ -292,15 +309,18 @@ void setContext(int argc, char *argv[]) {
     cubeMeshNode["ptr"] = (unsigned long long)mesh;
 
     gvt::core::DBNodeH loc =
-        cntxt->createNode("rank", (comm->id() & 1 == 1) ? (int)comm->id() : 1);
+        //cntxt->createNode("rank", (comm->id() & 1 == 1) ? (int)comm->id() : 1);
+    cntxt->createNode("rank", (int)comm->id() );
+
     cubeMeshNode["Locations"] += loc;
 
-    // cntxt->addToSync(cubeMeshNode);
+     cntxt->addToSync(cubeMeshNode);
   }
+#ifdef SYNC_CONTEXT
+   cntxt->syncContext();
 
-  // cntxt->syncContext();
-
-  // if (rank == 0) {
+   if (comm->id() == 0) {
+#endif
   // create a NxM grid of alternating cones / cubes, offset using i and j
   int instId = 0;
   int ii[2] = { -2, 3 }; // i range
@@ -337,13 +357,16 @@ void setContext(int argc, char *argv[]) {
       instnode["bbox"] = (unsigned long long)ibox;
       instnode["centroid"] = ibox->centroid();
 
-      // cntxt->addToSync(instnode);
+       cntxt->addToSync(instnode);
     }
   }
-  // }
 
-  // cntxt->syncContext();
+#ifdef SYNC_CONTEXT
+   }
 
+
+   cntxt->syncContext();
+#endif
   // add lights, camera, and film to the database
   gvt::core::DBNodeH lightNodes =
       cntxt->createNodeFromType("Lights", "Lights", root.UUID());
@@ -351,7 +374,10 @@ void setContext(int argc, char *argv[]) {
   gvt::core::DBNodeH lightNode =
       cntxt->createNodeFromType("PointLight", "conelight", lightNodes.UUID());
   lightNode["position"] = glm::vec3(1.0, 0.0, -1.0);
-  lightNode["color"] = glm::vec3(1.0, 1.0, 1.0);
+  glm::vec3 c = glm::vec3(0.0, 1.0f, 1.0f);
+  c[comm->id()%3]=float(comm->id())/float(comm->lastid());
+  lightNode["color"] = c;
+
 #else
   gvt::core::DBNodeH lightNode =
       cntxt->createNodeFromType("AreaLight", "AreaLight", lightNodes.UUID());
@@ -524,11 +550,21 @@ int main(int argc, char *argv[]) {
   cntxt->setTracer(tracer);
   std::shared_ptr<gvt::render::composite::ImageComposite> composite_buffer =
       cntxt->getComposite<gvt::render::composite::ImageComposite>();
-  for (int ii = 0; ii < 10; ii++) {
-    std::cout << ".";
+
+  int nFrames =100;
+  for (int ii = 0; ii < nFrames; ii++) {
+
+	if (comm->id() == 0)
+    std::cout << " Starting frame " << ii << std::endl << std::flush;
+
     gvt::core::time::timer t(true, "Frame timer");
     composite_buffer->reset();
     (*tracer)();
+
+//    glm::vec3 light = cntxt->getRootNode()["Lights"].getChildren()[0]["position"].value().tovec3();
+//    Rotate(light,cntxt->getCamera()->getFocalPoint(), ((360*2)/(nFrames-1))*M_PI/180, cntxt->getCamera()->getUpVector());
+//    cntxt->getRootNode()["Lights"].getChildren()[0]["position"] = light;
+
   }
 
   composite_buffer->write(cntxt->getRootNode()["Film"]["outputPath"].value().toString());

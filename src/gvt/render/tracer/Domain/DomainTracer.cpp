@@ -82,10 +82,17 @@ void InNodeLargestQueueFirst::refreshInNode() {
   // build location map, where meshes are by mpi node
   for (size_t i = 0; i < dataNodes.size(); i++) {
     std::vector<gvt::core::DBNodeH> locations = dataNodes[i]["Locations"].getChildren();
+#ifdef SYNC_CONTEXT
     for (auto loc : locations) {
       meshAvailbyMPI[loc.value().toInteger()].insert(dataNodes[i].UUID().toString());
     }
+#else
+    for (size_t rank = 0; rank < comm->lastid(); rank++){
+      meshAvailbyMPI[rank].insert(dataNodes[i].UUID().toString());
+    }
+#endif
   }
+
   lastAssigned = meshAvailbyMPI.begin();
   // create a map of instances to mpi rank
   for (size_t i = 0; i < instancenodes.size(); i++) {
@@ -125,8 +132,15 @@ void InNodeLargestQueueFirst::refreshInNode() {
         if (lastAssigned == meshAvailbyMPI.end()) lastAssigned = meshAvailbyMPI.begin();
       } while (lastAssigned != startedAt);
       if (mpiInstanceMap[i] == comm->id()) addToInNode(i);
+//      if (comm->id()==0)
+//		std::cout << "[" << comm->id() << "] domain scheduler: instId: "
+//				<< i << ", mesh: " << meshNode.UUID() << ", target mpi node: "
+//				<< mpiInstanceMap[i] << ", world size: " << comm->lastid()
+//				<< std::endl << std::flush;
+
     }
   }
+
 }
 
 int InNodeLargestQueueFirst::policyCheck(
@@ -153,6 +167,8 @@ bool DomainTracer::areWeDone() {
   // std::cout << "[" << comm->id() << "] Check " << ((tracer->_queue.empty()) ? "T" :
   // "F")
   //           << std::endl << std::flush;
+ // if (!ret)
+ // std::cout << comm->id() << "Comm thr q size: " << tracer->_queue.size()  << std::endl << std::flush;
   return ret;
 }
 
@@ -162,10 +178,16 @@ void DomainTracer::Done(bool T) {
   std::shared_ptr<DomainTracer> tracer =
       std::dynamic_pointer_cast<DomainTracer>(cntxt.tracer());
   if (!tracer) return;
-  if (T)
-    std::cout << "[" << comm->id() << "] Done ... " << (T ? "T" : "F") << std::endl
-              << std::flush;
-  tracer->GlobalFrameFinished = T;
+	if (T) {
+//		std::cout << "[" << comm->id() << "] Done ... " << (T ? "T" : "F")
+//				<< std::endl << std::flush;
+
+		std::lock_guard < std::mutex > _lock(tracer->_queue._protect);
+		tracer->_queue._queue.clear();
+	}
+
+  tracer->setGlobalFrameFinished(T);
+
 }
 
 DomainTracer::DomainTracer() : RayTracer() {
@@ -180,6 +202,8 @@ DomainTracer::DomainTracer() : RayTracer() {
 DomainTracer::~DomainTracer() {}
 
 void DomainTracer::operator()() {
+
+    gvt::core::time::timer t1(true, "Pre-frame");
 
   std::shared_ptr<gvt::comm::communicator> comm = gvt::comm::communicator::singleton();
   gvt::render::RenderContext &cntxt = *gvt::render::RenderContext::instance();
@@ -243,16 +267,17 @@ void DomainTracer::operator()() {
   }
 
   _queue.setQueuePolicy<InNodeLargestQueueFirst>();
+  _queue._queue.clear();
 
   _cam->AllocateCameraRays();
   _cam->generateRays();
 
-  int ray_portion = _cam->rays.size() / comm->lastid();
-  int rays_start = comm->id() * ray_portion;
-  size_t rays_end =
-      (comm->id() + 1) == comm->lastid()
-          ? _cam->rays.size()
-          : (comm->id() + 1) * ray_portion; // tack on any odd rays to last proc
+//  int ray_portion = _cam->rays.size() / comm->lastid();
+//  int rays_start = comm->id() * ray_portion;
+//  size_t rays_end =
+//      (comm->id() + 1) == comm->lastid()
+//          ? _cam->rays.size()
+//          : (comm->id() + 1) * ray_portion; // tack on any odd rays to last proc
 
   // gvt::render::actor::RayVector lrays;
   // lrays.assign(_cam->rays.begin() + rays_start, _cam->rays.begin() + rays_end);
@@ -263,22 +288,37 @@ void DomainTracer::operator()() {
   InNodeLargestQueueFirst *pp = dynamic_cast<InNodeLargestQueueFirst *>(_queue.QP.get());
   std::vector<int> remote_instances;
   if (pp) {
-    for (auto q : _queue._queue) {
-      if (pp->mpiInstanceMap[q.first] != comm->id()) {
-        remote_instances.push_back(q.first);
-      }
-    }
-    for (auto id : remote_instances) _queue._queue.erase(id);
+//	_queue._protect.lock();
+//    for (auto q : _queue._queue) {
+//      if (pp->mpiInstanceMap[q.first] != comm->id()) {
+//        remote_instances.push_back(q.first);
+//      }
+//    }
+//    for (auto id : remote_instances) _queue._queue.erase(id);
+//    _queue._protect.unlock();
+
+	  for (int i = 0; i < instancenodes.size(); i++) {
+		  if (pp->mpiInstanceMap[i] != comm->id()) {
+		         remote_instances.push_back(i);
+		  }
+	  }
+
+	  for (auto id : remote_instances) _queue._queue.erase(id);
+
+
   }
 
-  GlobalFrameFinished = false;
+  t1.stop();
+
+  setGlobalFrameFinished(false);
   {
     gvt::core::time::timer t(true, "Tracing");
-    while (!GlobalFrameFinished) {
+    while (!getGlobalFrameFinished()) {
       int target = -1;
       gvt::render::actor::RayVector toprocess, moved_rays, send_rays;
       _queue.dequeue(target, toprocess);
       if (target != -1) {
+    	//std::cout << comm->id() << " Tracing queue " << target << std::endl << std::flush;
         trace(target, meshRef[target], toprocess, moved_rays, instM[target],
               instMinv[target], instMinvN[target], lights);
         processRayQueue(moved_rays, target);
@@ -286,19 +326,37 @@ void DomainTracer::operator()() {
         for (auto id : remote_instances) {
           if (_queue.dequeue_send(id, send_rays)) {
             // TODO: Send rays
-            // std::cout << "Send queue : " << id << " " << send_rays.size() << std::endl
-            // <<
-            // std::flush;
+
+//             std::cout << comm->id() << " Send queue to: " << pp->mpiInstanceMap[id]
+//                                                                                 << " " << send_rays.begin()[0].id
+//                                                                                 << " " << send_rays.begin()[1].id
+//                                                                                 << " " << send_rays.begin()[2].id
+//                                                                                 << std::endl
+//             <<
+//             std::flush;
             std::shared_ptr<gvt::comm::Message> msg =
                 std::make_shared<gvt::comm::SendRayList>(
                     comm->id(), pp->mpiInstanceMap[id], send_rays);
 
+//            if (comm->id() == 0 && pp->mpiInstanceMap[id] == 1)
+//							std::cout << comm->id() << " Sending : " << send_rays.size() << " rays in a msg with " << msg->size() <<
+//							" to " << pp->mpiInstanceMap[id]
+//							<< " " << send_rays.begin()[0].id
+//							<< " " << send_rays.begin()[1].id
+//							<< " " << send_rays.begin()[2].id
+//							<< std::endl << std::flush;
+
             comm->send(msg, pp->mpiInstanceMap[id]);
           }
         }
+
+
       }
       if (_queue.empty()) {
-        v->PorposeVoting();
+        // std::cout << comm->id() << " Comp th qsize: " << _queue.size() << std::endl << std::flush;
+           v->PorposeVoting();
+      } else {
+    	 // std::cout << comm->id() << "Work to do " << _queue.size() <<std::endl;
       }
     }
     t.stop();
@@ -310,8 +368,16 @@ void DomainTracer::operator()() {
 };
 
 bool DomainTracer::MessageManager(std::shared_ptr<gvt::comm::Message> msg) {
-  std::cout << "TAG : " << msg->tag() << std::endl << std::flush;
-  return Tracer::MessageManager(msg);
+
+	  std::shared_ptr<gvt::comm::communicator> comm = gvt::comm::communicator::singleton();
+	  gvt::render::actor::RayVector rays;
+	  rays.resize(msg->size()/sizeof(gvt::render::actor::Ray));
+	  //TODO
+	  std::memcpy(&rays[0],msg->getMessage<void>(), msg->size()) ;
+      processRayQueue(rays);
+
+      return true;
+
 }
 
 void DomainTracer::updateGeometry() {}

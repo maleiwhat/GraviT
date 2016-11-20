@@ -46,6 +46,8 @@
 
 #define CONTEXT_LEAF_MARSH_SIZE 256
 
+#define SYNC_CONTEXT
+
 namespace gvt {
 namespace core {
 /// context base class for GraviT internal state
@@ -132,6 +134,10 @@ public:
 
   void setTracer(std::shared_ptr<gvt::tracer::Tracer> &tracer) {
     if (tracer != nullptr) _tracer = tracer;
+  }
+
+  std::shared_ptr<gvt::tracer::Tracer> getTracer() {
+    return _tracer;
   }
 
 protected:

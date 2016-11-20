@@ -104,7 +104,10 @@ struct RayQueueManager {
     }
     return true;
   }
-  std::size_t size() { return _queue.size(); }
+  std::size_t size() {
+	  std::lock_guard<std::mutex> _lock(_protect);
+	  return _queue.size();
+  }
 
   template <class Policy> void setQueuePolicy() {
     static_assert(std::is_base_of<QueuePolicy, Policy>::value,

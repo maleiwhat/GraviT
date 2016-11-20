@@ -57,8 +57,18 @@ public:
   static bool areWeDone();
   static void Done(bool);
 
+  void inline setGlobalFrameFinished(bool v){
+	    _GlobalFrameFinished = v;
+  }
+
+  bool inline getGlobalFrameFinished(){
+  	   return _GlobalFrameFinished;
+    }
+
+  std::mutex finish;
 private:
-  volatile bool GlobalFrameFinished = false;
+  //volatile bool _GlobalFrameFinished = false;
+  std::atomic<bool> _GlobalFrameFinished = false;
   std::map<int, int> mpiInstanceMap;
   std::shared_ptr<comm::vote::vote> v;
 };

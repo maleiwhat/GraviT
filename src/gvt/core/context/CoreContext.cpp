@@ -33,17 +33,20 @@ CoreContext::CoreContext() {
   std::vector<MarshedDatabaseNode> buf;
   buf.reserve(1);
   DatabaseNode *root;
+  std::shared_ptr<gvt::comm::communicator> comm = gvt::comm::communicator::singleton();
 
-  if (MPI::COMM_WORLD.Get_rank() == 0) {
+
+  if (comm->id() == 0) {
 
     root = new DatabaseNode(String("GraviT"), String("GVT ROOT"), Uuid(), Uuid::null());
 
     marsh(buf, *root);
   }
+  comm->aquireComm();
+  MPI_Bcast(&buf[0], CONTEXT_LEAF_MARSH_SIZE, MPI_UNSIGNED_CHAR, 0,MPI_COMM_WORLD );
+  comm->releaseComm();
 
-  MPI::COMM_WORLD.Bcast(&buf[0], CONTEXT_LEAF_MARSH_SIZE, MPI_UNSIGNED_CHAR, 0);
-
-  if (MPI::COMM_WORLD.Get_rank() != 0) {
+  if (comm->id() != 0) {
     root = unmarsh(buf, 1);
   }
 
@@ -155,8 +158,10 @@ DatabaseNode *CoreContext::unmarsh(std::vector<MarshedDatabaseNode> &messagesBuf
 
 void CoreContext::syncContext() {
 
-  const int rankSize = MPI::COMM_WORLD.Get_size();
-  const int myRank = MPI::COMM_WORLD.Get_rank();
+  std::shared_ptr<gvt::comm::communicator> comm = gvt::comm::communicator::singleton();
+
+  const int rankSize = comm->lastid();
+  const int myRank = comm->id();
   int nTreeNodeEntries = 0;
 
   std::vector<int> mySyncTable(rankSize, 0); // array with the # tree-nodes to send
@@ -164,7 +169,9 @@ void CoreContext::syncContext() {
   std::vector<MarshedDatabaseNode> buf;
 
   mySyncTable[myRank] = __nodesToSync.size();
-  MPI::COMM_WORLD.Allreduce(&mySyncTable[0], &syncTable[0], rankSize, MPI_INT, MPI_MAX);
+  comm->aquireComm();
+  MPI_Allreduce(&mySyncTable[0], &syncTable[0], rankSize, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
+  comm->releaseComm();
 
   for (int i = 0; i < rankSize; i++) {
     if (syncTable[i] == 0) continue;
@@ -177,9 +184,13 @@ void CoreContext::syncContext() {
       }
 
       // agree on message length, strings length and # leaf are arbitrary
-      MPI::COMM_WORLD.Bcast(&nTreeNodeEntries, 1, MPI::INT, i);
+      comm->aquireComm();
+      MPI_Bcast(&nTreeNodeEntries, 1, MPI_INT, i, MPI_COMM_WORLD);
+      comm->releaseComm();
       buf.reserve(nTreeNodeEntries);
-      MPI::COMM_WORLD.Bcast(&buf[0], nTreeNodeEntries * CONTEXT_LEAF_MARSH_SIZE, MPI_UNSIGNED_CHAR, i);
+      comm->aquireComm();
+      MPI_Bcast(&buf[0], nTreeNodeEntries * CONTEXT_LEAF_MARSH_SIZE, MPI_UNSIGNED_CHAR, i, MPI_COMM_WORLD);
+      comm->releaseComm();
 
       if (i != myRank) {
         unmarsh(buf, nTreeNodeEntries);
@@ -189,7 +200,7 @@ void CoreContext::syncContext() {
     }
   }
 
-  MPI::COMM_WORLD.Barrier();
+  MPI_Barrier(MPI_COMM_WORLD);
 
   __nodesToSync.clear();
 }

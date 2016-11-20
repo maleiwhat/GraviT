@@ -21,7 +21,6 @@ namespace comm {
 struct communicator {
 
   static std::shared_ptr<communicator> _instance;
-  std::mutex mcomm;
   static tbb::task_group tg;
   volatile bool _terminate = false;
 
@@ -36,6 +35,9 @@ struct communicator {
   static std::vector<std::string> registry_names;
   static std::map<std::string, std::size_t> registry_ids;
 
+  std::mutex _mcomm;
+  static bool _MPI_THREAD_SERIALIZED;
+
   communicator();
   virtual ~communicator();
 
@@ -49,6 +51,8 @@ struct communicator {
   virtual void broadcast(std::shared_ptr<comm::Message> msg);
   virtual void run() = 0;
   virtual void terminate();
+  virtual inline void aquireComm();
+  virtual inline void releaseComm();
 
   virtual void setVote(std::shared_ptr<comm::vote::vote> vote) { voting = vote; }
 
