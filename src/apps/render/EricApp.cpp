@@ -936,6 +936,33 @@ using namespace gvt::render::unit;
 using namespace apps::render::mpi;
 
 int main(int argc, char **argv) {
+
+  /* messing with mpi
+ 
+  MPI_Init(NULL, NULL);
+
+  // Get the number of processes
+  int world_size;
+  MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+  //
+  // Get the rank of the process
+  int world_rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
+  
+  // Get the name of the processor
+  char processor_name[MPI_MAX_PROCESSOR_NAME];
+  int name_len;
+  MPI_Get_processor_name(processor_name, &name_len);
+  
+  printf("Hello world from processor %s, rank %d"
+         " out of %d processors\n",
+         processor_name, world_rank, world_size);
+
+  */
+
+  printf("==============================\n");
+  printf("initializing environment (a lot of black magic)\n");
+
   int pvd;
   MPI_Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &pvd);
   if ((pvd != MPI_THREAD_MULTIPLE)) {
@@ -968,18 +995,42 @@ int main(int argc, char **argv) {
   // create database
   if (options.tracer != commandline::Options::PING_TEST) {
     timer t_database(false, "database timer:");
-    std::cout << "rank " << mpi.rank << " creating database." << std::endl;
+//    std::cout << "rank " << mpi.rank << " creating database." << std::endl;
     t_database.start();
     CreateDatabase(mpi, options);
     t_database.stop();
-    std::cout << "rank " << mpi.rank << " done creating database." << std::endl;
+//    std::cout << "rank " << mpi.rank << " done creating database." << std::endl;
+  }
+/*
+    if (options.interactive) {
+      RenderInteractive(options, mpi);
+    } else {
+      RenderFilm(options, mpi);
+    }
+*/
+
+  printf("starting Communicator tests\n");
+
+  // how to create another worker to send work to? (or at least see what is running on other workers)
+  Worker* worker = new Worker(mpi, options, g_camera, g_image);
+  PingTest* pt = new PingTest(62);
+  pt->tag = 0;
+
+  printf("I am rank %d\n", mpi.rank);
+
+  // test Send
+  if (mpi.rank == 0) {
+    printf("sending pingtest to worker 1\n");
+    pt->Send(0, worker->GetCommunicator());
+    printf("done sending\n");
   }
 
-  if (options.interactive) {
-    RenderInteractive(options, mpi);
-  } else {
-    RenderFilm(options, mpi);
-  }
+  // test Recv
+
+  // test SendAll
+
+  // why is gvt* failing?
+  printf("calling MPI_Finalize()\n");
   MPI_Finalize();
 }
 

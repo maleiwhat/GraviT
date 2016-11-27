@@ -34,7 +34,6 @@
 #include <tbb/task_scheduler_init.h>
 #include <thread>
 #include <glm/glm.hpp>
-#include <glm/gtx/rotate_vector.hpp>
 #include <mpi.h>
 
 // timer
@@ -662,86 +661,16 @@ void Kill() {
   g_worker->Wait();
 }
 
-float pan_speed = 0.005f;
-float move_speed = 2.5f;
-
 void KeyboardFunc(unsigned char key, int x, int y) {
-
-  // should I be changing camNode and/or g_camera?
-  glm::vec3 cur_eye = g_camera->getEyePoint();
-  glm::vec3 cur_focal = g_camera->getFocalPoint();
-  glm::vec3 cur_look = cur_focal - cur_eye;
-  glm::vec3 cur_up = g_camera->getUpVector();
-  glm::vec3 cur_tangent = glm::cross(cur_look, cur_up);
-
-  std::cout << "key pressed " << key << std::endl;
   switch (key) {
   case 'q':
     printf("pressed q\n");
     g_quit_key_entered = true;
     break;
-  case 'p':
-    std::cout << "================" << std::endl;
-    std::cout << "current eye -> " << cur_eye[0] << " " << cur_eye[1] << " " << cur_eye[2] << std::endl;
-    std::cout << "focal point -> " << cur_focal[0] << " " << cur_focal[1] << " " << cur_focal[2] << std::endl;
-    std::cout << "up vector   -> " << cur_up[0] << " " << cur_up[1] << " " << cur_up[2] << std::endl;
-    break;
-
-  case 'w':
-    cur_eye[2] += -move_speed;
-    break;
-  case 'a':
-    cur_eye[0] += -move_speed;
-    break;
-  case 's':
-    cur_eye[2] += move_speed;
-    break;
-  case 'd':
-    cur_eye[0] += move_speed;
-    break;
-  case 'j': // move up
-    cur_eye[1] += -move_speed;
-    break;
-  case 'k': // move down
-    cur_eye[1] += move_speed;
-    break;
-  case 'n': // turn left
-    cur_look = glm::rotate(cur_look, pan_speed, cur_up);
-    break; 
-  case 'm': // turn right
-    cur_look = glm::rotate(cur_look, -pan_speed, cur_up);
-    break;
-  case 'u': // look down
-    cur_up = glm::rotate(cur_up, pan_speed, cur_tangent);
-    cur_look = glm::rotate(cur_look, pan_speed, cur_tangent);
-    break;
-  case 'i': // look up
-    cur_up = glm::rotate(cur_up, -pan_speed, cur_tangent);
-    cur_look = glm::rotate(cur_look, -pan_speed, cur_tangent);
-    break;
-    
-
   default:
     break;
   }
-  cur_focal = cur_look + cur_eye;
-  g_camera->lookAt(cur_eye, cur_focal, cur_up);
 }
-
-int last_mouse_x = 0;
-int last_mouse_y = 0;
-
-static void MouseFunc(int button, int state, int x, int y) { 
-  std::cout << "in the mouse func " << button << std::endl;
-  if (button == 0 && state == GLUT_DOWN) { 
-    int x_diff = x - last_mouse_x;
-    int y_diff = y - last_mouse_y;
-    last_mouse_x = x;
-    last_mouse_y = y;
-    
-  }
-}
-
 
 void DisplayFunc(void) {
   static bool quit = false;
@@ -794,7 +723,7 @@ void InitGlut(int width, int height) {
   // glutIdleFunc(idleFunc);
   glutKeyboardFunc(KeyboardFunc);
   // glutSpecialFunc(SpecialFunc);
-  glutMouseFunc(MouseFunc);
+  // glutMouseFunc(MouseFunc);
   // glutMotionFunc(MotionFunc);
   // glutReshapeFunc(reshapeFunc);
   glutMainLoop();
@@ -1007,50 +936,133 @@ using namespace gvt::render::unit;
 using namespace apps::render::mpi;
 
 int main(int argc, char **argv) {
-  int pvd;
-  MPI_Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &pvd);
-  if ((pvd != MPI_THREAD_MULTIPLE)) {
-    std::cerr << "error: mpi_thread_multiple not available\n";
-    exit(1);
-  }
 
+  std::cout << "=========================" << std::endl;
+  std::cout << "my custom test" << std::endl;
+
+  /* messing with mpi
+  MPI_Init(NULL, NULL);
+
+  // Get the number of processes
+  int world_size;
+  MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+  //
+  // Get the rank of the process
+  int world_rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
+  
+  // Get the name of the processor
+  char processor_name[MPI_MAX_PROCESSOR_NAME];
+  int name_len;
+  MPI_Get_processor_name(processor_name, &name_len);
+  
+  printf("Hello world from processor %s, rank %d"
+         " out of %d processors\n",
+         processor_name, world_rank, world_size);
+  */
+
+  // init
   MpiInfo mpi;
-  MPI_Comm_rank(MPI_COMM_WORLD, &mpi.rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &mpi.size);
-
-  if (mpi.rank == 0) std::cout << "mpi size: " << mpi.size << std::endl;
+  int pvd; // what is this?
+  MPI_Init_thread(&argc, &argv, MPI_THREAD_SINGLE, &pvd); // single vs multiple?
 
   commandline::Options options;
   commandline::Parse(argc, argv, &options);
+  g_camera = new gvt::render::data::scene::gvtPerspectiveCamera;
+  g_image = new Image(g_camera->getFilmSizeWidth(), g_camera->getFilmSizeHeight(), GetTestName(mpi, options));
 
-  g_width = options.width;
-  g_height = options.height;
-  g_tracer_mode = options.tracer;
-  g_mpiRank = mpi.rank;
-  g_mpiSize = mpi.size;
-  g_num_warmup_frames = options.warmup_frames;
-  g_num_active_frames = options.active_frames;
+  Worker* worker = new Worker(mpi, options, g_camera, g_image);
+  Communicator* comm = new Communicator(mpi, worker);
 
-  // initialize tbb
-  // tbb::task_scheduler_init init;
-  // tbb::task_scheduler_init init(tbb::task_scheduler_init::default_num_threads());
-  tbb::task_scheduler_init init(options.numTbbThreads);
+  int rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-  // create database
-  if (options.tracer != commandline::Options::PING_TEST) {
-    timer t_database(false, "database timer:");
-    std::cout << "rank " << mpi.rank << " creating database." << std::endl;
-    t_database.start();
-    CreateDatabase(mpi, options);
-    t_database.stop();
-    std::cout << "rank " << mpi.rank << " done creating database." << std::endl;
-  }
+  // test Send
+  if (rank == 0) {
+    printf("I am rank 0");
 
-  if (options.interactive) {
-    RenderInteractive(options, mpi);
-  } else {
-    RenderFilm(options, mpi);
+    PingTest* pt = new PingTest(62);
+    comm->Send(1, pt);               // use Work's communicator or my own?
+  } else if (rank == 1) {
+    printf("I am rank 1");
+
+    comm->Recv(
+  } 
+  
+  // test SendAll
+  
+  // test Recv
+
+
+
+  MPI_Finalize();
+  std::cout << "=========================" << std::endl;
+
+/*
+  //learning to render images
+  int pvd;
+  MPI_Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &pvd);
+
+  for (int i = 0; i < 3; i++) {
+
+    // int pvd;
+    // MPI_Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &pvd);
+    if ((pvd != MPI_THREAD_MULTIPLE)) {
+      std::cerr << "error: mpi_thread_multiple not available\n";
+      exit(1);
+    }
+
+    MpiInfo mpi;
+    MPI_Comm_rank(MPI_COMM_WORLD, &mpi.rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &mpi.size);
+
+    if (mpi.rank == 0) std::cout << "mpi size: " << mpi.size << std::endl;
+
+    commandline::Options options;
+    commandline::Parse(argc, argv, &options);
+
+    // use all 3 kinds of tracers
+    if (i == 0) {
+      options.tracer = commandline::Options::ASYNC_DOMAIN;
+    }
+    else if (i == 1) {
+      options.tracer = commandline::Options::SYNC_DOMAIN; 
+    }
+    else {
+      options.tracer = commandline::Options::SYNC_IMAGE;
+    }
+
+    g_width = options.width;
+    g_height = options.height;
+    g_tracer_mode = options.tracer;
+    g_mpiRank = mpi.rank;
+    g_mpiSize = mpi.size;
+    g_num_warmup_frames = options.warmup_frames;
+    g_num_active_frames = options.active_frames;
+
+    // initialize tbb
+    // tbb::task_scheduler_init init;
+    // tbb::task_scheduler_init init(tbb::task_scheduler_init::default_num_threads());
+    tbb::task_scheduler_init init(options.numTbbThreads);
+
+    // create database
+    if (options.tracer != commandline::Options::PING_TEST) {
+      timer t_database(false, "database timer:");
+      std::cout << "rank " << mpi.rank << " creating database." << std::endl;
+      t_database.start();
+      CreateDatabase(mpi, options);
+      t_database.stop();
+      std::cout << "rank " << mpi.rank << " done creating database." << std::endl;
+    }
+
+    if (options.interactive) {
+      RenderInteractive(options, mpi);
+    } else {
+      RenderFilm(options, mpi);
+    }
+    // MPI_Finalize();
   }
   MPI_Finalize();
+*/
 }
 
