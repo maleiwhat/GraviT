@@ -663,18 +663,17 @@ void Kill() {
 }
 
 float pan_speed = 0.005f;
-float move_speed = 2.5f;
+float move_speed = 7.5f;
 
 void KeyboardFunc(unsigned char key, int x, int y) {
 
   // should I be changing camNode and/or g_camera?
   glm::vec3 cur_eye = g_camera->getEyePoint();
   glm::vec3 cur_focal = g_camera->getFocalPoint();
-  glm::vec3 cur_look = cur_focal - cur_eye;
+  glm::vec3 cur_look = glm::normalize(cur_focal - cur_eye);
   glm::vec3 cur_up = g_camera->getUpVector();
   glm::vec3 cur_tangent = glm::cross(cur_look, cur_up);
 
-  std::cout << "key pressed " << key << std::endl;
   switch (key) {
   case 'q':
     printf("pressed q\n");
@@ -688,16 +687,16 @@ void KeyboardFunc(unsigned char key, int x, int y) {
     break;
 
   case 'w':
-    cur_eye[2] += -move_speed;
+    cur_eye += move_speed * cur_look;
     break;
   case 'a':
-    cur_eye[0] += -move_speed;
+    cur_eye += -move_speed * cur_tangent;
     break;
   case 's':
-    cur_eye[2] += move_speed;
+    cur_eye += -move_speed * cur_look;
     break;
   case 'd':
-    cur_eye[0] += move_speed;
+    cur_eye += move_speed * cur_tangent;
     break;
   case 'j': // move up
     cur_eye[1] += -move_speed;
