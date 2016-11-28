@@ -45,6 +45,15 @@
 #include <tbb/task_scheduler_init.h>
 #include <thread>
 
+#include <gvt/core/Context.h>
+#include <gvt/core/comm/comm.h>
+#include <gvt/render/Context.h>
+
+#include <gvt/render/composite/IceTComposite.h>
+#include <gvt/render/composite/ImageComposite.h>
+#include <gvt/render/tracer/Domain/DomainTracer.h>
+#include <gvt/render/tracer/Image/ImageTracer.h>
+
 #ifdef GVT_RENDER_ADAPTER_EMBREE
 #include <gvt/render/adapter/embree/Wrapper.h>
 #endif
@@ -83,9 +92,8 @@ using namespace gvt::render::data::scene;
 using namespace gvt::render::schedule;
 using namespace gvt::render::data::primitives;
 
-void test_bvh(gvtPerspectiveCamera &camera);
 
-int main(int argc, char **argv) {
+int setContext(int argc, char **argv) {
 
   ParseCommandLine cmd("gvtSimple");
 
@@ -109,23 +117,8 @@ int main(int argc, char **argv) {
     tbb::task_scheduler_init init(cmd.get<int>("threads"));
   }
 
-  MPI_Init(&argc, &argv);
-  MPI_Pcontrol(0);
-  int rank = -1;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#ifdef GVT_USE_MPE
-  // MPE_Init_log();
-  int readstart, readend;
-  int renderstart, renderend;
-  MPE_Log_get_state_eventIDs(&readstart, &readend);
-  MPE_Log_get_state_eventIDs(&renderstart, &renderend);
-  if (rank == 0) {
-    MPE_Describe_state(readstart, readend, "Initialize context state", "red");
-    MPE_Describe_state(renderstart, renderend, "Render", "yellow");
-  }
-  MPI_Pcontrol(1);
-  MPE_Log_event(readstart, 0, NULL);
-#endif
+  std::shared_ptr<gvt::comm::communicator> comm = gvt::comm::communicator::singleton();
+
   gvt::render::RenderContext *cntxt = gvt::render::RenderContext::instance();
   if (cntxt == NULL) {
     std::cout << "Something went wrong initializing the context" << std::endl;
@@ -136,7 +129,7 @@ int main(int argc, char **argv) {
 
   // mix of cones and cubes
 
-  if (rank == 0) {
+  if (comm->id() == 0) {
     gvt::core::DBNodeH dataNodes =
         cntxt->addToSync(cntxt->createNodeFromType("Data", "Data", root.UUID()));
     cntxt->addToSync(cntxt->createNodeFromType("Mesh", "conemesh", dataNodes.UUID()));
@@ -206,7 +199,7 @@ int main(int argc, char **argv) {
     coneMeshNode["bbox"] = (unsigned long long)meshbbox;
     coneMeshNode["ptr"] = (unsigned long long)mesh;
 
-    gvt::core::DBNodeH loc = cntxt->createNode("rank", rank);
+    gvt::core::DBNodeH loc = cntxt->createNode("rank", int(comm->id()));
     coneMeshNode["Locations"] += loc;
 
     cntxt->addToSync(coneMeshNode);
@@ -300,7 +293,7 @@ int main(int argc, char **argv) {
     cubeMeshNode["bbox"] = (unsigned long long)meshbbox;
     cubeMeshNode["ptr"] = (unsigned long long)mesh;
 
-    gvt::core::DBNodeH loc = cntxt->createNode("rank", rank);
+    gvt::core::DBNodeH loc = cntxt->createNode("rank", int(comm->id()));
     cubeMeshNode["Locations"] += loc;
 
     cntxt->addToSync(cubeMeshNode);
@@ -308,7 +301,7 @@ int main(int argc, char **argv) {
 
   cntxt->syncContext();
 
-  if (rank == 0) {
+  if (comm->id() == 0) {
     // create a NxM grid of alternating cones / cubes, offset using i and j
     int instId = 0;
     int ii[2] = { -2, 3 }; // i range
@@ -440,142 +433,85 @@ int main(int argc, char **argv) {
   schedNode["adapter"] = adapterType;
 
   // end db setup
+  return true;
+}
 
-  // cntxt->database()->printTree(root.UUID(), 10, std::cout);
+void setCamera() {
+  gvt::render::RenderContext *cntxt = gvt::render::RenderContext::instance();
+  gvt::core::DBNodeH camNode = cntxt->getRootNode()["Camera"];
+  gvt::core::DBNodeH filmNode = cntxt->getRootNode()["Film"];
 
-  // use db to create structs needed by system
-
-  // setup gvtCamera from database entries
-  gvtPerspectiveCamera mycamera;
+  std::shared_ptr<gvt::render::data::scene::gvtPerspectiveCamera> mycamera =
+      std::make_shared<gvt::render::data::scene::gvtPerspectiveCamera>();
   glm::vec3 cameraposition = camNode["eyePoint"].value().tovec3();
   glm::vec3 focus = camNode["focus"].value().tovec3();
   float fov = camNode["fov"].value().toFloat();
   glm::vec3 up = camNode["upVector"].value().tovec3();
-
   int rayMaxDepth = camNode["rayMaxDepth"].value().toInteger();
   int raySamples = camNode["raySamples"].value().toInteger();
-  float jitterWindowSize = camNode["jitterWindowSize"].value().toFloat();
+  //float jitterWindowSize = camNode["jitterWindowSize"].value().toFloat();
 
-  mycamera.setMaxDepth(rayMaxDepth);
-  mycamera.setSamples(raySamples);
-  mycamera.setJitterWindowSize(jitterWindowSize);
-  mycamera.lookAt(cameraposition, focus, up);
-  mycamera.setFOV(fov);
-  mycamera.setFilmsize(filmNode["width"].value().toInteger(),
-                       filmNode["height"].value().toInteger());
+  mycamera->lookAt(cameraposition, focus, up);
+  mycamera->setMaxDepth(rayMaxDepth);
+  mycamera->setSamples(raySamples);
+  //mycamera->setJitterWindowSize(jitterWindowSize);
+  mycamera->setFOV(fov);
+  mycamera->setFilmsize(filmNode["width"].value().toInteger(),
+                        filmNode["height"].value().toInteger());
 
-#ifdef GVT_USE_MPE
-  MPE_Log_event(readend, 0, NULL);
-#endif
-  // setup image from database sizes
-  Image myimage(mycamera.getFilmSizeWidth(), mycamera.getFilmSizeHeight(),
-                filmNode["outputPath"].value().toString());
-
-  mycamera.AllocateCameraRays();
-  mycamera.generateRays();
-
-  int schedType = root["Schedule"]["type"].value().toInteger();
-  switch (schedType) {
-  case gvt::render::scheduler::Image: {
-    //   std::cout << "starting image scheduler" << std::endl;
-    //  std::cout << "ligthpos " << lightNode["position"].value().tovec3() << std::endl;
-    gvt::render::algorithm::Tracer<ImageScheduler> tracer(mycamera.rays, myimage);
-    for (int z = 0; z < 10; z++) {
-      mycamera.AllocateCameraRays();
-      mycamera.generateRays();
-      myimage.clear();
-      tracer();
-    }
-    break;
-  }
-  case gvt::render::scheduler::Domain: {
-// std::cout << "starting domain scheduler" << std::endl;
-#ifdef GVT_USE_MPE
-    MPE_Log_event(renderstart, 0, NULL);
-#endif
-    // gvt::render::algorithm::Tracer<DomainScheduler>(mycamera.rays, myimage)();
-    gvt::render::algorithm::Tracer<DomainScheduler> tracer(mycamera.rays, myimage);
-    for (int z = 0; z < 10; z++) {
-      mycamera.AllocateCameraRays();
-      mycamera.generateRays();
-      myimage.clear();
-      tracer();
-    }
-    break;
-#ifdef GVT_USE_MPE
-    MPE_Log_event(renderend, 0, NULL);
-#endif
-    break;
-  }
-  default: {
-    std::cout << "unknown schedule type provided: " << schedType << std::endl;
-    break;
-  }
-  }
-
-  myimage.Write();
-#ifdef GVT_USE_MPE
-  MPE_Log_sync_clocks();
-// MPE_Finish_log("gvtSimplelog");
-#endif
-  if (MPI::COMM_WORLD.Get_size() > 1) MPI_Finalize();
+  cntxt->setCamera(mycamera);
 }
+
+void setImage() {
+  gvt::render::RenderContext *cntxt = gvt::render::RenderContext::instance();
+  gvt::core::DBNodeH filmNode = cntxt->getRootNode()["Film"];
+  cntxt->setComposite(std::make_shared<gvt::render::composite::IceTComposite>(
+      filmNode["width"].value().toInteger(), filmNode["height"].value().toInteger()));
+}
+
+int main(int argc, char *argv[]) {
+  gvt::comm::scomm::init(argc, argv);
+  std::shared_ptr<gvt::comm::communicator> comm = gvt::comm::communicator::singleton();
+  gvt::render::RenderContext *cntxt = gvt::render::RenderContext::instance();
+
+  if (!setContext(argc, argv)) return 0;
+  setCamera();
+  setImage();
+
+  std::shared_ptr<gvt::tracer::Tracer> tracer =
+      std::make_shared<gvt::tracer::DomainTracer>();
+
+  cntxt->setTracer(tracer);
+  std::shared_ptr<gvt::render::composite::ImageComposite> composite_buffer =
+      cntxt->getComposite<gvt::render::composite::ImageComposite>();
+
+  int nFrames =100;
+  for (int ii = 0; ii < nFrames; ii++) {
+
+    gvt::core::time::timer t(true, "Frame timer");
+    composite_buffer->reset();
+    (*tracer)();
+
+//    glm::vec3 light = cntxt->getRootNode()["Lights"].getChildren()[0]["position"].value().tovec3();
+//	Rotate(light,cntxt->getCamera()->getFocalPoint(), ((360*2)/(nFrames-1))*M_PI/180, cntxt->getCamera()->getUpVector());
+//	cntxt->getRootNode()["Lights"].getChildren()[0]["position"] = light;
 //
-// // bvh intersection list test
-// void test_bvh(gvtPerspectiveCamera &mycamera) {
-//   gvt::core::DBNodeH root = gvt::render::RenderContext::instance()->getRootNode();
-//
-//   cout << "\n-- bvh test --" << endl;
-//
-//   auto ilist = root["Instances"].getChildren();
-//   auto bvh = new gvt::render::data::accel::BVH(ilist);
-//
-//   // list of rays to test
-//   std::vector<gvt::render::actor::Ray> rays;
-//   rays.push_back(mycamera.rays[100 * 512 + 100]);
-//   rays.push_back(mycamera.rays[182 * 512 + 182]);
-//   rays.push_back(mycamera.rays[256 * 512 + 256]);
-//   auto dir = glm::normalize(glm::vec3(0.0, 0.0, 0.0) - glm::vec3(1.0, 1.0, 1.0));
-//   rays.push_back(gvt::render::actor::Ray(glm::vec3(1.0, 1.0, 1.0), dir));
-//   rays.push_back(mycamera.rays[300 * 512 + 300]);
-//   rays.push_back(mycamera.rays[400 * 512 + 400]);
-//   rays.push_back(mycamera.rays[470 * 512 + 470]);
-//   rays.push_back(gvt::render::actor::Ray(glm::vec3(0.0, 0.0, 1.0), glm::vec3(0.0, 0.0,
-//   -1.0)));
-//   rays.push_back(mycamera.rays[144231]);
-//
-//   // test rays and print out which instances were hit
-//   for (size_t z = 0; z < rays.size(); z++) {
-//     gvt::render::actor::Ray &r = rays[z];
-//     cout << "bvh: r[" << z << "]: " << r << endl;
-//
-//     gvt::render::actor::isecDomList &isect = r.domains;
-//     bvh->intersect(r, isect);
-//     std::sort(isect.begin(), isect.end());
-//     cout << "bvh: r[" << z << "]: isect[" << isect.size() << "]: ";
-//     for (auto i : isect) {
-//       cout << i.domain << " ";
-//     }
-//     cout << endl;
-//   }
-//
-// #if 0
-//     cout << "- check all rays" << endl;
-//     for(int z=0; z<mycamera.rays.size(); z++) {
-//         gvt::render::actor::Ray &r = mycamera.rays[z];
-//
-//         gvt::render::actor::isecDomList& isect = r.domains;
-//         bvh->intersect(r, isect);
-//         std::sort(isect);
-//
-//         if(isect.size() > 1) {
-//             cout << "bvh: r[" << z << "]: " << r << endl;
-//             cout << "bvh: r[" << z << "]: isect[" << isect.size() << "]: ";
-//             for(auto i : isect) { cout << i.domain << " "; }
-//             cout << endl;
-//         }
-//     }
-// #endif
-//
-//   cout << "--------------\n\n" << endl;
-// }
+//	std::shared_ptr<gvt::render::data::scene::gvtCameraBase> camera = cntxt->getCamera();
+//	glm::vec3 cameraposition = cntxt->getRootNode()["Camera"]["eyePoint"].value().tovec3();
+//	glm::vec3 focus = cntxt->getRootNode()["Camera"]["focus"].value().tovec3();
+//	Rotate(cameraposition, focus, ((360*2)/(nFrames-1))*M_PI/180, cntxt->getCamera()->getUpVector());
+//	camera->lookAt(cameraposition, focus, cntxt->getCamera()->getUpVector());
+//	cntxt->getRootNode()["Camera"]["eyePoint"] = cameraposition;
+
+  // composite_buffer->write(cntxt->getRootNode()["Film"]["outputPath"].value().toString()+std::to_string(ii));
+
+
+
+  }
+
+  composite_buffer->write(cntxt->getRootNode()["Film"]["outputPath"].value().toString());
+  comm->terminate();
+
+  return 0;
+}
+
