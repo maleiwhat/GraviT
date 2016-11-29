@@ -663,16 +663,15 @@ void Kill() {
 }
 
 float pan_speed = 0.005f;
-float move_speed = 7.5f;
-
+float move_speed = 10.0f;
 void KeyboardFunc(unsigned char key, int x, int y) {
 
-  // should I be changing camNode and/or g_camera?
-  glm::vec3 cur_eye = g_camera->getEyePoint();
-  glm::vec3 cur_focal = g_camera->getFocalPoint();
-  glm::vec3 cur_look = glm::normalize(cur_focal - cur_eye);
-  glm::vec3 cur_up = g_camera->getUpVector();
-  glm::vec3 cur_tangent = glm::cross(cur_look, cur_up);
+  glm::vec3 eye = g_camera->getEyePoint();
+  glm::vec3 focal = g_camera->getFocalPoint();
+  glm::vec3 up = g_camera->getUpVector();
+  float cam_distance = glm::length(focal - eye);
+  glm::vec3 look = glm::normalize(focal - eye);
+  glm::vec3 tangent = glm::cross(look, up);
 
   switch (key) {
   case 'q':
@@ -681,64 +680,88 @@ void KeyboardFunc(unsigned char key, int x, int y) {
     break;
   case 'p':
     std::cout << "================" << std::endl;
-    std::cout << "current eye -> " << cur_eye[0] << " " << cur_eye[1] << " " << cur_eye[2] << std::endl;
-    std::cout << "focal point -> " << cur_focal[0] << " " << cur_focal[1] << " " << cur_focal[2] << std::endl;
-    std::cout << "up vector   -> " << cur_up[0] << " " << cur_up[1] << " " << cur_up[2] << std::endl;
+    std::cout << "eye         -> " << eye[0] << " " << eye[1] << " " << eye[2] << std::endl;
+    std::cout << "focal point -> " << focal[0] << " " << focal[1] << " " << focal[2] << std::endl;
+    std::cout << "up vector   -> " << up[0] << " " << up[1] << " " << up[2] << std::endl;
     break;
 
   case 'w':
-    cur_eye += move_speed * cur_look;
+    eye += move_speed * look;
+    focal += move_speed * look;
     break;
   case 'a':
-    cur_eye += -move_speed * cur_tangent;
+    eye += -move_speed * tangent;
+    focal += -move_speed * tangent;
     break;
   case 's':
-    cur_eye += -move_speed * cur_look;
+    eye += -move_speed * look;
+    focal += -move_speed * look;
     break;
   case 'd':
-    cur_eye += move_speed * cur_tangent;
+    eye += move_speed * tangent;
+    focal += move_speed * tangent;
     break;
   case 'j': // move up
-    cur_eye[1] += -move_speed;
+    eye += -move_speed * up;
+    focal += -move_speed * up;
     break;
   case 'k': // move down
-    cur_eye[1] += move_speed;
+    eye += move_speed * up;
+    focal += move_speed * up;
     break;
   case 'n': // turn left
-    cur_look = glm::rotate(cur_look, pan_speed, cur_up);
+    look = glm::rotate(look, pan_speed, up);
+    focal = eye + cam_distance*look;
     break; 
   case 'm': // turn right
-    cur_look = glm::rotate(cur_look, -pan_speed, cur_up);
+    look = glm::rotate(look, -pan_speed, up);
+    focal = eye + cam_distance*look;
     break;
   case 'u': // look down
-    cur_up = glm::rotate(cur_up, pan_speed, cur_tangent);
-    cur_look = glm::rotate(cur_look, pan_speed, cur_tangent);
+    look = glm::rotate(look, pan_speed, tangent);
+    focal = eye + cam_distance*look;
     break;
   case 'i': // look up
-    cur_up = glm::rotate(cur_up, -pan_speed, cur_tangent);
-    cur_look = glm::rotate(cur_look, -pan_speed, cur_tangent);
+    look = glm::rotate(look, -pan_speed, tangent);
+    focal = eye + cam_distance*look;
     break;
     
 
   default:
     break;
   }
-  cur_focal = cur_look + cur_eye;
-  g_camera->lookAt(cur_eye, cur_focal, cur_up);
+  g_camera->lookAt(eye, focal, up);
+}
+
+bool new_click = false;
+static void MouseFunc(int button, int state, int x, int y) { 
+  new_click = state == GLUT_DOWN;
 }
 
 int last_mouse_x = 0;
 int last_mouse_y = 0;
-
-static void MouseFunc(int button, int state, int x, int y) { 
-  std::cout << "in the mouse func " << button << std::endl;
-  if (button == 0 && state == GLUT_DOWN) { 
-    int x_diff = x - last_mouse_x;
-    int y_diff = y - last_mouse_y;
+float orbit_speed = 0.01f;
+static void MotionFunc(int x, int y) {
+  if (new_click) {
     last_mouse_x = x;
     last_mouse_y = y;
-    
+    new_click = false;
   }
+  int x_diff = x - last_mouse_x;
+  int y_diff = y - last_mouse_y;
+  last_mouse_x = x;
+  last_mouse_y = y;
+
+  glm::vec3 eye = g_camera->getEyePoint();
+  glm::vec3 focal = g_camera->getFocalPoint();
+  glm::vec3 up = g_camera->getUpVector();
+
+  glm::vec3 look = focal - eye;
+  look = glm::rotate(look, -orbit_speed*x_diff, up);
+  look = glm::rotate(look, -orbit_speed*y_diff, glm::cross(look, up));
+  eye = focal - look;
+
+  g_camera->lookAt(eye, focal, up);
 }
 
 
@@ -794,7 +817,7 @@ void InitGlut(int width, int height) {
   glutKeyboardFunc(KeyboardFunc);
   // glutSpecialFunc(SpecialFunc);
   glutMouseFunc(MouseFunc);
-  // glutMotionFunc(MotionFunc);
+  glutMotionFunc(MotionFunc);
   // glutReshapeFunc(reshapeFunc);
   glutMainLoop();
 }
