@@ -68,7 +68,7 @@ public:
   std::mutex finish;
 private:
   //volatile bool _GlobalFrameFinished = false;
-  std::atomic<bool> _GlobalFrameFinished = false;
+  volatile bool _GlobalFrameFinished = true;
   std::map<int, int> mpiInstanceMap;
   std::shared_ptr<comm::vote::vote> v;
 };

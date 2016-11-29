@@ -116,6 +116,9 @@ struct RayQueueManager {
   }
   void dequeue(int &target, gvt::render::actor::RayVector &_raylist) {
     int id = -1;
+
+    if(_queue.empty()) return;    
+
     unsigned _total = 0;
     {
       std::lock_guard<std::mutex> _lock(_protect);

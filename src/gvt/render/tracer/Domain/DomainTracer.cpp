@@ -160,15 +160,9 @@ int InNodeLargestQueueFirst::policyCheck(
 bool DomainTracer::areWeDone() {
   std::shared_ptr<gvt::comm::communicator> comm = gvt::comm::communicator::singleton();
   gvt::render::RenderContext &cntxt = *gvt::render::RenderContext::instance();
-  std::shared_ptr<DomainTracer> tracer =
-      std::dynamic_pointer_cast<DomainTracer>(cntxt.tracer());
-  if (!tracer) return false;
+  std::shared_ptr<DomainTracer> tracer = std::dynamic_pointer_cast<DomainTracer>(cntxt.tracer());
+  if (!tracer || tracer->getGlobalFrameFinished()) return false;
   bool ret = tracer->_queue.empty();
-  // std::cout << "[" << comm->id() << "] Check " << ((tracer->_queue.empty()) ? "T" :
-  // "F")
-  //           << std::endl << std::flush;
- // if (!ret)
- // std::cout << comm->id() << "Comm thr q size: " << tracer->_queue.size()  << std::endl << std::flush;
   return ret;
 }
 
@@ -179,15 +173,10 @@ void DomainTracer::Done(bool T) {
       std::dynamic_pointer_cast<DomainTracer>(cntxt.tracer());
   if (!tracer) return;
 	if (T) {
-//		std::cout << "[" << comm->id() << "] Done ... " << (T ? "T" : "F")
-//				<< std::endl << std::flush;
-
 		std::lock_guard < std::mutex > _lock(tracer->_queue._protect);
 		tracer->_queue._queue.clear();
+        tracer->setGlobalFrameFinished(true);
 	}
-
-  tracer->setGlobalFrameFinished(T);
-
 }
 
 DomainTracer::DomainTracer() : RayTracer() {
@@ -205,178 +194,134 @@ void DomainTracer::operator()() {
 
     gvt::core::time::timer t1(true, "Pre-frame");
 
-  std::shared_ptr<gvt::comm::communicator> comm = gvt::comm::communicator::singleton();
-  gvt::render::RenderContext &cntxt = *gvt::render::RenderContext::instance();
+    std::shared_ptr<gvt::comm::communicator> comm = gvt::comm::communicator::singleton();
+    gvt::render::RenderContext &cntxt = *gvt::render::RenderContext::instance();
 
-  gvt::core::DBNodeH rootnode = cntxt.getRootNode();
-  size_t width = cntxt.getRootNode()["Film"]["width"].value().toInteger();
-  size_t height = cntxt.getRootNode()["Film"]["height"].value().toInteger();
-  size_t adapterType = cntxt.getRootNode()["Schedule"]["adapter"].value().toInteger();
+    gvt::core::DBNodeH rootnode = cntxt.getRootNode();
+    size_t width = cntxt.getRootNode()["Film"]["width"].value().toInteger();
+    size_t height = cntxt.getRootNode()["Film"]["height"].value().toInteger();
+    size_t adapterType = cntxt.getRootNode()["Schedule"]["adapter"].value().toInteger();
 
-  std::shared_ptr<gvt::render::data::scene::gvtCameraBase> _cam = cntxt.getCamera();
-  std::shared_ptr<gvt::render::composite::ImageComposite> composite_buffer =
-      cntxt.getComposite<gvt::render::composite::ImageComposite>();
-  GVT_ASSERT(composite_buffer,
-             "Invalid image composite buffer, please instanciate a proper "
-             "composite buffer in context");
-  std::shared_ptr<gvt::render::data::scene::Image> image = cntxt.getImage();
-  // std::shared_ptr<gvt::render::data::scene::Image> _img = cntxt.getImage();
+    std::shared_ptr<gvt::render::data::scene::gvtCameraBase> _cam = cntxt.getCamera();
+    std::shared_ptr<gvt::render::composite::ImageComposite> composite_buffer =
+        cntxt.getComposite<gvt::render::composite::ImageComposite>();
+    GVT_ASSERT(composite_buffer,
+            "Invalid image composite buffer, please instanciate a proper "
+            "composite buffer in context");
+    std::shared_ptr<gvt::render::data::scene::Image> image = cntxt.getImage();
 
-  std::vector<gvt::core::DBNodeH> instancenodes = rootnode["Instances"].getChildren();
-  GVT_ASSERT(!instancenodes.empty(), "Calling a tracer over an empty domain set");
+    std::vector<gvt::core::DBNodeH> instancenodes = rootnode["Instances"].getChildren();
+    GVT_ASSERT(!instancenodes.empty(), "Calling a tracer over an empty domain set");
 
-  // Build BVH
-  global_bvh = std::make_shared<gvt::render::data::accel::BVH>(instancenodes);
-  // Cache context to avoid expensive lookups
-  std::map<int, gvt::render::data::primitives::Mesh *> meshRef;
-  std::map<int, glm::mat4 *> instM;
-  std::map<int, glm::mat4 *> instMinv;
-  std::map<int, glm::mat3 *> instMinvN;
-  std::vector<gvt::render::data::scene::Light *> lights;
+    // Build BVH
+    global_bvh = std::make_shared<gvt::render::data::accel::BVH>(instancenodes);
+    // Cache context to avoid expensive lookups
+    std::map<int, gvt::render::data::primitives::Mesh *> meshRef;
+    std::map<int, glm::mat4 *> instM;
+    std::map<int, glm::mat4 *> instMinv;
+    std::map<int, glm::mat3 *> instMinvN;
+    std::vector<gvt::render::data::scene::Light *> lights;
 
-  for (int i = 0; i < instancenodes.size(); i++) {
-    meshRef[i] = (gvt::render::data::primitives::Mesh *)instancenodes[i]["meshRef"]
-                     .deRef()["ptr"]
-                     .value()
-                     .toULongLong();
-    instM[i] = (glm::mat4 *)instancenodes[i]["mat"].value().toULongLong();
-    instMinv[i] = (glm::mat4 *)instancenodes[i]["matInv"].value().toULongLong();
-    instMinvN[i] = (glm::mat3 *)instancenodes[i]["normi"].value().toULongLong();
-  }
-
-  auto lightNodes = rootnode["Lights"].getChildren();
-
-  lights.reserve(2);
-
-  for (auto lightNode : lightNodes) {
-    auto color = lightNode["color"].value().tovec3();
-
-    if (lightNode.name() == std::string("PointLight")) {
-      auto pos = lightNode["position"].value().tovec3();
-      lights.push_back(new gvt::render::data::scene::PointLight(pos, color));
-    } else if (lightNode.name() == std::string("AmbientLight")) {
-      lights.push_back(new gvt::render::data::scene::AmbientLight(color));
-    } else if (lightNode.name() == std::string("AreaLight")) {
-      auto pos = lightNode["position"].value().tovec3();
-      auto normal = lightNode["normal"].value().tovec3();
-      auto width = lightNode["width"].value().toFloat();
-      auto height = lightNode["height"].value().toFloat();
-      lights.push_back(
-          new gvt::render::data::scene::AreaLight(pos, color, normal, width, height));
+    for (int i = 0; i < instancenodes.size(); i++) {
+        meshRef[i] = (gvt::render::data::primitives::Mesh *)instancenodes[i]["meshRef"]
+            .deRef()["ptr"]
+            .value()
+            .toULongLong();
+        instM[i] = (glm::mat4 *)instancenodes[i]["mat"].value().toULongLong();
+        instMinv[i] = (glm::mat4 *)instancenodes[i]["matInv"].value().toULongLong();
+        instMinvN[i] = (glm::mat3 *)instancenodes[i]["normi"].value().toULongLong();
     }
-  }
 
-  _queue.setQueuePolicy<InNodeLargestQueueFirst>();
-  _queue._queue.clear();
+    auto lightNodes = rootnode["Lights"].getChildren();
 
-  _cam->AllocateCameraRays();
-  _cam->generateRays();
+    lights.reserve(2);
 
-//  int ray_portion = _cam->rays.size() / comm->lastid();
-//  int rays_start = comm->id() * ray_portion;
-//  size_t rays_end =
-//      (comm->id() + 1) == comm->lastid()
-//          ? _cam->rays.size()
-//          : (comm->id() + 1) * ray_portion; // tack on any odd rays to last proc
+    for (auto lightNode : lightNodes) {
+        auto color = lightNode["color"].value().tovec3();
 
-  // gvt::render::actor::RayVector lrays;
-  // lrays.assign(_cam->rays.begin() + rays_start, _cam->rays.begin() + rays_end);
-  // _cam->rays.clear();
+        if (lightNode.name() == std::string("PointLight")) {
+            auto pos = lightNode["position"].value().tovec3();
+            lights.push_back(new gvt::render::data::scene::PointLight(pos, color));
+        } else if (lightNode.name() == std::string("AmbientLight")) {
+            lights.push_back(new gvt::render::data::scene::AmbientLight(color));
+        } else if (lightNode.name() == std::string("AreaLight")) {
+            auto pos = lightNode["position"].value().tovec3();
+            auto normal = lightNode["normal"].value().tovec3();
+            auto width = lightNode["width"].value().toFloat();
+            auto height = lightNode["height"].value().toFloat();
+            lights.push_back(
+                    new gvt::render::data::scene::AreaLight(pos, color, normal, width, height));
+        }
+    }
 
-  processRayQueue(_cam->rays);
+    _queue.setQueuePolicy<InNodeLargestQueueFirst>();
+    _queue._queue.clear();
 
-  InNodeLargestQueueFirst *pp = dynamic_cast<InNodeLargestQueueFirst *>(_queue.QP.get());
-  std::vector<int> remote_instances;
-  if (pp) {
-//	_queue._protect.lock();
-//    for (auto q : _queue._queue) {
-//      if (pp->mpiInstanceMap[q.first] != comm->id()) {
-//        remote_instances.push_back(q.first);
-//      }
-//    }
-//    for (auto id : remote_instances) _queue._queue.erase(id);
-//    _queue._protect.unlock();
+    _cam->AllocateCameraRays();
+    _cam->generateRays();
 
-	  for (int i = 0; i < instancenodes.size(); i++) {
-		  if (pp->mpiInstanceMap[i] != comm->id()) {
-		         remote_instances.push_back(i);
-		  }
-	  }
+    processRayQueue(_cam->rays);
 
-	  for (auto id : remote_instances) _queue._queue.erase(id);
-
-
-  }
-
-  t1.stop();
-
-  setGlobalFrameFinished(false);
-  {
-    gvt::core::time::timer t(true, "Tracing");
-    while (!getGlobalFrameFinished()) {
-      int target = -1;
-      gvt::render::actor::RayVector toprocess, moved_rays, send_rays;
-      _queue.dequeue(target, toprocess);
-      if (target != -1) {
-    	//std::cout << comm->id() << " Tracing queue " << target << std::endl << std::flush;
-        trace(target, meshRef[target], toprocess, moved_rays, instM[target],
-              instMinv[target], instMinvN[target], lights);
-        processRayQueue(moved_rays, target);
-      } else if (!_queue.empty()) {
-        for (auto id : remote_instances) {
-          if (_queue.dequeue_send(id, send_rays)) {
-            // TODO: Send rays
-
-//             std::cout << comm->id() << " Send queue to: " << pp->mpiInstanceMap[id]
-//                                                                                 << " " << send_rays.begin()[0].id
-//                                                                                 << " " << send_rays.begin()[1].id
-//                                                                                 << " " << send_rays.begin()[2].id
-//                                                                                 << std::endl
-//             <<
-//             std::flush;
-            std::shared_ptr<gvt::comm::Message> msg =
-                std::make_shared<gvt::comm::SendRayList>(
-                    comm->id(), pp->mpiInstanceMap[id], send_rays);
-
-//            if (comm->id() == 0 && pp->mpiInstanceMap[id] == 1)
-//							std::cout << comm->id() << " Sending : " << send_rays.size() << " rays in a msg with " << msg->size() <<
-//							" to " << pp->mpiInstanceMap[id]
-//							<< " " << send_rays.begin()[0].id
-//							<< " " << send_rays.begin()[1].id
-//							<< " " << send_rays.begin()[2].id
-//							<< std::endl << std::flush;
-
-            comm->send(msg, pp->mpiInstanceMap[id]);
-          }
+    InNodeLargestQueueFirst *pp = dynamic_cast<InNodeLargestQueueFirst *>(_queue.QP.get());
+    std::vector<int> remote_instances;
+    if (pp) {
+        for (int i = 0; i < instancenodes.size(); i++) {
+            if (pp->mpiInstanceMap[i] != comm->id()) {
+                remote_instances.push_back(i);
+            }
         }
 
-
-      }
-      if (_queue.empty()) {
-        // std::cout << comm->id() << " Comp th qsize: " << _queue.size() << std::endl << std::flush;
-           v->PorposeVoting();
-      } else {
-    	 // std::cout << comm->id() << "Work to do " << _queue.size() <<std::endl;
-      }
+        for (auto id : remote_instances) _queue._queue.erase(id);
     }
-    t.stop();
-  }
-  {
-    gvt::core::time::timer c(true, "Composite");
-    float *img_final = composite_buffer->composite();
-  }
+
+    t1.stop();
+
+    setGlobalFrameFinished(false);
+    {
+        gvt::core::time::timer t(true, "Tracing");
+        while (!getGlobalFrameFinished()) {
+            int target = -1;
+            gvt::render::actor::RayVector toprocess, moved_rays, send_rays;
+            _queue.dequeue(target, toprocess);
+
+            if (target != -1) {
+                trace(target, meshRef[target], toprocess, moved_rays, instM[target],
+                        instMinv[target], instMinvN[target], lights);
+                processRayQueue(moved_rays, target);
+            } else if (!_queue.empty()) {
+                for (auto id : remote_instances) {
+                    if (_queue.dequeue_send(id, send_rays)) {
+                        std::shared_ptr<gvt::comm::Message> msg =
+                            std::make_shared<gvt::comm::SendRayList>(
+                                    comm->id(), pp->mpiInstanceMap[id], send_rays);
+                        comm->send(msg, pp->mpiInstanceMap[id]);
+                    }
+                }
+
+
+            }
+            if (_queue.empty()) {
+                v->PorposeVoting();
+            } 
+        }
+        t.stop();
+    }
+    {
+        gvt::core::time::timer c(true, "Composite");
+        float *img_final = composite_buffer->composite();
+    }
 };
 
 bool DomainTracer::MessageManager(std::shared_ptr<gvt::comm::Message> msg) {
 
-	  std::shared_ptr<gvt::comm::communicator> comm = gvt::comm::communicator::singleton();
-	  gvt::render::actor::RayVector rays;
-	  rays.resize(msg->size()/sizeof(gvt::render::actor::Ray));
-	  //TODO
-	  std::memcpy(&rays[0],msg->getMessage<void>(), msg->size()) ;
-      processRayQueue(rays);
+    std::shared_ptr<gvt::comm::communicator> comm = gvt::comm::communicator::singleton();
+    gvt::render::actor::RayVector rays;
+    rays.resize(msg->size()/sizeof(gvt::render::actor::Ray));
+    //TODO
+    std::memcpy(&rays[0],msg->getMessage<void>(), msg->size()) ;
+    processRayQueue(rays);
 
-      return true;
+    return true;
 
 }
 
