@@ -238,6 +238,10 @@ public:
 
     gvt::render::Adapter *adapter = 0;
     do {
+#ifdef __USE_TAU
+  TAU_PROFILE("DomainTracer.h::operator::1stdo","",TAU_DEFAULT);
+#endif
+
 
       do {
         // process domain with most rays queued
@@ -273,6 +277,9 @@ public:
             adapter = 0;
           }
           if (!adapter) {
+#ifdef __USE_TAU
+  TAU_PROFILE("DominTracer.h::operator::NotAdapter","",TAU_DEFAULT);
+#ifdef
             switch (adapterType) {
 #ifdef GVT_RENDER_ADAPTER_EMBREE
               case gvt::render::adapter::Embree:
