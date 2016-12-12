@@ -325,7 +325,7 @@ public:
    */
   inline void shuffleRays(gvt::render::actor::RayVector &rays, const int domID) {
 #ifdef __USE_TAU
- TAU_PROFILE("tracerbase.h::shuffleRays","",TAU_DEFAULT);
+  TAU_PROFILE("tracerbase.h::shuffleRays","",TAU_DEFAULT);
 #endif
 
 
@@ -373,7 +373,7 @@ public:
 
   inline void gatherFramebuffers(int rays_traced) {
 #ifdef __USE_TAU
-  TAU_PROFILE("TracerBase.h::gatherFramebuffers","void",TAU_DEFAULT);
+  TAU_PROFILE("TracerBase.h::gatherFramebuffers","",TAU_DEFAULT);
 #endif
 
     glm::vec4 * final;
@@ -389,7 +389,8 @@ public:
     tbb::parallel_for(tbb::blocked_range<size_t>(0, size, chunksize),
                       [&](tbb::blocked_range<size_t> chunk) {
 #ifdef __USE_TAU
-                          TAU_PROFILE("TracerBase.h::gatherFramebuffers::tbb::parallel_for","tbb",TAU_DEFAULT);
+                          TAU_PROFILE("TracerBase.h::gatherFramebuffers::tbb::parallel_for","",TAU_DEFAULT);
+#endif
 
                         for (size_t i = chunk.begin(); i < chunk.end(); i++) image.Add(i, final[i]);
                       },
