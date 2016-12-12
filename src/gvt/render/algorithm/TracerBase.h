@@ -372,6 +372,9 @@ public:
   inline bool SendRays() { GVT_ASSERT_BACKTRACE(0, "Not supported"); }
 
   inline void gatherFramebuffers(int rays_traced) {
+#ifdef __USE_TAU
+  TAU_PROFILE("TracerBase.h::gatherFramebuffers","void",TAU_DEFAULT);
+#endif
 
     glm::vec4 * final;
 
@@ -385,6 +388,9 @@ public:
     static tbb::simple_partitioner ap;
     tbb::parallel_for(tbb::blocked_range<size_t>(0, size, chunksize),
                       [&](tbb::blocked_range<size_t> chunk) {
+#ifdef __USE_TAU
+                          TAU_PROFILE("TracerBase.h::gatherFramebuffers::tbb::parallel_for","tbb",TAU_DEFAULT);
+
                         for (size_t i = chunk.begin(); i < chunk.end(); i++) image.Add(i, final[i]);
                       },
                       ap);
