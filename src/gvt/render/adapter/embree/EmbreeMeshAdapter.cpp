@@ -126,6 +126,9 @@ void error_handler(const RTCError code, const char *str = nullptr) {
 }
 
 EmbreeMeshAdapter::EmbreeMeshAdapter(gvt::render::data::primitives::Mesh *mesh) : Adapter(mesh) {
+#ifdef __USE_TAU
+  TAU_PROFILE("EmbreeMeshAdapter.cpp::EmbreeMeshAdapter","",TAU_DEFAULT);
+#endif
   GVT_ASSERT(mesh, "EmbreeMeshAdapter: mesh pointer in the database is null");
   mesh->generateNormals();
 
