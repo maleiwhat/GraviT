@@ -282,14 +282,11 @@ public:
 #endif
             switch (adapterType) {
 #ifdef GVT_RENDER_ADAPTER_EMBREE
-{
-#ifdef __USE_TAU
-  TAU_PROFILE("DomainTracer.h::GVT_RENDER_ADAPTER_EMBREE","",TAU_DEFAULT);
-#endif
+
               case gvt::render::adapter::Embree:
                 adapter = new gvt::render::adapter::embree::data::EmbreeMeshAdapter(mesh);
                 break;
-}
+
 #endif
 #ifdef GVT_RENDER_ADAPTER_MANTA
             case gvt::render::adapter::Manta:
