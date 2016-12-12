@@ -279,7 +279,7 @@ public:
           if (!adapter) {
 #ifdef __USE_TAU
   TAU_PROFILE("DominTracer.h::operator::NotAdapter","",TAU_DEFAULT);
-#ifdef
+#endif
             switch (adapterType) {
 #ifdef GVT_RENDER_ADAPTER_EMBREE
               case gvt::render::adapter::Embree:
