@@ -169,8 +169,8 @@ public:
 #ifdef __USE_TAU
   TAU_PROFILE("DomainTracer.h::shuffleDropRays::tbb::parallel_for","",TAU_DEFAULT);
 #endif
-                        std::vector<gvt::render::data::accel::BVH::hit> hits =
-                            acc.intersect<GVT_SIMD_WIDTH>(raysit.begin(), raysit.end(), -1);
+                        gvt::core::Vector<gvt::render::data::accel::BVH::hit> hits =
+                        acc.intersect<GVT_SIMD_WIDTH>(raysit.begin(), raysit.end(), -1);
                         gvt::core::Map<int, gvt::render::actor::RayVector> local_queue;
                         for (size_t i = 0; i < hits.size(); i++) {
                           gvt::render::actor::Ray &r = *(raysit.begin() + i);
