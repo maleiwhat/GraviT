@@ -30,6 +30,10 @@
 #include <gvt/render/data/Primitives.h>
 #include <gvt/render/data/primitives/Mesh.h>
 
+#ifdef __USE_TAU
+#include <TAU.h>
+#endif
+
 using namespace gvt::render::actor;
 using namespace gvt::render::data;
 using namespace gvt::render::data::primitives;
