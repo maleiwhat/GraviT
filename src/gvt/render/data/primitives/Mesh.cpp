@@ -102,6 +102,9 @@ void Mesh::addFace(int v0, int v1, int v2) {
 void Mesh::addFaceToNormals(Mesh::FaceToNormals face) { faces_to_normals.push_back(face); }
 
 void Mesh::generateNormals() {
+#ifdef __USE_TAU
+  TAU_PROFILE("Mesh.cpp::Mesh::generateNormals","",TAU_DEFAULT);
+#endif
   if (haveNormals) return;
   normals.clear();
   face_normals.clear();
