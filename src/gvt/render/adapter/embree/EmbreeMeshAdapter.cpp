@@ -144,11 +144,17 @@ EmbreeMeshAdapter::EmbreeMeshAdapter(gvt::render::data::primitives::Mesh *mesh) 
   geomId = rtcNewTriangleMesh(scene, RTC_GEOMETRY_STATIC, numTris, numVerts);
 
   embVertex *vertices = (embVertex *)rtcMapBuffer(scene, geomId, RTC_VERTEX_BUFFER);
+#ifdef __USE_TAU
+  TAU_START("EMA.cpp::EMA::verticiesLoop");
+#endif
   for (int i = 0; i < numVerts; i++) {
     vertices[i].x = mesh->vertices[i][0];
     vertices[i].y = mesh->vertices[i][1];
     vertices[i].z = mesh->vertices[i][2];
   }
+#ifdef __USE_TAU
+  TAU_STOP("EMA.cpp::EMA::verticiesLoop");
+#endif
   rtcUnmapBuffer(scene, geomId, RTC_VERTEX_BUFFER);
 
   embTriangle *triangles = (embTriangle *)rtcMapBuffer(scene, geomId, RTC_INDEX_BUFFER);
