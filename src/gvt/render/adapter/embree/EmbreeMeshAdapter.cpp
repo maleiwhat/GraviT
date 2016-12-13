@@ -142,8 +142,14 @@ EmbreeMeshAdapter::EmbreeMeshAdapter(gvt::render::data::primitives::Mesh *mesh) 
   /* set error handler */
   rtcDeviceSetErrorFunction(device, error_handler);
 
+#ifdef __USE_TAU
+  TAU_START("EMA::EMA::numVerts/Tris");
+#endif
   int numVerts = mesh->vertices.size();
   int numTris = mesh->faces.size();
+#ifdef __USE_TAU
+  TAU_STOP("EMA::EMA::numVerts/Tris");
+#endif
 #ifdef __USE_TAU
     TAU_START("EMA::EMA::rtcDeviceNewScene");
 #endif
@@ -159,11 +165,11 @@ EmbreeMeshAdapter::EmbreeMeshAdapter(gvt::render::data::primitives::Mesh *mesh) 
     TAU_STOP("EMA::EMA::rtcNewTriangleMesh");
 #endif
 #ifdef __USE_TAU
-    TAU_START("EMA::EMA::rtcMapBuffer");
+    TAU_START("EMA::EMA::vertices::rtcMapBuffer");
 #endif
   embVertex *vertices = (embVertex *)rtcMapBuffer(scene, geomId, RTC_VERTEX_BUFFER);
 #ifdef __USE_TAU
-    TAU_STOP("EMA::EMA::rtcMapBuffer");
+    TAU_STOP("EMA::EMA::vertices::rtcMapBuffer");
 #endif
 #ifdef __USE_TAU
   TAU_START("EMA.cpp::EMA::verticiesLoop");
@@ -176,26 +182,49 @@ EmbreeMeshAdapter::EmbreeMeshAdapter(gvt::render::data::primitives::Mesh *mesh) 
 #ifdef __USE_TAU
   TAU_STOP("EMA.cpp::EMA::verticiesLoop");
 #endif
+#ifdef __USE_TAU
+  TAU_START("EMA.cpp::EMA::rtcUnmapBuffer");
+#endif
   rtcUnmapBuffer(scene, geomId, RTC_VERTEX_BUFFER);
+#ifdef __USE_TAU
+  TAU_STOP("EMA.cpp::EMA::rtcUnmapBuffer");
+#endif
 
+#ifdef __USE_TAU
+    TAU_START("EMA::EMA::triangles::rtcMapBuffer");
+#endif
   embTriangle *triangles = (embTriangle *)rtcMapBuffer(scene, geomId, RTC_INDEX_BUFFER);
-  #ifdef __USE_TAU
+#ifdef __USE_TAU
+    TAU_STOP("EMA::EMA::triangles::rtcMapBuffer");
+#endif
+#ifdef __USE_TAU
     TAU_START("EMA.cpp::EMA::trianglesLoop");
-  #endif
+#endif
   for (int i = 0; i < numTris; i++) {
     gvt::render::data::primitives::Mesh::Face f = mesh->faces[i];
     triangles[i].v0 = f.get<0>();
     triangles[i].v1 = f.get<1>();
     triangles[i].v2 = f.get<2>();
   }
-  #ifdef __USE_TAU
+#ifdef __USE_TAU
     TAU_STOP("EMA.cpp::EMA::trianglesLoop");
-  #endif
+#endif
+#ifdef __USE_TAU
+    TAU_START("EMA.cpp::EMA::rtcUnmapBuffer");
+#endif
   rtcUnmapBuffer(scene, geomId, RTC_INDEX_BUFFER);
+  #ifdef __USE_TAU
+      TAU_STOP("EMA.cpp::EMA::rtcUnmapBuffer");
+  #endif
 
   // mesh->writeobj("mesh.obj");
-
+#ifdef __USE_TAU
+    TAU_START("EMA.cpp::EMA::rtcCommit");
+#endif
   rtcCommit(scene);
+#ifdef __USE_TAU
+    TAU_STOP("EMA.cpp::EMA::rtcCommit");
+#endif
 }
 
 EmbreeMeshAdapter::~EmbreeMeshAdapter() {
