@@ -131,19 +131,40 @@ EmbreeMeshAdapter::EmbreeMeshAdapter(gvt::render::data::primitives::Mesh *mesh) 
 #endif
   GVT_ASSERT(mesh, "EmbreeMeshAdapter: mesh pointer in the database is null");
   mesh->generateNormals();
-
+#ifdef __USE_TAU
+  TAU_START("EMA::EMA::rtcNewDevice");
+#endif
   device = rtcNewDevice("threads=1");
+#ifdef __USE_TAU
+  TAU_STOP("EMA::EMA::rtcNewDevice");
+#endif
   error_handler(rtcDeviceGetError(device));
   /* set error handler */
   rtcDeviceSetErrorFunction(device, error_handler);
 
   int numVerts = mesh->vertices.size();
   int numTris = mesh->faces.size();
-
+#ifdef __USE_TAU
+    TAU_START("EMA::EMA::rtcDeviceNewScene");
+#endif
   scene = rtcDeviceNewScene(device, RTC_SCENE_STATIC, GVT_EMBREE_ALGORITHM);
+#ifdef __USE_TAU
+    TAU_STOP("EMA::EMA::rtcDeviceNewScene");
+#endif
+#ifdef __USE_TAU
+    TAU_START("EMA::EMA::rtcNewTriangleMesh");
+#endif
   geomId = rtcNewTriangleMesh(scene, RTC_GEOMETRY_STATIC, numTris, numVerts);
-
+#ifdef __USE_TAU
+    TAU_STOP("EMA::EMA::rtcNewTriangleMesh");
+#endif
+#ifdef __USE_TAU
+    TAU_START("EMA::EMA::rtcMapBuffer");
+#endif
   embVertex *vertices = (embVertex *)rtcMapBuffer(scene, geomId, RTC_VERTEX_BUFFER);
+#ifdef __USE_TAU
+    TAU_STOP("EMA::EMA::rtcMapBuffer");
+#endif
 #ifdef __USE_TAU
   TAU_START("EMA.cpp::EMA::verticiesLoop");
 #endif
@@ -158,12 +179,18 @@ EmbreeMeshAdapter::EmbreeMeshAdapter(gvt::render::data::primitives::Mesh *mesh) 
   rtcUnmapBuffer(scene, geomId, RTC_VERTEX_BUFFER);
 
   embTriangle *triangles = (embTriangle *)rtcMapBuffer(scene, geomId, RTC_INDEX_BUFFER);
+  #ifdef __USE_TAU
+    TAU_START("EMA.cpp::EMA::trianglesLoop");
+  #endif
   for (int i = 0; i < numTris; i++) {
     gvt::render::data::primitives::Mesh::Face f = mesh->faces[i];
     triangles[i].v0 = f.get<0>();
     triangles[i].v1 = f.get<1>();
     triangles[i].v2 = f.get<2>();
   }
+  #ifdef __USE_TAU
+    TAU_STOP("EMA.cpp::EMA::trianglesLoop");
+  #endif
   rtcUnmapBuffer(scene, geomId, RTC_INDEX_BUFFER);
 
   // mesh->writeobj("mesh.obj");
