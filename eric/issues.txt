@@ -1,0 +1,3 @@
+rendering fewer than 2 triangles results in nothing
+  - in the same plane?
+weird concentric circles when the light is close to a surfacec
