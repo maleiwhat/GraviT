@@ -14,16 +14,16 @@ EXE=/home/03755/ericlee/gvt/gravit/build/bin/gvtMpi
 MODEL=data/simple/
 
 # simple
-eye="0 0 100"
+eye="0 0 350"
 look="0 0 0"
-lpos="0 0 50"
-lcolor="450 450 450"
+lpos="0 0 100"
+lcolor="455 455 455"
 
-# testing
-nodes=1
-width=512
-height=512
-depth=8
+# dolphins
+#eye="0 0 520"
+#look="13 0 550"
+#lpos="10 50 520"
+#lcolor="0 0 450"
 
 #nodes=1
 #width=512

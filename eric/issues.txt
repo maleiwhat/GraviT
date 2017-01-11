@@ -1,3 +1,2 @@
-rendering fewer than 2 triangles results in nothing
-  - in the same plane?
+when all the vertices are on the xy/yz/xz plane, nothing renders
 weird concentric circles when the light is close to a surfacec
