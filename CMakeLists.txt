@@ -15,7 +15,9 @@ if(COMMAND cmake_policy)
   cmake_policy(SET CMP0003 NEW)
 
   # use rpath on MacOS
-  #cmake_policy(SET CMP0042 NEW)
+  if(APPLE)
+  cmake_policy(SET CMP0042 NEW)
+  endif(APPLE)
 endif(COMMAND cmake_policy)
 
 if(NOT CMAKE_BUILD_TYPE)
@@ -64,6 +66,7 @@ if (GVT_RENDER)
   option(GVT_SIMPLE_FILE_LOAD_APP		"Build the simple application (load obj file)" ON)
   option(GVT_PLY_APP "Build the ply reader application (load ply file)" ON)
   option(GVT_CTEST "Build CTEST Unit and Integration tests" ON)
+  option(GVT_UTILS "Build GVT stand-alone utilities" ON)
   add_definitions(-DGVT_RENDER)
 endif(GVT_RENDER)
 
@@ -503,6 +506,17 @@ if (GVT_SIMPLE_FILE_LOAD_APP)
   add_executable(gvtFileLoad ${GVTSIMPLEFILE_RENDER_SRCS})
   target_link_libraries(gvtFileLoad gvtCore gvtRender ${GVTSIMPLEFILE_RENDER_LIBS} )
 endif(GVT_SIMPLE_FILE_LOAD_APP)
+
+if (GVT_UTILS)
+  find_package(MPI REQUIRED)
+  include_directories(${MPI_INCLUDE_PATH})
+  set(GVT_UTILS_LIBS ${GVT_UTILS_LIBS} ${GVT_CORE_LIBS} ${GVT_RENDER_LIBS} ${MPI_LIBRARIES})
+  set(GVT_UTIL_RAY_COST_SRCS ${GVT_UTILS_SRCS}
+    src/utils/ray_cost.cpp
+    )
+  add_executable(gvtRayCost ${GVT_UTIL_RAY_COST_SRCS})
+  target_link_libraries(gvtRayCost gvtCore gvtRender ${GVT_UTILS_LIBS})
+endif(GVT_UTILS)
 
 if (GVT_GLRENDER_APP)
   find_package(MPI REQUIRED)
