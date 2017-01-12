@@ -137,7 +137,7 @@ struct GVT_COMM {
                            0);
 
     if (newbuf) std::memcpy(buf, newbuf, sizeof(B) * size);
-    delete gather;
+    delete[] gather;
     delete newbuf;
     return newbuf;
   }
