@@ -1,2 +1,7 @@
 when all the vertices are on the xy/yz/xz plane, nothing renders
 weird concentric circles when the light is close to a surfacec
+how are clients supposed to run the test code on their machines?
+
+create golden images and update test script
+fix concentric circles
+fix bounding box size

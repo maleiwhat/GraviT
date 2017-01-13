@@ -37,7 +37,8 @@ if 1:
       continue
     print("============ " + nodes + " nodes ==============")
     for size in image_sizes:
-      subprocess.call(diff_bin + " -diff output/nodes_1_size_" + size + ".ppm,output/nodes_" + nodes + "_size_" + size + ".ppm", shell=True)
+      #subprocess.call(diff_bin + " -diff output/nodes_1_size_" + size + ".ppm,output/nodes_" + nodes + "_size_" + size + ".ppm", shell=True)
+      subprocess.call(diff_bin + " -diff output/nodes_1_size_" + size + ".ppm,golden/golden_" + size + ".ppm", shell=True)
       print("")
 
 # turn on secondary rays
