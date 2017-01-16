@@ -16,8 +16,8 @@ MODEL=data/simple/
 # simple
 eye="0 0 350"
 look="0 0 0"
-lpos="0 0 100"
-lcolor="455 455 455"
+lpos="0 0 50"
+lcolor="100 100 100"
 
 # dolphins
 #eye="0 0 520"
@@ -25,10 +25,10 @@ lcolor="455 455 455"
 #lpos="10 50 520"
 #lcolor="0 0 450"
 
-#nodes=1
-#width=512
-#height=512
-#depth=8
+#nodes=4
+#width=1024
+#height=1024
+#depth=1
 name=simple
 
 export MY_MPIRUN_OPTIONS="MV2_DEBUG_SHOW_BACKTRACE=1 MV2_SHOW_ENV_INFO=1 MV2_DEBUG_MEM_USAGE_VERBOSE=1 MV2_SHOW_CPU_BINDING=1"

@@ -275,6 +275,16 @@ bool gvt::render::data::primitives::Shade(gvt::render::data::primitives::Materia
 
   color *= Li;
 
+  // normalize any shading greater than 1.0f (idk how to handle this properly)
+  for (int i = 0; i < 3; i++) {
+    float temp = color[i];
+    if (temp > 1.0f) {
+      for (int j = 0; j < 3; j++) {
+        color[j] /= temp;
+      }
+    }
+  }
+
   return true;
 }
 
