@@ -9,7 +9,7 @@
 
 export MV2_ENABLE_AFFINITY=0
 export LD_LIBRARY_PATH=/opt/apps/gcc/4.9.1/lib64:$LD_LIBRARY_PATH
-EXE=/home/03755/ericlee/gvt/gravit/build/bin/gvtMpi
+EXE=../build/bin/gvtMpi
 #MODEL=/home/03755/ericlee/hman/data/simple/
 MODEL=data/simple/
 
