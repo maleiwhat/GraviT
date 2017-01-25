@@ -40,6 +40,14 @@
 #include <tbb/task_scheduler_init.h>
 #include <thread>
 
+#if defined(__USE_TAU_ALL) || defined(__USE_TAU_PLYAPP) || defined(__USE_TAU_PAST_FIRST) || defined(__USE_TAU_INIT_ONLY)
+#define __USE_TAU
+#endif
+
+#if defined (__USE_TAU)
+#include <TAU.h>
+#endif
+
 #ifdef GVT_RENDER_ADAPTER_EMBREE
 #include <gvt/render/adapter/embree/EmbreeMeshAdapter.h>
 #endif
@@ -84,6 +92,10 @@ public:
 //#define DOMAIN_PER_NODE 2
 
 int main(int argc, char **argv) {
+#if defined(__USE_TAU_ALL) || defined(__USE_TAU_PLYAPP)
+  TAU_PROFILE("PlyApp.cpp::main","",TAU_DEFAULT);
+#endif
+
 
   ParseCommandLine cmd("gvtPly");
 
