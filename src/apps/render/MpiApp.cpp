@@ -26,16 +26,16 @@
 //
 
 #include <cstdlib>
+#include <glm/glm.hpp>
+#include <glm/gtx/rotate_vector.hpp>
 #include <glob.h>
 #include <iostream>
 #include <map>
+#include <mpi.h>
 #include <sstream>
 #include <sys/stat.h>
 #include <tbb/task_scheduler_init.h>
 #include <thread>
-#include <glm/glm.hpp>
-#include <glm/gtx/rotate_vector.hpp>
-#include <mpi.h>
 
 // timer
 #include "gvt/core/utils/timer.h"
@@ -68,6 +68,7 @@
 
 // warning: ply.h must be included after tracer related headers
 #include <ply.h>
+#include <tiny_obj_loader.h>
 
 #if defined(__APPLE__)
 #include <GLUT/glut.h>
@@ -392,7 +393,7 @@ std::string GetTestName(const MpiInfo &mpi, const commandline::Options &options)
   return filename;
 }
 
-void CreateDatabase(const MpiInfo &mpi, const commandline::Options &options) {
+void CreatePlyDatabase(const MpiInfo &mpi, const commandline::Options &options) {
   // mess I use to open and read the ply file with the c utils I found.
   PlyFile *in_ply;
   Vertex *vert;
@@ -655,7 +656,90 @@ void CreateDatabase(const MpiInfo &mpi, const commandline::Options &options) {
   g_camera->setFOV(fov);
   g_camera->setFilmsize(filmNode["width"].value().toInteger(), filmNode["height"].value().toInteger());
 
-} // void CreateDatabase(const commandline::Options& options) {
+} // void CreatePlyDatabase(const commandline::Options& options) {
+
+void CreateObjDatabase(const MpiInfo &mpi, const commandline::Options &options) {
+  // void CreateObjDatabase(
+  // const std::string& filename, const Mat4& model_transform, std::vector<Geometry*>* geometries) {
+
+  std::vector<tinyobj::shape_t> shapes;
+  std::vector<tinyobj::material_t> materials;
+  std::string err;
+  const char* mtl_basepath = nullptr;
+  bool success = LoadObj(shapes, materials, err, options.infile.c_str(), mtl_basepath);
+  if (!success) {
+    std::cout << "tinyobj error" << std::endl;
+    exit(1);
+  }
+
+  //   int num_prims = 0;
+  //   for (int i = 0; i < shapes.size(); ++i) {
+  //     const tinyobj::mesh_t& mesh = shapes[i].mesh;
+  //     if ((mesh.indices.size() % 3) != 0) {
+  //       printf("error inconsistent indices size %lu", mesh.indices.size());
+  //       exit(1);
+  //     }
+  //     num_prims += (mesh.indices.size() / 3);
+  //   }
+  //
+  //   if (num_prims < 1) {
+  //     std::cout << "error: unable to flatten meshes (no mesh found)\n";
+  //     exit(1);
+  //   }
+  //
+  //   int num_vertices = 0;
+  //   for (int i = 0; i < shapes.size(); ++i) {
+  //     const tinyobj::mesh_t& mesh = shapes[i].mesh;
+  //     if ((mesh.positions.size() % 3) != 0) {
+  //       printf("error inconsistent positions size %lu", mesh.positions.size());
+  //       exit(1);
+  //     }
+  //     num_vertices += (mesh.positions.size() / 3);
+  //   }
+  //
+  //   std::vector<Vec3> vertices;
+  //   std::vector<std::size_t> indices;
+  //
+  //   vertices.reserve(num_vertices);
+  //   indices.reserve(3 * num_prims);
+  //
+  //   int vid = 0;
+  //
+  //   int vertices_index = 0;
+  //   int indices_index = 0;
+  //   int vertices_offset = 0;
+  //
+  //   printf("loaded obj file...\n");
+  //   printf("number of vertices: %d\n", num_vertices);
+  //   printf("number of primitives: %d\n", num_prims);
+  //
+  //   Aabb mesh_bound;
+  //   for (std::size_t i = 0; i < shapes.size(); ++i) {
+  //     const tinyobj::mesh_t& mesh = shapes[i].mesh;
+  //     // const std::vector<float>& pos = mesh.positions;
+  //     // const std::vector<unsigned int>& indices = mesh.indices;
+  //
+  //     for (std::size_t j = 0; j < mesh.indices.size(); ++j) {
+  //       indices.push_back(mesh.indices[j]);
+  //     }
+  //
+  //     for (std::size_t j = 0; j < mesh.positions.size(); j += 3) {
+  //       Vec4 vertex4(mesh.positions[j], mesh.positions[j + 1],
+  //                    mesh.positions[j + 2], Real(1));
+  //       vertex4 = model_transform * vertex4;
+  //       Vec3 vertex(vertex4);
+  //       mesh_bound.merge(vertex);
+  //       vertices.push_back(vertex);
+  //     }
+  //   }
+  //
+  //   Mat4 object2world;
+  //   Mat4 world2object = glm::inverse(object2world);
+  //   geometries->push_back(
+  //       new TriangleMesh("unknown_mesh_name", DRT_INVALID_MATERIAL_ID,
+  //                        std::move(vertices), std::move(indices), mesh_bound,
+  //                      object2world, world2object, num_vertices, num_prims));
+} // void CreateObjDatabase(const commandline::Options& options) {
 
 void Kill() {
   g_worker->Quit();
@@ -685,9 +769,14 @@ void KeyboardFunc(unsigned char key, int x, int y) {
     std::cout << "up vector   -> " << up[0] << " " << up[1] << " " << up[2] << std::endl;
     break;
 
+  case 'z':
   case 'w':
     eye += move_speed * look;
     focal += move_speed * look;
+    break;
+  case 't':
+    eye -= move_speed * look;
+    focal -= move_speed * look;
     break;
   case 'a':
     eye += -move_speed * tangent;
@@ -711,21 +800,20 @@ void KeyboardFunc(unsigned char key, int x, int y) {
     break;
   case 'n': // turn left
     look = glm::rotate(look, pan_speed, up);
-    focal = eye + cam_distance*look;
-    break; 
+    focal = eye + cam_distance * look;
+    break;
   case 'm': // turn right
     look = glm::rotate(look, -pan_speed, up);
-    focal = eye + cam_distance*look;
+    focal = eye + cam_distance * look;
     break;
   case 'u': // look down
     look = glm::rotate(look, pan_speed, tangent);
-    focal = eye + cam_distance*look;
+    focal = eye + cam_distance * look;
     break;
   case 'i': // look up
     look = glm::rotate(look, -pan_speed, tangent);
-    focal = eye + cam_distance*look;
+    focal = eye + cam_distance * look;
     break;
-    
 
   default:
     break;
@@ -734,8 +822,24 @@ void KeyboardFunc(unsigned char key, int x, int y) {
 }
 
 bool new_click = false;
-static void MouseFunc(int button, int state, int x, int y) { 
+static void MouseFunc(int button, int state, int x, int y) {
+
   new_click = state == GLUT_DOWN;
+
+  if (new_click) {
+    if (button == 3 || button == 4) {
+      glm::vec3 eye = g_camera->getEyePoint();
+      glm::vec3 focal = g_camera->getFocalPoint();
+      glm::vec3 up = g_camera->getUpVector();
+      glm::vec3 look = glm::normalize(focal - eye);
+
+      float sign = button == 4 ? -1.f : 1.f;
+
+      eye = eye + (sign * move_speed * look);
+      focal = focal + (sign * move_speed * look);
+      g_camera->lookAt(eye, focal, up);
+    }
+  }
 }
 
 int last_mouse_x = 0;
@@ -757,13 +861,12 @@ static void MotionFunc(int x, int y) {
   glm::vec3 up = g_camera->getUpVector();
 
   glm::vec3 look = focal - eye;
-  look = glm::rotate(look, -orbit_speed*x_diff, up);
-  look = glm::rotate(look, -orbit_speed*y_diff, glm::cross(look, up));
+  look = glm::rotate(look, -orbit_speed * x_diff, up);
+  look = glm::rotate(look, -orbit_speed * y_diff, glm::cross(look, up));
   eye = focal - look;
 
   g_camera->lookAt(eye, focal, up);
 }
-
 
 void DisplayFunc(void) {
   static bool quit = false;
@@ -1063,7 +1166,11 @@ int main(int argc, char **argv) {
     timer t_database(false, "database timer:");
     std::cout << "rank " << mpi.rank << " creating database." << std::endl;
     t_database.start();
-    CreateDatabase(mpi, options);
+    if (options.obj) {
+      CreateObjDatabase(mpi, options);
+    } else {
+      CreatePlyDatabase(mpi, options);
+    }
     t_database.stop();
     std::cout << "rank " << mpi.rank << " done creating database." << std::endl;
   }
