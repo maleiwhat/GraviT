@@ -9,6 +9,11 @@ namespace render {
 namespace mpi {
 namespace commandline {
 
+struct PointLightInfo {
+  glm::vec3 position;
+  glm::vec3 color;
+};
+
 struct Options {
   enum TracerType {
     ASYNC_DOMAIN = 0,
@@ -33,6 +38,8 @@ struct Options {
   int numTbbThreads;
   std::string infile;
   std::string model_name;
+  bool lpos = false;
+  bool lcolor = false;
   glm::vec3 light_position;
   glm::vec3 light_color;
   glm::vec3 eye;
@@ -44,6 +51,7 @@ struct Options {
   int warmup_frames;
   int active_frames;
   bool interactive;
+  std::vector<PointLightInfo> point_lights;
 };
 
 }  // namespace commandline

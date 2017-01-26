@@ -117,6 +117,7 @@ void PrintUsage(const char *argv) {
          "512.0, 2048.0)\n");
   printf("  --lcolor <x, y, z> specify point light color (default: 100.0, "
          "100.0, 500.0).\n");
+  printf("  --point-light <x, y, z, r, g, b> ad point light source.\n");
   printf("  --eye <x, y, z> specify camera position. (default: 512.0 512.0 "
          "4096.0)\n");
   printf("  --look <x, y, z> specify lookat position (default: 512.0 512.0 "
@@ -231,10 +232,21 @@ void Parse(int argc, char **argv, Options *options) {
       options->light_position[0] = atof(argv[++i]);
       options->light_position[1] = atof(argv[++i]);
       options->light_position[2] = atof(argv[++i]);
+      options->lpos = true;
     } else if (strcmp(argv[i], "--lcolor") == 0) {
       options->light_color[0] = atof(argv[++i]);
       options->light_color[1] = atof(argv[++i]);
       options->light_color[2] = atof(argv[++i]);
+      options->lcolor = true;
+    } else if (strcmp(argv[i], "--point-light") == 0) {
+      PointLightInfo info;
+      for (int j = 0; j < 3; ++j) {
+        info.position[j] = atof(argv[++i]);
+      }
+      for (int j = 0; j < 3; ++j) {
+        info.color[j] = atof(argv[++i]);
+      }
+      options->point_lights.push_back(info);
     } else if (strcmp(argv[i], "--ray-depth") == 0) {
       options->ray_depth = atoi(argv[++i]);
     } else if (strcmp(argv[i], "--ray-samples") == 0) {
@@ -585,10 +597,33 @@ void CreatePlyDatabase(const MpiInfo &mpi, const commandline::Options &options) 
   }
 
   // add lights, camera, and film to the database
+
+  // add point light sources
   gvt::core::DBNodeH lightNodes = cntxt->createNodeFromType("Lights", "Lights", root.UUID());
-  gvt::core::DBNodeH lightNode = cntxt->createNodeFromType("PointLight", "conelight", lightNodes.UUID());
-  lightNode["position"] = options.light_position;
-  lightNode["color"] = options.light_color;
+
+  gvt::core::DBNodeH point_light;
+  for (std::size_t i = 0; i < options.point_lights.size(); ++i) {
+    std::stringstream ss;
+    ss << i;
+    std::string name("p");
+    name += ss.str();
+    point_light = cntxt->createNodeFromType("PointLight", name, lightNodes.UUID());
+    point_light["position"] = options.point_lights[i].position;
+    point_light["color"] = options.point_lights[i].color;
+  }
+
+ 
+  bool light_specified = options.lpos || options.lcolor;
+  if (light_specified || (!light_specified && options.point_lights.empty())) {
+    std::stringstream ss;
+    ss << options.point_lights.size();
+    std::string name("p");
+    name += ss.str();
+    point_light = cntxt->createNodeFromType("PointLight", name, lightNodes.UUID());
+    point_light["position"] = options.light_position;
+    point_light["color"] = options.light_color;
+  }
+
   // camera
   gvt::core::DBNodeH camNode = cntxt->createNodeFromType("Camera", "conecam", root.UUID());
   camNode["eyePoint"] = options.eye;
