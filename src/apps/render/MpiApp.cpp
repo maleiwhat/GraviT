@@ -302,6 +302,9 @@ using namespace gvt::render::unit::profiler;
 gvt::render::data::scene::gvtPerspectiveCamera *g_camera = NULL;
 gvt::render::data::scene::Image *g_image = NULL;
 
+apps::render::mpi::commandline::Options *g_options = NULL;
+gvt::render::data::primitives::Box3D g_scene_bound;
+
 // global variables
 // gvt::render::unit::RayTracer* tracer;
 bool g_quit_key_entered = false;
@@ -407,6 +410,18 @@ std::string GetTestName(const MpiInfo &mpi, const commandline::Options &options)
   std::string filename("prof_" + options.model_name + "_" + tracer_name + "_size_" + mpi_size_str + "_rank_" +
                        rank_str);
   return filename;
+}
+
+void ResetCameraView(const commandline::Options &options, const Box3D &scene_bound, glm::vec3 *eye, glm::vec3 *look,
+                     glm::vec3 *up) {
+  if (options.set_eye) {
+    *eye = options.eye;
+  } else {
+    float diag = glm::length(scene_bound.extent());
+    *eye = scene_bound.centroid() + (2.f * diag * glm::vec3(0.f, 0.f, 1.f));
+  }
+  *look = options.set_look ? options.look : scene_bound.centroid();
+  *up = options.set_up ? options.up : glm::vec3(0.0, 1.0, 0.0);
 }
 
 void CreatePlyDatabase(const MpiInfo &mpi, const commandline::Options &options) {
@@ -727,6 +742,7 @@ void CreateObjDatabase(const MpiInfo &mpi, const commandline::Options &options) 
 
   mesh->computeBoundingBox();
   Box3D *meshbbox = mesh->getBoundingBox();
+  g_scene_bound = *meshbbox;
 
   // add bunny mesh to the database
 
@@ -803,13 +819,12 @@ void CreateObjDatabase(const MpiInfo &mpi, const commandline::Options &options) 
   // set the camera
   gvt::core::DBNodeH camNode = cntxt->createNodeFromType("Camera", "cam", root.UUID());
 
-  float diag = glm::length(meshbbox->extent());
-  glm::vec3 centroid = meshbbox->centroid();
-  glm::vec3 eyepos = centroid + (2.f * diag * glm::vec3(0.f, 0.f, 1.f));
+  glm::vec3 eyepos, lookpos, upvec;
+  ResetCameraView(options, *meshbbox, &eyepos, &lookpos, &upvec);
 
-  camNode["eyePoint"] = options.set_eye ? options.eye : eyepos;
-  camNode["focus"] = options.set_look ? options.look : centroid;
-  camNode["upVector"] = options.set_up ? options.up : glm::vec3(0.0, 1.0, 0.0);
+  camNode["eyePoint"] = eyepos;
+  camNode["focus"] = lookpos;
+  camNode["upVector"] = upvec;
   camNode["fov"] = (float)(45.0 * M_PI / 180.0);
   camNode["rayMaxDepth"] = static_cast<int>(options.ray_depth);
   camNode["raySamples"] = static_cast<int>(options.ray_samples);
@@ -886,6 +901,10 @@ void KeyboardFunc(unsigned char key, int x, int y) {
     std::cout << "eye         -> " << eye[0] << " " << eye[1] << " " << eye[2] << std::endl;
     std::cout << "focal point -> " << focal[0] << " " << focal[1] << " " << focal[2] << std::endl;
     std::cout << "up vector   -> " << up[0] << " " << up[1] << " " << up[2] << std::endl;
+    break;
+
+  case ' ':
+    ResetCameraView(*g_options, g_scene_bound, &eye, &focal, &up);
     break;
 
   case 'z':
@@ -1274,6 +1293,7 @@ int main(int argc, char **argv) {
   g_mpiSize = mpi.size;
   g_num_warmup_frames = options.warmup_frames;
   g_num_active_frames = options.active_frames;
+  g_options = &options;
 
   // initialize tbb
   // tbb::task_scheduler_init init;
