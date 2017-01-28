@@ -219,14 +219,17 @@ void Parse(int argc, char **argv, Options *options) {
       options->eye[0] = atof(argv[++i]);
       options->eye[1] = atof(argv[++i]);
       options->eye[2] = atof(argv[++i]);
+      options->set_eye = true;
     } else if (strcmp(argv[i], "--look") == 0) {
       options->look[0] = atof(argv[++i]);
       options->look[1] = atof(argv[++i]);
       options->look[2] = atof(argv[++i]);
+      options->set_look = true;
     } else if (strcmp(argv[i], "--up") == 0) {
       options->up[0] = atof(argv[++i]);
       options->up[1] = atof(argv[++i]);
       options->up[2] = atof(argv[++i]);
+      options->set_up = true;
     } else if (strcmp(argv[i], "--fov") == 0) {
       options->fov = atof(argv[++i]);
     } else if (strcmp(argv[i], "--lpos") == 0) {
@@ -707,35 +710,36 @@ void CreateObjDatabase(const MpiInfo &mpi, const commandline::Options &options) 
   // add the data - mesh in this case
   gvt::core::DBNodeH dataNodes = cntxt->createNodeFromType("Data", "Data", root.UUID());
 
-  gvt::core::DBNodeH bunnyMeshNode = cntxt->createNodeFromType("Mesh", "bunny", dataNodes.UUID());
-  {
-    std::string objPath = std::string("../data/geom/bunny.obj");
-    // if(cmd.isSet("obj"))
-    // {
-    //   objPath = cmd.getValue<std::string>("obj")[0];
-    // }
+  gvt::core::DBNodeH objMeshNode = cntxt->createNodeFromType("Mesh", "objmesh", dataNodes.UUID());
+  // {
+  // std::string objPath = std::string("../data/geom/bunny.obj");
+  std::string objPath = options.infile;
+  // if(cmd.isSet("obj"))
+  // {
+  //   objPath = cmd.getValue<std::string>("obj")[0];
+  // }
 
-    // path assumes binary is run as bin/gvtFileApp
-    gvt::render::data::domain::reader::ObjReader objReader(objPath);
-    // right now mesh must be converted to gvt format
-    Mesh *mesh = objReader.getMesh();
-    mesh->generateNormals();
+  // path assumes binary is run as bin/gvtFileApp
+  gvt::render::data::domain::reader::ObjReader objReader(objPath);
+  // right now mesh must be converted to gvt format
+  Mesh *mesh = objReader.getMesh();
+  mesh->generateNormals();
 
-    mesh->computeBoundingBox();
-    Box3D *meshbbox = mesh->getBoundingBox();
+  mesh->computeBoundingBox();
+  Box3D *meshbbox = mesh->getBoundingBox();
 
-    // add bunny mesh to the database
+  // add bunny mesh to the database
 
-    bunnyMeshNode["file"] = objPath;
-    bunnyMeshNode["bbox"] = (unsigned long long)meshbbox;
-    bunnyMeshNode["ptr"] = (unsigned long long)mesh;
-  }
+  objMeshNode["file"] = objPath;
+  objMeshNode["bbox"] = (unsigned long long)meshbbox;
+  objMeshNode["ptr"] = (unsigned long long)mesh;
+  // }
 
   // create the instance
   gvt::core::DBNodeH instNodes = cntxt->createNodeFromType("Instances", "Instances", root.UUID());
 
   gvt::core::DBNodeH instnode = cntxt->createNodeFromType("Instance", "inst", instNodes.UUID());
-  gvt::core::DBNodeH meshNode = bunnyMeshNode;
+  gvt::core::DBNodeH meshNode = objMeshNode;
   Box3D *mbox = (Box3D *)meshNode["bbox"].value().toULongLong();
 
   instnode["id"] = 0; // unique id per instance
@@ -798,13 +802,26 @@ void CreateObjDatabase(const MpiInfo &mpi, const commandline::Options &options) 
 
   // set the camera
   gvt::core::DBNodeH camNode = cntxt->createNodeFromType("Camera", "cam", root.UUID());
-  camNode["eyePoint"] = glm::vec3(0.0, 0.1, 0.3);
-  camNode["focus"] = glm::vec3(0.0, 0.1, -0.3);
-  camNode["upVector"] = glm::vec3(0.0, 1.0, 0.0);
+
+  float diag = glm::length(meshbbox->extent());
+  glm::vec3 centroid = meshbbox->centroid();
+  glm::vec3 eyepos = centroid + (2.f * diag * glm::vec3(0.f, 0.f, 1.f));
+
+  camNode["eyePoint"] = options.set_eye ? options.eye : eyepos;
+  camNode["focus"] = options.set_look ? options.look : centroid;
+  camNode["upVector"] = options.set_up ? options.up : glm::vec3(0.0, 1.0, 0.0);
   camNode["fov"] = (float)(45.0 * M_PI / 180.0);
   camNode["rayMaxDepth"] = (int)1;
   camNode["raySamples"] = (int)1;
   camNode["jitterWindowSize"]= (float) 0;
+
+  // camNode["eyePoint"] = glm::vec3(0.0, 0.1, 0.3);
+  // camNode["focus"] = glm::vec3(0.0, 0.1, -0.3);
+  // camNode["upVector"] = glm::vec3(0.0, 1.0, 0.0);
+  // camNode["fov"] = (float)(45.0 * M_PI / 180.0);
+  // camNode["rayMaxDepth"] = (int)1;
+  // camNode["raySamples"] = (int)1;
+  // camNode["jitterWindowSize"]= (float) 0;
 
   // gvt::core::DBNodeH camNode = cntxt->createNodeFromType("Camera", "conecam", root.UUID());
   // camNode["eyePoint"] = options.eye;

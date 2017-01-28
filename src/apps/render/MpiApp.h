@@ -43,8 +43,11 @@ struct Options {
   glm::vec3 light_position;
   glm::vec3 light_color;
   glm::vec3 eye;
+  bool set_eye = false;
   glm::vec3 look;
+  bool set_look = false;
   glm::vec3 up;
+  bool set_up = false;
   float fov;
   int ray_depth;
   int ray_samples;
