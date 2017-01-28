@@ -736,6 +736,7 @@ void CreateObjDatabase(const MpiInfo &mpi, const commandline::Options &options) 
 
   // path assumes binary is run as bin/gvtFileApp
   gvt::render::data::domain::reader::ObjReader objReader(objPath);
+
   // right now mesh must be converted to gvt format
   Mesh *mesh = objReader.getMesh();
   mesh->generateNormals();
