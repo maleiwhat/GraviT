@@ -48,6 +48,8 @@ glm::vec3 lambertShade(const gvt::render::data::primitives::Material *material, 
 
   float NdotL = std::max(0.f, glm::dot(N, wi));
   glm::vec3  diffuse = material->kd * (NdotL * ray.w);
+  // std::cout << "diffuse: " << diffuse[0] << "," << diffuse[1] << "," << diffuse[2] << "\n";
+  // std::cout << "material: " << material->kd[0] << "," << material->kd[1] << "," << material->kd[2] << "\n";
 
   return diffuse;
 }

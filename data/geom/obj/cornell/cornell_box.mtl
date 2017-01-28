@@ -1,18 +1,18 @@
 newmtl floor
 Ka  0.5 0.5 0.5
-Kd  0.4 0.4 0.4
+Kd  0.4 0.2 0.1
 Ks  0.0 0.0 0.0
 d 1
 
 newmtl ceiling
 Ka  0.5 0.5 0.5
-Kd  0.4 0.4 0.4
+Kd  0.4 0.1 0.1
 Ks  0 0 0
 Tr 1
 
 newmtl back
 Ka  0.5 0.5 0.5
-Kd  0.4 0.4 0.4
+Kd  0.3 0.4 0.8
 Ks  0 0 0
 Tr 1
 
@@ -29,14 +29,14 @@ Ks  0.5 0 0
 Tr 1
 
 newmtl short_box
-Ka  0.6 0.6 0.6
-Kd  0.5 0.5 0.5
+Ka  0.3 0.6 0.1
+Kd  0.5 0.2 0.1
 Ks  0 0 0
 Tr  1
 
 newmtl tall_box
-Ka  0.6 0.6 0.6
-Kd  0.5 0.5 0.5
+Ka  0.2 0.6 0.6
+Kd  0.2 0.1 0.5
 Ks  0 0 0
 Tr  1
 
@@ -48,4 +48,4 @@ newmtl light
 Ka  0 0 0
 Ke  18.9914 14.4266 3.8927
 Ks  0.78 0.78 0.78
-Kd  0.5 0.5 0.5
+Kd  0.2 0.1 0.7

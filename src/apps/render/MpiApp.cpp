@@ -236,12 +236,12 @@ void Parse(int argc, char **argv, Options *options) {
       options->light_position[0] = atof(argv[++i]);
       options->light_position[1] = atof(argv[++i]);
       options->light_position[2] = atof(argv[++i]);
-      options->lpos = true;
+      options->set_light_position = true;
     } else if (strcmp(argv[i], "--lcolor") == 0) {
       options->light_color[0] = atof(argv[++i]);
       options->light_color[1] = atof(argv[++i]);
       options->light_color[2] = atof(argv[++i]);
-      options->lcolor = true;
+      options->set_light_color = true;
     } else if (strcmp(argv[i], "--point-light") == 0) {
       PointLightInfo info;
       for (int j = 0; j < 3; ++j) {
@@ -632,7 +632,7 @@ void CreatePlyDatabase(const MpiInfo &mpi, const commandline::Options &options) 
   }
 
  
-  bool light_specified = options.lpos || options.lcolor;
+  bool light_specified = options.set_light_position || options.set_light_color;
   if (light_specified || (!light_specified && options.point_lights.empty())) {
     std::stringstream ss;
     ss << options.point_lights.size();
@@ -789,9 +789,9 @@ void CreateObjDatabase(const MpiInfo &mpi, const commandline::Options &options) 
   // add point light sources
   gvt::core::DBNodeH lightNodes = cntxt->createNodeFromType("Lights", "Lights", root.UUID());
 
-  gvt::core::DBNodeH lightNode = cntxt->createNodeFromType("PointLight", "light", lightNodes.UUID());
-  lightNode["position"] = glm::vec3(0.0, 0.1, 0.5);
-  lightNode["color"] = glm::vec3(1.0, 1.0, 1.0);
+  // gvt::core::DBNodeH lightNode = cntxt->createNodeFromType("PointLight", "light", lightNodes.UUID());
+  // lightNode["position"] = glm::vec3(0.0, 0.1, 0.5);
+  // lightNode["color"] = glm::vec3(1.0, 1.0, 1.0);
 
   gvt::core::DBNodeH point_light;
   for (std::size_t i = 0; i < options.point_lights.size(); ++i) {
@@ -804,16 +804,42 @@ void CreateObjDatabase(const MpiInfo &mpi, const commandline::Options &options) 
     point_light["color"] = options.point_lights[i].color;
   }
 
- 
-  bool light_specified = options.lpos || options.lcolor;
-  if (light_specified || (!light_specified && options.point_lights.empty())) {
-    std::stringstream ss;
-    ss << options.point_lights.size();
-    std::string name("p");
-    name += ss.str();
-    point_light = cntxt->createNodeFromType("PointLight", name, lightNodes.UUID());
-    point_light["position"] = options.light_position;
-    point_light["color"] = options.light_color;
+  // bool light_specified = options.set_light_position || options.set_light_color;
+  // if (light_specified || (!light_specified && options.point_lights.empty())) {
+  //   std::stringstream ss;
+  //   ss << options.point_lights.size();
+  //   std::string name("p");
+  //   name += ss.str();
+  //   point_light = cntxt->createNodeFromType("PointLight", name, lightNodes.UUID());
+  //   point_light["position"] = options.light_position;
+  //   point_light["color"] = options.light_color;
+  // }
+
+  // the user did not specify any light source
+  // use default light source
+  if (options.point_lights.empty()) {
+    glm::vec3 p1 = 1.5f * (meshbbox->bounds_min - meshbbox->centroid());
+    glm::vec3 p2 = 1.5f * (meshbbox->bounds_max - meshbbox->centroid());
+    glm::vec3 p3 = 1.5f * (glm::vec3(meshbbox->bounds_min[0], meshbbox->bounds_max[1], meshbbox->bounds_min[2]) -
+                           meshbbox->centroid());
+    glm::vec3 p4 = 1.5f * (glm::vec3(meshbbox->bounds_max[0], meshbbox->bounds_min[1], meshbbox->bounds_max[2]) -
+                           meshbbox->centroid());
+
+    point_light = cntxt->createNodeFromType("PointLight", "p1", lightNodes.UUID());
+    point_light["position"] = p1;
+    point_light["color"] = options.set_light_color ? options.light_color : glm::vec3(5.0, 5.0, 5.0);
+
+    point_light = cntxt->createNodeFromType("PointLight", "p2", lightNodes.UUID());
+    point_light["position"] = p2;
+    point_light["color"] = options.set_light_color ? options.light_color : glm::vec3(5.0, 5.0, 5.0);
+
+    point_light = cntxt->createNodeFromType("PointLight", "p3", lightNodes.UUID());
+    point_light["position"] = p3;
+    point_light["color"] = options.set_light_color ? options.light_color : glm::vec3(5.0, 5.0, 5.0);
+
+    point_light = cntxt->createNodeFromType("PointLight", "p4", lightNodes.UUID());
+    point_light["position"] = p4;
+    point_light["color"] = options.set_light_color ? options.light_color : glm::vec3(5.0, 5.0, 5.0);
   }
 
   // set the camera

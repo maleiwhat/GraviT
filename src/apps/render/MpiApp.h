@@ -38,10 +38,10 @@ struct Options {
   int numTbbThreads;
   std::string infile;
   std::string model_name;
-  bool lpos = false;
-  bool lcolor = false;
   glm::vec3 light_position;
+  bool set_light_position = false;
   glm::vec3 light_color;
+  bool set_light_color = false;
   glm::vec3 eye;
   bool set_eye = false;
   glm::vec3 look;
