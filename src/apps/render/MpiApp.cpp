@@ -811,25 +811,9 @@ void CreateObjDatabase(const MpiInfo &mpi, const commandline::Options &options) 
   camNode["focus"] = options.set_look ? options.look : centroid;
   camNode["upVector"] = options.set_up ? options.up : glm::vec3(0.0, 1.0, 0.0);
   camNode["fov"] = (float)(45.0 * M_PI / 180.0);
-  camNode["rayMaxDepth"] = (int)1;
-  camNode["raySamples"] = (int)1;
-  camNode["jitterWindowSize"]= (float) 0;
-
-  // camNode["eyePoint"] = glm::vec3(0.0, 0.1, 0.3);
-  // camNode["focus"] = glm::vec3(0.0, 0.1, -0.3);
-  // camNode["upVector"] = glm::vec3(0.0, 1.0, 0.0);
-  // camNode["fov"] = (float)(45.0 * M_PI / 180.0);
-  // camNode["rayMaxDepth"] = (int)1;
-  // camNode["raySamples"] = (int)1;
-  // camNode["jitterWindowSize"]= (float) 0;
-
-  // gvt::core::DBNodeH camNode = cntxt->createNodeFromType("Camera", "conecam", root.UUID());
-  // camNode["eyePoint"] = options.eye;
-  // camNode["focus"] = options.look;
-  // camNode["upVector"] = options.up;
-  // camNode["fov"] = static_cast<float>(options.fov * M_PI / 180.0);
-  // camNode["rayMaxDepth"] = static_cast<int>(options.ray_depth);
-  // camNode["raySamples"] = static_cast<int>(options.ray_samples);
+  camNode["rayMaxDepth"] = static_cast<int>(options.ray_depth);
+  camNode["raySamples"] = static_cast<int>(options.ray_samples);
+  camNode["jitterWindowSize"] = (float)0;
 
   // film
   gvt::core::DBNodeH filmNode = cntxt->createNodeFromType("Film", "conefilm", root.UUID());

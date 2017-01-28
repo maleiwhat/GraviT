@@ -130,15 +130,14 @@ ObjReader::ObjReader(const std::string filename) : computeNormals(false) {
   }
 
   // color.resize(materials.size());
-  // ;
   // for (size_t i = 0; i < materials.size(); i++) {
   //   pathtr::material &m = color[i];
   //   if (materials[i].name.find("light") != std::string::npos) {
   //     m._light = true;
   //   }
-  //
+
   //   m.illum = materials[i].illum;
-  //
+
   //   m.ambient = pathtr::rgb(materials[i].ambient[0], materials[i].ambient[1], materials[i].ambient[2]);
   //   m.diffuse = pathtr::rgb(materials[i].diffuse[0], materials[i].diffuse[1], materials[i].diffuse[2]);
   //   m.specular = pathtr::rgb(materials[i].specular[0], materials[i].specular[1], materials[i].specular[2]);
@@ -149,6 +148,12 @@ ObjReader::ObjReader(const std::string filename) : computeNormals(false) {
   //   m.ior = materials[i].ior;
   //   m.dissolve = materials[i].dissolve;
   // }
+
+  for (std::size_t i = 0; i < materials.size(); ++i) {
+    const tinyobj::material_t &mat = materials[i];
+    m->kd = glm::vec3(mat.diffuse[0], mat.diffuse[1], mat.diffuse[2]);
+    m->ks = glm::vec3(mat.specular[0], mat.specular[1], mat.specular[2]);
+  }
 
   size_t vertices_offset = 0;
 
