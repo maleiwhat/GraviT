@@ -418,7 +418,8 @@ void ResetCameraView(const commandline::Options &options, const Box3D &scene_bou
     *eye = options.eye;
   } else {
     float diag = glm::length(scene_bound.extent());
-    *eye = scene_bound.centroid() + (2.f * diag * glm::vec3(0.f, 0.f, 1.f));
+    *eye = scene_bound.centroid() + (0.9f * diag * glm::vec3(0.f, 0.f, 1.f));
+    // *eye = scene_bound.centroid() + (2.f * diag * glm::vec3(0.f, 0.f, 1.f));
   }
   *look = options.set_look ? options.look : scene_bound.centroid();
   *up = options.set_up ? options.up : glm::vec3(0.0, 1.0, 0.0);
@@ -908,7 +909,7 @@ void Kill() {
 }
 
 float pan_speed = 0.005f;
-float move_speed = 10.0f;
+float move_speed = 1.02f;
 void KeyboardFunc(unsigned char key, int x, int y) {
 
   glm::vec3 eye = g_camera->getEyePoint();
@@ -934,14 +935,15 @@ void KeyboardFunc(unsigned char key, int x, int y) {
     ResetCameraView(*g_options, g_scene_bound, &eye, &focal, &up);
     break;
 
-  case 'z':
   case 'w':
-    eye += move_speed * look;
-    focal += move_speed * look;
-    break;
   case 't':
-    eye -= move_speed * look;
-    focal -= move_speed * look;
+    glm::vec3 new_eye_pos = move_speed * eye;
+    float r = glm::length(new_eye_pos - g_scene_bound.centroid());
+    float sign = (key == 'w') ? 1.f : -1.f;
+    if (r > glm::length(g_scene_bound.extent()) * 0.001) {
+      eye += sign * new_eye_pos;
+    }
+    // focal += sign * move_speed * look;
     break;
   case 'a':
     eye += -move_speed * tangent;
@@ -998,10 +1000,16 @@ static void MouseFunc(int button, int state, int x, int y) {
       glm::vec3 up = g_camera->getUpVector();
       glm::vec3 look = glm::normalize(focal - eye);
 
-      float sign = button == 4 ? -1.f : 1.f;
-
-      eye = eye + (sign * move_speed * look);
-      focal = focal + (sign * move_speed * look);
+      glm::vec3 new_eye_pos = move_speed * eye;
+      float r = glm::length(new_eye_pos - g_scene_bound.centroid());
+      float sign = button == 3 ? 1.f : -1.f;
+      if (r > glm::length(g_scene_bound.extent()) * 0.001) {
+        eye += sign * new_eye_pos;
+        // focal += sign * move_speed * look;
+      }
+      // float sign = button == 4 ? -1.f : 1.f;
+      // eye = eye + (sign * move_speed * look);
+      // // focal = focal + (sign * move_speed * look);
       g_camera->lookAt(eye, focal, up);
     }
   }
