@@ -66,9 +66,10 @@
 
 #include "apps/render/MpiApp.h"
 
+#include "gvt/render/data/reader/ObjReader.h"
+
 // warning: ply.h must be included after tracer related headers
 #include <ply.h>
-#include <tiny_obj_loader.h>
 
 #if defined(__APPLE__)
 #include <GLUT/glut.h>
@@ -694,86 +695,168 @@ void CreatePlyDatabase(const MpiInfo &mpi, const commandline::Options &options) 
 } // void CreatePlyDatabase(const commandline::Options& options) {
 
 void CreateObjDatabase(const MpiInfo &mpi, const commandline::Options &options) {
-  // void CreateObjDatabase(
-  // const std::string& filename, const Mat4& model_transform, std::vector<Geometry*>* geometries) {
 
-  std::vector<tinyobj::shape_t> shapes;
-  std::vector<tinyobj::material_t> materials;
-  std::string err;
-  const char* mtl_basepath = nullptr;
-  bool success = LoadObj(shapes, materials, err, options.infile.c_str(), mtl_basepath);
-  if (!success) {
-    std::cout << "tinyobj error" << std::endl;
-    exit(1);
+  gvt::render::RenderContext *cntxt = gvt::render::RenderContext::instance();
+  if (cntxt == NULL) {
+    std::cout << "Something went wrong initializing the context" << std::endl;
+    exit(0);
   }
 
-  //   int num_prims = 0;
-  //   for (int i = 0; i < shapes.size(); ++i) {
-  //     const tinyobj::mesh_t& mesh = shapes[i].mesh;
-  //     if ((mesh.indices.size() % 3) != 0) {
-  //       printf("error inconsistent indices size %lu", mesh.indices.size());
-  //       exit(1);
-  //     }
-  //     num_prims += (mesh.indices.size() / 3);
-  //   }
-  //
-  //   if (num_prims < 1) {
-  //     std::cout << "error: unable to flatten meshes (no mesh found)\n";
-  //     exit(1);
-  //   }
-  //
-  //   int num_vertices = 0;
-  //   for (int i = 0; i < shapes.size(); ++i) {
-  //     const tinyobj::mesh_t& mesh = shapes[i].mesh;
-  //     if ((mesh.positions.size() % 3) != 0) {
-  //       printf("error inconsistent positions size %lu", mesh.positions.size());
-  //       exit(1);
-  //     }
-  //     num_vertices += (mesh.positions.size() / 3);
-  //   }
-  //
-  //   std::vector<Vec3> vertices;
-  //   std::vector<std::size_t> indices;
-  //
-  //   vertices.reserve(num_vertices);
-  //   indices.reserve(3 * num_prims);
-  //
-  //   int vid = 0;
-  //
-  //   int vertices_index = 0;
-  //   int indices_index = 0;
-  //   int vertices_offset = 0;
-  //
-  //   printf("loaded obj file...\n");
-  //   printf("number of vertices: %d\n", num_vertices);
-  //   printf("number of primitives: %d\n", num_prims);
-  //
-  //   Aabb mesh_bound;
-  //   for (std::size_t i = 0; i < shapes.size(); ++i) {
-  //     const tinyobj::mesh_t& mesh = shapes[i].mesh;
-  //     // const std::vector<float>& pos = mesh.positions;
-  //     // const std::vector<unsigned int>& indices = mesh.indices;
-  //
-  //     for (std::size_t j = 0; j < mesh.indices.size(); ++j) {
-  //       indices.push_back(mesh.indices[j]);
-  //     }
-  //
-  //     for (std::size_t j = 0; j < mesh.positions.size(); j += 3) {
-  //       Vec4 vertex4(mesh.positions[j], mesh.positions[j + 1],
-  //                    mesh.positions[j + 2], Real(1));
-  //       vertex4 = model_transform * vertex4;
-  //       Vec3 vertex(vertex4);
-  //       mesh_bound.merge(vertex);
-  //       vertices.push_back(vertex);
-  //     }
-  //   }
-  //
-  //   Mat4 object2world;
-  //   Mat4 world2object = glm::inverse(object2world);
-  //   geometries->push_back(
-  //       new TriangleMesh("unknown_mesh_name", DRT_INVALID_MATERIAL_ID,
-  //                        std::move(vertices), std::move(indices), mesh_bound,
-  //                      object2world, world2object, num_vertices, num_prims));
+  gvt::core::DBNodeH root = cntxt->getRootNode();
+
+  // add the data - mesh in this case
+  gvt::core::DBNodeH dataNodes = cntxt->createNodeFromType("Data", "Data", root.UUID());
+
+  gvt::core::DBNodeH bunnyMeshNode = cntxt->createNodeFromType("Mesh", "bunny", dataNodes.UUID());
+  {
+    std::string objPath = std::string("../data/geom/bunny.obj");
+    // if(cmd.isSet("obj"))
+    // {
+    //   objPath = cmd.getValue<std::string>("obj")[0];
+    // }
+
+    // path assumes binary is run as bin/gvtFileApp
+    gvt::render::data::domain::reader::ObjReader objReader(objPath);
+    // right now mesh must be converted to gvt format
+    Mesh *mesh = objReader.getMesh();
+    mesh->generateNormals();
+
+    mesh->computeBoundingBox();
+    Box3D *meshbbox = mesh->getBoundingBox();
+
+    // add bunny mesh to the database
+
+    bunnyMeshNode["file"] = objPath;
+    bunnyMeshNode["bbox"] = (unsigned long long)meshbbox;
+    bunnyMeshNode["ptr"] = (unsigned long long)mesh;
+  }
+
+  // create the instance
+  gvt::core::DBNodeH instNodes = cntxt->createNodeFromType("Instances", "Instances", root.UUID());
+
+  gvt::core::DBNodeH instnode = cntxt->createNodeFromType("Instance", "inst", instNodes.UUID());
+  gvt::core::DBNodeH meshNode = bunnyMeshNode;
+  Box3D *mbox = (Box3D *)meshNode["bbox"].value().toULongLong();
+
+  instnode["id"] = 0; // unique id per instance
+  instnode["meshRef"] = meshNode.UUID();
+
+  // transform bunny
+  float scale = 1.0;
+  auto m = new glm::mat4(1.f);
+  auto minv = new glm::mat4(1.f);
+  auto normi = new glm::mat3(1.f);
+  //*m = glm::translate(*m, glm::vec3(0, 0, 0));
+  //*m *glm::mat4::createTranslation(0.0, 0.0, 0.0);
+  //*m = *m * glm::mat4::createScale(scale, scale, scale);
+  *m = glm::scale(*m, glm::vec3(scale, scale, scale));
+
+  instnode["mat"] = (unsigned long long)m;
+  *minv = glm::inverse(*m);
+  instnode["matInv"] = (unsigned long long)minv;
+  *normi = glm::transpose(glm::inverse(glm::mat3(*m)));
+  instnode["normi"] = (unsigned long long)normi;
+
+  // transform mesh bounding box
+  auto il = glm::vec3((*m) * glm::vec4(mbox->bounds_min, 1.f));
+  auto ih = glm::vec3((*m) * glm::vec4(mbox->bounds_max, 1.f));
+  Box3D *ibox = new gvt::render::data::primitives::Box3D(il, ih);
+  instnode["bbox"] = (unsigned long long)ibox;
+  instnode["centroid"] = ibox->centroid();
+
+  // add lights, camera, and film to the database
+
+  // add point light sources
+  gvt::core::DBNodeH lightNodes = cntxt->createNodeFromType("Lights", "Lights", root.UUID());
+
+  gvt::core::DBNodeH lightNode = cntxt->createNodeFromType("PointLight", "light", lightNodes.UUID());
+  lightNode["position"] = glm::vec3(0.0, 0.1, 0.5);
+  lightNode["color"] = glm::vec3(1.0, 1.0, 1.0);
+
+  gvt::core::DBNodeH point_light;
+  for (std::size_t i = 0; i < options.point_lights.size(); ++i) {
+    std::stringstream ss;
+    ss << i;
+    std::string name("p");
+    name += ss.str();
+    point_light = cntxt->createNodeFromType("PointLight", name, lightNodes.UUID());
+    point_light["position"] = options.point_lights[i].position;
+    point_light["color"] = options.point_lights[i].color;
+  }
+
+ 
+  bool light_specified = options.lpos || options.lcolor;
+  if (light_specified || (!light_specified && options.point_lights.empty())) {
+    std::stringstream ss;
+    ss << options.point_lights.size();
+    std::string name("p");
+    name += ss.str();
+    point_light = cntxt->createNodeFromType("PointLight", name, lightNodes.UUID());
+    point_light["position"] = options.light_position;
+    point_light["color"] = options.light_color;
+  }
+
+  // set the camera
+  gvt::core::DBNodeH camNode = cntxt->createNodeFromType("Camera", "cam", root.UUID());
+  camNode["eyePoint"] = glm::vec3(0.0, 0.1, 0.3);
+  camNode["focus"] = glm::vec3(0.0, 0.1, -0.3);
+  camNode["upVector"] = glm::vec3(0.0, 1.0, 0.0);
+  camNode["fov"] = (float)(45.0 * M_PI / 180.0);
+  camNode["rayMaxDepth"] = (int)1;
+  camNode["raySamples"] = (int)1;
+  camNode["jitterWindowSize"]= (float) 0;
+
+  // gvt::core::DBNodeH camNode = cntxt->createNodeFromType("Camera", "conecam", root.UUID());
+  // camNode["eyePoint"] = options.eye;
+  // camNode["focus"] = options.look;
+  // camNode["upVector"] = options.up;
+  // camNode["fov"] = static_cast<float>(options.fov * M_PI / 180.0);
+  // camNode["rayMaxDepth"] = static_cast<int>(options.ray_depth);
+  // camNode["raySamples"] = static_cast<int>(options.ray_samples);
+
+  // film
+  gvt::core::DBNodeH filmNode = cntxt->createNodeFromType("Film", "conefilm", root.UUID());
+  filmNode["width"] = options.width;
+  filmNode["height"] = options.height;
+
+  gvt::core::DBNodeH schedNode = cntxt->createNodeFromType("Schedule", "Enzosched", root.UUID());
+  // if (cmd.isSet("domain"))
+  //   schedNode["type"] = gvt::render::scheduler::Domain;
+  // else
+  //   schedNode["type"] = gvt::render::scheduler::Image;
+  if (options.tracer == commandline::Options::ASYNC_DOMAIN || options.tracer == commandline::Options::SYNC_DOMAIN) {
+    schedNode["type"] = gvt::render::scheduler::Domain;
+  } else {
+    schedNode["type"] = gvt::render::scheduler::Image;
+  }
+
+  if (options.adapter == commandline::Options::EMBREE) {
+    schedNode["adapter"] = gvt::render::adapter::Embree;
+  } else if (options.adapter == commandline::Options::MANTA) {
+    schedNode["adapter"] = gvt::render::adapter::Manta;
+  } else if (options.adapter == commandline::Options::OPTIX) {
+    schedNode["adapter"] = gvt::render::adapter::Optix;
+  } else {
+    schedNode["adapter"] = gvt::render::adapter::Embree;
+  }
+
+  // end db setup
+
+  // use db to create structs needed by system
+
+  // setup gvtCamera from database entries
+  g_camera = new gvt::render::data::scene::gvtPerspectiveCamera;
+  glm::vec3 cameraposition = camNode["eyePoint"].value().tovec3();
+  glm::vec3 focus = camNode["focus"].value().tovec3();
+  float fov = camNode["fov"].value().toFloat();
+  glm::vec3 up = camNode["upVector"].value().tovec3();
+  int rayMaxDepth = camNode["rayMaxDepth"].value().toInteger();
+  int raySamples = camNode["raySamples"].value().toInteger();
+  g_camera->lookAt(cameraposition, focus, up);
+  g_camera->setMaxDepth(rayMaxDepth);
+  g_camera->setSamples(raySamples);
+  g_camera->setFOV(fov);
+  g_camera->setFilmsize(filmNode["width"].value().toInteger(), filmNode["height"].value().toInteger());
 } // void CreateObjDatabase(const commandline::Options& options) {
 
 void Kill() {
