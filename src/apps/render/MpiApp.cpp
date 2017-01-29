@@ -936,7 +936,7 @@ void KeyboardFunc(unsigned char key, int x, int y) {
     break;
 
   case 'w':
-  case 't':
+  case 't': {
     glm::vec3 new_eye_pos = move_speed * eye;
     float r = glm::length(new_eye_pos - g_scene_bound.centroid());
     float sign = (key == 'w') ? 1.f : -1.f;
@@ -945,6 +945,7 @@ void KeyboardFunc(unsigned char key, int x, int y) {
     }
     // focal += sign * move_speed * look;
     break;
+  }
   case 'a':
     eye += -move_speed * tangent;
     focal += -move_speed * tangent;
