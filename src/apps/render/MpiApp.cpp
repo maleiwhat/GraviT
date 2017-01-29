@@ -341,6 +341,14 @@ public:
     up = glm::vec3(0, sin_phi > 0 ? 1 : -1, 0);
   }
 
+  void pan(float dx, float dy, const glm::mat4 &c2w) {
+    float sdx = dx * 0.001f;
+    float sdy = -dy * 0.001f;
+    glm::vec4 disp = (c2w[0] * sdx) + (c2w[1] * sdy);
+    pos += glm::vec3(disp);
+    center += glm::vec3(disp);
+  }
+
   glm::vec3 getPos() const { return pos; }
   glm::vec3 getUp() const { return up; }
   glm::vec3 getCenter() const { return center; }
@@ -1011,41 +1019,45 @@ void KeyboardFunc(unsigned char key, int x, int y) {
   g_camera->lookAt(eye, focal, up);
 }
 
-bool new_click = false;
+bool g_mouse_left = false;
+bool g_mouse_right = false;
+int g_mouse_x = 0;
+int g_mouse_y = 0;
+float orbit_speed = 0.01f;
+
 static void MouseFunc(int button, int state, int x, int y) {
-
-  new_click = state == GLUT_DOWN;
-
-  if (new_click) {
-    if (button == 3 || button == 4) {
+  if (state == GLUT_DOWN) {
+    g_mouse_x = x;
+    g_mouse_y = y;
+    if (button == GLUT_LEFT_BUTTON) {
+      g_mouse_left = true;
+    } else if (button == GLUT_RIGHT_BUTTON) {
+      g_mouse_right = true;
+    } else if (button == 3 || button == 4) {
       g_camera_state.zoom(button == 3 ? 0.01f : -0.01f);
       g_camera->lookAt(g_camera_state.getPos(), g_camera_state.getCenter(), g_camera_state.getUp());
+    }
+  } else if (state == GLUT_UP) {
+    if (button == GLUT_LEFT_BUTTON) {
+      g_mouse_left = false;
     }
   }
 }
 
-int last_mouse_x = 0;
-int last_mouse_y = 0;
-float orbit_speed = 0.01f;
 static void MotionFunc(int x, int y) {
-  if (new_click) {
-    last_mouse_x = x;
-    last_mouse_y = y;
-    new_click = false;
+  int dx = x - g_mouse_x;
+  int dy = y - g_mouse_y;
+
+  if (g_mouse_left) {
+    g_camera_state.rotate(dx, dy, g_options->width, g_options->height);
+  } else if (g_mouse_right) {
+    g_camera_state.pan(dx, dy, g_camera->getCameraToWorld());
   }
-  int x_diff = x - last_mouse_x;
-  int y_diff = y - last_mouse_y;
-  last_mouse_x = x;
-  last_mouse_y = y;
-
-  g_camera_state.rotate(x_diff, y_diff, g_options->width, g_options->height);
-
-  // glm::vec3 look = focal - eye;
-  // look = glm::rotate(look, -orbit_speed * x_diff, up);
-  // look = glm::rotate(look, -orbit_speed * y_diff, glm::cross(look, up));
-  // eye = focal - look;
 
   g_camera->lookAt(g_camera_state.getPos(), g_camera_state.getCenter(), g_camera_state.getUp());
+
+  g_mouse_x = x;
+  g_mouse_y = y;
 }
 
 void DisplayFunc(void) {
