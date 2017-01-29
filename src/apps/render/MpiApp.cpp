@@ -828,11 +828,11 @@ void CreateObjDatabase(const MpiInfo &mpi, const commandline::Options &options) 
   // the user did not specify any light source
   // use default light source
   if (options.point_lights.empty()) {
-    glm::vec3 p1 = 1.5f * (meshbbox->bounds_min - meshbbox->centroid());
-    glm::vec3 p2 = 1.5f * (meshbbox->bounds_max - meshbbox->centroid());
-    glm::vec3 p3 = 1.5f * (glm::vec3(meshbbox->bounds_min[0], meshbbox->bounds_max[1], meshbbox->bounds_min[2]) -
+    glm::vec3 p1 = 2.0f * (meshbbox->bounds_min - meshbbox->centroid());
+    glm::vec3 p2 = 2.0f * (meshbbox->bounds_max - meshbbox->centroid());
+    glm::vec3 p3 = 2.0f * (glm::vec3(meshbbox->bounds_min[0], meshbbox->bounds_max[1], meshbbox->bounds_min[2]) -
                            meshbbox->centroid());
-    glm::vec3 p4 = 1.5f * (glm::vec3(meshbbox->bounds_max[0], meshbbox->bounds_min[1], meshbbox->bounds_max[2]) -
+    glm::vec3 p4 = 2.0f * (glm::vec3(meshbbox->bounds_max[0], meshbbox->bounds_min[1], meshbbox->bounds_max[2]) -
                            meshbbox->centroid());
 
     point_light = cntxt->createNodeFromType("PointLight", "p1", lightNodes.UUID());
@@ -847,9 +847,10 @@ void CreateObjDatabase(const MpiInfo &mpi, const commandline::Options &options) 
     point_light["position"] = p3;
     point_light["color"] = options.set_light_color ? options.light_color : glm::vec3(0.5);
 
-    point_light = cntxt->createNodeFromType("PointLight", "p4", lightNodes.UUID());
-    point_light["position"] = p4;
-    point_light["color"] = options.set_light_color ? options.light_color : glm::vec3(0.5);
+    // TODO: hpark, adding this light produces an artifact in the bunny scene
+    // point_light = cntxt->createNodeFromType("PointLight", "p4", lightNodes.UUID());
+    // point_light["position"] = p4;
+    // point_light["color"] = options.set_light_color ? options.light_color : glm::vec3(0.3);
   }
 
   // set the camera
