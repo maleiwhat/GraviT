@@ -294,6 +294,7 @@ public:
   CameraState() {}
 
   void reset(const commandline::Options &options, const Box3D &scene_bound) {
+    bound = scene_bound;
     glm::vec3 eye, look;
     if (options.set_eye) {
       eye = options.eye;
@@ -318,6 +319,13 @@ public:
     up = glm::vec3(0, sin_phi > 0 ? 1 : -1, 0);
   }
 
+  void zoom(float offset) {
+    float extent = glm::length(bound.extent());
+    float new_rho = glm::clamp(rho - offset, extent * 0.01f, extent * 10.0f);
+    pos = (pos - center) * (new_rho / rho) + center;
+    rho = new_rho;
+  }
+
   void rotate(float dx, float dy, int image_width, int image_height) {
     float dtheta = dx * (M_PI / image_width);
     float dphi = dy * (M_PI / image_height);
@@ -340,6 +348,7 @@ public:
 private:
   float rho, phi, theta;
   glm::vec3 pos, up, center;
+  Box3D bound;
 };
 
 CameraState g_camera_state;
@@ -1009,22 +1018,8 @@ static void MouseFunc(int button, int state, int x, int y) {
 
   if (new_click) {
     if (button == 3 || button == 4) {
-      glm::vec3 eye = g_camera->getEyePoint();
-      glm::vec3 focal = g_camera->getFocalPoint();
-      glm::vec3 up = g_camera->getUpVector();
-      glm::vec3 look = glm::normalize(focal - eye);
-
-      glm::vec3 new_eye_pos = move_speed * eye;
-      float r = glm::length(new_eye_pos - g_scene_bound.centroid());
-      float sign = button == 3 ? 1.f : -1.f;
-      if (r > glm::length(g_scene_bound.extent()) * 0.001) {
-        eye += sign * new_eye_pos;
-        // focal += sign * move_speed * look;
-      }
-      // float sign = button == 4 ? -1.f : 1.f;
-      // eye = eye + (sign * move_speed * look);
-      // // focal = focal + (sign * move_speed * look);
-      g_camera->lookAt(eye, focal, up);
+      g_camera_state.zoom(button == 3 ? 0.01f : -0.01f);
+      g_camera->lookAt(g_camera_state.getPos(), g_camera_state.getCenter(), g_camera_state.getUp());
     }
   }
 }
