@@ -25,6 +25,7 @@
 // MpiApp.cpp
 //
 
+#include <cmath>
 #include <cstdlib>
 #include <glm/glm.hpp>
 #include <glm/gtx/rotate_vector.hpp>
@@ -133,40 +134,6 @@ void PrintUsage(const char *argv) {
 }
 
 void Parse(int argc, char **argv, Options *options) {
-  // default settings
-  options->tracer = Options::ASYNC_DOMAIN;
-  options->adapter = Options::EMBREE;
-  options->width = 1920;
-  options->height = 1080;
-  options->obj = false;
-  options->instanceCountX = 1;
-  options->instanceCountY = 1;
-  options->instanceCountZ = 1;
-  options->numFrames = 1;
-  // options->numTbbThreads;
-  // options->infile;
-  options->model_name = std::string("unknownmodel");
-
-  // light
-  options->light_position = glm::vec3(512.0, 512.0, 2048.0);
-  options->light_color = glm::vec3(100.0, 100.0, 500.0);
-
-  // camera
-  options->eye = glm::vec3(512.0, 512.0, 4096.0);
-  options->look = glm::vec3(512.0, 512.0, 0.0);
-  options->up = glm::vec3(0.0, 1.0, 0.0);
-  options->fov = 25.0;
-
-  // ray
-  options->ray_depth = 1;
-  options->ray_samples = 1;
-
-  options->warmup_frames = 10;
-  options->active_frames = 100;
-
-  options->interactive = false;
-
-  options->numTbbThreads = -1;
   for (int i = 1; i < argc; ++i) {
     if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
       PrintUsage(argv[0]);
@@ -322,6 +289,61 @@ gvt::render::unit::Worker *g_worker;
 gvt::render::algorithm::AbstractTrace *g_tracer;
 int g_num_frames = 0;
 
+class CameraState {
+public:
+  CameraState() {}
+
+  void reset(const commandline::Options &options, const Box3D &scene_bound) {
+    glm::vec3 eye, look;
+    if (options.set_eye) {
+      eye = options.eye;
+    } else {
+      float diag = glm::length(scene_bound.extent());
+      eye = scene_bound.centroid() + (2.f * diag * glm::vec3(0.f, 0.f, 1.f));
+    }
+    look = options.set_look ? options.look : scene_bound.centroid();
+    // *up = options.set_up ? options.up : glm::vec3(0.0, 1.0, 0.0);
+    pos = eye;
+    center = look;
+    glm::vec3 camvec = eye - look;
+    rho = glm::length(camvec);
+    theta = glm::atan(camvec.y, camvec.z);
+    camvec = glm::normalize(camvec);
+    phi = glm::acos(camvec.y);
+    float sin_phi = sin(phi);
+    if (sin_phi == 0) {
+      phi += 0.00001f;
+      sin_phi = sin(phi);
+    }
+    up = glm::vec3(0, sin_phi > 0 ? 1 : -1, 0);
+  }
+
+  void rotate(float dx, float dy, int image_width, int image_height) {
+    float dtheta = dx * (M_PI / image_width);
+    float dphi = dy * (M_PI / image_height);
+    theta += dtheta;
+    phi = glm::clamp(phi + dphi, (float)0.0, (float)M_PI);
+    float sin_phi = sin(phi);
+    if (sin_phi == 0) {
+      phi += 0.00001f;
+      sin_phi = sin(phi);
+    }
+    glm::vec3 camvec(rho * sin_phi * sin(theta), rho * cos(phi), rho * sin_phi * cos(theta));
+    pos = center + camvec;
+    up = glm::vec3(0, sin_phi > 0 ? 1 : -1, 0);
+  }
+
+  glm::vec3 getPos() const { return pos; }
+  glm::vec3 getUp() const { return up; }
+  glm::vec3 getCenter() const { return center; }
+
+private:
+  float rho, phi, theta;
+  glm::vec3 pos, up, center;
+};
+
+CameraState g_camera_state;
+
 typedef struct Vertex {
   float x, y, z;
   float nx, ny, nz;
@@ -410,19 +432,6 @@ std::string GetTestName(const MpiInfo &mpi, const commandline::Options &options)
   std::string filename("prof_" + options.model_name + "_" + tracer_name + "_size_" + mpi_size_str + "_rank_" +
                        rank_str);
   return filename;
-}
-
-void ResetCameraView(const commandline::Options &options, const Box3D &scene_bound, glm::vec3 *eye, glm::vec3 *look,
-                     glm::vec3 *up) {
-  if (options.set_eye) {
-    *eye = options.eye;
-  } else {
-    float diag = glm::length(scene_bound.extent());
-    *eye = scene_bound.centroid() + (0.9f * diag * glm::vec3(0.f, 0.f, 1.f));
-    // *eye = scene_bound.centroid() + (2.f * diag * glm::vec3(0.f, 0.f, 1.f));
-  }
-  *look = options.set_look ? options.look : scene_bound.centroid();
-  *up = options.set_up ? options.up : glm::vec3(0.0, 1.0, 0.0);
 }
 
 void CreatePlyDatabase(const MpiInfo &mpi, const commandline::Options &options) {
@@ -632,7 +641,6 @@ void CreatePlyDatabase(const MpiInfo &mpi, const commandline::Options &options) 
     point_light["color"] = options.point_lights[i].color;
   }
 
- 
   bool light_specified = options.set_light_position || options.set_light_color;
   if (light_specified || (!light_specified && options.point_lights.empty())) {
     std::stringstream ss;
@@ -829,30 +837,29 @@ void CreateObjDatabase(const MpiInfo &mpi, const commandline::Options &options) 
 
     point_light = cntxt->createNodeFromType("PointLight", "p1", lightNodes.UUID());
     point_light["position"] = p1;
-    point_light["color"] = options.set_light_color ? options.light_color : glm::vec3(5.0, 5.0, 5.0);
+    point_light["color"] = options.set_light_color ? options.light_color : glm::vec3(0.5);
 
     point_light = cntxt->createNodeFromType("PointLight", "p2", lightNodes.UUID());
     point_light["position"] = p2;
-    point_light["color"] = options.set_light_color ? options.light_color : glm::vec3(5.0, 5.0, 5.0);
+    point_light["color"] = options.set_light_color ? options.light_color : glm::vec3(0.5);
 
     point_light = cntxt->createNodeFromType("PointLight", "p3", lightNodes.UUID());
     point_light["position"] = p3;
-    point_light["color"] = options.set_light_color ? options.light_color : glm::vec3(5.0, 5.0, 5.0);
+    point_light["color"] = options.set_light_color ? options.light_color : glm::vec3(0.5);
 
     point_light = cntxt->createNodeFromType("PointLight", "p4", lightNodes.UUID());
     point_light["position"] = p4;
-    point_light["color"] = options.set_light_color ? options.light_color : glm::vec3(5.0, 5.0, 5.0);
+    point_light["color"] = options.set_light_color ? options.light_color : glm::vec3(0.5);
   }
 
   // set the camera
   gvt::core::DBNodeH camNode = cntxt->createNodeFromType("Camera", "cam", root.UUID());
 
-  glm::vec3 eyepos, lookpos, upvec;
-  ResetCameraView(options, *meshbbox, &eyepos, &lookpos, &upvec);
+  g_camera_state.reset(options, *meshbbox);
 
-  camNode["eyePoint"] = eyepos;
-  camNode["focus"] = lookpos;
-  camNode["upVector"] = upvec;
+  camNode["eyePoint"] = g_camera_state.getPos();
+  camNode["focus"] = g_camera_state.getCenter();
+  camNode["upVector"] = g_camera_state.getUp();
   camNode["fov"] = (float)(45.0 * M_PI / 180.0);
   camNode["rayMaxDepth"] = static_cast<int>(options.ray_depth);
   camNode["raySamples"] = static_cast<int>(options.ray_samples);
@@ -924,15 +931,20 @@ void KeyboardFunc(unsigned char key, int x, int y) {
     printf("pressed q\n");
     g_quit_key_entered = true;
     break;
-  case 'p':
+  case 'p': {
     std::cout << "================" << std::endl;
-    std::cout << "eye         -> " << eye[0] << " " << eye[1] << " " << eye[2] << std::endl;
-    std::cout << "focal point -> " << focal[0] << " " << focal[1] << " " << focal[2] << std::endl;
-    std::cout << "up vector   -> " << up[0] << " " << up[1] << " " << up[2] << std::endl;
-    break;
+    glm::vec3 campos = g_camera_state.getPos();
+    glm::vec3 center = g_camera_state.getCenter();
+    std::cout << "eye         -> " << campos[0] << " " << campos[1] << " " << campos[2] << std::endl;
+    std::cout << "focal point -> " << center[0] << " " << center[1] << " " << center[2] << std::endl;
+    // std::cout << "up vector   -> " << up[0] << " " << up[1] << " " << up[2] << std::endl; }
+  } break;
 
   case ' ':
-    ResetCameraView(*g_options, g_scene_bound, &eye, &focal, &up);
+    g_camera_state.reset(*g_options, g_scene_bound);
+    eye = g_camera_state.getPos();
+    focal = g_camera_state.getCenter();
+    up = g_camera_state.getUp();
     break;
 
   case 'w':
@@ -1030,16 +1042,14 @@ static void MotionFunc(int x, int y) {
   last_mouse_x = x;
   last_mouse_y = y;
 
-  glm::vec3 eye = g_camera->getEyePoint();
-  glm::vec3 focal = g_camera->getFocalPoint();
-  glm::vec3 up = g_camera->getUpVector();
+  g_camera_state.rotate(x_diff, y_diff, g_options->width, g_options->height);
 
-  glm::vec3 look = focal - eye;
-  look = glm::rotate(look, -orbit_speed * x_diff, up);
-  look = glm::rotate(look, -orbit_speed * y_diff, glm::cross(look, up));
-  eye = focal - look;
+  // glm::vec3 look = focal - eye;
+  // look = glm::rotate(look, -orbit_speed * x_diff, up);
+  // look = glm::rotate(look, -orbit_speed * y_diff, glm::cross(look, up));
+  // eye = focal - look;
 
-  g_camera->lookAt(eye, focal, up);
+  g_camera->lookAt(g_camera_state.getPos(), g_camera_state.getCenter(), g_camera_state.getUp());
 }
 
 void DisplayFunc(void) {
@@ -1103,22 +1113,15 @@ void CreateTracer(const commandline::Options &options, const gvt::render::unit::
   switch (options.tracer) {
   case commandline::Options::ASYNC_DOMAIN: {
     if (mpi.rank == 0) std::cout << "start ASYNC_DOMAIN" << std::endl;
-
     g_image = new Image(g_camera->getFilmSizeWidth(), g_camera->getFilmSizeHeight(), GetTestName(mpi, options));
-
     g_worker = new Worker(mpi, options, g_camera, g_image);
-
   } break;
 
-  case commandline::Options::SYNC_DOMAIN: {
-
-    if (mpi.rank == 0) std::cout << "start SYNC_DOMAIN" << std::endl;
-
-    g_image = new Image(g_camera->getFilmSizeWidth(), g_camera->getFilmSizeHeight(), GetTestName(mpi, options));
-
-    g_tracer = new gvt::render::algorithm::Tracer<DomainScheduler>(g_camera->rays, *g_image);
-
-  } break;
+  // case commandline::Options::SYNC_DOMAIN: {
+  //   if (mpi.rank == 0) std::cout << "start SYNC_DOMAIN" << std::endl;
+  //   g_image = new Image(g_camera->getFilmSizeWidth(), g_camera->getFilmSizeHeight(), GetTestName(mpi, options));
+  //   g_tracer = new gvt::render::algorithm::Tracer<DomainScheduler>(g_camera->rays, *g_image);
+  // } break;
 
   default: {
     std::cout << "rank " << mpi.rank << " error found unsupported tracer type " << options.tracer << std::endl;
