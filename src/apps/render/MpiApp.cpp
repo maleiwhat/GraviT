@@ -845,12 +845,22 @@ void CreateObjDatabase(const MpiInfo &mpi, const commandline::Options &options) 
   // the user did not specify any light source
   // use default light source
   if (options.point_lights.empty()) {
-    glm::vec3 p1 = 2.0f * (meshbbox->bounds_min - meshbbox->centroid());
-    glm::vec3 p2 = 2.0f * (meshbbox->bounds_max - meshbbox->centroid());
-    glm::vec3 p3 = 2.0f * (glm::vec3(meshbbox->bounds_min[0], meshbbox->bounds_max[1], meshbbox->bounds_min[2]) -
-                           meshbbox->centroid());
-    glm::vec3 p4 = 2.0f * (glm::vec3(meshbbox->bounds_max[0], meshbbox->bounds_min[1], meshbbox->bounds_max[2]) -
-                           meshbbox->centroid());
+    glm::vec3 centroid = meshbbox->centroid();
+    glm::vec3 p1 = centroid + 2.0f * (meshbbox->bounds_min - centroid);
+    glm::vec3 p2 = centroid + 2.0f * (meshbbox->bounds_max - centroid);
+    glm::vec3 p3 =
+        centroid +
+        2.0f * (glm::vec3(meshbbox->bounds_min[0], meshbbox->bounds_max[1], meshbbox->bounds_min[2]) - centroid);
+    glm::vec3 p4 =
+        centroid +
+        2.0f * (glm::vec3(meshbbox->bounds_max[0], meshbbox->bounds_min[1], meshbbox->bounds_max[2]) - centroid);
+
+    glm::vec3 p5 =
+        centroid +
+        2.0f * (glm::vec3(meshbbox->bounds_min[0], meshbbox->bounds_max[1], meshbbox->bounds_max[2]) - centroid);
+    glm::vec3 p6 =
+        centroid +
+        2.0f * (glm::vec3(meshbbox->bounds_max[0], meshbbox->bounds_max[1], meshbbox->bounds_min[2]) - centroid);
 
     point_light = cntxt->createNodeFromType("PointLight", "p1", lightNodes.UUID());
     point_light["position"] = p1;
@@ -864,11 +874,22 @@ void CreateObjDatabase(const MpiInfo &mpi, const commandline::Options &options) 
     point_light["position"] = p3;
     point_light["color"] = options.set_light_color ? options.light_color : glm::vec3(0.5);
 
-    // TODO: hpark, adding this light produces an artifact in the bunny scene
-    // point_light = cntxt->createNodeFromType("PointLight", "p4", lightNodes.UUID());
-    // point_light["position"] = p4;
-    // point_light["color"] = options.set_light_color ? options.light_color : glm::vec3(0.3);
+    point_light = cntxt->createNodeFromType("PointLight", "p4", lightNodes.UUID());
+    point_light["position"] = p4;
+    point_light["color"] = options.set_light_color ? options.light_color : glm::vec3(0.5);
+
+    point_light = cntxt->createNodeFromType("PointLight", "p5", lightNodes.UUID());
+    point_light["position"] = p5;
+    point_light["color"] = options.set_light_color ? options.light_color : glm::vec3(0.5);
+
+    point_light = cntxt->createNodeFromType("PointLight", "p6", lightNodes.UUID());
+    point_light["position"] = p6;
+    point_light["color"] = options.set_light_color ? options.light_color : glm::vec3(0.5);
   }
+
+  // TODO: ambient light is currently not supported
+  // gvt::core::DBNodeH ambient_light = cntxt->createNodeFromType("AmbientLight", "p5", lightNodes.UUID());
+  // ambient_light["color"] = options.set_light_color ? options.light_color : glm::vec3(1.0);
 
   // set the camera
   gvt::core::DBNodeH camNode = cntxt->createNodeFromType("Camera", "cam", root.UUID());

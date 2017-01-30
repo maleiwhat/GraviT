@@ -99,6 +99,8 @@ DBNodeH RenderContext::createNodeFromType(String type, String name, Uuid parent)
     n += gvt::core::CoreContext::createNode("mat");
     n += gvt::core::CoreContext::createNode("matInv");
     n += gvt::core::CoreContext::createNode("normi");
+  } else if (type == String("AmbientLight")) {
+    n += gvt::core::CoreContext::createNode("color");
   } else if (type == String("PointLight")) {
     n += gvt::core::CoreContext::createNode("position");
     n += gvt::core::CoreContext::createNode("color");

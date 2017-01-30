@@ -212,7 +212,12 @@ public:
                             local_queue[hits[i].next].push_back(r);
                           } else if (r.type == gvt::render::actor::Ray::SHADOW && glm::length(r.color) > 0) {
                             tbb::mutex::scoped_lock fbloc(colorBuf_mutex[r.id % width]);
-                            colorBuf[r.id] += glm::vec4(r.color, r.w);
+                            // colorBuf[r.id] += glm::vec4(r.color, r.w);
+                            glm::vec3 color(colorBuf[r.id].r, colorBuf[r.id].g, colorBuf[r.id].b);
+                            color += r.color;
+                            color = glm::clamp(color, glm::vec3(0), glm::vec3(1));
+                            r.w = glm::clamp(r.w, 0.f, 1.f);
+                            colorBuf[r.id] = glm::vec4(color, r.w);
                             // colorBuf[r.id] += r.color;
                           }
                         }
