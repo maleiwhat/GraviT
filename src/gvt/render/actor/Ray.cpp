@@ -36,7 +36,8 @@
 
 using namespace gvt::render::actor;
 
-const float Ray::RAY_EPSILON = 1.e-6;
+// const float Ray::RAY_EPSILON = 16.f * std::numeric_limits<float>::epsilon();
+const float Ray::RAY_EPSILON = 1.e-4;
 // void Ray::setDirection(glm::vec3 dir) {
 //   direction = glm::normalize(dir);
 //   //  inverseDirection = 1.f / direction;

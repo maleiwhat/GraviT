@@ -364,15 +364,14 @@ struct embreeParallelTrace {
 
       if (!gvt::render::data::primitives::Shade(material, r, normal, light, lightPos, c)) continue;
 
-      const float multiplier = 1.0f - gvt::render::actor::Ray::RAY_EPSILON;
-      const float t_shadow = multiplier * r.t;
+      const float t_shadow = (1.f - gvt::render::actor::Ray::RAY_EPSILON) * r.t;
 
       const glm::vec3 origin = r.origin + r.direction * t_shadow;
       const glm::vec3 dir = lightPos - origin;
       const float t_max = dir.length();
 
       // note: ray copy constructor is too heavy, so going to build it manually
-      shadowRays.push_back(Ray(r.origin + r.direction * t_shadow, dir, r.w, Ray::SHADOW, r.depth));
+      shadowRays.push_back(Ray(origin, dir, r.w, Ray::SHADOW, r.depth));
 
       Ray &shadow_ray = shadowRays.back();
       shadow_ray.t = r.t;
@@ -668,9 +667,7 @@ struct embreeParallelTrace {
               // replace current ray with generated secondary ray
               if (ndepth > 0 && r.w > p) {
                 r.type = gvt::render::actor::Ray::SECONDARY;
-                const float multiplier =
-                    1.0f - 16.0f * std::numeric_limits<float>::epsilon(); // TODO: move out somewhere / make static
-                const float t_secondary = multiplier * r.t;
+                const float t_secondary = (1.f - gvt::render::actor::Ray::RAY_EPSILON) * r.t;
                 r.origin = r.origin + r.direction * t_secondary;
 
                 // TODO: remove this dependency on mesh, store material object in the database
