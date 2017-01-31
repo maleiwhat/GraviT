@@ -228,6 +228,8 @@ void Parse(int argc, char **argv, Options *options) {
       options->active_frames = atoi(argv[++i]);
     } else if (strcmp(argv[i], "--gl") == 0) {
       options->interactive = true;
+    } else if (strcmp(argv[i], "--ply-with-color") == 0) {
+      options->ply_with_color = true;
     } else {
       printf("error: %s not defined\n", argv[i]);
       exit(1);
@@ -291,7 +293,11 @@ int g_num_frames = 0;
 
 class CameraState {
 public:
-  CameraState() {}
+  CameraState() : sensitivity(1.f) {}
+
+  void increaseSensitivity() { sensitivity *= 4.f; }
+  void decreaseSensitivity() { sensitivity /= 4.f; }
+  float getSensitivity() { return sensitivity; }
 
   void reset(const commandline::Options &options, const Box3D &scene_bound) {
     bound = scene_bound;
@@ -321,7 +327,7 @@ public:
 
   void zoom(float offset) {
     float extent = glm::length(bound.extent());
-    float new_rho = glm::clamp(rho - offset, extent * 0.01f, extent * 10.0f);
+    float new_rho = glm::clamp(rho - (offset * sensitivity), extent * 0.01f, extent * 10.f);
     pos = (pos - center) * (new_rho / rho) + center;
     rho = new_rho;
   }
@@ -342,8 +348,8 @@ public:
   }
 
   void pan(float dx, float dy, const glm::mat4 &c2w) {
-    float sdx = dx * 0.001f;
-    float sdy = -dy * 0.001f;
+    float sdx = dx * 0.001f * sensitivity;
+    float sdy = -dy * 0.001f * sensitivity;
     glm::vec4 disp = (c2w[0] * sdx) + (c2w[1] * sdy);
     pos += glm::vec3(disp);
     center += glm::vec3(disp);
@@ -357,13 +363,15 @@ private:
   float rho, phi, theta;
   glm::vec3 pos, up, center;
   Box3D bound;
+  float sensitivity;
 };
 
 CameraState g_camera_state;
 
 typedef struct Vertex {
   float x, y, z;
-  float nx, ny, nz;
+  unsigned char cx, cy, cz;
+  // float nx, ny, nz;
   void *other_props; /* other properties */
 } Vertex;
 
@@ -375,12 +383,15 @@ typedef struct Face {
 
 PlyProperty vert_props[] = {
   /* list of property information for a vertex */
-  { "x", Float32, Float32, offsetof(Vertex, x), 0, 0, 0, 0 },
-  { "y", Float32, Float32, offsetof(Vertex, y), 0, 0, 0, 0 },
-  { "z", Float32, Float32, offsetof(Vertex, z), 0, 0, 0, 0 },
-  { "nx", Float32, Float32, offsetof(Vertex, nx), 0, 0, 0, 0 },
-  { "ny", Float32, Float32, offsetof(Vertex, ny), 0, 0, 0, 0 },
-  { "nz", Float32, Float32, offsetof(Vertex, nz), 0, 0, 0, 0 },
+  { "x", Float32, Float32, offsetof(Vertex, x), PLY_SCALAR, 0, 0, 0 },
+  { "y", Float32, Float32, offsetof(Vertex, y), PLY_SCALAR, 0, 0, 0 },
+  { "z", Float32, Float32, offsetof(Vertex, z), PLY_SCALAR, 0, 0, 0 },
+  { "red", Uint8, Uint8, offsetof(Vertex, cx), PLY_SCALAR, 0, 0, 0 },
+  { "green", Uint8, Uint8, offsetof(Vertex, cy), PLY_SCALAR, 0, 0, 0 },
+  { "blue", Uint8, Uint8, offsetof(Vertex, cz), PLY_SCALAR, 0, 0, 0 }
+  // { "nx", Float32, Float32, offsetof(Vertex, nx), 0, 0, 0, 0 },
+  // { "ny", Float32, Float32, offsetof(Vertex, ny), 0, 0, 0, 0 },
+  // { "nz", Float32, Float32, offsetof(Vertex, nz), 0, 0, 0, 0 },
 };
 
 PlyProperty face_props[] = {
@@ -449,6 +460,120 @@ std::string GetTestName(const MpiInfo &mpi, const commandline::Options &options)
   std::string filename("prof_" + options.model_name + "_" + tracer_name + "_size_" + mpi_size_str + "_rank_" +
                        rank_str);
   return filename;
+}
+
+void initCamera(const apps::render::mpi::commandline::Options &options,
+                const gvt::render::data::primitives::Box3D &scene_bound) {
+  gvt::render::RenderContext *cntxt = gvt::render::RenderContext::instance();
+  gvt::core::DBNodeH root = cntxt->getRootNode();
+  gvt::core::DBNodeH cam_node = cntxt->createNodeFromType("Camera", "cam", root.UUID());
+
+  g_camera_state.reset(options, scene_bound);
+
+  int ray_max_depth = static_cast<int>(options.ray_depth);
+  int ray_samples = static_cast<int>(options.ray_samples);
+  float fov = (float)(45.0 * M_PI / 180.0);
+
+  cam_node["eyePoint"] = g_camera_state.getPos();
+  cam_node["focus"] = g_camera_state.getCenter();
+  cam_node["upVector"] = g_camera_state.getUp();
+  cam_node["fov"] = fov;
+  cam_node["rayMaxDepth"] = ray_max_depth;
+  cam_node["raySamples"] = ray_samples;
+  cam_node["jitterWindowSize"] = (float)0;
+
+  g_camera = new gvt::render::data::scene::gvtPerspectiveCamera;
+
+  g_camera->lookAt(g_camera_state.getPos(), g_camera_state.getCenter(), g_camera_state.getUp());
+  g_camera->setMaxDepth(ray_max_depth);
+  g_camera->setSamples(ray_samples);
+  g_camera->setFOV(fov);
+  g_camera->setFilmsize(options.width, options.height);
+}
+
+void initLights(const apps::render::mpi::commandline::Options &options,
+                const gvt::render::data::primitives::Box3D &scene_bound) {
+
+  gvt::render::RenderContext *cntxt = gvt::render::RenderContext::instance();
+  gvt::core::DBNodeH root = cntxt->getRootNode();
+
+  // add point light sources
+  gvt::core::DBNodeH lightNodes = cntxt->createNodeFromType("Lights", "Lights", root.UUID());
+
+  // gvt::core::DBNodeH lightNode = cntxt->createNodeFromType("PointLight", "light", lightNodes.UUID());
+  // lightNode["position"] = glm::vec3(0.0, 0.1, 0.5);
+  // lightNode["color"] = glm::vec3(1.0, 1.0, 1.0);
+
+  gvt::core::DBNodeH point_light;
+  for (std::size_t i = 0; i < options.point_lights.size(); ++i) {
+    std::stringstream ss;
+    ss << i;
+    std::string name("p");
+    name += ss.str();
+    point_light = cntxt->createNodeFromType("PointLight", name, lightNodes.UUID());
+    point_light["position"] = options.point_lights[i].position;
+    point_light["color"] = options.point_lights[i].color;
+  }
+
+  // bool light_specified = options.set_light_position || options.set_light_color;
+  // if (light_specified || (!light_specified && options.point_lights.empty())) {
+  //   std::stringstream ss;
+  //   ss << options.point_lights.size();
+  //   std::string name("p");
+  //   name += ss.str();
+  //   point_light = cntxt->createNodeFromType("PointLight", name, lightNodes.UUID());
+  //   point_light["position"] = options.light_position;
+  //   point_light["color"] = options.light_color;
+  // }
+
+  // the user did not specify any light source
+  // use default light sources
+  if (options.point_lights.empty()) {
+    glm::vec3 centroid = scene_bound.centroid();
+    glm::vec3 p1 = centroid + 2.0f * (scene_bound.bounds_min - centroid);
+    glm::vec3 p2 = centroid + 2.0f * (scene_bound.bounds_max - centroid);
+    glm::vec3 p3 =
+        centroid +
+        2.0f * (glm::vec3(scene_bound.bounds_min[0], scene_bound.bounds_max[1], scene_bound.bounds_min[2]) - centroid);
+    glm::vec3 p4 =
+        centroid +
+        2.0f * (glm::vec3(scene_bound.bounds_max[0], scene_bound.bounds_min[1], scene_bound.bounds_max[2]) - centroid);
+
+    glm::vec3 p5 =
+        centroid +
+        2.0f * (glm::vec3(scene_bound.bounds_min[0], scene_bound.bounds_max[1], scene_bound.bounds_max[2]) - centroid);
+    glm::vec3 p6 =
+        centroid +
+        2.0f * (glm::vec3(scene_bound.bounds_max[0], scene_bound.bounds_max[1], scene_bound.bounds_min[2]) - centroid);
+
+    point_light = cntxt->createNodeFromType("PointLight", "p1", lightNodes.UUID());
+    point_light["position"] = p1;
+    point_light["color"] = options.set_light_color ? options.light_color : glm::vec3(0.5);
+
+    point_light = cntxt->createNodeFromType("PointLight", "p2", lightNodes.UUID());
+    point_light["position"] = p2;
+    point_light["color"] = options.set_light_color ? options.light_color : glm::vec3(0.5);
+
+    point_light = cntxt->createNodeFromType("PointLight", "p3", lightNodes.UUID());
+    point_light["position"] = p3;
+    point_light["color"] = options.set_light_color ? options.light_color : glm::vec3(0.5);
+
+    point_light = cntxt->createNodeFromType("PointLight", "p4", lightNodes.UUID());
+    point_light["position"] = p4;
+    point_light["color"] = options.set_light_color ? options.light_color : glm::vec3(0.5);
+
+    point_light = cntxt->createNodeFromType("PointLight", "p5", lightNodes.UUID());
+    point_light["position"] = p5;
+    point_light["color"] = options.set_light_color ? options.light_color : glm::vec3(0.5);
+
+    point_light = cntxt->createNodeFromType("PointLight", "p6", lightNodes.UUID());
+    point_light["position"] = p6;
+    point_light["color"] = options.set_light_color ? options.light_color : glm::vec3(0.5);
+  }
+
+  // TODO: ambient light is currently not supported
+  // gvt::core::DBNodeH ambient_light = cntxt->createNodeFromType("AmbientLight", "p5", lightNodes.UUID());
+  // ambient_light["color"] = options.set_light_color ? options.light_color : glm::vec3(1.0);
 }
 
 void CreatePlyDatabase(const MpiInfo &mpi, const commandline::Options &options) {
@@ -535,6 +660,11 @@ void CreatePlyDatabase(const MpiInfo &mpi, const commandline::Options &options) 
         setup_property_ply(in_ply, &vert_props[0]);
         setup_property_ply(in_ply, &vert_props[1]);
         setup_property_ply(in_ply, &vert_props[2]);
+        if (options.ply_with_color) {
+          setup_property_ply(in_ply, &vert_props[3]);
+          setup_property_ply(in_ply, &vert_props[4]);
+          setup_property_ply(in_ply, &vert_props[5]);
+        }
         for (j = 0; j < elem_count; j++) {
           vlist[j] = (Vertex *)malloc(sizeof(Vertex));
           get_element_ply(in_ply, (void *)vlist[j]);
@@ -552,23 +682,29 @@ void CreatePlyDatabase(const MpiInfo &mpi, const commandline::Options &options) 
     // close_ply(in_ply);
     // smoosh data into the mesh object
     {
-      Mesh *mesh = NULL;
+      Mesh *mesh = nullptr;
       // load mesh data only if this is the owner process.
       if (mpi.rank == ownerProcess) {
-        Material *m = new Material();
-        m->type = LAMBERT;
-        // m->type = EMBREE_MATERIAL_MATTE;
-        m->kd = glm::vec3(1.0, 1.0, 1.0);
-        m->ks = glm::vec3(1.0, 1.0, 1.0);
-        m->alpha = 0.5;
+        if (options.ply_with_color) {
+          // material to be created inside the mesh adapter
+          // color to be retreived directly from mesh
+          mesh = new Mesh(nullptr /* Material */);
+        } else {
+          Material *m = new Material();
+          m->type = LAMBERT;
+          // m->type = EMBREE_MATERIAL_MATTE;
+          m->kd = glm::vec3(1.0, 1.0, 1.0);
+          m->ks = glm::vec3(1.0, 1.0, 1.0);
+          m->alpha = 0.5;
 
-        // m->type = EMBREE_MATERIAL_METAL;
-        // copper metal
-        m->eta = glm::vec3(.19, 1.45, 1.50);
-        m->k = glm::vec3(3.06, 2.40, 1.88);
-        m->roughness = 0.05;
+          // m->type = EMBREE_MATERIAL_METAL;
+          // copper metal
+          m->eta = glm::vec3(.19, 1.45, 1.50);
+          m->k = glm::vec3(3.06, 2.40, 1.88);
+          m->roughness = 0.05;
 
-        mesh = new Mesh(m);
+          mesh = new Mesh(m);
+        }
       }
 
       vert = vlist[0];
@@ -590,6 +726,9 @@ void CreatePlyDatabase(const MpiInfo &mpi, const commandline::Options &options) 
 
         if (mesh) {
           mesh->addVertex(glm::vec3(vert->x, vert->y, vert->z));
+          if (options.ply_with_color) {
+            mesh->addVertexColor(glm::vec3(vert->cx / 255.f, vert->cy / 255.f, vert->cz / 255.f));
+          }
         }
       }
       glm::vec3 lower(xmin, ymin, zmin);
@@ -610,6 +749,8 @@ void CreatePlyDatabase(const MpiInfo &mpi, const commandline::Options &options) 
         // EnzoMeshNode["file"] =
         // string("/work/01197/semeraro/maverick/DAVEDATA/EnzoPlyDATA/Block0.ply");
         EnzoMeshNode["ptr"] = (unsigned long long)mesh;
+
+        g_scene_bound.merge(*(mesh->getBoundingBox()));
       } else {
         EnzoMeshNode["ptr"] = (unsigned long long)0;
       }
@@ -640,43 +781,50 @@ void CreatePlyDatabase(const MpiInfo &mpi, const commandline::Options &options) 
     DeallocatePly<Face>(flists_map);
 
     close_ply(in_ply);
-  }
+  } // for (file = files.begin(), k = 0; file != files.end(); file++, k++) {
 
   // add lights, camera, and film to the database
 
-  // add point light sources
-  gvt::core::DBNodeH lightNodes = cntxt->createNodeFromType("Lights", "Lights", root.UUID());
+  // // add point light sources
+  // gvt::core::DBNodeH lightNodes = cntxt->createNodeFromType("Lights", "Lights", root.UUID());
 
-  gvt::core::DBNodeH point_light;
-  for (std::size_t i = 0; i < options.point_lights.size(); ++i) {
-    std::stringstream ss;
-    ss << i;
-    std::string name("p");
-    name += ss.str();
-    point_light = cntxt->createNodeFromType("PointLight", name, lightNodes.UUID());
-    point_light["position"] = options.point_lights[i].position;
-    point_light["color"] = options.point_lights[i].color;
-  }
+  // gvt::core::DBNodeH point_light;
+  // for (std::size_t i = 0; i < options.point_lights.size(); ++i) {
+  //   std::stringstream ss;
+  //   ss << i;
+  //   std::string name("p");
+  //   name += ss.str();
+  //   point_light = cntxt->createNodeFromType("PointLight", name, lightNodes.UUID());
+  //   point_light["position"] = options.point_lights[i].position;
+  //   point_light["color"] = options.point_lights[i].color;
+  // }
 
-  bool light_specified = options.set_light_position || options.set_light_color;
-  if (light_specified || (!light_specified && options.point_lights.empty())) {
-    std::stringstream ss;
-    ss << options.point_lights.size();
-    std::string name("p");
-    name += ss.str();
-    point_light = cntxt->createNodeFromType("PointLight", name, lightNodes.UUID());
-    point_light["position"] = options.light_position;
-    point_light["color"] = options.light_color;
-  }
+  // bool light_specified = options.set_light_position || options.set_light_color;
+  // if (light_specified || (!light_specified && options.point_lights.empty())) {
+  //   std::stringstream ss;
+  //   ss << options.point_lights.size();
+  //   std::string name("p");
+  //   name += ss.str();
+  //   point_light = cntxt->createNodeFromType("PointLight", name, lightNodes.UUID());
+  //   point_light["position"] = options.light_position;
+  //   point_light["color"] = options.light_color;
+  // }
 
+  // lights
+  initLights(options, g_scene_bound);
+
+  // 
   // camera
-  gvt::core::DBNodeH camNode = cntxt->createNodeFromType("Camera", "conecam", root.UUID());
-  camNode["eyePoint"] = options.eye;
-  camNode["focus"] = options.look;
-  camNode["upVector"] = options.up;
-  camNode["fov"] = static_cast<float>(options.fov * M_PI / 180.0);
-  camNode["rayMaxDepth"] = static_cast<int>(options.ray_depth);
-  camNode["raySamples"] = static_cast<int>(options.ray_samples);
+  initCamera(options, g_scene_bound);
+
+  // gvt::core::DBNodeH camNode = cntxt->createNodeFromType("Camera", "conecam", root.UUID());
+  // camNode["eyePoint"] = options.eye;
+  // camNode["focus"] = options.look;
+  // camNode["upVector"] = options.up;
+  // camNode["fov"] = static_cast<float>(options.fov * M_PI / 180.0);
+  // camNode["rayMaxDepth"] = static_cast<int>(options.ray_depth);
+  // camNode["raySamples"] = static_cast<int>(options.ray_samples);
+
   // film
   gvt::core::DBNodeH filmNode = cntxt->createNodeFromType("Film", "conefilm", root.UUID());
   filmNode["width"] = options.width;
@@ -722,19 +870,20 @@ void CreatePlyDatabase(const MpiInfo &mpi, const commandline::Options &options) 
 
   // use db to create structs needed by system
 
-  // setup gvtCamera from database entries
-  g_camera = new gvt::render::data::scene::gvtPerspectiveCamera;
-  glm::vec3 cameraposition = camNode["eyePoint"].value().tovec3();
-  glm::vec3 focus = camNode["focus"].value().tovec3();
-  float fov = camNode["fov"].value().toFloat();
-  glm::vec3 up = camNode["upVector"].value().tovec3();
-  int rayMaxDepth = camNode["rayMaxDepth"].value().toInteger();
-  int raySamples = camNode["raySamples"].value().toInteger();
-  g_camera->lookAt(cameraposition, focus, up);
-  g_camera->setMaxDepth(rayMaxDepth);
-  g_camera->setSamples(raySamples);
-  g_camera->setFOV(fov);
-  g_camera->setFilmsize(filmNode["width"].value().toInteger(), filmNode["height"].value().toInteger());
+  // // setup gvtCamera from database entries
+  // g_camera = new gvt::render::data::scene::gvtPerspectiveCamera;
+  // glm::vec3 cameraposition = camNode["eyePoint"].value().tovec3();
+  // glm::vec3 focus = camNode["focus"].value().tovec3();
+  // float fov = camNode["fov"].value().toFloat();
+  // glm::vec3 up = camNode["upVector"].value().tovec3();
+  // int rayMaxDepth = camNode["rayMaxDepth"].value().toInteger();
+  // int raySamples = camNode["raySamples"].value().toInteger();
+
+  // g_camera->lookAt(cameraposition, focus, up);
+  // g_camera->setMaxDepth(rayMaxDepth);
+  // g_camera->setSamples(raySamples);
+  // g_camera->setFOV(fov);
+  // g_camera->setFilmsize(filmNode["width"].value().toInteger(), filmNode["height"].value().toInteger());
 
 } // void CreatePlyDatabase(const commandline::Options& options) {
 
@@ -986,17 +1135,31 @@ void KeyboardFunc(unsigned char key, int x, int y) {
     up = g_camera_state.getUp();
     break;
 
-  case 'w':
+  case 'w': {
+    g_camera_state.zoom(0.01f);
+    g_camera->lookAt(g_camera_state.getPos(), g_camera_state.getCenter(), g_camera_state.getUp());
+  } break;
   case 't': {
-    glm::vec3 new_eye_pos = move_speed * eye;
-    float r = glm::length(new_eye_pos - g_scene_bound.centroid());
-    float sign = (key == 'w') ? 1.f : -1.f;
-    if (r > glm::length(g_scene_bound.extent()) * 0.001) {
-      eye += sign * new_eye_pos;
-    }
-    // focal += sign * move_speed * look;
-    break;
-  }
+    g_camera_state.zoom(-0.01f);
+    g_camera->lookAt(g_camera_state.getPos(), g_camera_state.getCenter(), g_camera_state.getUp());
+    // glm::vec3 new_eye_pos = move_speed * eye;
+    // float r = glm::length(new_eye_pos - g_scene_bound.centroid());
+    // float sign = (key == 'w') ? 1.f : -1.f;
+    // if (r > glm::length(g_scene_bound.extent()) * 0.001) {
+    //   eye += sign * new_eye_pos;
+    // }
+    // // focal += sign * move_speed * look;
+    // break;
+  } break;
+  case '=': {
+    g_camera_state.increaseSensitivity();
+    printf("camera sensitivity: %f\n", g_camera_state.getSensitivity());
+  } break;
+  case '-': {
+    g_camera_state.decreaseSensitivity();
+    printf("camera sensitivity: %f\n", g_camera_state.getSensitivity());
+  } break;
+
   case 'a':
     eye += -move_speed * tangent;
     focal += -move_speed * tangent;

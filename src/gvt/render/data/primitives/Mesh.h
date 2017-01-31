@@ -79,6 +79,7 @@ public:
 
   virtual void addVertexNormalTexUV(glm::vec3 vertex, glm::vec3 normal = glm::vec3(), glm::vec3 texUV = glm::vec3());
   virtual void addVertex(glm::vec3 vertex);
+  virtual void addVertexColor(glm::vec3 color) { vertex_colors.push_back(color); }
   virtual void addNormal(glm::vec3 normal);
   virtual void addTexUV(glm::vec3 texUV);
   virtual void addFace(int v0, int v1, int v2);
@@ -104,6 +105,7 @@ public:
 public:
   gvt::render::data::primitives::Material *mat;
   std::vector<glm::vec3> vertices;
+  std::vector<glm::vec3> vertex_colors;
   std::vector<glm::vec3> mapuv;
   std::vector<glm::vec3> normals;
   std::vector<Face> faces;

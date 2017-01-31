@@ -55,6 +55,7 @@ struct Options {
   int active_frames = 1;
   bool interactive = false;
   std::vector<PointLightInfo> point_lights;
+  bool ply_with_color = false;
 };
 
 }  // namespace commandline
