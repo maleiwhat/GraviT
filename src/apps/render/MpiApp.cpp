@@ -787,67 +787,17 @@ void CreatePlyDatabase(const MpiInfo &mpi, const commandline::Options &options) 
     close_ply(in_ply);
   } // for (file = files.begin(), k = 0; file != files.end(); file++, k++) {
 
-  // add lights, camera, and film to the database
-
-  // // add point light sources
-  // gvt::core::DBNodeH lightNodes = cntxt->createNodeFromType("Lights", "Lights", root.UUID());
-
-  // gvt::core::DBNodeH point_light;
-  // for (std::size_t i = 0; i < options.point_lights.size(); ++i) {
-  //   std::stringstream ss;
-  //   ss << i;
-  //   std::string name("p");
-  //   name += ss.str();
-  //   point_light = cntxt->createNodeFromType("PointLight", name, lightNodes.UUID());
-  //   point_light["position"] = options.point_lights[i].position;
-  //   point_light["color"] = options.point_lights[i].color;
-  // }
-
-  // bool light_specified = options.set_light_position || options.set_light_color;
-  // if (light_specified || (!light_specified && options.point_lights.empty())) {
-  //   std::stringstream ss;
-  //   ss << options.point_lights.size();
-  //   std::string name("p");
-  //   name += ss.str();
-  //   point_light = cntxt->createNodeFromType("PointLight", name, lightNodes.UUID());
-  //   point_light["position"] = options.light_position;
-  //   point_light["color"] = options.light_color;
-  // }
-
   // lights
   initLights(options, g_scene_bound);
 
-  // 
+  //
   // camera
   initCamera(options, g_scene_bound);
-
-  // gvt::core::DBNodeH camNode = cntxt->createNodeFromType("Camera", "conecam", root.UUID());
-  // camNode["eyePoint"] = options.eye;
-  // camNode["focus"] = options.look;
-  // camNode["upVector"] = options.up;
-  // camNode["fov"] = static_cast<float>(options.fov * M_PI / 180.0);
-  // camNode["rayMaxDepth"] = static_cast<int>(options.ray_depth);
-  // camNode["raySamples"] = static_cast<int>(options.ray_samples);
 
   // film
   gvt::core::DBNodeH filmNode = cntxt->createNodeFromType("Film", "conefilm", root.UUID());
   filmNode["width"] = options.width;
   filmNode["height"] = options.height;
-
-  // if (cmd.isSet("eye")) {
-  //  std::vector<float> eye = cmd.getValue<float>("eye");
-  //  camNode["eyePoint"] = glm::vec3(eye[0], eye[1], eye[2]);
-  //}
-
-  // if (cmd.isSet("look")) {
-  //  std::vector<float> eye = cmd.getValue<float>("look");
-  //  camNode["focus"] = glm::vec3(eye[0], eye[1], eye[2]);
-  //}
-  // if (cmd.isSet("wsize")) {
-  //  std::vector<int> wsize = cmd.getValue<int>("wsize");
-  //  filmNode["width"] = wsize[0];
-  //  filmNode["height"] = wsize[1];
-  //}
 
   gvt::core::DBNodeH schedNode = cntxt->createNodeFromType("Schedule", "Enzosched", root.UUID());
   // if (cmd.isSet("domain"))
@@ -869,26 +819,6 @@ void CreatePlyDatabase(const MpiInfo &mpi, const commandline::Options &options) 
   } else {
     schedNode["adapter"] = gvt::render::adapter::Embree;
   }
-
-  // end db setup
-
-  // use db to create structs needed by system
-
-  // // setup gvtCamera from database entries
-  // g_camera = new gvt::render::data::scene::gvtPerspectiveCamera;
-  // glm::vec3 cameraposition = camNode["eyePoint"].value().tovec3();
-  // glm::vec3 focus = camNode["focus"].value().tovec3();
-  // float fov = camNode["fov"].value().toFloat();
-  // glm::vec3 up = camNode["upVector"].value().tovec3();
-  // int rayMaxDepth = camNode["rayMaxDepth"].value().toInteger();
-  // int raySamples = camNode["raySamples"].value().toInteger();
-
-  // g_camera->lookAt(cameraposition, focus, up);
-  // g_camera->setMaxDepth(rayMaxDepth);
-  // g_camera->setSamples(raySamples);
-  // g_camera->setFOV(fov);
-  // g_camera->setFilmsize(filmNode["width"].value().toInteger(), filmNode["height"].value().toInteger());
-
 } // void CreatePlyDatabase(const commandline::Options& options) {
 
 void CreateObjDatabase(const MpiInfo &mpi, const commandline::Options &options) {
@@ -969,101 +899,9 @@ void CreateObjDatabase(const MpiInfo &mpi, const commandline::Options &options) 
   // lights
   initLights(options, g_scene_bound);
 
-  // 
+  //
   // camera
   initCamera(options, g_scene_bound);
-
-
-  // // add point light sources
-  // gvt::core::DBNodeH lightNodes = cntxt->createNodeFromType("Lights", "Lights", root.UUID());
-
-  // // gvt::core::DBNodeH lightNode = cntxt->createNodeFromType("PointLight", "light", lightNodes.UUID());
-  // // lightNode["position"] = glm::vec3(0.0, 0.1, 0.5);
-  // // lightNode["color"] = glm::vec3(1.0, 1.0, 1.0);
-
-  // gvt::core::DBNodeH point_light;
-  // for (std::size_t i = 0; i < options.point_lights.size(); ++i) {
-  //   std::stringstream ss;
-  //   ss << i;
-  //   std::string name("p");
-  //   name += ss.str();
-  //   point_light = cntxt->createNodeFromType("PointLight", name, lightNodes.UUID());
-  //   point_light["position"] = options.point_lights[i].position;
-  //   point_light["color"] = options.point_lights[i].color;
-  // }
-
-  // // bool light_specified = options.set_light_position || options.set_light_color;
-  // // if (light_specified || (!light_specified && options.point_lights.empty())) {
-  // //   std::stringstream ss;
-  // //   ss << options.point_lights.size();
-  // //   std::string name("p");
-  // //   name += ss.str();
-  // //   point_light = cntxt->createNodeFromType("PointLight", name, lightNodes.UUID());
-  // //   point_light["position"] = options.light_position;
-  // //   point_light["color"] = options.light_color;
-  // // }
-
-  // // the user did not specify any light source
-  // // use default light source
-  // if (options.point_lights.empty()) {
-  //   glm::vec3 centroid = meshbbox->centroid();
-  //   glm::vec3 p1 = centroid + 2.0f * (meshbbox->bounds_min - centroid);
-  //   glm::vec3 p2 = centroid + 2.0f * (meshbbox->bounds_max - centroid);
-  //   glm::vec3 p3 =
-  //       centroid +
-  //       2.0f * (glm::vec3(meshbbox->bounds_min[0], meshbbox->bounds_max[1], meshbbox->bounds_min[2]) - centroid);
-  //   glm::vec3 p4 =
-  //       centroid +
-  //       2.0f * (glm::vec3(meshbbox->bounds_max[0], meshbbox->bounds_min[1], meshbbox->bounds_max[2]) - centroid);
-
-  //   glm::vec3 p5 =
-  //       centroid +
-  //       2.0f * (glm::vec3(meshbbox->bounds_min[0], meshbbox->bounds_max[1], meshbbox->bounds_max[2]) - centroid);
-  //   glm::vec3 p6 =
-  //       centroid +
-  //       2.0f * (glm::vec3(meshbbox->bounds_max[0], meshbbox->bounds_max[1], meshbbox->bounds_min[2]) - centroid);
-
-  //   point_light = cntxt->createNodeFromType("PointLight", "p1", lightNodes.UUID());
-  //   point_light["position"] = p1;
-  //   point_light["color"] = options.set_light_color ? options.light_color : glm::vec3(0.5);
-
-  //   point_light = cntxt->createNodeFromType("PointLight", "p2", lightNodes.UUID());
-  //   point_light["position"] = p2;
-  //   point_light["color"] = options.set_light_color ? options.light_color : glm::vec3(0.5);
-
-  //   point_light = cntxt->createNodeFromType("PointLight", "p3", lightNodes.UUID());
-  //   point_light["position"] = p3;
-  //   point_light["color"] = options.set_light_color ? options.light_color : glm::vec3(0.5);
-
-  //   point_light = cntxt->createNodeFromType("PointLight", "p4", lightNodes.UUID());
-  //   point_light["position"] = p4;
-  //   point_light["color"] = options.set_light_color ? options.light_color : glm::vec3(0.5);
-
-  //   point_light = cntxt->createNodeFromType("PointLight", "p5", lightNodes.UUID());
-  //   point_light["position"] = p5;
-  //   point_light["color"] = options.set_light_color ? options.light_color : glm::vec3(0.5);
-
-  //   point_light = cntxt->createNodeFromType("PointLight", "p6", lightNodes.UUID());
-  //   point_light["position"] = p6;
-  //   point_light["color"] = options.set_light_color ? options.light_color : glm::vec3(0.5);
-  // }
-
-  // // TODO: ambient light is currently not supported
-  // // gvt::core::DBNodeH ambient_light = cntxt->createNodeFromType("AmbientLight", "p5", lightNodes.UUID());
-  // // ambient_light["color"] = options.set_light_color ? options.light_color : glm::vec3(1.0);
-
-  // // set the camera
-  // gvt::core::DBNodeH camNode = cntxt->createNodeFromType("Camera", "cam", root.UUID());
-
-  // g_camera_state.reset(options, *meshbbox);
-
-  // camNode["eyePoint"] = g_camera_state.getPos();
-  // camNode["focus"] = g_camera_state.getCenter();
-  // camNode["upVector"] = g_camera_state.getUp();
-  // camNode["fov"] = (float)(45.0 * M_PI / 180.0);
-  // camNode["rayMaxDepth"] = static_cast<int>(options.ray_depth);
-  // camNode["raySamples"] = static_cast<int>(options.ray_samples);
-  // camNode["jitterWindowSize"] = (float)0;
 
   // film
   gvt::core::DBNodeH filmNode = cntxt->createNodeFromType("Film", "conefilm", root.UUID());
@@ -1090,24 +928,6 @@ void CreateObjDatabase(const MpiInfo &mpi, const commandline::Options &options) 
   } else {
     schedNode["adapter"] = gvt::render::adapter::Embree;
   }
-
-  // end db setup
-
-  // use db to create structs needed by system
-
-  // // setup gvtCamera from database entries
-  // g_camera = new gvt::render::data::scene::gvtPerspectiveCamera;
-  // glm::vec3 cameraposition = camNode["eyePoint"].value().tovec3();
-  // glm::vec3 focus = camNode["focus"].value().tovec3();
-  // float fov = camNode["fov"].value().toFloat();
-  // glm::vec3 up = camNode["upVector"].value().tovec3();
-  // int rayMaxDepth = camNode["rayMaxDepth"].value().toInteger();
-  // int raySamples = camNode["raySamples"].value().toInteger();
-  // g_camera->lookAt(cameraposition, focus, up);
-  // g_camera->setMaxDepth(rayMaxDepth);
-  // g_camera->setSamples(raySamples);
-  // g_camera->setFOV(fov);
-  // g_camera->setFilmsize(filmNode["width"].value().toInteger(), filmNode["height"].value().toInteger());
 } // void CreateObjDatabase(const commandline::Options& options) {
 
 void Kill() {
