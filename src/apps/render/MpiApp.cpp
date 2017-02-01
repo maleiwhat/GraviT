@@ -133,6 +133,7 @@ void PrintUsage(const char *argv) {
   printf("  --gl enable interactive mode.\n");
   printf("  --ply-with-color PLY files having color information.\n");
   printf("  --shading-model <0: lambert, 1: phong, 2: blinn>.\n");
+  printf("  --camera-view <x y z>.\n");
 }
 
 void Parse(int argc, char **argv, Options *options) {
@@ -234,6 +235,10 @@ void Parse(int argc, char **argv, Options *options) {
       options->ply_with_color = true;
     } else if (strcmp(argv[i], "--shading-model") == 0) {
       options->shading_model = atoi(argv[++i]);
+    } else if (strcmp(argv[i], "--camera-view") == 0) {
+      options->camera_view[0] = atof(argv[++i]);
+      options->camera_view[1] = atof(argv[++i]);
+      options->camera_view[2] = atof(argv[++i]);
     } else {
       printf("error: %s not defined\n", argv[i]);
       exit(1);
@@ -310,7 +315,13 @@ public:
       eye = options.eye;
     } else {
       float diag = glm::length(scene_bound.extent());
-      eye = scene_bound.centroid() + (2.f * diag * glm::vec3(0.f, 0.f, 1.f));
+      glm::vec3 view(options.camera_view);
+      if (view.x == 0.f && view.z == 0.f) {
+        if (view.y == 1.f || view.y == -1.f) {
+          view.x += std::numeric_limits<float>::epsilon();
+        }
+      }
+      eye = scene_bound.centroid() + (2.f * diag * view);
     }
     look = options.set_look ? options.look : scene_bound.centroid();
     // *up = options.set_up ? options.up : glm::vec3(0.0, 1.0, 0.0);
@@ -323,7 +334,8 @@ public:
     phi = glm::acos(camvec.y);
     float sin_phi = sin(phi);
     if (sin_phi == 0) {
-      phi += 0.00001f;
+      // phi += 0.00001f;
+      phi += std::numeric_limits<float>::epsilon();
       sin_phi = sin(phi);
     }
     up = glm::vec3(0, sin_phi > 0 ? 1 : -1, 0);
@@ -343,7 +355,8 @@ public:
     phi = glm::clamp(phi + dphi, (float)0.0, (float)M_PI);
     float sin_phi = sin(phi);
     if (sin_phi == 0) {
-      phi += 0.00001f;
+      // phi += 0.00001f;
+      phi += std::numeric_limits<float>::epsilon();
       sin_phi = sin(phi);
     }
     glm::vec3 camvec(rho * sin_phi * sin(theta), rho * cos(phi), rho * sin_phi * cos(theta));

@@ -59,6 +59,7 @@ struct Options {
   std::vector<PointLightInfo> point_lights;
   bool ply_with_color = false;
   int shading_model = gvt::render::data::primitives::LAMBERT;
+  glm::vec3 camera_view = glm::vec3(0.f, 0.f, 1.f); // initial camera view
 };
 
 }  // namespace commandline
