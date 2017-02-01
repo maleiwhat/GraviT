@@ -59,6 +59,7 @@ struct Material {
   //Default material
   Material(){
     type = LAMBERT;
+    ka = glm::vec3(0.f);
     //type = EMBREE_MATERIAL_MATTE;
     kd = glm::vec3(.5,.5,.5);
     ks = glm::vec3(.5,.5,.5);
@@ -73,6 +74,7 @@ struct Material {
 
   int type;
 
+  glm::vec3 ka; // ambient k
   glm::vec3 ks; //diffuse k
   glm::vec3 kd; // specular k
   float alpha;

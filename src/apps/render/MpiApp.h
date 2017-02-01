@@ -1,6 +1,8 @@
 #ifndef APPS_RENDER_MPI_APP_H
 #define APPS_RENDER_MPI_APP_H
 
+#include "gvt/render/data/primitives/Material.h"
+
 #include <string>
 #include <glm/glm.hpp>
 
@@ -56,6 +58,7 @@ struct Options {
   bool interactive = false;
   std::vector<PointLightInfo> point_lights;
   bool ply_with_color = false;
+  int shading_model = gvt::render::data::primitives::LAMBERT;
 };
 
 }  // namespace commandline

@@ -32,6 +32,7 @@
 #define GVT_RENDER_DATA_DOMAIN_READER_OBJ_READER_H
 
 #include <gvt/render/data/Primitives.h>
+#include <gvt/render/data/primitives/Material.h>
 
 #include <string>
 #include <vector>
@@ -53,7 +54,7 @@ public:
   /** Constructor opens the given file and parses it line by line placing data in the mesh
   *   object.
   */
-  ObjReader(const std::string filename = "");
+  ObjReader(const std::string filename = "", int material_type = gvt::render::data::primitives::LAMBERT);
   virtual ~ObjReader();
 
   /** public member function to return a pointer to the mesh object.

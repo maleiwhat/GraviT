@@ -131,6 +131,8 @@ void PrintUsage(const char *argv) {
   printf("  --warmup <value> specify number of warm-up frames (default: 10).\n");
   printf("  --active <value> specify number of active frames (default: 100).\n");
   printf("  --gl enable interactive mode.\n");
+  printf("  --ply-with-color PLY files having color information.\n");
+  printf("  --shading-model <0: lambert, 1: phong, 2: blinn>.\n");
 }
 
 void Parse(int argc, char **argv, Options *options) {
@@ -230,6 +232,8 @@ void Parse(int argc, char **argv, Options *options) {
       options->interactive = true;
     } else if (strcmp(argv[i], "--ply-with-color") == 0) {
       options->ply_with_color = true;
+    } else if (strcmp(argv[i], "--shading-model") == 0) {
+      options->shading_model = atoi(argv[++i]);
     } else {
       printf("error: %s not defined\n", argv[i]);
       exit(1);
@@ -910,7 +914,7 @@ void CreateObjDatabase(const MpiInfo &mpi, const commandline::Options &options) 
   // }
 
   // path assumes binary is run as bin/gvtFileApp
-  gvt::render::data::domain::reader::ObjReader objReader(objPath);
+  gvt::render::data::domain::reader::ObjReader objReader(objPath, options.shading_model);
 
   // right now mesh must be converted to gvt format
   Mesh *mesh = objReader.getMesh();

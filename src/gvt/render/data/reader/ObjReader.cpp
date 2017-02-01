@@ -62,7 +62,7 @@ std::vector<std::string> split(const std::string &s, char delim, std::vector<std
 }
 } // namespace reader} namespace domain} namespace data} namespace render} namespace gvt}
 
-ObjReader::ObjReader(const std::string filename) : computeNormals(false) {
+ObjReader::ObjReader(const std::string filename, int material_type) : computeNormals(false) {
 
   // GVT_ASSERT(filename.size() > 0, "Invalid filename");
   // std::fstream file;
@@ -155,12 +155,14 @@ ObjReader::ObjReader(const std::string filename) : computeNormals(false) {
       Material *m = new Material;
       objMesh->materials.push_back(m);
       const tinyobj::material_t &mat = materials[i];
+      m->ka = glm::vec3(mat.ambient[0], mat.ambient[1], mat.ambient[2]);
       m->kd = glm::vec3(mat.diffuse[0], mat.diffuse[1], mat.diffuse[2]);
       m->ks = glm::vec3(mat.specular[0], mat.specular[1], mat.specular[2]);
-#ifdef GVT_USE_DEBUG
-      std::cout << "[DEBUG] kd(" << m->kd[0] << "," << m->kd[1] << "," << m->kd[2] << "), "
-                << "ks(" << m->ks[0] << "," << m->ks[1] << "," << m->ks[2] << ")\n";
-#endif
+      m->type = material_type;
+      // #ifdef GVT_USE_DEBUG
+      //       std::cout << "[DEBUG] kd(" << m->kd[0] << "," << m->kd[1] << "," << m->kd[2] << "), "
+      //                 << "ks(" << m->ks[0] << "," << m->ks[1] << "," << m->ks[2] << ")\n";
+      // #endif
     }
   } else {
     objMesh = new Mesh(new Material);

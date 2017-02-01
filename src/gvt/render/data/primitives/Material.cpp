@@ -64,6 +64,7 @@ glm::vec3 phongShade(const gvt::render::data::primitives::Material *material, co
 
   gvt::render::data::Color finalColor =  material->kd * (NdotL * ray.w);
   finalColor += material->ks * (power * ray.w);
+  finalColor += material->ka;
   return finalColor;
 }
 
@@ -81,6 +82,7 @@ glm::vec3 blinnPhongShade(const gvt::render::data::primitives::Material *materia
   gvt::render::data::Color specular =  material->ks * (power * ray.w);
 
   gvt::render::data::Color finalColor = (diffuse + specular);
+  finalColor += material->ka;
   return finalColor;
 }
 
