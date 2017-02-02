@@ -311,6 +311,7 @@ public:
   void reset(const commandline::Options &options, const Box3D &scene_bound) {
     bound = scene_bound;
     glm::vec3 eye, look;
+    this->options = &options;
     if (options.set_eye) {
       eye = options.eye;
     } else {
@@ -338,7 +339,9 @@ public:
       phi += std::numeric_limits<float>::epsilon();
       sin_phi = sin(phi);
     }
-    up = glm::vec3(0, sin_phi > 0 ? 1 : -1, 0);
+    // up = glm::vec3(0, sin_phi > 0 ? 1 : -1, 0);
+    up = options.set_up ? (sin_phi > 0 ? options.up : options.up * glm::vec3(0, -1, 0))
+                        : glm::vec3(0, sin_phi > 0 ? 1 : -1, 0);
   }
 
   void zoom(float offset) {
@@ -361,7 +364,9 @@ public:
     }
     glm::vec3 camvec(rho * sin_phi * sin(theta), rho * cos(phi), rho * sin_phi * cos(theta));
     pos = center + camvec;
-    up = glm::vec3(0, sin_phi > 0 ? 1 : -1, 0);
+    // up = glm::vec3(0, sin_phi > 0 ? 1 : -1, 0);
+    up = options->set_up ? (sin_phi > 0 ? options->up : options->up * glm::vec3(0, -1, 0))
+                         : glm::vec3(0, sin_phi > 0 ? 1 : -1, 0);
   }
 
   void pan(float dx, float dy, const glm::mat4 &c2w) {
@@ -381,6 +386,7 @@ private:
   glm::vec3 pos, up, center;
   Box3D bound;
   float sensitivity;
+  const commandline::Options *options;
 };
 
 CameraState g_camera_state;
@@ -506,6 +512,15 @@ void initCamera(const apps::render::mpi::commandline::Options &options,
   g_camera->setSamples(ray_samples);
   g_camera->setFOV(fov);
   g_camera->setFilmsize(options.width, options.height);
+}
+
+void printSceneBound(const gvt::render::data::primitives::Box3D &scene_bound) {
+
+  const gvt::render::data::primitives::Box3D &s = scene_bound;
+  const glm::vec3 &c = s.centroid();
+
+  printf("scene min(%f %f %f) max(%f %f %f) center(%f %f %f)\n", s.bounds_min[0], s.bounds_min[1], s.bounds_min[2],
+         s.bounds_max[0], s.bounds_max[1], s.bounds_max[2], c[0], c[1], c[2]);
 }
 
 void initLights(const apps::render::mpi::commandline::Options &options,
@@ -800,6 +815,8 @@ void CreatePlyDatabase(const MpiInfo &mpi, const commandline::Options &options) 
     close_ply(in_ply);
   } // for (file = files.begin(), k = 0; file != files.end(); file++, k++) {
 
+  printSceneBound(g_scene_bound); 
+
   // lights
   initLights(options, g_scene_bound);
 
@@ -906,6 +923,8 @@ void CreateObjDatabase(const MpiInfo &mpi, const commandline::Options &options) 
   Box3D *ibox = new gvt::render::data::primitives::Box3D(il, ih);
   instnode["bbox"] = (unsigned long long)ibox;
   instnode["centroid"] = ibox->centroid();
+
+  printSceneBound(g_scene_bound); 
 
   // add lights, camera, and film to the database
   //
