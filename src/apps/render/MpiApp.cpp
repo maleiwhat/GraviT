@@ -134,6 +134,7 @@ void PrintUsage(const char *argv) {
   printf("  --ply-with-color PLY files having color information.\n");
   printf("  --shading-model <0: lambert, 1: phong, 2: blinn>.\n");
   printf("  --camera-view <x y z>.\n");
+  printf("  --eye-light.\n");
 }
 
 void Parse(int argc, char **argv, Options *options) {
@@ -239,6 +240,8 @@ void Parse(int argc, char **argv, Options *options) {
       options->camera_view[0] = atof(argv[++i]);
       options->camera_view[1] = atof(argv[++i]);
       options->camera_view[2] = atof(argv[++i]);
+    } else if (strcmp(argv[i], "--eye-light") == 0) {
+      options->eye_light = true;
     } else {
       printf("error: %s not defined\n", argv[i]);
       exit(1);
@@ -524,7 +527,7 @@ void printSceneBound(const gvt::render::data::primitives::Box3D &scene_bound) {
 }
 
 void initLights(const apps::render::mpi::commandline::Options &options,
-                const gvt::render::data::primitives::Box3D &scene_bound) {
+                const gvt::render::data::primitives::Box3D &scene_bound, const glm::vec3 &camera_pos) {
 
   gvt::render::RenderContext *cntxt = gvt::render::RenderContext::instance();
   gvt::core::DBNodeH root = cntxt->getRootNode();
@@ -557,6 +560,12 @@ void initLights(const apps::render::mpi::commandline::Options &options,
   //   point_light["position"] = options.light_position;
   //   point_light["color"] = options.light_color;
   // }
+
+  if (options.eye_light) {
+    point_light = cntxt->createNodeFromType("PointLight", "eye_light", lightNodes.UUID());
+    point_light["position"] = camera_pos;
+    point_light["color"] = options.set_light_color ? options.light_color : glm::vec3(0.5);
+  }
 
   // the user did not specify any light source
   // use default light sources
@@ -817,12 +826,12 @@ void CreatePlyDatabase(const MpiInfo &mpi, const commandline::Options &options) 
 
   printSceneBound(g_scene_bound); 
 
-  // lights
-  initLights(options, g_scene_bound);
-
   //
   // camera
   initCamera(options, g_scene_bound);
+
+  // lights
+  initLights(options, g_scene_bound, g_camera_state.getPos());
 
   // film
   gvt::core::DBNodeH filmNode = cntxt->createNodeFromType("Film", "conefilm", root.UUID());
@@ -929,11 +938,14 @@ void CreateObjDatabase(const MpiInfo &mpi, const commandline::Options &options) 
   // add lights, camera, and film to the database
   //
   // lights
-  initLights(options, g_scene_bound);
+  // initLights(options, g_scene_bound);
 
   //
   // camera
   initCamera(options, g_scene_bound);
+
+  // lights
+  initLights(options, g_scene_bound, g_camera_state.getPos());
 
   // film
   gvt::core::DBNodeH filmNode = cntxt->createNodeFromType("Film", "conefilm", root.UUID());
