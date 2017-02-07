@@ -45,7 +45,7 @@
 #include <boost/timer/timer.hpp>
 
 namespace gvt {
-namespace render {
+namespace tracer {
 
 RayTracer::RayTracer() : cntxt(gvt::render::RenderContext::instance()) {
   resetCamera();

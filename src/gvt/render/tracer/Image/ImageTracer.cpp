@@ -28,67 +28,87 @@
 #include <gvt/core/comm/communicator.h>
 #include <gvt/core/utils/timer.h>
 namespace gvt {
-namespace render {
-ImageTracer::ImageTracer() : gvt::render::RayTracer() {
-  queue_mutex = new std::mutex[meshRef.size()];
-  for (auto &m : meshRef) {
-    queue[m.first] = gvt::render::actor::RayVector();
-  }
+namespace tracer {
+ImageTracer::ImageTracer() : gvt::tracer::RayTracer() {
+  // queue_mutex = new std::mutex[meshRef.size()];
+  // for (auto &m : meshRef) {
+  //   queue[m.first] = gvt::render::actor::RayVector();
+  // }
 }
 ImageTracer::~ImageTracer() {
-  if (queue_mutex != nullptr) delete[] queue_mutex;
-  queue.clear();
+  // if (queue_mutex != nullptr) delete[] queue_mutex;
+  // queue.clear();
 }
 
 void ImageTracer::resetBVH() {
   RayTracer::resetBVH();
-  if (queue_mutex != nullptr) delete[] queue_mutex;
-  for (auto &m : meshRef) {
-    queue[m.first] = gvt::render::actor::RayVector();
-  }
+  // if (queue_mutex != nullptr) delete[] queue_mutex;
+  // for (auto &m : meshRef) {
+  //   queue[m.first] = gvt::render::actor::RayVector();
+  // }
 }
 
 void ImageTracer::operator()() {
 
   img->reset();
 
-    gvt::core::time::timer t_frame(true,"image tracer: frame: ");
-    gvt::core::time::timer t_all(false,"image tracer: all timers: ");
-    gvt::core::time::timer t_gather(false,"image tracer: gather: ");
-    gvt::core::time::timer t_shuffle(false,"image tracer: shuffle: ");
-    gvt::core::time::timer t_tracer(false,"image tracer: adapter+trace : ");
-    gvt::core::time::timer t_select(false,"image tracer: select : ");
-    gvt::core::time::timer t_filter(false,"image tracer: filter : ");
-    gvt::core::time::timer t_camera(false,"image tracer: gen rays : ");
-    t_camera.resume();
-    cam->AllocateCameraRays();
-    cam->generateRays();
-    t_camera.stop();
-    t_filter.resume();
-    processRaysAndDrop(cam->rays);
-    t_filter.stop();
+  gvt::core::time::timer t_frame(true, "image tracer: frame: ");
+  gvt::core::time::timer t_all(false, "image tracer: all timers: ");
+  gvt::core::time::timer t_gather(false, "image tracer: gather: ");
+  gvt::core::time::timer t_shuffle(false, "image tracer: shuffle: ");
+  gvt::core::time::timer t_tracer(false, "image tracer: adapter+trace : ");
+  gvt::core::time::timer t_select(false, "image tracer: select : ");
+  gvt::core::time::timer t_filter(false, "image tracer: filter : ");
+  gvt::core::time::timer t_camera(false, "image tracer: gen rays : ");
+  t_camera.resume();
+  cam->AllocateCameraRays();
+  cam->generateRays();
+  t_camera.stop();
+  t_filter.resume();
+  processRaysAndDrop(cam->rays);
+  t_filter.stop();
+  gvt::render::actor::RayVector toprocess;
   gvt::render::actor::RayVector returned_rays;
   do {
     int target = -1;
     int amount = 0;
     t_select.resume();
-    for (auto &q : queue) {
-      if (q.second.size() > amount) {
-        amount = q.second.size();
-        target = q.first;
-      }
-    }
+    // for (auto &q : queue) {
+    //   if (isInNode(q.first) && q.second.size() > amount) {
+    //     amount = q.second.size();
+    //     target = q.first;
+    //   }
+    // }
+    queue.dequeue(target, toprocess);
     t_select.stop();
+
     if (target != -1) {
       t_tracer.resume();
-      returned_rays.reserve(queue[target].size() * 10);
-      RayTracer::calladapter(target, queue[target], returned_rays);
-      queue[target].clear();
-      t_tracer.stop();
+      // gc_rays.add(toprocess.size());
+      RayTracer::calladapter(target, toprocess, returned_rays);
       t_shuffle.resume();
+      // gc_shuffle.add(returned_rays.size());
       processRays(returned_rays, target);
       t_shuffle.stop();
     }
+    // t_select.resume();
+    // for (auto &q : queue) {
+    //   if (q.second.size() > amount) {
+    //     amount = q.second.size();
+    //     target = q.first;
+    //   }
+    // }
+    // t_select.stop();
+    // if (target != -1) {
+    //   t_tracer.resume();
+    //   returned_rays.reserve(queue[target].size() * 10);
+    //   RayTracer::calladapter(target, queue[target], returned_rays);
+    //   queue[target].clear();
+    //   t_tracer.stop();
+    //   t_shuffle.resume();
+    //   processRays(returned_rays, target);
+    //   t_shuffle.stop();
+    // }
   } while (hasWork());
   t_gather.resume();
   img->composite();
@@ -123,11 +143,9 @@ void ImageTracer::processRaysAndDrop(gvt::render::actor::RayVector &rays) {
                         }
                       }
                       for (auto &q : local_queue) {
-                        queue_mutex[q.first].lock();
-                        queue[q.first].insert(queue[q.first].end(),
-                                              std::make_move_iterator(local_queue[q.first].begin()),
-                                              std::make_move_iterator(local_queue[q.first].end()));
-                        queue_mutex[q.first].unlock();
+                        for (auto &q : local_queue) {
+                          queue.enqueue(q.first, q.second);
+                        }
                       }
                     },
                     ap);
@@ -158,11 +176,7 @@ void ImageTracer::processRays(gvt::render::actor::RayVector &rays, const int src
                         }
                       }
                       for (auto &q : local_queue) {
-                        queue_mutex[q.first].lock();
-                        queue[q.first].insert(queue[q.first].end(),
-                                              std::make_move_iterator(local_queue[q.first].begin()),
-                                              std::make_move_iterator(local_queue[q.first].end()));
-                        queue_mutex[q.first].unlock();
+                        queue.enqueue(q.first, q.second);
                       }
                     },
                     ap);
@@ -174,8 +188,8 @@ bool ImageTracer::MessageManager(std::shared_ptr<gvt::comm::Message> msg) { retu
 
 bool ImageTracer::isDone() {
   if (queue.empty()) return true;
-  for (auto &q : queue)
-    if (!q.second.empty()) return false;
+  // for (auto &q : queue)
+  //   if (!q.second.empty()) return false;
   return true;
 }
 bool ImageTracer::hasWork() { return !isDone(); }

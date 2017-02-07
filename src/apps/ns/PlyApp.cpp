@@ -262,15 +262,15 @@ int main(int argc, char **argv) {
 
   // end db setup
 
-  std::shared_ptr<gvt::render::RayTracer> rt;
+  std::shared_ptr<gvt::tracer::RayTracer> rt;
   int schedType = root["Schedule"]["type"].value().toInteger();
   switch (schedType) {
   case gvt::render::scheduler::Image: {
-    rt = std::make_shared<gvt::render::ImageTracer>();
+    rt = std::make_shared<gvt::tracer::ImageTracer>();
     break;
   }
   case gvt::render::scheduler::Domain: {
-    rt = std::make_shared<gvt::render::DomainTracer>();
+    rt = std::make_shared<gvt::tracer::DomainTracer>();
     break;
   }
   default: {

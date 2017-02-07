@@ -24,31 +24,33 @@
    =======================================================================================
    */
 
-#include "SendRayList.h"
+#include "RayQueueManager.h"
 
 namespace gvt {
-namespace comm {
+namespace tracer {
 
-REGISTER_INIT_MESSAGE(EmptyMessage);
-REGISTER_INIT_MESSAGE(SendRayList);
-
-SendRayList::SendRayList(const long _src, const long _dst, gvt::render::actor::RayVector &raylist)
-    : gvt::comm::Message(sizeof(gvt::render::actor::Ray) * raylist.size()) {
-  tag(COMMUNICATOR_MESSAGE_TAG);
-  src(_src);
-  dst(_dst);
-  std::memcpy(getMessage<void>(), &raylist[0], sizeof(gvt::render::actor::Ray) * raylist.size());
-
-  // std::size_t size = ;
-  // _buffer = make_shared_buffer<unsigned char>(size + sizeof(long));
-  // _size = size;
-  //
-  // long &s = *(long *)((unsigned char *)msg_ptr() +
-  //                     sizeof(gvt::render::actor::Ray) * raylist.size());
-  // long &d = *(long *)((unsigned char *)msg_ptr() +
-  //                     sizeof(gvt::render::actor::Ray) * raylist.size() + sizeof(long));
-  // s = src;
-  // d = dst;
-}
+// template <>
+// void RayQueueManager::dequeue<HighestSizedQueueFirstPolicy>(
+//     int &target, gvt::render::actor::RayVector &_raylist) {
+//   int id = -1;
+//   unsigned _total = 0;
+//   {
+//     std::lock_guard<std::mutex> _lock(_protect);
+//     for (const auto &q : _queue) {
+//       if (q.second.size() > _total &&
+//           HighestSizedQueueFirstPolicy::policyCheck(_queue, q.first)) {
+//         id = q.first;
+//         _total = q.second.size();
+//       }
+//     }
+//   }
+//
+//   target = id;
+//   if (id == -1) return;
+//   std::lock_guard<std::mutex> _lock(_protect);
+//   std::swap(_queue[id], _raylist);
+//   _queue.erase(id);
+//   return;
+// }
 }
 }

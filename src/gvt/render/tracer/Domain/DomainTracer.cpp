@@ -31,7 +31,7 @@
 #include <gvt/core/utils/timer.h>
 
 namespace gvt {
-namespace render {
+namespace tracer {
 
 bool DomainTracer::areWeDone() {
   std::shared_ptr<gvt::comm::communicator> comm = gvt::comm::communicator::singleton();
@@ -53,17 +53,17 @@ void DomainTracer::Done(bool T) {
     tracer->setGlobalFrameFinished(true);
   }
 }
-DomainTracer::DomainTracer() : gvt::render::RayTracer() {
+DomainTracer::DomainTracer() : gvt::tracer::RayTracer() {
   RegisterMessage<gvt::comm::EmptyMessage>();
   RegisterMessage<gvt::comm::SendRayList>();
   gvt::comm::communicator &comm = gvt::comm::communicator::instance();
   v = std::make_shared<comm::vote::vote>(DomainTracer::areWeDone, DomainTracer::Done);
   comm.setVote(v);
 
-  queue_mutex = new std::mutex[meshRef.size()];
-  for (auto &m : meshRef) {
-    queue[m.first] = gvt::render::actor::RayVector();
-  }
+  // queue_mutex = new std::mutex[meshRef.size()];
+  // for (auto &m : meshRef) {
+  //   queue[m.first] = gvt::render::actor::RayVector();
+  // }
 
   instances_in_node.clear();
   gvt::core::Map<std::string, std::set<int> > remote_location;
@@ -87,20 +87,22 @@ DomainTracer::DomainTracer() : gvt::render::RayTracer() {
       remote[i] = remote_location[UUID];
     }
   }
+
+  queue.setQueuePolicy<tracer::LargestQueueFirst>();
 }
 
 DomainTracer::~DomainTracer() {
-  if (queue_mutex != nullptr) delete[] queue_mutex;
-  queue.clear();
+  // if (queue_mutex != nullptr) delete[] queue_mutex;
+  // queue.clear();
 }
 
 void DomainTracer::resetBVH() {
   RayTracer::resetBVH();
-  if (queue_mutex != nullptr) delete[] queue_mutex;
-  for (auto &m : meshRef) {
-    queue[m.first] = gvt::render::actor::RayVector();
-    queue[m.first].reserve(8192);
-  }
+  // if (queue_mutex != nullptr) delete[] queue_mutex;
+  // for (auto &m : meshRef) {
+  //   queue[m.first] = gvt::render::actor::RayVector();
+  //   queue[m.first].reserve(8192);
+  // }
 }
 
 void DomainTracer::operator()() {
@@ -131,58 +133,45 @@ void DomainTracer::operator()() {
   gc_filter.add(cam->rays.size());
   processRaysAndDrop(cam->rays);
   t_filter.stop();
+
+  gvt::render::actor::RayVector toprocess;
   gvt::render::actor::RayVector returned_rays;
 
   do {
     int target = -1;
     int amount = 0;
     t_select.resume();
-    for (auto &q : queue) {
-      if (isInNode(q.first) && q.second.size() > amount) {
-        amount = q.second.size();
-        target = q.first;
-      }
-    }
+    // for (auto &q : queue) {
+    //   if (isInNode(q.first) && q.second.size() > amount) {
+    //     amount = q.second.size();
+    //     target = q.first;
+    //   }
+    // }
+    queue.dequeue(target, toprocess);
     t_select.stop();
 
     if (target != -1) {
-      gvt::render::actor::RayVector tmp;
-
-      queue_mutex[target].lock();
-      t_tracer.resume();
-      gc_rays.add(queue[target].size());
-      std::swap(queue[target], tmp);
-      queue[target].reserve(4096);
-      queue_mutex[target].unlock();
-      RayTracer::calladapter(target, tmp, returned_rays);
-      t_tracer.stop();
-
-      t_shuffle.resume();
-      gc_shuffle.add(returned_rays.size());
-      processRays(returned_rays, target);
-      t_shuffle.stop();
-    }
-
-    if (target == -1) {
-      t_send.resume();
-      for (auto& q : queue) {
-        if (isInNode(q.first) || q.second.empty()) continue;
-        queue_mutex[q.first].lock();
-        gc_sent.add(q.second.size());
-        int sendto = pickNode(q.first);
-        std::shared_ptr<gvt::comm::Message> msg = std::make_shared<gvt::comm::SendRayList>(comm.id(), sendto, q.second);
+      if (isInNode(target)) {
+        t_tracer.resume();
+        gc_rays.add(toprocess.size());
+        RayTracer::calladapter(target, toprocess, returned_rays);
+        t_shuffle.resume();
+        gc_shuffle.add(returned_rays.size());
+        processRays(returned_rays, target);
+        t_shuffle.stop();
+      } else {
+        t_send.resume();
+        int sendto = pickNode(target);
+        std::shared_ptr<gvt::comm::Message> msg =
+            std::make_shared<gvt::comm::SendRayList>(comm.id(), sendto, toprocess);
         comm.send(msg, sendto);
-
-        q.second.clear();
-        queue_mutex[q.first].unlock();
+        t_send.stop();
       }
-      t_send.stop();
     }
 
     if (isDone()) {
       v->PorposeVoting();
     }
-
   } while (hasWork());
   t_gather.resume();
   img->composite();
@@ -211,14 +200,11 @@ inline void DomainTracer::processRaysAndDrop(gvt::render::actor::RayVector &rays
                       gvt::core::Map<int, gvt::render::actor::RayVector> local_queue;
                       for (size_t i = 0; i < hits.size(); i++) {
                         gvt::render::actor::Ray &r = *(raysit.begin() + i);
-                        if (hits[i].next != -1) if(instances_in_node[hits[i].next]) local_queue[hits[i].next].push_back(r);
+                        if (hits[i].next != -1)
+                          if (instances_in_node[hits[i].next]) local_queue[hits[i].next].push_back(r);
                       }
                       for (auto &q : local_queue) {
-                        queue_mutex[q.first].lock();
-                        queue[q.first].insert(queue[q.first].end(),
-                                              std::make_move_iterator(local_queue[q.first].begin()),
-                                              std::make_move_iterator(local_queue[q.first].end()));
-                        queue_mutex[q.first].unlock();
+                        queue.enqueue(q.first, q.second);
                       }
                     },
                     ap);
@@ -249,11 +235,9 @@ inline void DomainTracer::processRays(gvt::render::actor::RayVector &rays, const
                         }
                       }
                       for (auto &q : local_queue) {
-                        queue_mutex[q.first].lock();
-                        queue[q.first].insert(queue[q.first].end(),
-                                              std::make_move_iterator(local_queue[q.first].begin()),
-                                              std::make_move_iterator(local_queue[q.first].end()));
-                        queue_mutex[q.first].unlock();
+                        for (auto &q : local_queue) {
+                          queue.enqueue(q.first, q.second);
+                        }
                       }
                     },
                     ap);
@@ -271,9 +255,10 @@ bool DomainTracer::MessageManager(std::shared_ptr<gvt::comm::Message> msg) {
 }
 
 bool DomainTracer::isDone() {
-  if (queue.empty()) return true;
-  for (auto &q : queue)
-    if (!q.second.empty()) return false;
+  queue.empty();
+  // if (queue.empty()) return true;
+  // for (auto &q : queue)
+  //   if (!q.second.empty()) return false;
   return true;
 }
 bool DomainTracer::hasWork() { return !_GlobalFrameFinished; }

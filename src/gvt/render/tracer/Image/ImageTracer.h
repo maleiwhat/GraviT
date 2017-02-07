@@ -29,12 +29,12 @@
 #include <mutex>
 
 namespace gvt {
-namespace render {
-class ImageTracer : public gvt::render::RayTracer {
+namespace tracer {
+class ImageTracer : public gvt::tracer::RayTracer {
 private:
 protected:
   std::mutex *queue_mutex = nullptr;
-  gvt::core::Map<int, gvt::render::actor::RayVector> queue;
+  // gvt::core::Map<int, gvt::render::actor::RayVector> queue;
 
 public:
   ImageTracer();

@@ -443,15 +443,33 @@ int main(int argc, char **argv) {
     exit(1);
   }
 
-  gvt::render::DomainTracer rt;
+  std::shared_ptr<gvt::tracer::RayTracer> rt;
+  int schedType = root["Schedule"]["type"].value().toInteger();
+  switch (schedType) {
+  case gvt::render::scheduler::Image: {
+    rt = std::make_shared<gvt::tracer::ImageTracer>();
+    break;
+  }
+  case gvt::render::scheduler::Domain: {
+    rt = std::make_shared<gvt::tracer::DomainTracer>();
+    break;
+  }
+  default: {
+    std::cout << "unknown schedule type provided: " << schedType << std::endl;
+    std::exit(0);
+    break;
+  }
+  }
 
-  for (int i = 0; i < 10; i++) {
-    gvt::core::time::timer t_frame(true, "Frame time :");
-    rt();
+  cntxt->settracer(rt);
+
+  std::cout << "Calling tracer" << std::endl;
+  for (int i = 0; i < 100; i++) {
+    (*rt)();
   }
 
   if (gvt::comm::communicator::instance().id() == 0)
-    rt.getComposite()->write(filmNode["outputPath"].value().toString());
+    (*rt).getComposite()->write(filmNode["outputPath"].value().toString());
   gvt::comm::communicator::instance().terminate();
 
   // end db setup
