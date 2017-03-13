@@ -267,8 +267,13 @@ inline void DomainTracer::trace() {
         profiler.AddCounter(Profiler::ADAPTER_MISS, 1);
       }
       if (!adapter) {
-        GVT_DEBUG(DBG_ALWAYS, "image scheduler: creating new adapter");
+        GVT_DEBUG(DBG_ALWAYS, "domain scheduler: creating new adapter");
         switch (adapterType) {
+#ifdef GVT_RENDER_ADAPTER_EMBREE_1M
+        case gvt::render::adapter::Embree1M:
+          adapter = new gvt::render::adapter::embree::data::EmbreeMeshAdapter1M(mesh);
+          break;
+#endif
 #ifdef GVT_RENDER_ADAPTER_EMBREE
         case gvt::render::adapter::Embree:
           adapter = new gvt::render::adapter::embree::data::EmbreeMeshAdapter(mesh);
@@ -291,7 +296,7 @@ inline void DomainTracer::trace() {
           break;
 #endif
         default:
-          GVT_DEBUG(DBG_SEVERE, "image scheduler: unknown adapter type: " << adapterType);
+          GVT_DEBUG(DBG_SEVERE, "domain scheduler: unknown adapter type: " << adapterType);
         }
 
         adapterCache[mesh] = adapter;
@@ -299,10 +304,10 @@ inline void DomainTracer::trace() {
       profiler.Stop(Profiler::ADAPTER);
 
       // t_adapter.stop();
-      GVT_ASSERT(adapter != nullptr, "image scheduler: adapter not set");
+      GVT_ASSERT(adapter != nullptr, "domain scheduler: adapter not set");
       // end getAdapterFromCache concept
 
-      GVT_DEBUG(DBG_ALWAYS, "image scheduler: calling process queue");
+      GVT_DEBUG(DBG_ALWAYS, "domain scheduler: calling process queue");
       {
         // t_trace.resume();
         profiler.Start(Profiler::TRACE);

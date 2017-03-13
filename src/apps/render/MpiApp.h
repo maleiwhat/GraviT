@@ -26,10 +26,10 @@ struct Options {
     NUM_TRACERS
   };
 
-  enum AdapterType { EMBREE, MANTA, OPTIX };
+  enum AdapterType { EMBREE_1M, EMBREE, MANTA, OPTIX };
 
   int tracer = ASYNC_DOMAIN;
-  int adapter = EMBREE;
+  int adapter = EMBREE_1M;
   int width = 400;
   int height = 400;
   bool obj = false;

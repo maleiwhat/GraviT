@@ -36,6 +36,7 @@ enum RenderType {
   Manta,
   Optix,
   Embree,
+  Embree1M,
   Heterogeneous
 };
 } // namespace adapter
