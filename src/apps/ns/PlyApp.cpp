@@ -95,7 +95,7 @@ public:
 
 int main(int argc, char **argv) {
 #if defined (__USE_TAU)
-  TAU_PROFILE("gvtPlyNS::main()",,TAU_DEFAULT);
+  TAU_PROFILE("gvtPlyNS::main()","int",TAU_DEFAULT);
 #endif
 
   gvt::core::time::timer t_skip(true, "To skip");
