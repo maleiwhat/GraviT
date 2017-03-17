@@ -68,6 +68,10 @@
 
 #include <memory>
 
+#if defined(__USE_TAU)
+#include <TAU.h>
+#endif
+
 using namespace std;
 using namespace gvt::render;
 using namespace gvt::render::data::scene;
@@ -90,6 +94,9 @@ public:
 //#define DOMAIN_PER_NODE 2
 
 int main(int argc, char **argv) {
+#if defined (__USE_TAU)
+  TAU_PROFILE("gvtPlyNS::main()",,TAU_DEFAULT);
+#endif
 
   gvt::core::time::timer t_skip(true, "To skip");
 
