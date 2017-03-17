@@ -15,7 +15,9 @@ if(COMMAND cmake_policy)
   cmake_policy(SET CMP0003 NEW)
 
   # use rpath on MacOS
+if(APPLE)
   cmake_policy(SET CMP0042 NEW)
+endif(APPLE)
 endif(COMMAND cmake_policy)
 
 if(NOT CMAKE_BUILD_TYPE)
