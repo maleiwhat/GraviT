@@ -180,6 +180,7 @@ inline void DomainTracer::trace() {
 
   clearBuffer();
   int adapterType = root["Schedule"]["adapter"].value().toInteger();
+  // printf("adapter %d\n", adapterType);
 
   long domain_counter = 0;
 
@@ -272,11 +273,19 @@ inline void DomainTracer::trace() {
 #ifdef GVT_RENDER_ADAPTER_EMBREE_1M
         case gvt::render::adapter::Embree1M:
           adapter = new gvt::render::adapter::embree::data::EmbreeMeshAdapter1M(mesh);
+          // printf("created Embree1M\n");
+          break;
+#endif
+#ifdef GVT_RENDER_ADAPTER_EMBREE_NM
+        case gvt::render::adapter::EmbreeNM:
+          adapter = new gvt::render::adapter::embree::data::EmbreeMeshAdapterNM(mesh);
+          // printf("created EmbreeNM\n");
           break;
 #endif
 #ifdef GVT_RENDER_ADAPTER_EMBREE
         case gvt::render::adapter::Embree:
           adapter = new gvt::render::adapter::embree::data::EmbreeMeshAdapter(mesh);
+          // printf("created Embree\n");
           break;
 #endif
 #ifdef GVT_RENDER_ADAPTER_MANTA

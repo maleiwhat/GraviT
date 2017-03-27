@@ -29,6 +29,7 @@
 // #include <gvt/render/adapter/embree/data/domain/EmbreeDomain.h>
 #include <gvt/render/adapter/embree/data/EmbreeMeshAdapter.h>
 #include <gvt/render/adapter/embree/data/EmbreeMeshAdapter1M.h>
+#include <gvt/render/adapter/embree/data/EmbreeMeshAdapterNM.h>
 
 /// single include for all Embree-specific headers
 

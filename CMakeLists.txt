@@ -57,6 +57,7 @@ if (GVT_RENDER)
   option(GVT_RENDER_ADAPTER_MANTA  		"Build the SCI Manta ray tracing engine adapter" OFF)
   option(GVT_RENDER_ADAPTER_EMBREE 		"Build the Intel Embree ray tracing engine adapter" OFF)
   option(GVT_RENDER_ADAPTER_EMBREE_1M 		"Build the Intel Embree ray tracing engine adapter using ray streams of size 1M" ON)
+  option(GVT_RENDER_ADAPTER_EMBREE_NM 		"Build the Intel Embree ray tracing engine adapter using ray streams of size NM" ON)
   option(GVT_RENDER_ADAPTER_OPTIX_PRIME 	"Build the NVIDIA Optix Prime ray tracing engine adapter" OFF)
   option(GVT_RENDER_APP 					"Build the GraviT example renderer application" ON)
   option(GVT_GLRENDER_APP			"Build the interactive X application" ON)
@@ -368,6 +369,17 @@ if (GVT_RENDER_ADAPTER_EMBREE_1M)
     src/gvt/render/adapter/embree/data/EmbreeMeshAdapter1M.cpp
   )
 endif(GVT_RENDER_ADAPTER_EMBREE_1M)
+
+if (GVT_RENDER_ADAPTER_EMBREE_NM)
+  add_definitions(-DGVT_RENDER_ADAPTER_EMBREE_NM)
+  set (GVT_RENDER_HDRS ${GVT_RENDER_HDRS}
+    src/gvt/render/adapter/embree/data/EmbreeMeshAdapterNM.h
+    src/gvt/render/adapter/embree/Wrapper.h
+  )
+  set(GVT_RENDER_SRCS ${GVT_RENDER_SRCS}
+    src/gvt/render/adapter/embree/data/EmbreeMeshAdapterNM.cpp
+  )
+endif(GVT_RENDER_ADAPTER_EMBREE_NM)
 
 if (GVT_RENDER_ADAPTER_EMBREE AND GVT_RENDER_ADAPTER_OPTIX_PRIME)
   set (GVT_RENDER_HDRS ${GVT_RENDER_HDRS}

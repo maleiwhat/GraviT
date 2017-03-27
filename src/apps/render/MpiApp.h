@@ -26,7 +26,7 @@ struct Options {
     NUM_TRACERS
   };
 
-  enum AdapterType { EMBREE_1M, EMBREE, MANTA, OPTIX };
+  enum AdapterType { EMBREE_1M, EMBREE_NM, EMBREE, MANTA, OPTIX };
 
   int tracer = ASYNC_DOMAIN;
   int adapter = EMBREE_1M;

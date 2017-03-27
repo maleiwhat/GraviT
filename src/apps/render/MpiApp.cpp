@@ -100,7 +100,7 @@ void PrintUsage(const char *argv) {
   printf("  -h, --help\n");
   printf("  -i, --infile <infile> (default: ../data/geom/bunny.obj for obj and "
          "./EnzoPlyData/Enzo8 for ply)\n");
-  printf("  -a, --adapter <embree1m | embree | manta | optix> (default: embree1m)\n");
+  printf("  -a, --adapter <embree1m | embreenm | embree | manta | optix> (default: embree1m)\n");
   printf("  -t, --tracer <0-3> (default: 0)\n");
   printf("      0: ASYNC_DOMAIN, 1: ASYNC_IMAGE, 2: SYNC_DOMAIN, 3: SYNC_IMAGE, "
          "4: PING_TEST\n");
@@ -153,6 +153,8 @@ void Parse(int argc, char **argv, Options *options) {
       ++i;
       if (strcmp(argv[i], "embree1m") == 0) {
         options->adapter = Options::EMBREE_1M;
+      } else if (strcmp(argv[i], "embreenm") == 0) {
+        options->adapter = Options::EMBREE_NM;
       } else if (strcmp(argv[i], "embree") == 0) {
         options->adapter = Options::EMBREE;
       } else if (strcmp(argv[i], "manta") == 0) {
@@ -853,6 +855,8 @@ void CreatePlyDatabase(const MpiInfo &mpi, const commandline::Options &options) 
 
   if (options.adapter == commandline::Options::EMBREE_1M) {
     schedNode["adapter"] = gvt::render::adapter::Embree1M;
+  } else if (options.adapter == commandline::Options::EMBREE_NM) {
+    schedNode["adapter"] = gvt::render::adapter::EmbreeNM;
   } else if (options.adapter == commandline::Options::EMBREE) {
     schedNode["adapter"] = gvt::render::adapter::Embree;
   } else if (options.adapter == commandline::Options::MANTA) {
@@ -969,6 +973,8 @@ void CreateObjDatabase(const MpiInfo &mpi, const commandline::Options &options) 
 
   if (options.adapter == commandline::Options::EMBREE_1M) {
     schedNode["adapter"] = gvt::render::adapter::Embree1M;
+  } else if (options.adapter == commandline::Options::EMBREE_NM) {
+    schedNode["adapter"] = gvt::render::adapter::EmbreeNM;
   } else if (options.adapter == commandline::Options::EMBREE) {
     schedNode["adapter"] = gvt::render::adapter::Embree;
   } else if (options.adapter == commandline::Options::MANTA) {
