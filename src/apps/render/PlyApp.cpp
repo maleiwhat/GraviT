@@ -84,6 +84,9 @@ public:
 
 int main(int argc, char **argv) {
  {
+#if defined (__USE_TAU)
+ TAU_PROFILE("gvtPly::main()","int",TAU_DEFAULT);
+#endif
   gvt::core::time::timer t_skip(true, "To skip");
 
   ParseCommandLine cmd("gvtPly");
