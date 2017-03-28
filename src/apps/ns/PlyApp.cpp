@@ -96,7 +96,7 @@ public:
 int main(int argc, char **argv) {
 #if defined (__USE_TAU)
 //  TAU_PROFILE("gvtPlyNS::main()","int",TAU_DEFAULT);
-   TAU_START("gvtPlyNS::main()");
+//   TAU_START("gvtPlyNS::main()");
 #endif
 
   gvt::core::time::timer t_skip(true, "To skip");
@@ -289,21 +289,24 @@ int main(int argc, char **argv) {
     break;
   }
   }
-
+  #if defined (__USE_TAU)
+  //  TAU_PROFILE("gvtPlyNS::main()","int",TAU_DEFAULT);
+     TAU_START("gvtPlyNS::main()");
+  #endif
   cntxt->settracer(rt);
 
   std::cout << "Calling tracer" << std::endl;
   for (int i = 0; i < 100; i++) {
     (*rt)();
   }
-
+  #if defined (__USE_TAU)
+  //  TAU_PROFILE("gvtPlyNS::main()","int",TAU_DEFAULT);
+     TAU_STOP("gvtPlyNS::main()");
+  #endif
   if (gvt::comm::communicator::instance().id() == 0)
     (*rt).getComposite()->write(filmNode["outputPath"].value().toString());
   gvt::comm::communicator::instance().terminate();
-#if defined (__USE_TAU)
-//  TAU_PROFILE("gvtPlyNS::main()","int",TAU_DEFAULT);
-   TAU_STOP("gvtPlyNS::main()");
-#endif
+
   }
 //  MPI_Finalize();
 //}
