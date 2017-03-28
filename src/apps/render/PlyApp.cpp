@@ -61,6 +61,10 @@
 #include <boost/range/algorithm.hpp>
 #include <gvt/render/data/reader/PlyReader.h>
 
+#if defined(__USE_TAU)
+#include <TAU.h>
+#endif
+
 using namespace std;
 using namespace gvt::render;
 using namespace gvt::render::data::scene;
@@ -190,7 +194,7 @@ int main(int argc, char **argv) {
   camNode["focus"] = glm::vec3(512.0, 512.0, 0.0);
   camNode["upVector"] = glm::vec3(0.0, 1.0, 0.0);
   camNode["fov"] = (float)(25.0 * M_PI / 180.0);
-  camNode["rayMaxDepth"] = (int)1;
+  camNode["rayMaxDepth"] = (int)8;
   camNode["raySamples"] = (int)1;
   // film
   gvt::core::DBNodeH filmNode = cntxt->createNodeFromType("Film", "conefilm", root.UUID());
