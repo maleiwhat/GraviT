@@ -44,6 +44,10 @@
 
 #include <boost/timer/timer.hpp>
 
+#if defined (__USE_TAU)
+#include <TAU.h>
+#endif
+
 namespace gvt {
 namespace render {
 
