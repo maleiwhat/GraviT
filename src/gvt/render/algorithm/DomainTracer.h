@@ -57,6 +57,10 @@
 
 #include <set>
 
+#if defined (__USE_TAU)
+#include <TAU.h>
+#endif
+
 #define RAY_BUF_SIZE 10485760 // 10 MB per neighbor
 
 namespace gvt {
@@ -317,13 +321,18 @@ public:
 
           {
             t_trace.resume();
+#if defined (__USE_TAU)
+  TAU_START("DomainTracer.h::t_trace");
+#endif
             gc_rays.add(this->queue[instTarget].size());
             moved_rays.reserve(this->queue[instTarget].size() * 10);
             adapter->trace(this->queue[instTarget], moved_rays, instM[instTarget], instMinv[instTarget],
                            instMinvN[instTarget], lights);
 
             this->queue[instTarget].clear();
-
+#if defined (__USE_TAU)
+  TAU_STOP("DomainTracer.h::t_trace");
+#endif
             t_trace.stop();
           }
 
