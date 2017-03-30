@@ -30,7 +30,7 @@
 #include <gvt/core/utils/global_counter.h>
 #include <gvt/core/utils/timer.h>
 
-#ifdef (__USE_TAU)
+#if defined (__USE_TAU)
 #include <TAU.h>
 #endif
 
