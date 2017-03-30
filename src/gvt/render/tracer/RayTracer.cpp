@@ -78,6 +78,9 @@ void RayTracer::processRays(gvt::render::actor::RayVector &rays, const int src, 
 
 void RayTracer::calladapter(const int instTarget, gvt::render::actor::RayVector &toprocess,
                             gvt::render::actor::RayVector &moved_rays) {
+#ifdef (__USE_TAU)
+  TAU_PROFILE("RayTracer::calladapter","void",TAU_DEFAULT);
+#endif                              
   std::shared_ptr<gvt::render::Adapter> adapter;
 
   gvt::render::data::primitives::Mesh *mesh = meshRef[instTarget];
