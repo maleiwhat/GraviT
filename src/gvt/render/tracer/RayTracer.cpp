@@ -60,6 +60,9 @@ RayTracer::RayTracer() : cntxt(gvt::render::RenderContext::instance()) {
 RayTracer::~RayTracer(){};
 
 void RayTracer::operator()() {
+#if defined (__USE_TAU)
+  TAU_PROFILE("RayTracer::operator","void",TAU_DEFAULT);
+#endif
   cam->AllocateCameraRays();
   cam->generateRays();
   gvt::render::actor::RayVector moved_rays;
