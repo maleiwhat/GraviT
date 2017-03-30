@@ -30,6 +30,10 @@
 #include <gvt/core/utils/global_counter.h>
 #include <gvt/core/utils/timer.h>
 
+#ifdef (__USE_TAU)
+#include <TAU.h>
+#endif
+
 namespace gvt {
 namespace render {
 
@@ -150,11 +154,17 @@ void DomainTracer::operator()() {
 
       queue_mutex[target].lock();
       t_tracer.resume();
+      #ifdef (__USE_TAU)
+        TAU_START("DomainTracer.cpp:t_tracer");
+      #endif
       gc_rays.add(queue[target].size());
       std::swap(queue[target], tmp);
       queue[target].reserve(4096);
       queue_mutex[target].unlock();
       RayTracer::calladapter(target, tmp, returned_rays);
+      #ifdef (__USE_TAU)
+        TAU_STOP("DomainTracer.cpp:t_tracer");
+      #endif
       t_tracer.stop();
 
       t_shuffle.resume();
