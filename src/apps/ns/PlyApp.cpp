@@ -280,6 +280,9 @@ int main(int argc, char **argv) {
     break;
   }
   case gvt::render::scheduler::Domain: {
+#if defined (__USE_TAU)
+  TAU_PROFILE("PlyAppNS.cpp:gvt::render::scheduler::Domain:","",TAU_DEFAULT);
+#endif
     rt = std::make_shared<gvt::render::DomainTracer>();
     break;
   }
@@ -289,7 +292,13 @@ int main(int argc, char **argv) {
     break;
   }
   }
+#if defined (__USE_TAU)
+  TAU_START("PlyAppNS.cpp:cntxt->settracer");
+#endif
   cntxt->settracer(rt);
+#if defined (__USE_TAU)
+  TAU_STOP("PlyAppNS.cpp:cntxt->settracer");
+#endif
 
   std::cout << "Calling tracer" << std::endl;
   for (int i = 0; i < 100; i++) {
