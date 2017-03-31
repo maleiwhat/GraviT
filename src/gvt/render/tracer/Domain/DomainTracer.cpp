@@ -58,6 +58,9 @@ void DomainTracer::Done(bool T) {
   }
 }
 DomainTracer::DomainTracer() : gvt::render::RayTracer() {
+#if defined (__USE_TAU)
+  TAU_PROFILE("DomainTracer::DomainTracer()","",TAU_DEFAULT);
+#endif
   RegisterMessage<gvt::comm::EmptyMessage>();
   RegisterMessage<gvt::comm::SendRayList>();
   gvt::comm::communicator &comm = gvt::comm::communicator::instance();
