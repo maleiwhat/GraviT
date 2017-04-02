@@ -97,7 +97,9 @@ int main(int argc, char **argv) {
 #if defined (__USE_TAU)
   TAU_PROFILE("gvtPlyNS::main()","int",TAU_DEFAULT);
 #endif
-
+#if defined (__USE_TAU)
+  TAU_START("gvtPlyNS::main():Init");
+#endif
   gvt::core::time::timer t_skip(true, "To skip");
 
   ParseCommandLine cmd("gvtPly");
@@ -292,20 +294,27 @@ int main(int argc, char **argv) {
     break;
   }
   }
-#if defined (__USE_TAU)
-  TAU_START("PlyAppNS.cpp:cntxt->settracer");
-#endif
   cntxt->settracer(rt);
 #if defined (__USE_TAU)
-  TAU_STOP("PlyAppNS.cpp:cntxt->settracer");
+  TAU_STOP("gvtPlyNS::main():Init");
 #endif
-
+#if defined (__USE_TAU)
+    TAU_START("gvtPlyNS::main():Calling Tracer loop");
+  #endif
   std::cout << "Calling tracer" << std::endl;
   for (int i = 0; i < 100; i++) {
     (*rt)();
   }
+#if defined (__USE_TAU)
+  TAU_STOP("gvtPlyNS::main():Calling Tracer loop");
+#endif
+#if defined (__USE_TAU)
+  TAU_START("gvtPlyNS::main():terminate");
+#endif
   if (gvt::comm::communicator::instance().id() == 0)
     (*rt).getComposite()->write(filmNode["outputPath"].value().toString());
   gvt::comm::communicator::instance().terminate();
-
+#if defined (__USE_TAU)
+  TAU_STOP("gvtPlyNS::main():terminate");
+#endif
 }
