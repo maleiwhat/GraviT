@@ -91,6 +91,9 @@ int main(int argc, char **argv) {
 #if defined (__USE_TAU)
  TAU_PROFILE("gvtPly::main()","int",TAU_DEFAULT);
 #endif
+#if defined (__USE_TAU)
+ TAU_START("gvtPly::main():Init");
+#endif
   gvt::core::time::timer t_skip(true, "To skip");
 
   ParseCommandLine cmd("gvtPly");
@@ -277,7 +280,9 @@ int main(int argc, char **argv) {
   mycamera.setSamples(raySamples);
   mycamera.setFOV(fov);
   mycamera.setFilmsize(filmNode["width"].value().toInteger(), filmNode["height"].value().toInteger());
-
+#if defined (__USE_TAU)
+ TAU_STOP("gvtPly::main():Init");
+#endif
   t_skip.stop();
 
   // setup image from database sizes
@@ -300,6 +305,9 @@ int main(int argc, char **argv) {
     break;
   }
   case gvt::render::scheduler::Domain: {
+#if defined (__USE_TAU)
+  TAU_PROFILE("PlyApp.cpp:gvt::render::scheduler::Domain:","",TAU_DEFAULT);
+#endif
     std::cout << "starting domain scheduler" << std::endl;
 
     // gvt::render::algorithm::Tracer<DomainScheduler>(mycamera.rays, myimage)();
@@ -318,8 +326,13 @@ int main(int argc, char **argv) {
     break;
   }
   }
-
-  myimage.Write();
+#if defined (__USE_TAU)
+ TAU_START("gvtPly::main():myimage.Write()");
+#endif
+myimage.Write();
+#if defined (__USE_TAU)
+ TAU_STOP("gvtPly::main():myimage.Write()");
+#endif
   }
   // std::cout << "Observed threads: " << tracker.get_concurrency() << std::endl;
 
