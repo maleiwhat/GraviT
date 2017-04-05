@@ -222,7 +222,9 @@ inline void DomainTracer::processRaysAndDrop(gvt::render::actor::RayVector &rays
   static tbb::auto_partitioner ap;
   tbb::parallel_for(tbb::blocked_range<gvt::render::actor::RayVector::iterator>(rays.begin(), rays.end(), chunksize),
                     [&](tbb::blocked_range<gvt::render::actor::RayVector::iterator> raysit) {
-
+#if defined (__USE_TAU)
+                    TAU_START("DomainTracer::processRaysAndDrop:parallel_for");
+#endif
                       gvt::core::Vector<gvt::render::data::accel::BVH::hit> hits =
                           acc.intersect<GVT_SIMD_WIDTH>(raysit.begin(), raysit.end(), -1);
 
@@ -239,6 +241,9 @@ inline void DomainTracer::processRaysAndDrop(gvt::render::actor::RayVector &rays
                                               std::make_move_iterator(local_queue[q.first].end()));
                         queue_mutex[q.first].unlock();
                       }
+#if defined (__USE_TAU)
+                    TAU_STOP("DomainTracer::processRaysAndDrop:parallel_for");
+#endif
                     },
                     ap);
 
@@ -279,7 +284,7 @@ inline void DomainTracer::processRays(gvt::render::actor::RayVector &rays, const
                         queue_mutex[q.first].unlock();
                       }
 #if defined (__USE_TAU)
-                      TAU_START("DomainTracer::processRays:parallel_for");
+                      TAU_STOP("DomainTracer::processRays:parallel_for");
 #endif
                     },
                     ap);
