@@ -111,6 +111,9 @@ void DomainTracer::resetBVH() {
 }
 
 void DomainTracer::operator()() {
+#if defined (__USE_TAU)
+  TAU_PROFILE("DomainTracer::operator()()","",TAU_DEFAULT);
+#endif
   gvt::comm::communicator &comm = gvt::comm::communicator::instance();
   _GlobalFrameFinished = false;
 
@@ -209,7 +212,9 @@ void DomainTracer::operator()() {
 }
 
 inline void DomainTracer::processRaysAndDrop(gvt::render::actor::RayVector &rays) {
-
+#if defined (__USE_TAU)
+  TAU_PROFILE("DomainTracer::processRaysAndDrop","",TAU_DEFAULT);
+#endif
   gvt::comm::communicator &comm = gvt::comm::communicator::instance();
   const int chunksize =
       MAX(4096, rays.size() / (gvt::core::CoreContext::instance()->getRootNode()["threads"].value().toInteger() * 4));
@@ -241,14 +246,18 @@ inline void DomainTracer::processRaysAndDrop(gvt::render::actor::RayVector &rays
 }
 
 inline void DomainTracer::processRays(gvt::render::actor::RayVector &rays, const int src, const int dst) {
-
+#if defined (__USE_TAU)
+  TAU_PROFILE("DomainTracer::processRays","",TAU_DEFAULT);
+#endif
   const int chunksize =
       MAX(4096, rays.size() / (gvt::core::CoreContext::instance()->getRootNode()["threads"].value().toInteger() * 4));
   gvt::render::data::accel::BVH &acc = *bvh.get();
   static tbb::auto_partitioner ap;
   tbb::parallel_for(tbb::blocked_range<gvt::render::actor::RayVector::iterator>(rays.begin(), rays.end(), chunksize),
                     [&](tbb::blocked_range<gvt::render::actor::RayVector::iterator> raysit) {
-
+#if defined (__USE_TAU)
+                    TAU_START("DomainTracer::processRays:parallel_for");
+#endif
                       gvt::core::Vector<gvt::render::data::accel::BVH::hit> hits =
                           acc.intersect<GVT_SIMD_WIDTH>(raysit.begin(), raysit.end(), src);
 
@@ -269,6 +278,9 @@ inline void DomainTracer::processRays(gvt::render::actor::RayVector &rays, const
                                               std::make_move_iterator(local_queue[q.first].end()));
                         queue_mutex[q.first].unlock();
                       }
+#if defined (__USE_TAU)
+                      TAU_START("DomainTracer::processRays:parallel_for");
+#endif
                     },
                     ap);
 

@@ -63,6 +63,10 @@
 #include <tbb/partitioner.h>
 #include <tbb/tick_count.h>
 
+#if defined (__USE_TAU)
+#include <TAU.h>
+#endif
+
 namespace gvt {
 namespace render {
 namespace algorithm {
@@ -291,7 +295,9 @@ public:
    * to find out what instance they will hit next
    */
   inline void shuffleRays(gvt::render::actor::RayVector &rays, const int domID) {
-
+#if defined (__USE_TAU)
+  TAU_PROFILE("TracerBase.h::shuffleRays","",TAU_DEFAULT);
+#endif
     const size_t chunksize =
         MAX(4096, rays.size() / (gvt::core::CoreContext::instance()->getRootNode()["threads"].value().toInteger() * 4));
     gvt::render::data::accel::BVH &acc = *dynamic_cast<gvt::render::data::accel::BVH *>(acceleration);

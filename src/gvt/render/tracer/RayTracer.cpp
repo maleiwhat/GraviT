@@ -78,6 +78,9 @@ bool RayTracer::isDone() { return false; };
 bool RayTracer::hasWork() { return true; };
 
 void RayTracer::processRays(gvt::render::actor::RayVector &rays, const int src, const int dst) {
+#if defined (__USE_TAU)
+  TAU_PROFILE("RayTracer::processRays","",TAU_DEFAULT);
+#endif
   for (gvt::render::actor::Ray &r : rays) {
     img->localAdd(r.id, r.color * r.w, 1.0, r.t);
   }

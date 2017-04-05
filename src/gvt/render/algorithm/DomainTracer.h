@@ -173,7 +173,9 @@ public:
   virtual ~Tracer() {}
 
   void shuffleDropRays(gvt::render::actor::RayVector &rays) {
-
+#if defined (__USE_TAU)
+  TAU_PROFILE("DomainTracer.h::shuffleDropRays","",TAU_DEFAULT);
+#endif
     const size_t chunksize =
         MAX(4096, rays.size() / (gvt::core::CoreContext::instance()->getRootNode()["threads"].value().toInteger() * 4));
     static gvt::render::data::accel::BVH &acc = *dynamic_cast<gvt::render::data::accel::BVH *>(acceleration);
@@ -322,7 +324,7 @@ public:
           {
             t_trace.resume();
 #if defined (__USE_TAU)
-  TAU_START("DomainTracer.h::t_trace");
+  TAU_START("agorithm_DomainTracer.h::t_trace");
 #endif
             gc_rays.add(this->queue[instTarget].size());
             moved_rays.reserve(this->queue[instTarget].size() * 10);
@@ -331,7 +333,7 @@ public:
 
             this->queue[instTarget].clear();
 #if defined (__USE_TAU)
-  TAU_STOP("DomainTracer.h::t_trace");
+  TAU_STOP("agorithm_DomainTracer.h::t_trace");
 #endif
             t_trace.stop();
           }
