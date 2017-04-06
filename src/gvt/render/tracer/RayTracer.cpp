@@ -89,7 +89,7 @@ void RayTracer::processRays(gvt::render::actor::RayVector &rays, const int src, 
 void RayTracer::calladapter(const int instTarget, gvt::render::actor::RayVector &toprocess,
                             gvt::render::actor::RayVector &moved_rays) {
 #if defined (__USE_TAU)
-  TAU_PROFILE("RayTracer::calladapter","void",TAU_DEFAULT);
+  TAU_PROFILE("RayTracer::calladapter","",TAU_DEFAULT);
 #endif
   std::shared_ptr<gvt::render::Adapter> adapter;
 
@@ -132,9 +132,23 @@ void RayTracer::calladapter(const int instTarget, gvt::render::actor::RayVector 
   }
   GVT_ASSERT(adapter != nullptr, "image scheduler: adapter not set");
   {
+#if defined (__USE_TAU)
+ TAU_START("RayTracer::calladapter:moved_rays.reserve");
+#endif
     moved_rays.reserve(toprocess.size() * 10);
+#if defined (__USE_TAU)
+ TAU_STOP("RayTracer::calladapter:moved_rays.reserve");
+ TAU_START("RayTracer::calladapter:adapter->trace");
+#endif
     adapter->trace(toprocess, moved_rays, instM[instTarget], instMinv[instTarget], instMinvN[instTarget], lights);
+#if defined (__USE_TAU)
+ TAU_STOP("RayTracer::calladapter:adapter->trace");
+ TAU_START("RayTracer::calladapter:toprocess.clear");
+#endif
     toprocess.clear();
+#if defined (__USE_TAU)
+ TAU_STOP("RayTracer::calladapter:toprocess.clear");
+#endif
   }
 }
 
