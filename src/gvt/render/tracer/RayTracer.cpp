@@ -145,10 +145,6 @@ void RayTracer::calladapter(const int instTarget, gvt::render::actor::RayVector 
  TAU_STOP("RayTracer::calladapter:adapter->trace");
  TAU_START("RayTracer::calladapter:toprocess.clear");
 #endif
-#if defined (__USE_TAU)
- TAU_STOP("RayTracer::calladapter:adapter->trace");
- TAU_START("RayTracer::calladapter:toprocess.clear");
-#endif
     toprocess.clear();
 #if defined (__USE_TAU)
  TAU_STOP("RayTracer::calladapter:toprocess.clear");
