@@ -27,6 +27,10 @@
 #include <cassert>
 #include <iostream>
 
+#if defined(__USE_TAU)
+#include<TAU.h>
+#endif
+
 namespace gvt {
 namespace comm {
 namespace vote {
@@ -45,6 +49,9 @@ vote::vote(const vote &other) : vote(other._callback_check, other._callback_upda
 }
 
 bool vote::PorposeVoting() {
+#if defined(__USE_TAU)
+  TAU_PROFILE("vote.cpp:vote::PorposeVoting","",TAU_DEFAULT);
+#endif
   std::shared_ptr<comm::communicator> comm = comm::communicator::singleton();
   if (comm->lastid() == 1) {
     _callback_update(true);

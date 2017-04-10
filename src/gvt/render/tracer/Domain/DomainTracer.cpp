@@ -181,6 +181,9 @@ void DomainTracer::operator()() {
 
     if (target == -1) {
       t_send.resume();
+#if defined (__USE_TAU)
+  TAU_START("DomainTracer.cpp:t_send");
+#endif
       for (auto &q : queue) {
         if (isInNode(q.first) || q.second.empty()) continue;
         queue_mutex[q.first].lock();
@@ -192,6 +195,9 @@ void DomainTracer::operator()() {
         q.second.clear();
         queue_mutex[q.first].unlock();
       }
+#if defined (__USE_TAU)
+  TAU_START("DomainTracer.cpp:t_send");
+#endif
       t_send.stop();
     }
 

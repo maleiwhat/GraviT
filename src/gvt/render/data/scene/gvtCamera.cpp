@@ -33,6 +33,10 @@
 #include <tbb/partitioner.h>
 #include <thread>
 
+#if defined(__USE_TAU)
+#include <TAU.h>
+#endif
+
 using namespace gvt::render::data::scene;
 using namespace gvt::render::actor;
 
@@ -179,6 +183,9 @@ void gvtCameraBase::setJitterWindowSize(int windowSize) { jitterWindowSize = win
 
 // gvt::render::actor::RayVector gvtCameraBase::AllocateCameraRays() {
 void gvtCameraBase::AllocateCameraRays() {
+#if defined (__USE_TAU)
+  TAU_PROFILE("gvtCamera.cpp::gvtCameraBase::AllocateCameraRays","",TAU_DEFAULT);
+#endif
   size_t nrays = filmsize[0] * filmsize[1] * samples * samples;
   rays.clear();
   rays.resize(nrays);
@@ -194,6 +201,9 @@ gvtPerspectiveCamera::gvtPerspectiveCamera(const gvtPerspectiveCamera &cam) : gv
 gvtPerspectiveCamera::~gvtPerspectiveCamera() {}
 // gvt::render::actor::RayVector gvtPerspectiveCamera::generateRays() {
 void gvtPerspectiveCamera::generateRays() {
+  #if defined (__USE_TAU)
+    TAU_PROFILE("gvtCamera.cpp::gvtCameraBase::generateRays","",TAU_DEFAULT);
+  #endif
   gvt::core::time::timer t(true, "generate camera rays");
   // Generate rays direction in camera space and transform to world space.
   int buffer_width = filmsize[0];
