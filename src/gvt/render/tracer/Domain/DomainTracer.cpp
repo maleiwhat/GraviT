@@ -196,7 +196,7 @@ void DomainTracer::operator()() {
         queue_mutex[q.first].unlock();
       }
 #if defined (__USE_TAU)
-  TAU_START("DomainTracer.cpp:t_send");
+  TAU_STOP("DomainTracer.cpp:t_send");
 #endif
       t_send.stop();
     }
