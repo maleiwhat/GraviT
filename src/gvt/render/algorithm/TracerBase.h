@@ -172,7 +172,9 @@ public:
   int width;
   int height;
 
-  float sample_ratio;
+  int (*loadBlockFunc)(void *, int ,double ** , int& , int ** , int& );
+  void * loadBlockObj;
+  float sample_ratio = 1.f;
 
   tbb::mutex *queue_mutex;                                  // array of mutexes - one per instance
   gvt::core::Map<int, gvt::render::actor::RayVector> queue; ///< Node rays working
@@ -193,6 +195,8 @@ public:
     sample_ratio = 1.f;
 
     require_composite = false;
+    loadBlockFunc = NULL;
+
     colorBuf = new glm::vec4[width * height];
     require_composite = img.initIceT();
 

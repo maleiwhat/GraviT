@@ -98,6 +98,9 @@ public:
   }
 
   void Write();
+
+  void WriteChar(unsigned char * img);
+
   void resize(const size_t &w, const size_t &h) {
     if (rgb) delete[] rgb;
     width = w;

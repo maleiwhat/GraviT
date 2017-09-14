@@ -67,6 +67,7 @@ if (GVT_RENDER)
   option(GVT_PLY_APP "Build the ply reader application (load ply file)" ON)
   option(GVT_PLY_NS_APP "Build the ply reader application (load ply file)" ON)
   option(GVT_CTEST "Build CTEST Unit and Integration tests" ON)
+  option(GVT_VISIT_ADAPTER "Build VISIT adapter for Gravit" OFF)
   add_definitions(-DGVT_RENDER)
 endif(GVT_RENDER)
 
@@ -637,3 +638,36 @@ if (GVT_GLRENDER_APP)
   #   RUNTIME DESTINATION bin
   # )
 endif(GVT_GLRENDER_APP)
+
+if(GVT_VISIT_ADAPTER)
+  find_package(MPI REQUIRED)
+  include_directories(${MPI_INCLUDE_PATH})
+  set(API_RENDER_LIBS ${API_RENDER_LIBS}  ${MPI_LIBRARIES} ${MPE_LIB2} ${GVT_CORE_LIBS})
+  set(API_SRCS ${API_SRCS} src/apps/render/RenderAPI.h src/apps/render/RenderAPI.cpp)
+
+  add_library(APICode STATIC ${API_SRCS} ${API_RENDER_LIBS} ${gvtCore} ${gvtRender})
+
+  target_link_libraries(APICode  ${API_RENDER_LIBS})
+
+  install(TARGETS APICode
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+  )
+endif(GVT_VISIT_ADAPTER)
+
+##CTEST for RenderAPI
+if (GVT_CTEST AND GVT_VISIT_ADAPTER)
+
+  include_directories(${MPI_INCLUDE_PATH})
+  set(RENDER_API_TEST_SRCS src/apps/test/RenderAPI_DOMAIN_Test.cpp src/apps/test/testingHelper.h ${API_SRCS})
+
+  add_executable(renderAPITest
+    ${RENDER_API_TEST_SRCS}
+  )
+
+  target_link_libraries(renderAPITest gvtCore gvtRender ${GVTSIMPLE_RENDER_LIBS} ${GVT_CORE_LIBS} ${APICode})
+
+  install(TARGETS renderAPITest
+    RUNTIME DESTINATION bin
+  )
+endif(GVT_CTEST AND GVT_VISIT_ADAPTER)

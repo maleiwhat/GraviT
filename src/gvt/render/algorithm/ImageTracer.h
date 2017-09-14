@@ -117,6 +117,43 @@ public:
       shuffleRays(rays, -1);
     }
   }
+  
+  inline void insertMeshData(gvt::render::data::primitives::Mesh * mesh, int meshId) {
+
+    double * points;
+    int * edges;
+    int numPoints = -1;
+    int numEdges = -1;
+
+    loadBlockFunc(loadBlockObj, meshId, &points, numPoints, &edges, numEdges); 
+
+    // add these edges and points to the current mesh
+
+    //clear the mesh
+
+    mesh->vertices.clear();
+    mesh->haveNormals = false;
+
+    double * point = points;
+    for(int i =0;i< numPoints;i++)
+    {
+      glm::vec3 newPoint(*point,*(point+1),*(point+2));
+      mesh->addVertex(newPoint);
+      point +=3;
+
+    }
+
+    int * edge = edges;
+    for(int i =0;i< numEdges;i++)
+    {
+      mesh->addFace(*(edge), *(edge+1), *(edge+2));
+      edge+=3;
+    }
+    delete [] points;
+    delete [] edges;
+
+    mesh->generateNormals();
+  }
 
   inline void operator()() {
 
@@ -185,6 +222,21 @@ public:
           adapter = 0;
         }
         if (!adapter) {
+          /*
+           Visit Delayed Data Loading
+
+           The load block function is used to request data from Visit
+           as needed.  This means if a ray does not intersect with
+           a mesh, visit never needs to compute the data for that mesh.
+          */ 
+          if(loadBlockFunc) {
+            GVT_DEBUG(DBG_ALWAYS, "Image:calling load block func from visit.");
+            insertMeshData(mesh, instTarget);
+          } else {
+            GVT_DEBUG(DBG_ALWAYS, "No load block func");
+          }
+
+          GVT_DEBUG(DBG_ALWAYS, "image scheduler: creating new adapter");
 
           switch (adapterType) {
 #ifdef GVT_RENDER_ADAPTER_EMBREE
