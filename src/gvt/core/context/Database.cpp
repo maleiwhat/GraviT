@@ -304,9 +304,10 @@ DatabaseNode *Database::unmarshLeaf(unsigned char *buffer, Uuid parent) {
       v = (unsigned long long)mat;
 
     } else if (name == String("ptr")) {
-      v = (unsigned long long)0;
-    } else
-      GVT_ASSERT(false, "Pointer used in marsh");
+      v = (unsigned long long) 0;
+    }
+//    } else
+//      GVT_ASSERT(false, "Pointer used in marsh");
     break;
   }
   case 6: {
