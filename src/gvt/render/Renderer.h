@@ -51,7 +51,10 @@ public:
   void render(std::string const &name = "Scheduler");
   void WriteImage(std::string const &name = "Film");
 
-protected:
+  void resetSize(int width, int height);
+
+
+public:
   gvtRenderer(); // constructor
   static gvtRenderer *__singleton;
   std::shared_ptr<data::scene::gvtPerspectiveCamera> camera;

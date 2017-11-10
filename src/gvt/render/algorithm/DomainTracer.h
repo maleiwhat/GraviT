@@ -185,6 +185,8 @@ public:
     gvt::util::global_counter gc_shuffle("Number of rays shuffled :");
     gvt::util::global_counter gc_sent("Number of rays sent :");
 
+    gvt::render::data::accel::BVH &acc = *dynamic_cast<gvt::render::data::accel::BVH *>(acceleration.get());
+
     clearBuffer();
     int adapterType = db.getChild(db.getUnique(schedulername), "adapter");
 

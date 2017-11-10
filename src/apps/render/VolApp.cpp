@@ -77,6 +77,11 @@
 #include <gvt/render/api2/api.h>
 #endif
 
+#include <OpenGL/gl.h>
+#include <GLUT/glut.h>
+
+#include <gvt/render/Renderer.h>
+
 using namespace std;
 
 // split a string into parts using the delimiter given return 
@@ -288,6 +293,63 @@ bool file_exists(const char *path) {
   return(stat(path, &buf) == 0);
 }
 
+std::mutex _dlock;
+glm::vec3 eye;
+
+void display()
+{
+  _dlock.lock();
+  string rendername("VolumeRenderer");
+  gvt::render::gvtRenderer *ren = gvt::render::gvtRenderer::instance();
+  cntx::rcontext &db = cntx::rcontext::instance();
+  auto& rn = db.getUnique(rendername);
+  auto& cam = db.getUnique(db.getChild(rn,"camera"));
+  auto& fn = db.getUnique(db.getChild(rn,"film"));
+//  db.getChild(fn,"width") = width;
+//  db.getChild(fn,"height") = height;
+  eye = glm::normalize(glm::cross(eye,glm::vec3(0.f,1.f,0.f))) * 10.f + eye;
+  db.getChild(cam,"eyePoint") = eye;
+  api2::render(rendername);
+  glClearColor( 0, 0, 0, 1 );
+  glClear( GL_COLOR_BUFFER_BIT );
+
+
+    glDrawPixels(db.getChild(fn, "width"), db.getChild(fn, "height"), GL_RGBA, GL_FLOAT, ren->myimage->colorbf());
+
+  glutSwapBuffers();
+  _dlock.unlock();
+}
+
+void reshape(GLint width, GLint height)
+{
+
+  if(width == 0 || height == 0) return;
+  _dlock.lock();
+
+
+
+  string rendername("VolumeRenderer");
+
+  gvt::render::gvtRenderer *ren = gvt::render::gvtRenderer::instance();
+  cntx::rcontext &db = cntx::rcontext::instance();
+  auto& rn = db.getUnique(rendername);
+  auto& fn = db.getUnique(db.getChild(rn,"film"));
+  db.getChild(fn,"width") = width;
+  db.getChild(fn,"height") = height;
+
+  ren->resetSize(width,height);
+
+
+  glViewport(0, 0, width, height);
+  glMatrixMode(GL_PROJECTION);
+  glLoadIdentity();
+  glMatrixMode(GL_MODELVIEW);
+
+  _dlock.unlock();
+}
+
+
+
 int main(int argc, char **argv) {
 
   ParseCommandLine cmd("gvtVol");
@@ -432,7 +494,7 @@ int main(int argc, char **argv) {
       //float samplingrate = 1.0;
       volnodename = volumefile + std::to_string(domain);
       api2::createVolume(volnodename);
-      api2::addVolumeTransferFunctions(volnodename,ctffile,otffile,0.0,65536.0);
+      api2::addVolumeTransferFunctions(volnodename,ctffile,otffile,60000.0,65536.0);
       api2::addVolumeSamples(volnodename,sampledata,volheader.counts,volheader.origin,deltas,samplingrate);
 #else
       volnodename = volumefile + std::to_string(domain);
@@ -496,7 +558,7 @@ int main(int argc, char **argv) {
   string lightname = "mylight";
   api2::addPointLight(lightname,glm::value_ptr(lpos),glm::value_ptr(lcolor));
   // camera time
-  auto eye = glm::vec3(127.5,127.5,1024.);
+  eye = glm::vec3(127.5,127.5,1024.);
   if (cmd.isSet("eye")) {
     std::vector<float> cameye = cmd.getValue<float>("eye");
     eye = glm::vec3(cameye[0], cameye[1], cameye[2]);
@@ -521,8 +583,8 @@ int main(int argc, char **argv) {
   // film
   string filmname = "conefilm";
   std::cout << "add film " << filmname << std::endl;
-  int width = 100;
-  int height = 100;
+  int width = 512;
+  int height = 512;
   if (cmd.isSet("wsize")) {
     std::vector<int> wsize = cmd.getValue<int>("wsize");
     width = wsize[0];
@@ -551,14 +613,22 @@ int main(int argc, char **argv) {
   GVT_DEBUG(DBG_ALWAYS, "ERROR: missing valid adapter");
 #endif
   db.sync();
-
-  std::cout << "add renderer " << rendername << " " << adaptertype << " " << schedtype << std::endl;
   api2::addRenderer(rendername,adaptertype,schedtype,camname,filmname,true);
-  std::cout << "Calling render" << std::endl;
   db.sync();
 
   api2::render(rendername);
-  api2::writeimage(rendername);
+
+  glutInit( &argc, argv );
+  glutInitDisplayMode( GLUT_RGBA | GLUT_DOUBLE );
+  glutInitWindowSize( 512, 512 );
+  glutCreateWindow( "GLUT" );
+  glutDisplayFunc( display );
+  glutIdleFunc(display);
+  glutReshapeFunc (reshape);
+  glutMainLoop();
+
+
+//  api2::writeimage(rendername);
 //  if (MPI::COMM_WORLD.Get_size() > 1) MPI_Finalize();
 #else
 

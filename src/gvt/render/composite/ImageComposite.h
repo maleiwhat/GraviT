@@ -48,6 +48,7 @@ struct ImageComposite : gvt::core::composite::Buffer<float> {
   virtual void write(std::string filename) {}
   virtual float *colorbf() { return nullptr; }
   virtual float *depthbf() { return nullptr; }
+  virtual void resize(int w, int h) {} ;
 };
 }
 }

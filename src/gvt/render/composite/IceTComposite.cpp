@@ -70,10 +70,17 @@ IceTComposite::IceTComposite(std::size_t width, std::size_t height)
 
   color_buffer = static_cast<IceTFloat *>(malloc(width * height * 4 * sizeof(IceTFloat)));
   depth_buffer = static_cast<IceTFloat *>(malloc(width * height * sizeof(IceTFloat)));
-
   reset();
+}
 
-  // icetDrawCallback(draw);
+void IceTComposite::resize(int w, int h) {
+  width = w;
+  height = h;
+  if(color_buffer) free(color_buffer);
+  if(depth_buffer) free(depth_buffer);
+  color_buffer = static_cast<IceTFloat *>(malloc(width * height * 4 * sizeof(IceTFloat)));
+  depth_buffer = static_cast<IceTFloat *>(malloc(width * height * sizeof(IceTFloat)));
+  reset();
 }
 
 IceTComposite::~IceTComposite() {

@@ -640,6 +640,19 @@ if (GVT_PLY_APP)
 endif (GVT_PLY_APP)
 
 if (GVT_VOL_APP)
+
+    find_package(OpenGL REQUIRED)
+
+    find_library(GLUTLIB glut)
+    if (GLUTLIB)
+        set(GVTGL_VOL_APP_RENDER_LIBS ${GVTGL_VOL_APP_RENDER_LIBS} ${OpenGL_LIBRARIES} ${GLUTLIB} ${GVT_CORE_LIBS})
+    endif (GLUTLIB)
+    find_library(GLULIB GLU)
+    if (GLULIB)
+        set(GVTGL_VOL_APP_RENDER_LIBS ${GVTGL_VOL_APP_RENDER_LIBS} ${GLULIB})
+    endif (GLULIB)
+
+
     if (GVT_MPE)
         if (DEFINED ENV{MPEHOME})
             set(MPE_HOME_DIR $ENV{MPEHOME})
@@ -656,7 +669,7 @@ if (GVT_VOL_APP)
     #set(GVTVOL_RENDER_LIBS ${GVTVOL_RENDER_LIBS} ${OSPRAY_LIBS} ${MPI_LIBRARIES} ${GVT_CORE_LIBS})
     set(GVTVOL_RENDER_SRCS ${GVTVOL_RENDER_SRCS} src/apps/render/VolApp.cpp ${PLYPATH}/ply.c)
     add_executable(gvtVol ${GVTVOL_RENDER_SRCS})
-    target_link_libraries(gvtVol gvtCore gvtRender ${MPI_LIBRARIES} ${GVT_RENDER_LIBS})
+    target_link_libraries(gvtVol gvtCore gvtRender ${OPENGL_gl_LIBRARY} ${GVTGL_VOL_APP_RENDER_LIBS} ${MPI_LIBRARIES} ${GVT_RENDER_LIBS})
 endif (GVT_VOL_APP)
 if (GVT_PLY_NS_APP)
     # find_package(MPI REQUIRED)

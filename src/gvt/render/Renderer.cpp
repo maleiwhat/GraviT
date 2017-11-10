@@ -92,6 +92,8 @@ gvtRenderer::gvtRenderer() {
 void gvtRenderer::reload(std::string const &name) {
 
   if (name == current_scheduler) return;
+  current_scheduler = name;
+
   cntx::rcontext &db = cntx::rcontext::instance();
 
   auto &ren = db.getUnique(name);
@@ -111,16 +113,10 @@ void gvtRenderer::reload(std::string const &name) {
   camera->setJitterWindowSize((float)db.getChild(cam, "jitterWindowSize"));
   camera->lookAt(cameraposition, focus, up);
   camera->setFOV((float)db.getChild(cam, "fov"));
-
   camera->setFilmsize(db.getChild(fil, "width"), db.getChild(fil, "height"));
 
   // image plane setup.
   myimage = std::make_shared<composite::IceTComposite>(camera->getFilmSizeWidth(), camera->getFilmSizeHeight());
-  // allocate rays (needed by tracer constructor)
-//  camera->AllocateCameraRays();
-//  camera->generateRays();
-  // now comes the tricky part. setting up the renderer itself.
-
   volume = db.getChild(ren, "volume").to<bool>();
 
   switch (db.getChild(ren, "type").to<int>()) {
@@ -135,23 +131,39 @@ void gvtRenderer::reload(std::string const &name) {
     break;
   }
   case scheduler::AsyncDomain: {
-    db.tracer = tracerasync = std::make_shared<gvt::render::DomainTracer>(name,camera,myimage);
+    db.tracer = tracerasync = std::make_shared<gvt::render::DomainTracer>(name, camera, myimage);
     tracersync = nullptr;
     break;
   }
   case scheduler::AsyncImage: {
-    db.tracer = tracerasync = std::make_shared<gvt::render::ImageTracer>(name,camera,myimage);
+    db.tracer = tracerasync = std::make_shared<gvt::render::ImageTracer>(name, camera, myimage);
     tracersync = nullptr;
     break;
   }
   default: {}
   }
-
-  // db.tracer = tracer;
 }
 
 void gvtRenderer::render(std::string const &name) {
   reload(name);
+
+  cntx::rcontext &db = cntx::rcontext::instance();
+
+  auto &ren = db.getUnique(name);
+  auto &cam = db.getUnique(db.getChild(ren, "camera"));
+  auto &fil = db.getUnique(db.getChild(ren, "film"));
+
+  glm::vec3 cameraposition = db.getChild(cam, "eyePoint");
+  glm::vec3 focus = db.getChild(cam, "focus");
+  glm::vec3 up = db.getChild(cam, "upVector"); // cameranode["upVector"].value().tovec3();
+
+  camera->setMaxDepth(db.getChild(cam, "rayMaxDepth"));
+  camera->setSamples(db.getChild(cam, "raySamples"));
+  camera->setJitterWindowSize((float)db.getChild(cam, "jitterWindowSize"));
+  camera->lookAt(cameraposition, focus, up);
+  camera->setFOV((float)db.getChild(cam, "fov"));
+  camera->setFilmsize(db.getChild(fil, "width"), db.getChild(fil, "height"));
+
   camera->AllocateCameraRays();
   camera->generateRays(volume);
   if (tracersync) {
@@ -160,6 +172,15 @@ void gvtRenderer::render(std::string const &name) {
     (*tracerasync.get())();
   }
 }
+
+
+void gvtRenderer::resetSize(int width, int height) {
+  camera->setFilmsize(width, height);
+  myimage->resize(width,height);
+  tracersync->resetBufferSize(width,height);
+
+}
+
 void gvtRenderer::WriteImage(std::string const &name) { myimage->write(name); }
 
 gvtRenderer *gvtRenderer::instance() {

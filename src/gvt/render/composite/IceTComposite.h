@@ -110,6 +110,8 @@ struct IceTComposite : gvt::render::composite::ImageComposite {
    * @return Pointer to the local depth buffer
    */
   virtual float *depthbf() { return depth_buffer; }
+
+  virtual void resize(int w, int h);
 };
 }
 }
