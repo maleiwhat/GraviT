@@ -8,6 +8,11 @@
 #include "variant_def.h"
 #include <gvt/core/cntx/context.h>
 
+#ifndef MAX
+#define MAX(a,b) ((a>b)?a:b)
+#endif
+
+
 namespace cntx {
 
 using node = cntx::anode<Variant>;

@@ -77,8 +77,8 @@
 #include <gvt/render/api2/api.h>
 #endif
 
-#include <OpenGL/gl.h>
-#include <GLUT/glut.h>
+#include <GL/gl.h>
+#include <GL/glut.h>
 
 #include <gvt/render/Renderer.h>
 
@@ -309,6 +309,8 @@ void display()
 //  db.getChild(fn,"height") = height;
   eye = glm::normalize(glm::cross(eye,glm::vec3(0.f,1.f,0.f))) * 10.f + eye;
   db.getChild(cam,"eyePoint") = eye;
+  db.sync();
+
   api2::render(rendername);
   glClearColor( 0, 0, 0, 1 );
   glClear( GL_COLOR_BUFFER_BIT );
@@ -337,7 +339,7 @@ void reshape(GLint width, GLint height)
   db.getChild(fn,"width") = width;
   db.getChild(fn,"height") = height;
 
-  ren->resetSize(width,height);
+  //ren->resetSize(width,height);
 
 
   glViewport(0, 0, width, height);
@@ -371,7 +373,7 @@ int main(int argc, char **argv) {
   cmd.parse(argc, argv);
 
   if (!cmd.isSet("threads")) {
-    tbb::task_scheduler_init init(std::thread::hardware_concurrency());
+    //tbb::task_scheduler_init init(std::thread::hardware_concurrency());
   } else {
     tbb::task_scheduler_init init(cmd.get<int>("threads"));
   }
@@ -618,6 +620,7 @@ int main(int argc, char **argv) {
 
   api2::render(rendername);
 
+  if(rank == 0) {
   glutInit( &argc, argv );
   glutInitDisplayMode( GLUT_RGBA | GLUT_DOUBLE );
   glutInitWindowSize( 512, 512 );
@@ -626,7 +629,17 @@ int main(int argc, char **argv) {
   glutIdleFunc(display);
   glutReshapeFunc (reshape);
   glutMainLoop();
+  } else {
+  
+    do {
 
+      db.sync();
+      api2::render(rendername);
+
+
+    } while(true);
+
+  }
 
 //  api2::writeimage(rendername);
 //  if (MPI::COMM_WORLD.Get_size() > 1) MPI_Finalize();

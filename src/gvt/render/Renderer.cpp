@@ -162,7 +162,9 @@ void gvtRenderer::render(std::string const &name) {
   camera->setJitterWindowSize((float)db.getChild(cam, "jitterWindowSize"));
   camera->lookAt(cameraposition, focus, up);
   camera->setFOV((float)db.getChild(cam, "fov"));
-  camera->setFilmsize(db.getChild(fil, "width"), db.getChild(fil, "height"));
+  resetSize(db.getChild(fil, "width"), db.getChild(fil, "height"));
+
+  
 
   camera->AllocateCameraRays();
   camera->generateRays(volume);
