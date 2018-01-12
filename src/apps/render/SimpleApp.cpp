@@ -310,5 +310,8 @@ int main(int argc, char **argv) {
 
 #endif
 
-  MPI_Finalize();
+  //MPI_Finalize();
+
+  api::gvtTerminate();
+
 }

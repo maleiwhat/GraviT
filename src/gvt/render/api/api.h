@@ -26,6 +26,9 @@
 namespace api {
 
 void gvtInit(int argc, char **argv, unsigned int threads = std::thread::hardware_concurrency());
+
+void gvtTerminate();
+
 // void addMesh(gvt::render::data::primitives::Box3D *mshbx, gvt::render::data::primitives::Mesh *mesh,
 //              std::string meshname);
 

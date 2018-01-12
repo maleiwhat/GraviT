@@ -481,7 +481,10 @@ int main(int argc, char **argv) {
   api::render(rendername);
   api::writeimage(rendername);
 
-  if (MPI::COMM_WORLD.Get_size() > 1) MPI_Finalize();
+
+  api::gvtTerminate();
+
+  //if (MPI::COMM_WORLD.Get_size() > 1) MPI_Finalize();
 
 }
 

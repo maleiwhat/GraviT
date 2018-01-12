@@ -331,5 +331,7 @@ int main(int argc, char **argv) {
   //    (*rt).getComposite()->write(filmNode["outputPath"].value().toString());
   //  gvt::comm::communicator::instance().terminate();
   //  }
-  MPI_Finalize();
+  // MPI_Finalize();
+
+  api::gvtTerminate();
 }
