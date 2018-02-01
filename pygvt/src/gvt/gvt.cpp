@@ -1566,6 +1566,7 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *, cha
 /* Module declarations from 'gvt' */
 static std::string __pyx_convert_string_from_py_std__in_string(PyObject *); /*proto*/
 static __Pyx_TypeInfo __Pyx_TypeInfo_float = { "float", NULL, sizeof(float), { 0 }, 0, 'R', 0, 0 };
+static __Pyx_TypeInfo __Pyx_TypeInfo_int = { "int", NULL, sizeof(int), { 0 }, 0, IS_UNSIGNED(int) ? 'U' : 'I', IS_UNSIGNED(int), 0 };
 static __Pyx_TypeInfo __Pyx_TypeInfo_unsigned_int = { "unsigned int", NULL, sizeof(unsigned int), { 0 }, 0, IS_UNSIGNED(unsigned int) ? 'U' : 'I', IS_UNSIGNED(unsigned int), 0 };
 #define __Pyx_MODULE_NAME "gvt"
 extern int __pyx_module_is_main_gvt;
@@ -1587,8 +1588,12 @@ static const char __pyx_k_np[] = "np";
 static const char __pyx_k_up[] = "up";
 static const char __pyx_k_fov[] = "fov";
 static const char __pyx_k_gvt[] = "gvt";
+static const char __pyx_k_low[] = "low";
 static const char __pyx_k_pos[] = "pos";
 static const char __pyx_k_sys[] = "sys";
+static const char __pyx_k_vol[] = "vol";
+static const char __pyx_k_film[] = "film";
+static const char __pyx_k_high[] = "high";
 static const char __pyx_k_main[] = "__main__";
 static const char __pyx_k_name[] = "name";
 static const char __pyx_k_path[] = "path";
@@ -1600,10 +1605,14 @@ static const char __pyx_k_depth[] = "depth";
 static const char __pyx_k_focus[] = "focus";
 static const char __pyx_k_numpy[] = "numpy";
 static const char __pyx_k_range[] = "range";
+static const char __pyx_k_camera[] = "camera";
+static const char __pyx_k_counts[] = "counts";
 static const char __pyx_k_ctypes[] = "ctypes";
+static const char __pyx_k_deltas[] = "deltas";
 static const char __pyx_k_encode[] = "encode";
 static const char __pyx_k_import[] = "__import__";
 static const char __pyx_k_jitter[] = "jitter";
+static const char __pyx_k_origin[] = "origin";
 static const char __pyx_k_output[] = "output";
 static const char __pyx_k_render[] = "render";
 static const char __pyx_k_adapter[] = "adapter";
@@ -1624,20 +1633,26 @@ static const char __pyx_k_writeimage[] = "writeimage";
 static const char __pyx_k_ImportError[] = "ImportError";
 static const char __pyx_k_addInstance[] = "addInstance";
 static const char __pyx_k_addRenderer[] = "addRenderer";
+static const char __pyx_k_colortfname[] = "colortfname";
 static const char __pyx_k_modifyLight[] = "modifyLight";
 static const char __pyx_k_RuntimeError[] = "RuntimeError";
 static const char __pyx_k_addAreaLight[] = "addAreaLight";
+static const char __pyx_k_createVolume[] = "createVolume";
 static const char __pyx_k_modifyCamera[] = "modifyCamera";
+static const char __pyx_k_opacityfname[] = "opacityfname";
+static const char __pyx_k_samplingrate[] = "samplingrate";
 static const char __pyx_k_addPointLight[] = "addPointLight";
 static const char __pyx_k_compute_normal[] = "compute_normal";
 static const char __pyx_k_addMeshVertices[] = "addMeshVertices";
 static const char __pyx_k_src_gvt_gvt_pyx[] = "src/gvt/gvt.pyx";
 static const char __pyx_k_addMeshTriangles[] = "addMeshTriangles";
+static const char __pyx_k_addVolumeSamples[] = "addVolumeSamples";
 static const char __pyx_k_addMeshFaceNormals[] = "addMeshFaceNormals";
 static const char __pyx_k_cline_in_traceback[] = "cline_in_traceback";
 static const char __pyx_k_addMeshVertexNormals[] = "addMeshVertexNormals";
 static const char __pyx_k_addMeshMaterialLambert[] = "addMeshMaterialLambert";
 static const char __pyx_k_addMeshMaterialSpecular[] = "addMeshMaterialSpecular";
+static const char __pyx_k_addVolumeTransferFunctions[] = "addVolumeTransferFunctions";
 static const char __pyx_k_ndarray_is_not_C_contiguous[] = "ndarray is not C contiguous";
 static const char __pyx_k_numpy_core_multiarray_failed_to[] = "numpy.core.multiarray failed to import";
 static const char __pyx_k_unknown_dtype_code_in_numpy_pxd[] = "unknown dtype code in numpy.pxd (%d)";
@@ -1665,24 +1680,34 @@ static PyObject *__pyx_n_s_addMeshVertexNormals;
 static PyObject *__pyx_n_s_addMeshVertices;
 static PyObject *__pyx_n_s_addPointLight;
 static PyObject *__pyx_n_s_addRenderer;
+static PyObject *__pyx_n_s_addVolumeSamples;
+static PyObject *__pyx_n_s_addVolumeTransferFunctions;
 static PyObject *__pyx_n_s_alpha;
+static PyObject *__pyx_n_s_camera;
 static PyObject *__pyx_n_s_cline_in_traceback;
 static PyObject *__pyx_n_s_color;
+static PyObject *__pyx_n_s_colortfname;
 static PyObject *__pyx_n_s_compute_normal;
+static PyObject *__pyx_n_s_counts;
 static PyObject *__pyx_n_s_createMesh;
+static PyObject *__pyx_n_s_createVolume;
 static PyObject *__pyx_n_s_ctypes;
+static PyObject *__pyx_n_s_deltas;
 static PyObject *__pyx_n_s_depth;
 static PyObject *__pyx_n_s_encode;
+static PyObject *__pyx_n_s_film;
 static PyObject *__pyx_n_s_finishMesh;
 static PyObject *__pyx_n_s_focus;
 static PyObject *__pyx_n_s_fov;
 static PyObject *__pyx_n_s_gvt;
 static PyObject *__pyx_n_s_gvtInit;
 static PyObject *__pyx_n_s_h;
+static PyObject *__pyx_n_s_high;
 static PyObject *__pyx_n_s_import;
 static PyObject *__pyx_n_s_jitter;
 static PyObject *__pyx_n_s_kd;
 static PyObject *__pyx_n_s_ks;
+static PyObject *__pyx_n_s_low;
 static PyObject *__pyx_n_s_m;
 static PyObject *__pyx_n_s_main;
 static PyObject *__pyx_n_s_mattype;
@@ -1698,6 +1723,8 @@ static PyObject *__pyx_n_s_np;
 static PyObject *__pyx_n_s_numpy;
 static PyObject *__pyx_kp_s_numpy_core_multiarray_failed_to;
 static PyObject *__pyx_kp_s_numpy_core_umath_failed_to_impor;
+static PyObject *__pyx_n_s_opacityfname;
+static PyObject *__pyx_n_s_origin;
 static PyObject *__pyx_n_s_output;
 static PyObject *__pyx_n_s_path;
 static PyObject *__pyx_n_s_pos;
@@ -1705,6 +1732,7 @@ static PyObject *__pyx_n_s_range;
 static PyObject *__pyx_n_s_render;
 static PyObject *__pyx_n_s_s;
 static PyObject *__pyx_n_s_samples;
+static PyObject *__pyx_n_s_samplingrate;
 static PyObject *__pyx_n_s_schedule;
 static PyObject *__pyx_n_s_size;
 static PyObject *__pyx_kp_s_src_gvt_gvt_pyx;
@@ -1714,29 +1742,33 @@ static PyObject *__pyx_n_s_triangles;
 static PyObject *__pyx_kp_u_unknown_dtype_code_in_numpy_pxd;
 static PyObject *__pyx_n_s_up;
 static PyObject *__pyx_n_s_vertices;
+static PyObject *__pyx_n_s_vol;
 static PyObject *__pyx_n_s_w;
 static PyObject *__pyx_n_s_writeimage;
 static PyObject *__pyx_pf_3gvt_gvtInit(CYTHON_UNUSED PyObject *__pyx_self); /* proto */
 static PyObject *__pyx_pf_3gvt_2createMesh(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name); /* proto */
-static PyObject *__pyx_pf_3gvt_4addMeshVertices(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, int __pyx_v_size, PyArrayObject *__pyx_v_vertices); /* proto */
-static PyObject *__pyx_pf_3gvt_6addMeshTriangles(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, unsigned int __pyx_v_n, PyArrayObject *__pyx_v_triangles); /* proto */
-static PyObject *__pyx_pf_3gvt_8addMeshFaceNormals(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, unsigned int __pyx_v_n, PyArrayObject *__pyx_v_normals); /* proto */
-static PyObject *__pyx_pf_3gvt_10addMeshVertexNormals(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, unsigned int __pyx_v_n, PyArrayObject *__pyx_v_normals); /* proto */
-static PyObject *__pyx_pf_3gvt_12finishMesh(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, bool __pyx_v_compute_normal); /* proto */
-static PyObject *__pyx_pf_3gvt_14addMeshMaterialLambert(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, unsigned int __pyx_v_mattype, PyArrayObject *__pyx_v_kd, float __pyx_v_alpha); /* proto */
-static PyObject *__pyx_pf_3gvt_16addMeshMaterialSpecular(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, unsigned int __pyx_v_mattype, PyArrayObject *__pyx_v_kd, PyArrayObject *__pyx_v_ks, float __pyx_v_alpha); /* proto */
-static PyObject *__pyx_pf_3gvt_18addInstance(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_s, PyObject *__pyx_v_name, PyArrayObject *__pyx_v_m); /* proto */
-static PyObject *__pyx_pf_3gvt_20addPointLight(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, PyArrayObject *__pyx_v_pos, PyArrayObject *__pyx_v_color); /* proto */
-static PyObject *__pyx_pf_3gvt_22addAreaLight(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, PyArrayObject *__pyx_v_pos, PyArrayObject *__pyx_v_color, PyArrayObject *__pyx_v_n, float __pyx_v_w, float __pyx_v_h); /* proto */
-static PyObject *__pyx_pf_3gvt_24modifyLight(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, PyArrayObject *__pyx_v_pos, PyArrayObject *__pyx_v_color); /* proto */
-static PyObject *__pyx_pf_3gvt_26modifyLight(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, PyArrayObject *__pyx_v_pos, PyArrayObject *__pyx_v_color, PyArrayObject *__pyx_v_n, float __pyx_v_w, float __pyx_v_h); /* proto */
-static PyObject *__pyx_pf_3gvt_28addCamera(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, PyArrayObject *__pyx_v_pos, PyArrayObject *__pyx_v_focus, PyArrayObject *__pyx_v_up, float __pyx_v_fov, int __pyx_v_depth, int __pyx_v_samples, float __pyx_v_jitter); /* proto */
-static PyObject *__pyx_pf_3gvt_30modifyCamera(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, PyArrayObject *__pyx_v_pos, PyArrayObject *__pyx_v_focus, PyArrayObject *__pyx_v_up, float __pyx_v_fov); /* proto */
-static PyObject *__pyx_pf_3gvt_32addFilm(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, int __pyx_v_w, int __pyx_v_h, PyObject *__pyx_v_path); /* proto */
-static PyObject *__pyx_pf_3gvt_34modifyFilm(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, int __pyx_v_w, int __pyx_v_h, PyObject *__pyx_v_path); /* proto */
-static PyObject *__pyx_pf_3gvt_36addRenderer(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, int __pyx_v_adapter, int __pyx_v_schedule); /* proto */
-static PyObject *__pyx_pf_3gvt_38render(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name); /* proto */
-static PyObject *__pyx_pf_3gvt_40writeimage(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, PyObject *__pyx_v_output); /* proto */
+static PyObject *__pyx_pf_3gvt_4addVolumeTransferFunctions(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, PyObject *__pyx_v_colortfname, PyObject *__pyx_v_opacityfname, float __pyx_v_low, float __pyx_v_high); /* proto */
+static PyObject *__pyx_pf_3gvt_6addVolumeSamples(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, PyArrayObject *__pyx_v_samples, PyArrayObject *__pyx_v_counts, PyArrayObject *__pyx_v_origin, PyArrayObject *__pyx_v_deltas, float __pyx_v_samplingrate); /* proto */
+static PyObject *__pyx_pf_3gvt_8addMeshVertices(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, int __pyx_v_size, PyArrayObject *__pyx_v_vertices); /* proto */
+static PyObject *__pyx_pf_3gvt_10addMeshTriangles(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, unsigned int __pyx_v_n, PyArrayObject *__pyx_v_triangles); /* proto */
+static PyObject *__pyx_pf_3gvt_12addMeshFaceNormals(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, unsigned int __pyx_v_n, PyArrayObject *__pyx_v_normals); /* proto */
+static PyObject *__pyx_pf_3gvt_14addMeshVertexNormals(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, unsigned int __pyx_v_n, PyArrayObject *__pyx_v_normals); /* proto */
+static PyObject *__pyx_pf_3gvt_16finishMesh(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, bool __pyx_v_compute_normal); /* proto */
+static PyObject *__pyx_pf_3gvt_18addMeshMaterialLambert(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, unsigned int __pyx_v_mattype, PyArrayObject *__pyx_v_kd, float __pyx_v_alpha); /* proto */
+static PyObject *__pyx_pf_3gvt_20addMeshMaterialSpecular(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, unsigned int __pyx_v_mattype, PyArrayObject *__pyx_v_kd, PyArrayObject *__pyx_v_ks, float __pyx_v_alpha); /* proto */
+static PyObject *__pyx_pf_3gvt_22addInstance(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_s, PyObject *__pyx_v_name, PyArrayObject *__pyx_v_m); /* proto */
+static PyObject *__pyx_pf_3gvt_24createVolume(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name); /* proto */
+static PyObject *__pyx_pf_3gvt_26addPointLight(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, PyArrayObject *__pyx_v_pos, PyArrayObject *__pyx_v_color); /* proto */
+static PyObject *__pyx_pf_3gvt_28addAreaLight(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, PyArrayObject *__pyx_v_pos, PyArrayObject *__pyx_v_color, PyArrayObject *__pyx_v_n, float __pyx_v_w, float __pyx_v_h); /* proto */
+static PyObject *__pyx_pf_3gvt_30modifyLight(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, PyArrayObject *__pyx_v_pos, PyArrayObject *__pyx_v_color); /* proto */
+static PyObject *__pyx_pf_3gvt_32modifyLight(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, PyArrayObject *__pyx_v_pos, PyArrayObject *__pyx_v_color, PyArrayObject *__pyx_v_n, float __pyx_v_w, float __pyx_v_h); /* proto */
+static PyObject *__pyx_pf_3gvt_34addCamera(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, PyArrayObject *__pyx_v_pos, PyArrayObject *__pyx_v_focus, PyArrayObject *__pyx_v_up, float __pyx_v_fov, int __pyx_v_depth, int __pyx_v_samples, float __pyx_v_jitter); /* proto */
+static PyObject *__pyx_pf_3gvt_36modifyCamera(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, PyArrayObject *__pyx_v_pos, PyArrayObject *__pyx_v_focus, PyArrayObject *__pyx_v_up, float __pyx_v_fov); /* proto */
+static PyObject *__pyx_pf_3gvt_38addFilm(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, int __pyx_v_w, int __pyx_v_h, PyObject *__pyx_v_path); /* proto */
+static PyObject *__pyx_pf_3gvt_40modifyFilm(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, int __pyx_v_w, int __pyx_v_h, PyObject *__pyx_v_path); /* proto */
+static PyObject *__pyx_pf_3gvt_42addRenderer(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, int __pyx_v_adapter, int __pyx_v_schedule, PyObject *__pyx_v_camera, PyObject *__pyx_v_film, bool __pyx_v_vol); /* proto */
+static PyObject *__pyx_pf_3gvt_44render(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name); /* proto */
+static PyObject *__pyx_pf_3gvt_46writeimage(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, PyObject *__pyx_v_output); /* proto */
 static int __pyx_pf_5numpy_7ndarray___getbuffer__(PyArrayObject *__pyx_v_self, Py_buffer *__pyx_v_info, int __pyx_v_flags); /* proto */
 static void __pyx_pf_5numpy_7ndarray_2__releasebuffer__(PyArrayObject *__pyx_v_self, Py_buffer *__pyx_v_info); /* proto */
 static PyObject *__pyx_tuple_;
@@ -1768,6 +1800,9 @@ static PyObject *__pyx_tuple__43;
 static PyObject *__pyx_tuple__45;
 static PyObject *__pyx_tuple__47;
 static PyObject *__pyx_tuple__49;
+static PyObject *__pyx_tuple__51;
+static PyObject *__pyx_tuple__53;
+static PyObject *__pyx_tuple__55;
 static PyObject *__pyx_codeobj__10;
 static PyObject *__pyx_codeobj__12;
 static PyObject *__pyx_codeobj__14;
@@ -1789,8 +1824,11 @@ static PyObject *__pyx_codeobj__44;
 static PyObject *__pyx_codeobj__46;
 static PyObject *__pyx_codeobj__48;
 static PyObject *__pyx_codeobj__50;
+static PyObject *__pyx_codeobj__52;
+static PyObject *__pyx_codeobj__54;
+static PyObject *__pyx_codeobj__56;
 
-/* "gvt.pyx":40
+/* "gvt.pyx":43
  * #void gvtInit(int &argc, char **&argv)
  * 
  * def gvtInit():             # <<<<<<<<<<<<<<
@@ -1817,7 +1855,7 @@ static PyObject *__pyx_pf_3gvt_gvtInit(CYTHON_UNUSED PyObject *__pyx_self) {
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("gvtInit", 0);
 
-  /* "gvt.pyx":47
+  /* "gvt.pyx":50
  *   # free(c_argv)
  * 
  *   _gvtInit(0,NULL);             # <<<<<<<<<<<<<<
@@ -1826,7 +1864,7 @@ static PyObject *__pyx_pf_3gvt_gvtInit(CYTHON_UNUSED PyObject *__pyx_self) {
  */
   gvtInit(0, NULL);
 
-  /* "gvt.pyx":40
+  /* "gvt.pyx":43
  * #void gvtInit(int &argc, char **&argv)
  * 
  * def gvtInit():             # <<<<<<<<<<<<<<
@@ -1841,12 +1879,12 @@ static PyObject *__pyx_pf_3gvt_gvtInit(CYTHON_UNUSED PyObject *__pyx_self) {
   return __pyx_r;
 }
 
-/* "gvt.pyx":62
+/* "gvt.pyx":65
  *   # _gvtInit(argc,argv)
  * 
  * def createMesh(str name):             # <<<<<<<<<<<<<<
  *   _createMesh(name.encode())
- * 
+ * def addVolumeTransferFunctions(str name, str colortfname, str opacityfname, float low, float high):
  */
 
 /* Python wrapper */
@@ -1856,7 +1894,7 @@ static PyObject *__pyx_pw_3gvt_3createMesh(PyObject *__pyx_self, PyObject *__pyx
   PyObject *__pyx_r = 0;
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("createMesh (wrapper)", 0);
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_name), (&PyString_Type), 1, "name", 1))) __PYX_ERR(0, 62, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_name), (&PyString_Type), 1, "name", 1))) __PYX_ERR(0, 65, __pyx_L1_error)
   __pyx_r = __pyx_pf_3gvt_2createMesh(__pyx_self, ((PyObject*)__pyx_v_name));
 
   /* function exit code */
@@ -1877,14 +1915,14 @@ static PyObject *__pyx_pf_3gvt_2createMesh(CYTHON_UNUSED PyObject *__pyx_self, P
   std::string __pyx_t_4;
   __Pyx_RefNannySetupContext("createMesh", 0);
 
-  /* "gvt.pyx":63
+  /* "gvt.pyx":66
  * 
  * def createMesh(str name):
  *   _createMesh(name.encode())             # <<<<<<<<<<<<<<
- * 
- * def addMeshVertices(str name, int size, np.ndarray[float, ndim=1, mode="c"] vertices not None):
+ * def addVolumeTransferFunctions(str name, str colortfname, str opacityfname, float low, float high):
+ *   _addVolumeTransferFunctions(name.encode(),colortfname.encode(),opacityfname.encode(),low,high)
  */
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_name, __pyx_n_s_encode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 63, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_name, __pyx_n_s_encode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 66, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_t_3 = NULL;
   if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_2))) {
@@ -1897,23 +1935,23 @@ static PyObject *__pyx_pf_3gvt_2createMesh(CYTHON_UNUSED PyObject *__pyx_self, P
     }
   }
   if (__pyx_t_3) {
-    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 63, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 66, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   } else {
-    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 63, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 66, __pyx_L1_error)
   }
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_4 = __pyx_convert_string_from_py_std__in_string(__pyx_t_1); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 63, __pyx_L1_error)
+  __pyx_t_4 = __pyx_convert_string_from_py_std__in_string(__pyx_t_1); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 66, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   createMesh(__pyx_t_4);
 
-  /* "gvt.pyx":62
+  /* "gvt.pyx":65
  *   # _gvtInit(argc,argv)
  * 
  * def createMesh(str name):             # <<<<<<<<<<<<<<
  *   _createMesh(name.encode())
- * 
+ * def addVolumeTransferFunctions(str name, str colortfname, str opacityfname, float low, float high):
  */
 
   /* function exit code */
@@ -1931,18 +1969,482 @@ static PyObject *__pyx_pf_3gvt_2createMesh(CYTHON_UNUSED PyObject *__pyx_self, P
   return __pyx_r;
 }
 
-/* "gvt.pyx":65
+/* "gvt.pyx":67
+ * def createMesh(str name):
  *   _createMesh(name.encode())
- * 
+ * def addVolumeTransferFunctions(str name, str colortfname, str opacityfname, float low, float high):             # <<<<<<<<<<<<<<
+ *   _addVolumeTransferFunctions(name.encode(),colortfname.encode(),opacityfname.encode(),low,high)
+ * def addVolumeSamples(str name, np.ndarray[float, ndim=1,mode="c"] samples, np.ndarray[int,ndim=1,mode="c"] counts, np.ndarray[float,ndim=1,mode="c"] origin, np.ndarray[float,ndim=1,mode="c"] deltas,float samplingrate):
+ */
+
+/* Python wrapper */
+static PyObject *__pyx_pw_3gvt_5addVolumeTransferFunctions(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_mdef_3gvt_5addVolumeTransferFunctions = {"addVolumeTransferFunctions", (PyCFunction)__pyx_pw_3gvt_5addVolumeTransferFunctions, METH_VARARGS|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_3gvt_5addVolumeTransferFunctions(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+  PyObject *__pyx_v_name = 0;
+  PyObject *__pyx_v_colortfname = 0;
+  PyObject *__pyx_v_opacityfname = 0;
+  float __pyx_v_low;
+  float __pyx_v_high;
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("addVolumeTransferFunctions (wrapper)", 0);
+  {
+    static PyObject **__pyx_pyargnames[] = {&__pyx_n_s_name,&__pyx_n_s_colortfname,&__pyx_n_s_opacityfname,&__pyx_n_s_low,&__pyx_n_s_high,0};
+    PyObject* values[5] = {0,0,0,0,0};
+    if (unlikely(__pyx_kwds)) {
+      Py_ssize_t kw_args;
+      const Py_ssize_t pos_args = PyTuple_GET_SIZE(__pyx_args);
+      switch (pos_args) {
+        case  5: values[4] = PyTuple_GET_ITEM(__pyx_args, 4);
+        CYTHON_FALLTHROUGH;
+        case  4: values[3] = PyTuple_GET_ITEM(__pyx_args, 3);
+        CYTHON_FALLTHROUGH;
+        case  3: values[2] = PyTuple_GET_ITEM(__pyx_args, 2);
+        CYTHON_FALLTHROUGH;
+        case  2: values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
+        CYTHON_FALLTHROUGH;
+        case  1: values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
+        CYTHON_FALLTHROUGH;
+        case  0: break;
+        default: goto __pyx_L5_argtuple_error;
+      }
+      kw_args = PyDict_Size(__pyx_kwds);
+      switch (pos_args) {
+        case  0:
+        if (likely((values[0] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_name)) != 0)) kw_args--;
+        else goto __pyx_L5_argtuple_error;
+        CYTHON_FALLTHROUGH;
+        case  1:
+        if (likely((values[1] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_colortfname)) != 0)) kw_args--;
+        else {
+          __Pyx_RaiseArgtupleInvalid("addVolumeTransferFunctions", 1, 5, 5, 1); __PYX_ERR(0, 67, __pyx_L3_error)
+        }
+        CYTHON_FALLTHROUGH;
+        case  2:
+        if (likely((values[2] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_opacityfname)) != 0)) kw_args--;
+        else {
+          __Pyx_RaiseArgtupleInvalid("addVolumeTransferFunctions", 1, 5, 5, 2); __PYX_ERR(0, 67, __pyx_L3_error)
+        }
+        CYTHON_FALLTHROUGH;
+        case  3:
+        if (likely((values[3] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_low)) != 0)) kw_args--;
+        else {
+          __Pyx_RaiseArgtupleInvalid("addVolumeTransferFunctions", 1, 5, 5, 3); __PYX_ERR(0, 67, __pyx_L3_error)
+        }
+        CYTHON_FALLTHROUGH;
+        case  4:
+        if (likely((values[4] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_high)) != 0)) kw_args--;
+        else {
+          __Pyx_RaiseArgtupleInvalid("addVolumeTransferFunctions", 1, 5, 5, 4); __PYX_ERR(0, 67, __pyx_L3_error)
+        }
+      }
+      if (unlikely(kw_args > 0)) {
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "addVolumeTransferFunctions") < 0)) __PYX_ERR(0, 67, __pyx_L3_error)
+      }
+    } else if (PyTuple_GET_SIZE(__pyx_args) != 5) {
+      goto __pyx_L5_argtuple_error;
+    } else {
+      values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
+      values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
+      values[2] = PyTuple_GET_ITEM(__pyx_args, 2);
+      values[3] = PyTuple_GET_ITEM(__pyx_args, 3);
+      values[4] = PyTuple_GET_ITEM(__pyx_args, 4);
+    }
+    __pyx_v_name = ((PyObject*)values[0]);
+    __pyx_v_colortfname = ((PyObject*)values[1]);
+    __pyx_v_opacityfname = ((PyObject*)values[2]);
+    __pyx_v_low = __pyx_PyFloat_AsFloat(values[3]); if (unlikely((__pyx_v_low == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 67, __pyx_L3_error)
+    __pyx_v_high = __pyx_PyFloat_AsFloat(values[4]); if (unlikely((__pyx_v_high == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 67, __pyx_L3_error)
+  }
+  goto __pyx_L4_argument_unpacking_done;
+  __pyx_L5_argtuple_error:;
+  __Pyx_RaiseArgtupleInvalid("addVolumeTransferFunctions", 1, 5, 5, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 67, __pyx_L3_error)
+  __pyx_L3_error:;
+  __Pyx_AddTraceback("gvt.addVolumeTransferFunctions", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_RefNannyFinishContext();
+  return NULL;
+  __pyx_L4_argument_unpacking_done:;
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_name), (&PyString_Type), 1, "name", 1))) __PYX_ERR(0, 67, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_colortfname), (&PyString_Type), 1, "colortfname", 1))) __PYX_ERR(0, 67, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_opacityfname), (&PyString_Type), 1, "opacityfname", 1))) __PYX_ERR(0, 67, __pyx_L1_error)
+  __pyx_r = __pyx_pf_3gvt_4addVolumeTransferFunctions(__pyx_self, __pyx_v_name, __pyx_v_colortfname, __pyx_v_opacityfname, __pyx_v_low, __pyx_v_high);
+
+  /* function exit code */
+  goto __pyx_L0;
+  __pyx_L1_error:;
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_3gvt_4addVolumeTransferFunctions(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, PyObject *__pyx_v_colortfname, PyObject *__pyx_v_opacityfname, float __pyx_v_low, float __pyx_v_high) {
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  PyObject *__pyx_t_2 = NULL;
+  PyObject *__pyx_t_3 = NULL;
+  std::string __pyx_t_4;
+  std::string __pyx_t_5;
+  std::string __pyx_t_6;
+  __Pyx_RefNannySetupContext("addVolumeTransferFunctions", 0);
+
+  /* "gvt.pyx":68
+ *   _createMesh(name.encode())
+ * def addVolumeTransferFunctions(str name, str colortfname, str opacityfname, float low, float high):
+ *   _addVolumeTransferFunctions(name.encode(),colortfname.encode(),opacityfname.encode(),low,high)             # <<<<<<<<<<<<<<
+ * def addVolumeSamples(str name, np.ndarray[float, ndim=1,mode="c"] samples, np.ndarray[int,ndim=1,mode="c"] counts, np.ndarray[float,ndim=1,mode="c"] origin, np.ndarray[float,ndim=1,mode="c"] deltas,float samplingrate):
+ *   _addVolumeSamples(name.encode(),<float*>samples.data,<int*>counts.data,<float*>origin.data,<float*>deltas.data,samplingrate)
+ */
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_name, __pyx_n_s_encode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 68, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
+  __pyx_t_3 = NULL;
+  if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_2))) {
+    __pyx_t_3 = PyMethod_GET_SELF(__pyx_t_2);
+    if (likely(__pyx_t_3)) {
+      PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_2);
+      __Pyx_INCREF(__pyx_t_3);
+      __Pyx_INCREF(function);
+      __Pyx_DECREF_SET(__pyx_t_2, function);
+    }
+  }
+  if (__pyx_t_3) {
+    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 68, __pyx_L1_error)
+    __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+  } else {
+    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 68, __pyx_L1_error)
+  }
+  __Pyx_GOTREF(__pyx_t_1);
+  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+  __pyx_t_4 = __pyx_convert_string_from_py_std__in_string(__pyx_t_1); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 68, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_colortfname, __pyx_n_s_encode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 68, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
+  __pyx_t_3 = NULL;
+  if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_2))) {
+    __pyx_t_3 = PyMethod_GET_SELF(__pyx_t_2);
+    if (likely(__pyx_t_3)) {
+      PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_2);
+      __Pyx_INCREF(__pyx_t_3);
+      __Pyx_INCREF(function);
+      __Pyx_DECREF_SET(__pyx_t_2, function);
+    }
+  }
+  if (__pyx_t_3) {
+    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 68, __pyx_L1_error)
+    __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+  } else {
+    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 68, __pyx_L1_error)
+  }
+  __Pyx_GOTREF(__pyx_t_1);
+  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+  __pyx_t_5 = __pyx_convert_string_from_py_std__in_string(__pyx_t_1); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 68, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_opacityfname, __pyx_n_s_encode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 68, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
+  __pyx_t_3 = NULL;
+  if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_2))) {
+    __pyx_t_3 = PyMethod_GET_SELF(__pyx_t_2);
+    if (likely(__pyx_t_3)) {
+      PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_2);
+      __Pyx_INCREF(__pyx_t_3);
+      __Pyx_INCREF(function);
+      __Pyx_DECREF_SET(__pyx_t_2, function);
+    }
+  }
+  if (__pyx_t_3) {
+    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 68, __pyx_L1_error)
+    __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+  } else {
+    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 68, __pyx_L1_error)
+  }
+  __Pyx_GOTREF(__pyx_t_1);
+  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+  __pyx_t_6 = __pyx_convert_string_from_py_std__in_string(__pyx_t_1); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 68, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  addVolumeTransferFunctions(__pyx_t_4, __pyx_t_5, __pyx_t_6, __pyx_v_low, __pyx_v_high);
+
+  /* "gvt.pyx":67
+ * def createMesh(str name):
+ *   _createMesh(name.encode())
+ * def addVolumeTransferFunctions(str name, str colortfname, str opacityfname, float low, float high):             # <<<<<<<<<<<<<<
+ *   _addVolumeTransferFunctions(name.encode(),colortfname.encode(),opacityfname.encode(),low,high)
+ * def addVolumeSamples(str name, np.ndarray[float, ndim=1,mode="c"] samples, np.ndarray[int,ndim=1,mode="c"] counts, np.ndarray[float,ndim=1,mode="c"] origin, np.ndarray[float,ndim=1,mode="c"] deltas,float samplingrate):
+ */
+
+  /* function exit code */
+  __pyx_r = Py_None; __Pyx_INCREF(Py_None);
+  goto __pyx_L0;
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_XDECREF(__pyx_t_2);
+  __Pyx_XDECREF(__pyx_t_3);
+  __Pyx_AddTraceback("gvt.addVolumeTransferFunctions", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "gvt.pyx":69
+ * def addVolumeTransferFunctions(str name, str colortfname, str opacityfname, float low, float high):
+ *   _addVolumeTransferFunctions(name.encode(),colortfname.encode(),opacityfname.encode(),low,high)
+ * def addVolumeSamples(str name, np.ndarray[float, ndim=1,mode="c"] samples, np.ndarray[int,ndim=1,mode="c"] counts, np.ndarray[float,ndim=1,mode="c"] origin, np.ndarray[float,ndim=1,mode="c"] deltas,float samplingrate):             # <<<<<<<<<<<<<<
+ *   _addVolumeSamples(name.encode(),<float*>samples.data,<int*>counts.data,<float*>origin.data,<float*>deltas.data,samplingrate)
+ * def addMeshVertices(str name, int size, np.ndarray[float, ndim=1, mode="c"] vertices not None):
+ */
+
+/* Python wrapper */
+static PyObject *__pyx_pw_3gvt_7addVolumeSamples(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_mdef_3gvt_7addVolumeSamples = {"addVolumeSamples", (PyCFunction)__pyx_pw_3gvt_7addVolumeSamples, METH_VARARGS|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_3gvt_7addVolumeSamples(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+  PyObject *__pyx_v_name = 0;
+  PyArrayObject *__pyx_v_samples = 0;
+  PyArrayObject *__pyx_v_counts = 0;
+  PyArrayObject *__pyx_v_origin = 0;
+  PyArrayObject *__pyx_v_deltas = 0;
+  float __pyx_v_samplingrate;
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("addVolumeSamples (wrapper)", 0);
+  {
+    static PyObject **__pyx_pyargnames[] = {&__pyx_n_s_name,&__pyx_n_s_samples,&__pyx_n_s_counts,&__pyx_n_s_origin,&__pyx_n_s_deltas,&__pyx_n_s_samplingrate,0};
+    PyObject* values[6] = {0,0,0,0,0,0};
+    if (unlikely(__pyx_kwds)) {
+      Py_ssize_t kw_args;
+      const Py_ssize_t pos_args = PyTuple_GET_SIZE(__pyx_args);
+      switch (pos_args) {
+        case  6: values[5] = PyTuple_GET_ITEM(__pyx_args, 5);
+        CYTHON_FALLTHROUGH;
+        case  5: values[4] = PyTuple_GET_ITEM(__pyx_args, 4);
+        CYTHON_FALLTHROUGH;
+        case  4: values[3] = PyTuple_GET_ITEM(__pyx_args, 3);
+        CYTHON_FALLTHROUGH;
+        case  3: values[2] = PyTuple_GET_ITEM(__pyx_args, 2);
+        CYTHON_FALLTHROUGH;
+        case  2: values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
+        CYTHON_FALLTHROUGH;
+        case  1: values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
+        CYTHON_FALLTHROUGH;
+        case  0: break;
+        default: goto __pyx_L5_argtuple_error;
+      }
+      kw_args = PyDict_Size(__pyx_kwds);
+      switch (pos_args) {
+        case  0:
+        if (likely((values[0] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_name)) != 0)) kw_args--;
+        else goto __pyx_L5_argtuple_error;
+        CYTHON_FALLTHROUGH;
+        case  1:
+        if (likely((values[1] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_samples)) != 0)) kw_args--;
+        else {
+          __Pyx_RaiseArgtupleInvalid("addVolumeSamples", 1, 6, 6, 1); __PYX_ERR(0, 69, __pyx_L3_error)
+        }
+        CYTHON_FALLTHROUGH;
+        case  2:
+        if (likely((values[2] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_counts)) != 0)) kw_args--;
+        else {
+          __Pyx_RaiseArgtupleInvalid("addVolumeSamples", 1, 6, 6, 2); __PYX_ERR(0, 69, __pyx_L3_error)
+        }
+        CYTHON_FALLTHROUGH;
+        case  3:
+        if (likely((values[3] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_origin)) != 0)) kw_args--;
+        else {
+          __Pyx_RaiseArgtupleInvalid("addVolumeSamples", 1, 6, 6, 3); __PYX_ERR(0, 69, __pyx_L3_error)
+        }
+        CYTHON_FALLTHROUGH;
+        case  4:
+        if (likely((values[4] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_deltas)) != 0)) kw_args--;
+        else {
+          __Pyx_RaiseArgtupleInvalid("addVolumeSamples", 1, 6, 6, 4); __PYX_ERR(0, 69, __pyx_L3_error)
+        }
+        CYTHON_FALLTHROUGH;
+        case  5:
+        if (likely((values[5] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_samplingrate)) != 0)) kw_args--;
+        else {
+          __Pyx_RaiseArgtupleInvalid("addVolumeSamples", 1, 6, 6, 5); __PYX_ERR(0, 69, __pyx_L3_error)
+        }
+      }
+      if (unlikely(kw_args > 0)) {
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "addVolumeSamples") < 0)) __PYX_ERR(0, 69, __pyx_L3_error)
+      }
+    } else if (PyTuple_GET_SIZE(__pyx_args) != 6) {
+      goto __pyx_L5_argtuple_error;
+    } else {
+      values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
+      values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
+      values[2] = PyTuple_GET_ITEM(__pyx_args, 2);
+      values[3] = PyTuple_GET_ITEM(__pyx_args, 3);
+      values[4] = PyTuple_GET_ITEM(__pyx_args, 4);
+      values[5] = PyTuple_GET_ITEM(__pyx_args, 5);
+    }
+    __pyx_v_name = ((PyObject*)values[0]);
+    __pyx_v_samples = ((PyArrayObject *)values[1]);
+    __pyx_v_counts = ((PyArrayObject *)values[2]);
+    __pyx_v_origin = ((PyArrayObject *)values[3]);
+    __pyx_v_deltas = ((PyArrayObject *)values[4]);
+    __pyx_v_samplingrate = __pyx_PyFloat_AsFloat(values[5]); if (unlikely((__pyx_v_samplingrate == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 69, __pyx_L3_error)
+  }
+  goto __pyx_L4_argument_unpacking_done;
+  __pyx_L5_argtuple_error:;
+  __Pyx_RaiseArgtupleInvalid("addVolumeSamples", 1, 6, 6, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 69, __pyx_L3_error)
+  __pyx_L3_error:;
+  __Pyx_AddTraceback("gvt.addVolumeSamples", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_RefNannyFinishContext();
+  return NULL;
+  __pyx_L4_argument_unpacking_done:;
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_name), (&PyString_Type), 1, "name", 1))) __PYX_ERR(0, 69, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_samples), __pyx_ptype_5numpy_ndarray, 1, "samples", 0))) __PYX_ERR(0, 69, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_counts), __pyx_ptype_5numpy_ndarray, 1, "counts", 0))) __PYX_ERR(0, 69, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_origin), __pyx_ptype_5numpy_ndarray, 1, "origin", 0))) __PYX_ERR(0, 69, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_deltas), __pyx_ptype_5numpy_ndarray, 1, "deltas", 0))) __PYX_ERR(0, 69, __pyx_L1_error)
+  __pyx_r = __pyx_pf_3gvt_6addVolumeSamples(__pyx_self, __pyx_v_name, __pyx_v_samples, __pyx_v_counts, __pyx_v_origin, __pyx_v_deltas, __pyx_v_samplingrate);
+
+  /* function exit code */
+  goto __pyx_L0;
+  __pyx_L1_error:;
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_3gvt_6addVolumeSamples(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, PyArrayObject *__pyx_v_samples, PyArrayObject *__pyx_v_counts, PyArrayObject *__pyx_v_origin, PyArrayObject *__pyx_v_deltas, float __pyx_v_samplingrate) {
+  __Pyx_LocalBuf_ND __pyx_pybuffernd_counts;
+  __Pyx_Buffer __pyx_pybuffer_counts;
+  __Pyx_LocalBuf_ND __pyx_pybuffernd_deltas;
+  __Pyx_Buffer __pyx_pybuffer_deltas;
+  __Pyx_LocalBuf_ND __pyx_pybuffernd_origin;
+  __Pyx_Buffer __pyx_pybuffer_origin;
+  __Pyx_LocalBuf_ND __pyx_pybuffernd_samples;
+  __Pyx_Buffer __pyx_pybuffer_samples;
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  PyObject *__pyx_t_2 = NULL;
+  PyObject *__pyx_t_3 = NULL;
+  std::string __pyx_t_4;
+  __Pyx_RefNannySetupContext("addVolumeSamples", 0);
+  __pyx_pybuffer_samples.pybuffer.buf = NULL;
+  __pyx_pybuffer_samples.refcount = 0;
+  __pyx_pybuffernd_samples.data = NULL;
+  __pyx_pybuffernd_samples.rcbuffer = &__pyx_pybuffer_samples;
+  __pyx_pybuffer_counts.pybuffer.buf = NULL;
+  __pyx_pybuffer_counts.refcount = 0;
+  __pyx_pybuffernd_counts.data = NULL;
+  __pyx_pybuffernd_counts.rcbuffer = &__pyx_pybuffer_counts;
+  __pyx_pybuffer_origin.pybuffer.buf = NULL;
+  __pyx_pybuffer_origin.refcount = 0;
+  __pyx_pybuffernd_origin.data = NULL;
+  __pyx_pybuffernd_origin.rcbuffer = &__pyx_pybuffer_origin;
+  __pyx_pybuffer_deltas.pybuffer.buf = NULL;
+  __pyx_pybuffer_deltas.refcount = 0;
+  __pyx_pybuffernd_deltas.data = NULL;
+  __pyx_pybuffernd_deltas.rcbuffer = &__pyx_pybuffer_deltas;
+  {
+    __Pyx_BufFmt_StackElem __pyx_stack[1];
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_samples.rcbuffer->pybuffer, (PyObject*)__pyx_v_samples, &__Pyx_TypeInfo_float, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 69, __pyx_L1_error)
+  }
+  __pyx_pybuffernd_samples.diminfo[0].strides = __pyx_pybuffernd_samples.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_samples.diminfo[0].shape = __pyx_pybuffernd_samples.rcbuffer->pybuffer.shape[0];
+  {
+    __Pyx_BufFmt_StackElem __pyx_stack[1];
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_counts.rcbuffer->pybuffer, (PyObject*)__pyx_v_counts, &__Pyx_TypeInfo_int, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 69, __pyx_L1_error)
+  }
+  __pyx_pybuffernd_counts.diminfo[0].strides = __pyx_pybuffernd_counts.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_counts.diminfo[0].shape = __pyx_pybuffernd_counts.rcbuffer->pybuffer.shape[0];
+  {
+    __Pyx_BufFmt_StackElem __pyx_stack[1];
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_origin.rcbuffer->pybuffer, (PyObject*)__pyx_v_origin, &__Pyx_TypeInfo_float, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 69, __pyx_L1_error)
+  }
+  __pyx_pybuffernd_origin.diminfo[0].strides = __pyx_pybuffernd_origin.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_origin.diminfo[0].shape = __pyx_pybuffernd_origin.rcbuffer->pybuffer.shape[0];
+  {
+    __Pyx_BufFmt_StackElem __pyx_stack[1];
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_deltas.rcbuffer->pybuffer, (PyObject*)__pyx_v_deltas, &__Pyx_TypeInfo_float, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 69, __pyx_L1_error)
+  }
+  __pyx_pybuffernd_deltas.diminfo[0].strides = __pyx_pybuffernd_deltas.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_deltas.diminfo[0].shape = __pyx_pybuffernd_deltas.rcbuffer->pybuffer.shape[0];
+
+  /* "gvt.pyx":70
+ *   _addVolumeTransferFunctions(name.encode(),colortfname.encode(),opacityfname.encode(),low,high)
+ * def addVolumeSamples(str name, np.ndarray[float, ndim=1,mode="c"] samples, np.ndarray[int,ndim=1,mode="c"] counts, np.ndarray[float,ndim=1,mode="c"] origin, np.ndarray[float,ndim=1,mode="c"] deltas,float samplingrate):
+ *   _addVolumeSamples(name.encode(),<float*>samples.data,<int*>counts.data,<float*>origin.data,<float*>deltas.data,samplingrate)             # <<<<<<<<<<<<<<
+ * def addMeshVertices(str name, int size, np.ndarray[float, ndim=1, mode="c"] vertices not None):
+ *   _addMeshVertices(name.encode(),size,<float*> vertices.data)
+ */
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_name, __pyx_n_s_encode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 70, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
+  __pyx_t_3 = NULL;
+  if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_2))) {
+    __pyx_t_3 = PyMethod_GET_SELF(__pyx_t_2);
+    if (likely(__pyx_t_3)) {
+      PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_2);
+      __Pyx_INCREF(__pyx_t_3);
+      __Pyx_INCREF(function);
+      __Pyx_DECREF_SET(__pyx_t_2, function);
+    }
+  }
+  if (__pyx_t_3) {
+    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 70, __pyx_L1_error)
+    __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+  } else {
+    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 70, __pyx_L1_error)
+  }
+  __Pyx_GOTREF(__pyx_t_1);
+  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+  __pyx_t_4 = __pyx_convert_string_from_py_std__in_string(__pyx_t_1); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 70, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  addVolumeSamples(__pyx_t_4, ((float *)__pyx_v_samples->data), ((int *)__pyx_v_counts->data), ((float *)__pyx_v_origin->data), ((float *)__pyx_v_deltas->data), __pyx_v_samplingrate);
+
+  /* "gvt.pyx":69
+ * def addVolumeTransferFunctions(str name, str colortfname, str opacityfname, float low, float high):
+ *   _addVolumeTransferFunctions(name.encode(),colortfname.encode(),opacityfname.encode(),low,high)
+ * def addVolumeSamples(str name, np.ndarray[float, ndim=1,mode="c"] samples, np.ndarray[int,ndim=1,mode="c"] counts, np.ndarray[float,ndim=1,mode="c"] origin, np.ndarray[float,ndim=1,mode="c"] deltas,float samplingrate):             # <<<<<<<<<<<<<<
+ *   _addVolumeSamples(name.encode(),<float*>samples.data,<int*>counts.data,<float*>origin.data,<float*>deltas.data,samplingrate)
+ * def addMeshVertices(str name, int size, np.ndarray[float, ndim=1, mode="c"] vertices not None):
+ */
+
+  /* function exit code */
+  __pyx_r = Py_None; __Pyx_INCREF(Py_None);
+  goto __pyx_L0;
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_XDECREF(__pyx_t_2);
+  __Pyx_XDECREF(__pyx_t_3);
+  { PyObject *__pyx_type, *__pyx_value, *__pyx_tb;
+    __Pyx_PyThreadState_declare
+    __Pyx_PyThreadState_assign
+    __Pyx_ErrFetch(&__pyx_type, &__pyx_value, &__pyx_tb);
+    __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_counts.rcbuffer->pybuffer);
+    __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_deltas.rcbuffer->pybuffer);
+    __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_origin.rcbuffer->pybuffer);
+    __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_samples.rcbuffer->pybuffer);
+  __Pyx_ErrRestore(__pyx_type, __pyx_value, __pyx_tb);}
+  __Pyx_AddTraceback("gvt.addVolumeSamples", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  goto __pyx_L2;
+  __pyx_L0:;
+  __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_counts.rcbuffer->pybuffer);
+  __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_deltas.rcbuffer->pybuffer);
+  __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_origin.rcbuffer->pybuffer);
+  __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_samples.rcbuffer->pybuffer);
+  __pyx_L2:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "gvt.pyx":71
+ * def addVolumeSamples(str name, np.ndarray[float, ndim=1,mode="c"] samples, np.ndarray[int,ndim=1,mode="c"] counts, np.ndarray[float,ndim=1,mode="c"] origin, np.ndarray[float,ndim=1,mode="c"] deltas,float samplingrate):
+ *   _addVolumeSamples(name.encode(),<float*>samples.data,<int*>counts.data,<float*>origin.data,<float*>deltas.data,samplingrate)
  * def addMeshVertices(str name, int size, np.ndarray[float, ndim=1, mode="c"] vertices not None):             # <<<<<<<<<<<<<<
  *   _addMeshVertices(name.encode(),size,<float*> vertices.data)
  * 
  */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_3gvt_5addMeshVertices(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_mdef_3gvt_5addMeshVertices = {"addMeshVertices", (PyCFunction)__pyx_pw_3gvt_5addMeshVertices, METH_VARARGS|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_3gvt_5addMeshVertices(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_3gvt_9addMeshVertices(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_mdef_3gvt_9addMeshVertices = {"addMeshVertices", (PyCFunction)__pyx_pw_3gvt_9addMeshVertices, METH_VARARGS|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_3gvt_9addMeshVertices(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyObject *__pyx_v_name = 0;
   int __pyx_v_size;
   PyArrayObject *__pyx_v_vertices = 0;
@@ -1974,17 +2476,17 @@ static PyObject *__pyx_pw_3gvt_5addMeshVertices(PyObject *__pyx_self, PyObject *
         case  1:
         if (likely((values[1] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_size)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("addMeshVertices", 1, 3, 3, 1); __PYX_ERR(0, 65, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("addMeshVertices", 1, 3, 3, 1); __PYX_ERR(0, 71, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_vertices)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("addMeshVertices", 1, 3, 3, 2); __PYX_ERR(0, 65, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("addMeshVertices", 1, 3, 3, 2); __PYX_ERR(0, 71, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "addMeshVertices") < 0)) __PYX_ERR(0, 65, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "addMeshVertices") < 0)) __PYX_ERR(0, 71, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 3) {
       goto __pyx_L5_argtuple_error;
@@ -1994,20 +2496,20 @@ static PyObject *__pyx_pw_3gvt_5addMeshVertices(PyObject *__pyx_self, PyObject *
       values[2] = PyTuple_GET_ITEM(__pyx_args, 2);
     }
     __pyx_v_name = ((PyObject*)values[0]);
-    __pyx_v_size = __Pyx_PyInt_As_int(values[1]); if (unlikely((__pyx_v_size == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 65, __pyx_L3_error)
+    __pyx_v_size = __Pyx_PyInt_As_int(values[1]); if (unlikely((__pyx_v_size == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 71, __pyx_L3_error)
     __pyx_v_vertices = ((PyArrayObject *)values[2]);
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("addMeshVertices", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 65, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("addMeshVertices", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 71, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("gvt.addMeshVertices", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_name), (&PyString_Type), 1, "name", 1))) __PYX_ERR(0, 65, __pyx_L1_error)
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_vertices), __pyx_ptype_5numpy_ndarray, 0, "vertices", 0))) __PYX_ERR(0, 65, __pyx_L1_error)
-  __pyx_r = __pyx_pf_3gvt_4addMeshVertices(__pyx_self, __pyx_v_name, __pyx_v_size, __pyx_v_vertices);
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_name), (&PyString_Type), 1, "name", 1))) __PYX_ERR(0, 71, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_vertices), __pyx_ptype_5numpy_ndarray, 0, "vertices", 0))) __PYX_ERR(0, 71, __pyx_L1_error)
+  __pyx_r = __pyx_pf_3gvt_8addMeshVertices(__pyx_self, __pyx_v_name, __pyx_v_size, __pyx_v_vertices);
 
   /* function exit code */
   goto __pyx_L0;
@@ -2018,7 +2520,7 @@ static PyObject *__pyx_pw_3gvt_5addMeshVertices(PyObject *__pyx_self, PyObject *
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_3gvt_4addMeshVertices(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, int __pyx_v_size, PyArrayObject *__pyx_v_vertices) {
+static PyObject *__pyx_pf_3gvt_8addMeshVertices(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, int __pyx_v_size, PyArrayObject *__pyx_v_vertices) {
   __Pyx_LocalBuf_ND __pyx_pybuffernd_vertices;
   __Pyx_Buffer __pyx_pybuffer_vertices;
   PyObject *__pyx_r = NULL;
@@ -2034,18 +2536,18 @@ static PyObject *__pyx_pf_3gvt_4addMeshVertices(CYTHON_UNUSED PyObject *__pyx_se
   __pyx_pybuffernd_vertices.rcbuffer = &__pyx_pybuffer_vertices;
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_vertices.rcbuffer->pybuffer, (PyObject*)__pyx_v_vertices, &__Pyx_TypeInfo_float, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 65, __pyx_L1_error)
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_vertices.rcbuffer->pybuffer, (PyObject*)__pyx_v_vertices, &__Pyx_TypeInfo_float, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 71, __pyx_L1_error)
   }
   __pyx_pybuffernd_vertices.diminfo[0].strides = __pyx_pybuffernd_vertices.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_vertices.diminfo[0].shape = __pyx_pybuffernd_vertices.rcbuffer->pybuffer.shape[0];
 
-  /* "gvt.pyx":66
- * 
+  /* "gvt.pyx":72
+ *   _addVolumeSamples(name.encode(),<float*>samples.data,<int*>counts.data,<float*>origin.data,<float*>deltas.data,samplingrate)
  * def addMeshVertices(str name, int size, np.ndarray[float, ndim=1, mode="c"] vertices not None):
  *   _addMeshVertices(name.encode(),size,<float*> vertices.data)             # <<<<<<<<<<<<<<
  * 
  * def addMeshTriangles(str name, unsigned n,  np.ndarray[unsigned, ndim=1, mode="c"] triangles):
  */
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_name, __pyx_n_s_encode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 66, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_name, __pyx_n_s_encode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 72, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_t_3 = NULL;
   if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_2))) {
@@ -2058,20 +2560,20 @@ static PyObject *__pyx_pf_3gvt_4addMeshVertices(CYTHON_UNUSED PyObject *__pyx_se
     }
   }
   if (__pyx_t_3) {
-    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 66, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 72, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   } else {
-    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 66, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 72, __pyx_L1_error)
   }
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_4 = __pyx_convert_string_from_py_std__in_string(__pyx_t_1); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 66, __pyx_L1_error)
+  __pyx_t_4 = __pyx_convert_string_from_py_std__in_string(__pyx_t_1); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 72, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   addMeshVertices(__pyx_t_4, __pyx_v_size, ((float *)__pyx_v_vertices->data));
 
-  /* "gvt.pyx":65
- *   _createMesh(name.encode())
- * 
+  /* "gvt.pyx":71
+ * def addVolumeSamples(str name, np.ndarray[float, ndim=1,mode="c"] samples, np.ndarray[int,ndim=1,mode="c"] counts, np.ndarray[float,ndim=1,mode="c"] origin, np.ndarray[float,ndim=1,mode="c"] deltas,float samplingrate):
+ *   _addVolumeSamples(name.encode(),<float*>samples.data,<int*>counts.data,<float*>origin.data,<float*>deltas.data,samplingrate)
  * def addMeshVertices(str name, int size, np.ndarray[float, ndim=1, mode="c"] vertices not None):             # <<<<<<<<<<<<<<
  *   _addMeshVertices(name.encode(),size,<float*> vertices.data)
  * 
@@ -2101,7 +2603,7 @@ static PyObject *__pyx_pf_3gvt_4addMeshVertices(CYTHON_UNUSED PyObject *__pyx_se
   return __pyx_r;
 }
 
-/* "gvt.pyx":68
+/* "gvt.pyx":74
  *   _addMeshVertices(name.encode(),size,<float*> vertices.data)
  * 
  * def addMeshTriangles(str name, unsigned n,  np.ndarray[unsigned, ndim=1, mode="c"] triangles):             # <<<<<<<<<<<<<<
@@ -2110,9 +2612,9 @@ static PyObject *__pyx_pf_3gvt_4addMeshVertices(CYTHON_UNUSED PyObject *__pyx_se
  */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_3gvt_7addMeshTriangles(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_mdef_3gvt_7addMeshTriangles = {"addMeshTriangles", (PyCFunction)__pyx_pw_3gvt_7addMeshTriangles, METH_VARARGS|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_3gvt_7addMeshTriangles(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_3gvt_11addMeshTriangles(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_mdef_3gvt_11addMeshTriangles = {"addMeshTriangles", (PyCFunction)__pyx_pw_3gvt_11addMeshTriangles, METH_VARARGS|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_3gvt_11addMeshTriangles(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyObject *__pyx_v_name = 0;
   unsigned int __pyx_v_n;
   PyArrayObject *__pyx_v_triangles = 0;
@@ -2144,17 +2646,17 @@ static PyObject *__pyx_pw_3gvt_7addMeshTriangles(PyObject *__pyx_self, PyObject 
         case  1:
         if (likely((values[1] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_n)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("addMeshTriangles", 1, 3, 3, 1); __PYX_ERR(0, 68, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("addMeshTriangles", 1, 3, 3, 1); __PYX_ERR(0, 74, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_triangles)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("addMeshTriangles", 1, 3, 3, 2); __PYX_ERR(0, 68, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("addMeshTriangles", 1, 3, 3, 2); __PYX_ERR(0, 74, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "addMeshTriangles") < 0)) __PYX_ERR(0, 68, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "addMeshTriangles") < 0)) __PYX_ERR(0, 74, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 3) {
       goto __pyx_L5_argtuple_error;
@@ -2164,20 +2666,20 @@ static PyObject *__pyx_pw_3gvt_7addMeshTriangles(PyObject *__pyx_self, PyObject 
       values[2] = PyTuple_GET_ITEM(__pyx_args, 2);
     }
     __pyx_v_name = ((PyObject*)values[0]);
-    __pyx_v_n = __Pyx_PyInt_As_unsigned_int(values[1]); if (unlikely((__pyx_v_n == (unsigned int)-1) && PyErr_Occurred())) __PYX_ERR(0, 68, __pyx_L3_error)
+    __pyx_v_n = __Pyx_PyInt_As_unsigned_int(values[1]); if (unlikely((__pyx_v_n == (unsigned int)-1) && PyErr_Occurred())) __PYX_ERR(0, 74, __pyx_L3_error)
     __pyx_v_triangles = ((PyArrayObject *)values[2]);
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("addMeshTriangles", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 68, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("addMeshTriangles", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 74, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("gvt.addMeshTriangles", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_name), (&PyString_Type), 1, "name", 1))) __PYX_ERR(0, 68, __pyx_L1_error)
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_triangles), __pyx_ptype_5numpy_ndarray, 1, "triangles", 0))) __PYX_ERR(0, 68, __pyx_L1_error)
-  __pyx_r = __pyx_pf_3gvt_6addMeshTriangles(__pyx_self, __pyx_v_name, __pyx_v_n, __pyx_v_triangles);
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_name), (&PyString_Type), 1, "name", 1))) __PYX_ERR(0, 74, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_triangles), __pyx_ptype_5numpy_ndarray, 1, "triangles", 0))) __PYX_ERR(0, 74, __pyx_L1_error)
+  __pyx_r = __pyx_pf_3gvt_10addMeshTriangles(__pyx_self, __pyx_v_name, __pyx_v_n, __pyx_v_triangles);
 
   /* function exit code */
   goto __pyx_L0;
@@ -2188,7 +2690,7 @@ static PyObject *__pyx_pw_3gvt_7addMeshTriangles(PyObject *__pyx_self, PyObject 
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_3gvt_6addMeshTriangles(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, unsigned int __pyx_v_n, PyArrayObject *__pyx_v_triangles) {
+static PyObject *__pyx_pf_3gvt_10addMeshTriangles(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, unsigned int __pyx_v_n, PyArrayObject *__pyx_v_triangles) {
   __Pyx_LocalBuf_ND __pyx_pybuffernd_triangles;
   __Pyx_Buffer __pyx_pybuffer_triangles;
   PyObject *__pyx_r = NULL;
@@ -2204,18 +2706,18 @@ static PyObject *__pyx_pf_3gvt_6addMeshTriangles(CYTHON_UNUSED PyObject *__pyx_s
   __pyx_pybuffernd_triangles.rcbuffer = &__pyx_pybuffer_triangles;
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_triangles.rcbuffer->pybuffer, (PyObject*)__pyx_v_triangles, &__Pyx_TypeInfo_unsigned_int, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 68, __pyx_L1_error)
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_triangles.rcbuffer->pybuffer, (PyObject*)__pyx_v_triangles, &__Pyx_TypeInfo_unsigned_int, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 74, __pyx_L1_error)
   }
   __pyx_pybuffernd_triangles.diminfo[0].strides = __pyx_pybuffernd_triangles.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_triangles.diminfo[0].shape = __pyx_pybuffernd_triangles.rcbuffer->pybuffer.shape[0];
 
-  /* "gvt.pyx":69
+  /* "gvt.pyx":75
  * 
  * def addMeshTriangles(str name, unsigned n,  np.ndarray[unsigned, ndim=1, mode="c"] triangles):
  *   _addMeshTriangles(name.encode(),  n,  <unsigned *> triangles.data)             # <<<<<<<<<<<<<<
  * 
  * def addMeshFaceNormals( str name, unsigned n,   np.ndarray[float, ndim=1, mode="c"] normals):
  */
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_name, __pyx_n_s_encode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 69, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_name, __pyx_n_s_encode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 75, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_t_3 = NULL;
   if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_2))) {
@@ -2228,18 +2730,18 @@ static PyObject *__pyx_pf_3gvt_6addMeshTriangles(CYTHON_UNUSED PyObject *__pyx_s
     }
   }
   if (__pyx_t_3) {
-    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 69, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 75, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   } else {
-    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 69, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 75, __pyx_L1_error)
   }
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_4 = __pyx_convert_string_from_py_std__in_string(__pyx_t_1); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 69, __pyx_L1_error)
+  __pyx_t_4 = __pyx_convert_string_from_py_std__in_string(__pyx_t_1); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 75, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   addMeshTriangles(__pyx_t_4, __pyx_v_n, ((unsigned int *)__pyx_v_triangles->data));
 
-  /* "gvt.pyx":68
+  /* "gvt.pyx":74
  *   _addMeshVertices(name.encode(),size,<float*> vertices.data)
  * 
  * def addMeshTriangles(str name, unsigned n,  np.ndarray[unsigned, ndim=1, mode="c"] triangles):             # <<<<<<<<<<<<<<
@@ -2271,7 +2773,7 @@ static PyObject *__pyx_pf_3gvt_6addMeshTriangles(CYTHON_UNUSED PyObject *__pyx_s
   return __pyx_r;
 }
 
-/* "gvt.pyx":71
+/* "gvt.pyx":77
  *   _addMeshTriangles(name.encode(),  n,  <unsigned *> triangles.data)
  * 
  * def addMeshFaceNormals( str name, unsigned n,   np.ndarray[float, ndim=1, mode="c"] normals):             # <<<<<<<<<<<<<<
@@ -2280,9 +2782,9 @@ static PyObject *__pyx_pf_3gvt_6addMeshTriangles(CYTHON_UNUSED PyObject *__pyx_s
  */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_3gvt_9addMeshFaceNormals(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_mdef_3gvt_9addMeshFaceNormals = {"addMeshFaceNormals", (PyCFunction)__pyx_pw_3gvt_9addMeshFaceNormals, METH_VARARGS|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_3gvt_9addMeshFaceNormals(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_3gvt_13addMeshFaceNormals(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_mdef_3gvt_13addMeshFaceNormals = {"addMeshFaceNormals", (PyCFunction)__pyx_pw_3gvt_13addMeshFaceNormals, METH_VARARGS|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_3gvt_13addMeshFaceNormals(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyObject *__pyx_v_name = 0;
   unsigned int __pyx_v_n;
   PyArrayObject *__pyx_v_normals = 0;
@@ -2314,17 +2816,17 @@ static PyObject *__pyx_pw_3gvt_9addMeshFaceNormals(PyObject *__pyx_self, PyObjec
         case  1:
         if (likely((values[1] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_n)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("addMeshFaceNormals", 1, 3, 3, 1); __PYX_ERR(0, 71, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("addMeshFaceNormals", 1, 3, 3, 1); __PYX_ERR(0, 77, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_normals)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("addMeshFaceNormals", 1, 3, 3, 2); __PYX_ERR(0, 71, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("addMeshFaceNormals", 1, 3, 3, 2); __PYX_ERR(0, 77, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "addMeshFaceNormals") < 0)) __PYX_ERR(0, 71, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "addMeshFaceNormals") < 0)) __PYX_ERR(0, 77, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 3) {
       goto __pyx_L5_argtuple_error;
@@ -2334,20 +2836,20 @@ static PyObject *__pyx_pw_3gvt_9addMeshFaceNormals(PyObject *__pyx_self, PyObjec
       values[2] = PyTuple_GET_ITEM(__pyx_args, 2);
     }
     __pyx_v_name = ((PyObject*)values[0]);
-    __pyx_v_n = __Pyx_PyInt_As_unsigned_int(values[1]); if (unlikely((__pyx_v_n == (unsigned int)-1) && PyErr_Occurred())) __PYX_ERR(0, 71, __pyx_L3_error)
+    __pyx_v_n = __Pyx_PyInt_As_unsigned_int(values[1]); if (unlikely((__pyx_v_n == (unsigned int)-1) && PyErr_Occurred())) __PYX_ERR(0, 77, __pyx_L3_error)
     __pyx_v_normals = ((PyArrayObject *)values[2]);
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("addMeshFaceNormals", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 71, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("addMeshFaceNormals", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 77, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("gvt.addMeshFaceNormals", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_name), (&PyString_Type), 1, "name", 1))) __PYX_ERR(0, 71, __pyx_L1_error)
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_normals), __pyx_ptype_5numpy_ndarray, 1, "normals", 0))) __PYX_ERR(0, 71, __pyx_L1_error)
-  __pyx_r = __pyx_pf_3gvt_8addMeshFaceNormals(__pyx_self, __pyx_v_name, __pyx_v_n, __pyx_v_normals);
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_name), (&PyString_Type), 1, "name", 1))) __PYX_ERR(0, 77, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_normals), __pyx_ptype_5numpy_ndarray, 1, "normals", 0))) __PYX_ERR(0, 77, __pyx_L1_error)
+  __pyx_r = __pyx_pf_3gvt_12addMeshFaceNormals(__pyx_self, __pyx_v_name, __pyx_v_n, __pyx_v_normals);
 
   /* function exit code */
   goto __pyx_L0;
@@ -2358,7 +2860,7 @@ static PyObject *__pyx_pw_3gvt_9addMeshFaceNormals(PyObject *__pyx_self, PyObjec
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_3gvt_8addMeshFaceNormals(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, unsigned int __pyx_v_n, PyArrayObject *__pyx_v_normals) {
+static PyObject *__pyx_pf_3gvt_12addMeshFaceNormals(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, unsigned int __pyx_v_n, PyArrayObject *__pyx_v_normals) {
   __Pyx_LocalBuf_ND __pyx_pybuffernd_normals;
   __Pyx_Buffer __pyx_pybuffer_normals;
   PyObject *__pyx_r = NULL;
@@ -2374,18 +2876,18 @@ static PyObject *__pyx_pf_3gvt_8addMeshFaceNormals(CYTHON_UNUSED PyObject *__pyx
   __pyx_pybuffernd_normals.rcbuffer = &__pyx_pybuffer_normals;
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_normals.rcbuffer->pybuffer, (PyObject*)__pyx_v_normals, &__Pyx_TypeInfo_float, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 71, __pyx_L1_error)
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_normals.rcbuffer->pybuffer, (PyObject*)__pyx_v_normals, &__Pyx_TypeInfo_float, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 77, __pyx_L1_error)
   }
   __pyx_pybuffernd_normals.diminfo[0].strides = __pyx_pybuffernd_normals.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_normals.diminfo[0].shape = __pyx_pybuffernd_normals.rcbuffer->pybuffer.shape[0];
 
-  /* "gvt.pyx":72
+  /* "gvt.pyx":78
  * 
  * def addMeshFaceNormals( str name, unsigned n,   np.ndarray[float, ndim=1, mode="c"] normals):
  *   _addMeshFaceNormals(name.encode(), n, <float*> normals.data)             # <<<<<<<<<<<<<<
  * 
  * def addMeshVertexNormals( str name,  unsigned n,  np.ndarray[float, ndim=1, mode="c"] normals):
  */
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_name, __pyx_n_s_encode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 72, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_name, __pyx_n_s_encode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 78, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_t_3 = NULL;
   if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_2))) {
@@ -2398,18 +2900,18 @@ static PyObject *__pyx_pf_3gvt_8addMeshFaceNormals(CYTHON_UNUSED PyObject *__pyx
     }
   }
   if (__pyx_t_3) {
-    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 72, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 78, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   } else {
-    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 72, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 78, __pyx_L1_error)
   }
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_4 = __pyx_convert_string_from_py_std__in_string(__pyx_t_1); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 72, __pyx_L1_error)
+  __pyx_t_4 = __pyx_convert_string_from_py_std__in_string(__pyx_t_1); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 78, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   addMeshFaceNormals(__pyx_t_4, __pyx_v_n, ((float *)__pyx_v_normals->data));
 
-  /* "gvt.pyx":71
+  /* "gvt.pyx":77
  *   _addMeshTriangles(name.encode(),  n,  <unsigned *> triangles.data)
  * 
  * def addMeshFaceNormals( str name, unsigned n,   np.ndarray[float, ndim=1, mode="c"] normals):             # <<<<<<<<<<<<<<
@@ -2441,7 +2943,7 @@ static PyObject *__pyx_pf_3gvt_8addMeshFaceNormals(CYTHON_UNUSED PyObject *__pyx
   return __pyx_r;
 }
 
-/* "gvt.pyx":74
+/* "gvt.pyx":80
  *   _addMeshFaceNormals(name.encode(), n, <float*> normals.data)
  * 
  * def addMeshVertexNormals( str name,  unsigned n,  np.ndarray[float, ndim=1, mode="c"] normals):             # <<<<<<<<<<<<<<
@@ -2450,9 +2952,9 @@ static PyObject *__pyx_pf_3gvt_8addMeshFaceNormals(CYTHON_UNUSED PyObject *__pyx
  */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_3gvt_11addMeshVertexNormals(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_mdef_3gvt_11addMeshVertexNormals = {"addMeshVertexNormals", (PyCFunction)__pyx_pw_3gvt_11addMeshVertexNormals, METH_VARARGS|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_3gvt_11addMeshVertexNormals(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_3gvt_15addMeshVertexNormals(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_mdef_3gvt_15addMeshVertexNormals = {"addMeshVertexNormals", (PyCFunction)__pyx_pw_3gvt_15addMeshVertexNormals, METH_VARARGS|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_3gvt_15addMeshVertexNormals(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyObject *__pyx_v_name = 0;
   unsigned int __pyx_v_n;
   PyArrayObject *__pyx_v_normals = 0;
@@ -2484,17 +2986,17 @@ static PyObject *__pyx_pw_3gvt_11addMeshVertexNormals(PyObject *__pyx_self, PyOb
         case  1:
         if (likely((values[1] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_n)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("addMeshVertexNormals", 1, 3, 3, 1); __PYX_ERR(0, 74, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("addMeshVertexNormals", 1, 3, 3, 1); __PYX_ERR(0, 80, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_normals)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("addMeshVertexNormals", 1, 3, 3, 2); __PYX_ERR(0, 74, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("addMeshVertexNormals", 1, 3, 3, 2); __PYX_ERR(0, 80, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "addMeshVertexNormals") < 0)) __PYX_ERR(0, 74, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "addMeshVertexNormals") < 0)) __PYX_ERR(0, 80, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 3) {
       goto __pyx_L5_argtuple_error;
@@ -2504,20 +3006,20 @@ static PyObject *__pyx_pw_3gvt_11addMeshVertexNormals(PyObject *__pyx_self, PyOb
       values[2] = PyTuple_GET_ITEM(__pyx_args, 2);
     }
     __pyx_v_name = ((PyObject*)values[0]);
-    __pyx_v_n = __Pyx_PyInt_As_unsigned_int(values[1]); if (unlikely((__pyx_v_n == (unsigned int)-1) && PyErr_Occurred())) __PYX_ERR(0, 74, __pyx_L3_error)
+    __pyx_v_n = __Pyx_PyInt_As_unsigned_int(values[1]); if (unlikely((__pyx_v_n == (unsigned int)-1) && PyErr_Occurred())) __PYX_ERR(0, 80, __pyx_L3_error)
     __pyx_v_normals = ((PyArrayObject *)values[2]);
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("addMeshVertexNormals", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 74, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("addMeshVertexNormals", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 80, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("gvt.addMeshVertexNormals", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_name), (&PyString_Type), 1, "name", 1))) __PYX_ERR(0, 74, __pyx_L1_error)
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_normals), __pyx_ptype_5numpy_ndarray, 1, "normals", 0))) __PYX_ERR(0, 74, __pyx_L1_error)
-  __pyx_r = __pyx_pf_3gvt_10addMeshVertexNormals(__pyx_self, __pyx_v_name, __pyx_v_n, __pyx_v_normals);
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_name), (&PyString_Type), 1, "name", 1))) __PYX_ERR(0, 80, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_normals), __pyx_ptype_5numpy_ndarray, 1, "normals", 0))) __PYX_ERR(0, 80, __pyx_L1_error)
+  __pyx_r = __pyx_pf_3gvt_14addMeshVertexNormals(__pyx_self, __pyx_v_name, __pyx_v_n, __pyx_v_normals);
 
   /* function exit code */
   goto __pyx_L0;
@@ -2528,7 +3030,7 @@ static PyObject *__pyx_pw_3gvt_11addMeshVertexNormals(PyObject *__pyx_self, PyOb
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_3gvt_10addMeshVertexNormals(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, unsigned int __pyx_v_n, PyArrayObject *__pyx_v_normals) {
+static PyObject *__pyx_pf_3gvt_14addMeshVertexNormals(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, unsigned int __pyx_v_n, PyArrayObject *__pyx_v_normals) {
   __Pyx_LocalBuf_ND __pyx_pybuffernd_normals;
   __Pyx_Buffer __pyx_pybuffer_normals;
   PyObject *__pyx_r = NULL;
@@ -2544,18 +3046,18 @@ static PyObject *__pyx_pf_3gvt_10addMeshVertexNormals(CYTHON_UNUSED PyObject *__
   __pyx_pybuffernd_normals.rcbuffer = &__pyx_pybuffer_normals;
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_normals.rcbuffer->pybuffer, (PyObject*)__pyx_v_normals, &__Pyx_TypeInfo_float, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 74, __pyx_L1_error)
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_normals.rcbuffer->pybuffer, (PyObject*)__pyx_v_normals, &__Pyx_TypeInfo_float, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 80, __pyx_L1_error)
   }
   __pyx_pybuffernd_normals.diminfo[0].strides = __pyx_pybuffernd_normals.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_normals.diminfo[0].shape = __pyx_pybuffernd_normals.rcbuffer->pybuffer.shape[0];
 
-  /* "gvt.pyx":75
+  /* "gvt.pyx":81
  * 
  * def addMeshVertexNormals( str name,  unsigned n,  np.ndarray[float, ndim=1, mode="c"] normals):
  *   _addMeshVertexNormals(name.encode(),n, <float*> normals.data)             # <<<<<<<<<<<<<<
  * 
  * def finishMesh( str name, bool compute_normal = True):
  */
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_name, __pyx_n_s_encode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 75, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_name, __pyx_n_s_encode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 81, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_t_3 = NULL;
   if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_2))) {
@@ -2568,18 +3070,18 @@ static PyObject *__pyx_pf_3gvt_10addMeshVertexNormals(CYTHON_UNUSED PyObject *__
     }
   }
   if (__pyx_t_3) {
-    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 75, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 81, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   } else {
-    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 75, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 81, __pyx_L1_error)
   }
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_4 = __pyx_convert_string_from_py_std__in_string(__pyx_t_1); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 75, __pyx_L1_error)
+  __pyx_t_4 = __pyx_convert_string_from_py_std__in_string(__pyx_t_1); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 81, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   addMeshVertexNormals(__pyx_t_4, __pyx_v_n, ((float *)__pyx_v_normals->data));
 
-  /* "gvt.pyx":74
+  /* "gvt.pyx":80
  *   _addMeshFaceNormals(name.encode(), n, <float*> normals.data)
  * 
  * def addMeshVertexNormals( str name,  unsigned n,  np.ndarray[float, ndim=1, mode="c"] normals):             # <<<<<<<<<<<<<<
@@ -2611,7 +3113,7 @@ static PyObject *__pyx_pf_3gvt_10addMeshVertexNormals(CYTHON_UNUSED PyObject *__
   return __pyx_r;
 }
 
-/* "gvt.pyx":77
+/* "gvt.pyx":83
  *   _addMeshVertexNormals(name.encode(),n, <float*> normals.data)
  * 
  * def finishMesh( str name, bool compute_normal = True):             # <<<<<<<<<<<<<<
@@ -2620,9 +3122,9 @@ static PyObject *__pyx_pf_3gvt_10addMeshVertexNormals(CYTHON_UNUSED PyObject *__
  */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_3gvt_13finishMesh(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_mdef_3gvt_13finishMesh = {"finishMesh", (PyCFunction)__pyx_pw_3gvt_13finishMesh, METH_VARARGS|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_3gvt_13finishMesh(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_3gvt_17finishMesh(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_mdef_3gvt_17finishMesh = {"finishMesh", (PyCFunction)__pyx_pw_3gvt_17finishMesh, METH_VARARGS|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_3gvt_17finishMesh(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyObject *__pyx_v_name = 0;
   bool __pyx_v_compute_normal;
   PyObject *__pyx_r = 0;
@@ -2655,7 +3157,7 @@ static PyObject *__pyx_pw_3gvt_13finishMesh(PyObject *__pyx_self, PyObject *__py
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "finishMesh") < 0)) __PYX_ERR(0, 77, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "finishMesh") < 0)) __PYX_ERR(0, 83, __pyx_L3_error)
       }
     } else {
       switch (PyTuple_GET_SIZE(__pyx_args)) {
@@ -2668,21 +3170,21 @@ static PyObject *__pyx_pw_3gvt_13finishMesh(PyObject *__pyx_self, PyObject *__py
     }
     __pyx_v_name = ((PyObject*)values[0]);
     if (values[1]) {
-      __pyx_v_compute_normal = __Pyx_PyObject_IsTrue(values[1]); if (unlikely((__pyx_v_compute_normal == ((bool)-1)) && PyErr_Occurred())) __PYX_ERR(0, 77, __pyx_L3_error)
+      __pyx_v_compute_normal = __Pyx_PyObject_IsTrue(values[1]); if (unlikely((__pyx_v_compute_normal == ((bool)-1)) && PyErr_Occurred())) __PYX_ERR(0, 83, __pyx_L3_error)
     } else {
       __pyx_v_compute_normal = ((bool)1);
     }
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("finishMesh", 0, 1, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 77, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("finishMesh", 0, 1, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 83, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("gvt.finishMesh", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_name), (&PyString_Type), 1, "name", 1))) __PYX_ERR(0, 77, __pyx_L1_error)
-  __pyx_r = __pyx_pf_3gvt_12finishMesh(__pyx_self, __pyx_v_name, __pyx_v_compute_normal);
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_name), (&PyString_Type), 1, "name", 1))) __PYX_ERR(0, 83, __pyx_L1_error)
+  __pyx_r = __pyx_pf_3gvt_16finishMesh(__pyx_self, __pyx_v_name, __pyx_v_compute_normal);
 
   /* function exit code */
   goto __pyx_L0;
@@ -2693,7 +3195,7 @@ static PyObject *__pyx_pw_3gvt_13finishMesh(PyObject *__pyx_self, PyObject *__py
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_3gvt_12finishMesh(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, bool __pyx_v_compute_normal) {
+static PyObject *__pyx_pf_3gvt_16finishMesh(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, bool __pyx_v_compute_normal) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -2702,14 +3204,14 @@ static PyObject *__pyx_pf_3gvt_12finishMesh(CYTHON_UNUSED PyObject *__pyx_self, 
   std::string __pyx_t_4;
   __Pyx_RefNannySetupContext("finishMesh", 0);
 
-  /* "gvt.pyx":78
+  /* "gvt.pyx":84
  * 
  * def finishMesh( str name, bool compute_normal = True):
  *   _finishMesh(name.encode(),compute_normal)             # <<<<<<<<<<<<<<
  * 
  * def addMeshMaterialLambert( str name,  unsigned mattype,  np.ndarray[float, ndim=1, mode="c"] kd,  float alpha):
  */
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_name, __pyx_n_s_encode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 78, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_name, __pyx_n_s_encode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 84, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_t_3 = NULL;
   if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_2))) {
@@ -2722,18 +3224,18 @@ static PyObject *__pyx_pf_3gvt_12finishMesh(CYTHON_UNUSED PyObject *__pyx_self, 
     }
   }
   if (__pyx_t_3) {
-    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 78, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 84, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   } else {
-    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 78, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 84, __pyx_L1_error)
   }
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_4 = __pyx_convert_string_from_py_std__in_string(__pyx_t_1); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 78, __pyx_L1_error)
+  __pyx_t_4 = __pyx_convert_string_from_py_std__in_string(__pyx_t_1); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 84, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   finishMesh(__pyx_t_4, __pyx_v_compute_normal);
 
-  /* "gvt.pyx":77
+  /* "gvt.pyx":83
  *   _addMeshVertexNormals(name.encode(),n, <float*> normals.data)
  * 
  * def finishMesh( str name, bool compute_normal = True):             # <<<<<<<<<<<<<<
@@ -2756,7 +3258,7 @@ static PyObject *__pyx_pf_3gvt_12finishMesh(CYTHON_UNUSED PyObject *__pyx_self, 
   return __pyx_r;
 }
 
-/* "gvt.pyx":80
+/* "gvt.pyx":86
  *   _finishMesh(name.encode(),compute_normal)
  * 
  * def addMeshMaterialLambert( str name,  unsigned mattype,  np.ndarray[float, ndim=1, mode="c"] kd,  float alpha):             # <<<<<<<<<<<<<<
@@ -2765,9 +3267,9 @@ static PyObject *__pyx_pf_3gvt_12finishMesh(CYTHON_UNUSED PyObject *__pyx_self, 
  */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_3gvt_15addMeshMaterialLambert(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_mdef_3gvt_15addMeshMaterialLambert = {"addMeshMaterialLambert", (PyCFunction)__pyx_pw_3gvt_15addMeshMaterialLambert, METH_VARARGS|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_3gvt_15addMeshMaterialLambert(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_3gvt_19addMeshMaterialLambert(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_mdef_3gvt_19addMeshMaterialLambert = {"addMeshMaterialLambert", (PyCFunction)__pyx_pw_3gvt_19addMeshMaterialLambert, METH_VARARGS|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_3gvt_19addMeshMaterialLambert(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyObject *__pyx_v_name = 0;
   unsigned int __pyx_v_mattype;
   PyArrayObject *__pyx_v_kd = 0;
@@ -2802,23 +3304,23 @@ static PyObject *__pyx_pw_3gvt_15addMeshMaterialLambert(PyObject *__pyx_self, Py
         case  1:
         if (likely((values[1] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_mattype)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("addMeshMaterialLambert", 1, 4, 4, 1); __PYX_ERR(0, 80, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("addMeshMaterialLambert", 1, 4, 4, 1); __PYX_ERR(0, 86, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_kd)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("addMeshMaterialLambert", 1, 4, 4, 2); __PYX_ERR(0, 80, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("addMeshMaterialLambert", 1, 4, 4, 2); __PYX_ERR(0, 86, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  3:
         if (likely((values[3] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_alpha)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("addMeshMaterialLambert", 1, 4, 4, 3); __PYX_ERR(0, 80, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("addMeshMaterialLambert", 1, 4, 4, 3); __PYX_ERR(0, 86, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "addMeshMaterialLambert") < 0)) __PYX_ERR(0, 80, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "addMeshMaterialLambert") < 0)) __PYX_ERR(0, 86, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 4) {
       goto __pyx_L5_argtuple_error;
@@ -2829,21 +3331,21 @@ static PyObject *__pyx_pw_3gvt_15addMeshMaterialLambert(PyObject *__pyx_self, Py
       values[3] = PyTuple_GET_ITEM(__pyx_args, 3);
     }
     __pyx_v_name = ((PyObject*)values[0]);
-    __pyx_v_mattype = __Pyx_PyInt_As_unsigned_int(values[1]); if (unlikely((__pyx_v_mattype == (unsigned int)-1) && PyErr_Occurred())) __PYX_ERR(0, 80, __pyx_L3_error)
+    __pyx_v_mattype = __Pyx_PyInt_As_unsigned_int(values[1]); if (unlikely((__pyx_v_mattype == (unsigned int)-1) && PyErr_Occurred())) __PYX_ERR(0, 86, __pyx_L3_error)
     __pyx_v_kd = ((PyArrayObject *)values[2]);
-    __pyx_v_alpha = __pyx_PyFloat_AsFloat(values[3]); if (unlikely((__pyx_v_alpha == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 80, __pyx_L3_error)
+    __pyx_v_alpha = __pyx_PyFloat_AsFloat(values[3]); if (unlikely((__pyx_v_alpha == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 86, __pyx_L3_error)
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("addMeshMaterialLambert", 1, 4, 4, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 80, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("addMeshMaterialLambert", 1, 4, 4, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 86, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("gvt.addMeshMaterialLambert", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_name), (&PyString_Type), 1, "name", 1))) __PYX_ERR(0, 80, __pyx_L1_error)
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_kd), __pyx_ptype_5numpy_ndarray, 1, "kd", 0))) __PYX_ERR(0, 80, __pyx_L1_error)
-  __pyx_r = __pyx_pf_3gvt_14addMeshMaterialLambert(__pyx_self, __pyx_v_name, __pyx_v_mattype, __pyx_v_kd, __pyx_v_alpha);
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_name), (&PyString_Type), 1, "name", 1))) __PYX_ERR(0, 86, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_kd), __pyx_ptype_5numpy_ndarray, 1, "kd", 0))) __PYX_ERR(0, 86, __pyx_L1_error)
+  __pyx_r = __pyx_pf_3gvt_18addMeshMaterialLambert(__pyx_self, __pyx_v_name, __pyx_v_mattype, __pyx_v_kd, __pyx_v_alpha);
 
   /* function exit code */
   goto __pyx_L0;
@@ -2854,7 +3356,7 @@ static PyObject *__pyx_pw_3gvt_15addMeshMaterialLambert(PyObject *__pyx_self, Py
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_3gvt_14addMeshMaterialLambert(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, unsigned int __pyx_v_mattype, PyArrayObject *__pyx_v_kd, float __pyx_v_alpha) {
+static PyObject *__pyx_pf_3gvt_18addMeshMaterialLambert(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, unsigned int __pyx_v_mattype, PyArrayObject *__pyx_v_kd, float __pyx_v_alpha) {
   __Pyx_LocalBuf_ND __pyx_pybuffernd_kd;
   __Pyx_Buffer __pyx_pybuffer_kd;
   PyObject *__pyx_r = NULL;
@@ -2870,18 +3372,18 @@ static PyObject *__pyx_pf_3gvt_14addMeshMaterialLambert(CYTHON_UNUSED PyObject *
   __pyx_pybuffernd_kd.rcbuffer = &__pyx_pybuffer_kd;
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_kd.rcbuffer->pybuffer, (PyObject*)__pyx_v_kd, &__Pyx_TypeInfo_float, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 80, __pyx_L1_error)
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_kd.rcbuffer->pybuffer, (PyObject*)__pyx_v_kd, &__Pyx_TypeInfo_float, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 86, __pyx_L1_error)
   }
   __pyx_pybuffernd_kd.diminfo[0].strides = __pyx_pybuffernd_kd.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_kd.diminfo[0].shape = __pyx_pybuffernd_kd.rcbuffer->pybuffer.shape[0];
 
-  /* "gvt.pyx":81
+  /* "gvt.pyx":87
  * 
  * def addMeshMaterialLambert( str name,  unsigned mattype,  np.ndarray[float, ndim=1, mode="c"] kd,  float alpha):
  *   _addMeshMaterial(name.encode() ,mattype, <float*> kd.data, alpha)             # <<<<<<<<<<<<<<
  * 
  * def addMeshMaterialSpecular( str name,  unsigned mattype,  np.ndarray[float, ndim=1, mode="c"] kd,  np.ndarray[float, ndim=1, mode="c"] ks, float alpha ):
  */
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_name, __pyx_n_s_encode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 81, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_name, __pyx_n_s_encode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 87, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_t_3 = NULL;
   if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_2))) {
@@ -2894,18 +3396,18 @@ static PyObject *__pyx_pf_3gvt_14addMeshMaterialLambert(CYTHON_UNUSED PyObject *
     }
   }
   if (__pyx_t_3) {
-    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 81, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 87, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   } else {
-    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 81, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 87, __pyx_L1_error)
   }
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_4 = __pyx_convert_string_from_py_std__in_string(__pyx_t_1); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 81, __pyx_L1_error)
+  __pyx_t_4 = __pyx_convert_string_from_py_std__in_string(__pyx_t_1); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 87, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   addMeshMaterial(__pyx_t_4, __pyx_v_mattype, ((float *)__pyx_v_kd->data), __pyx_v_alpha);
 
-  /* "gvt.pyx":80
+  /* "gvt.pyx":86
  *   _finishMesh(name.encode(),compute_normal)
  * 
  * def addMeshMaterialLambert( str name,  unsigned mattype,  np.ndarray[float, ndim=1, mode="c"] kd,  float alpha):             # <<<<<<<<<<<<<<
@@ -2937,7 +3439,7 @@ static PyObject *__pyx_pf_3gvt_14addMeshMaterialLambert(CYTHON_UNUSED PyObject *
   return __pyx_r;
 }
 
-/* "gvt.pyx":83
+/* "gvt.pyx":89
  *   _addMeshMaterial(name.encode() ,mattype, <float*> kd.data, alpha)
  * 
  * def addMeshMaterialSpecular( str name,  unsigned mattype,  np.ndarray[float, ndim=1, mode="c"] kd,  np.ndarray[float, ndim=1, mode="c"] ks, float alpha ):             # <<<<<<<<<<<<<<
@@ -2946,9 +3448,9 @@ static PyObject *__pyx_pf_3gvt_14addMeshMaterialLambert(CYTHON_UNUSED PyObject *
  */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_3gvt_17addMeshMaterialSpecular(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_mdef_3gvt_17addMeshMaterialSpecular = {"addMeshMaterialSpecular", (PyCFunction)__pyx_pw_3gvt_17addMeshMaterialSpecular, METH_VARARGS|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_3gvt_17addMeshMaterialSpecular(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_3gvt_21addMeshMaterialSpecular(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_mdef_3gvt_21addMeshMaterialSpecular = {"addMeshMaterialSpecular", (PyCFunction)__pyx_pw_3gvt_21addMeshMaterialSpecular, METH_VARARGS|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_3gvt_21addMeshMaterialSpecular(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyObject *__pyx_v_name = 0;
   unsigned int __pyx_v_mattype;
   PyArrayObject *__pyx_v_kd = 0;
@@ -2986,29 +3488,29 @@ static PyObject *__pyx_pw_3gvt_17addMeshMaterialSpecular(PyObject *__pyx_self, P
         case  1:
         if (likely((values[1] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_mattype)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("addMeshMaterialSpecular", 1, 5, 5, 1); __PYX_ERR(0, 83, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("addMeshMaterialSpecular", 1, 5, 5, 1); __PYX_ERR(0, 89, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_kd)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("addMeshMaterialSpecular", 1, 5, 5, 2); __PYX_ERR(0, 83, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("addMeshMaterialSpecular", 1, 5, 5, 2); __PYX_ERR(0, 89, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  3:
         if (likely((values[3] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_ks)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("addMeshMaterialSpecular", 1, 5, 5, 3); __PYX_ERR(0, 83, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("addMeshMaterialSpecular", 1, 5, 5, 3); __PYX_ERR(0, 89, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  4:
         if (likely((values[4] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_alpha)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("addMeshMaterialSpecular", 1, 5, 5, 4); __PYX_ERR(0, 83, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("addMeshMaterialSpecular", 1, 5, 5, 4); __PYX_ERR(0, 89, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "addMeshMaterialSpecular") < 0)) __PYX_ERR(0, 83, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "addMeshMaterialSpecular") < 0)) __PYX_ERR(0, 89, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 5) {
       goto __pyx_L5_argtuple_error;
@@ -3020,23 +3522,23 @@ static PyObject *__pyx_pw_3gvt_17addMeshMaterialSpecular(PyObject *__pyx_self, P
       values[4] = PyTuple_GET_ITEM(__pyx_args, 4);
     }
     __pyx_v_name = ((PyObject*)values[0]);
-    __pyx_v_mattype = __Pyx_PyInt_As_unsigned_int(values[1]); if (unlikely((__pyx_v_mattype == (unsigned int)-1) && PyErr_Occurred())) __PYX_ERR(0, 83, __pyx_L3_error)
+    __pyx_v_mattype = __Pyx_PyInt_As_unsigned_int(values[1]); if (unlikely((__pyx_v_mattype == (unsigned int)-1) && PyErr_Occurred())) __PYX_ERR(0, 89, __pyx_L3_error)
     __pyx_v_kd = ((PyArrayObject *)values[2]);
     __pyx_v_ks = ((PyArrayObject *)values[3]);
-    __pyx_v_alpha = __pyx_PyFloat_AsFloat(values[4]); if (unlikely((__pyx_v_alpha == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 83, __pyx_L3_error)
+    __pyx_v_alpha = __pyx_PyFloat_AsFloat(values[4]); if (unlikely((__pyx_v_alpha == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 89, __pyx_L3_error)
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("addMeshMaterialSpecular", 1, 5, 5, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 83, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("addMeshMaterialSpecular", 1, 5, 5, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 89, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("gvt.addMeshMaterialSpecular", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_name), (&PyString_Type), 1, "name", 1))) __PYX_ERR(0, 83, __pyx_L1_error)
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_kd), __pyx_ptype_5numpy_ndarray, 1, "kd", 0))) __PYX_ERR(0, 83, __pyx_L1_error)
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_ks), __pyx_ptype_5numpy_ndarray, 1, "ks", 0))) __PYX_ERR(0, 83, __pyx_L1_error)
-  __pyx_r = __pyx_pf_3gvt_16addMeshMaterialSpecular(__pyx_self, __pyx_v_name, __pyx_v_mattype, __pyx_v_kd, __pyx_v_ks, __pyx_v_alpha);
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_name), (&PyString_Type), 1, "name", 1))) __PYX_ERR(0, 89, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_kd), __pyx_ptype_5numpy_ndarray, 1, "kd", 0))) __PYX_ERR(0, 89, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_ks), __pyx_ptype_5numpy_ndarray, 1, "ks", 0))) __PYX_ERR(0, 89, __pyx_L1_error)
+  __pyx_r = __pyx_pf_3gvt_20addMeshMaterialSpecular(__pyx_self, __pyx_v_name, __pyx_v_mattype, __pyx_v_kd, __pyx_v_ks, __pyx_v_alpha);
 
   /* function exit code */
   goto __pyx_L0;
@@ -3047,7 +3549,7 @@ static PyObject *__pyx_pw_3gvt_17addMeshMaterialSpecular(PyObject *__pyx_self, P
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_3gvt_16addMeshMaterialSpecular(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, unsigned int __pyx_v_mattype, PyArrayObject *__pyx_v_kd, PyArrayObject *__pyx_v_ks, float __pyx_v_alpha) {
+static PyObject *__pyx_pf_3gvt_20addMeshMaterialSpecular(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, unsigned int __pyx_v_mattype, PyArrayObject *__pyx_v_kd, PyArrayObject *__pyx_v_ks, float __pyx_v_alpha) {
   __Pyx_LocalBuf_ND __pyx_pybuffernd_kd;
   __Pyx_Buffer __pyx_pybuffer_kd;
   __Pyx_LocalBuf_ND __pyx_pybuffernd_ks;
@@ -3069,23 +3571,23 @@ static PyObject *__pyx_pf_3gvt_16addMeshMaterialSpecular(CYTHON_UNUSED PyObject 
   __pyx_pybuffernd_ks.rcbuffer = &__pyx_pybuffer_ks;
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_kd.rcbuffer->pybuffer, (PyObject*)__pyx_v_kd, &__Pyx_TypeInfo_float, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 83, __pyx_L1_error)
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_kd.rcbuffer->pybuffer, (PyObject*)__pyx_v_kd, &__Pyx_TypeInfo_float, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 89, __pyx_L1_error)
   }
   __pyx_pybuffernd_kd.diminfo[0].strides = __pyx_pybuffernd_kd.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_kd.diminfo[0].shape = __pyx_pybuffernd_kd.rcbuffer->pybuffer.shape[0];
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_ks.rcbuffer->pybuffer, (PyObject*)__pyx_v_ks, &__Pyx_TypeInfo_float, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 83, __pyx_L1_error)
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_ks.rcbuffer->pybuffer, (PyObject*)__pyx_v_ks, &__Pyx_TypeInfo_float, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 89, __pyx_L1_error)
   }
   __pyx_pybuffernd_ks.diminfo[0].strides = __pyx_pybuffernd_ks.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_ks.diminfo[0].shape = __pyx_pybuffernd_ks.rcbuffer->pybuffer.shape[0];
 
-  /* "gvt.pyx":84
+  /* "gvt.pyx":90
  * 
  * def addMeshMaterialSpecular( str name,  unsigned mattype,  np.ndarray[float, ndim=1, mode="c"] kd,  np.ndarray[float, ndim=1, mode="c"] ks, float alpha ):
  *   _addMeshMaterial2(name.encode(), mattype, <float*> kd.data, <float*> ks.data, alpha)             # <<<<<<<<<<<<<<
  * 
  * # def addMeshMaterials( str name,  unsigned n,  np.ndarray[uint32, ndim=1, mode="c"] mattype,  np.ndarray[float, ndim=1, mode="c"] kd, np.ndarray[float, ndim=1, mode="c"] ks,  np.ndarray[float, ndim=1, mode="c"] alpha):
  */
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_name, __pyx_n_s_encode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 84, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_name, __pyx_n_s_encode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 90, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_t_3 = NULL;
   if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_2))) {
@@ -3098,18 +3600,18 @@ static PyObject *__pyx_pf_3gvt_16addMeshMaterialSpecular(CYTHON_UNUSED PyObject 
     }
   }
   if (__pyx_t_3) {
-    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 84, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 90, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   } else {
-    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 84, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 90, __pyx_L1_error)
   }
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_4 = __pyx_convert_string_from_py_std__in_string(__pyx_t_1); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 84, __pyx_L1_error)
+  __pyx_t_4 = __pyx_convert_string_from_py_std__in_string(__pyx_t_1); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 90, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   addMeshMaterial(__pyx_t_4, __pyx_v_mattype, ((float *)__pyx_v_kd->data), ((float *)__pyx_v_ks->data), __pyx_v_alpha);
 
-  /* "gvt.pyx":83
+  /* "gvt.pyx":89
  *   _addMeshMaterial(name.encode() ,mattype, <float*> kd.data, alpha)
  * 
  * def addMeshMaterialSpecular( str name,  unsigned mattype,  np.ndarray[float, ndim=1, mode="c"] kd,  np.ndarray[float, ndim=1, mode="c"] ks, float alpha ):             # <<<<<<<<<<<<<<
@@ -3143,18 +3645,18 @@ static PyObject *__pyx_pf_3gvt_16addMeshMaterialSpecular(CYTHON_UNUSED PyObject 
   return __pyx_r;
 }
 
-/* "gvt.pyx":89
+/* "gvt.pyx":95
  * #   _addMeshMaterials(name.encode(),n,<unsigned*> mattype.data, <float*> kd.data, <float*> ks.float, <float*> alpha.data)
  * 
  * def addInstance(str s, str name,  np.ndarray[float, ndim=1, mode="c"] m):             # <<<<<<<<<<<<<<
  *   _addInstance(s.encode(),name.encode(),<float*> m.data)
- * 
+ * def createVolume(str name):
  */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_3gvt_19addInstance(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_mdef_3gvt_19addInstance = {"addInstance", (PyCFunction)__pyx_pw_3gvt_19addInstance, METH_VARARGS|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_3gvt_19addInstance(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_3gvt_23addInstance(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_mdef_3gvt_23addInstance = {"addInstance", (PyCFunction)__pyx_pw_3gvt_23addInstance, METH_VARARGS|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_3gvt_23addInstance(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyObject *__pyx_v_s = 0;
   PyObject *__pyx_v_name = 0;
   PyArrayObject *__pyx_v_m = 0;
@@ -3186,17 +3688,17 @@ static PyObject *__pyx_pw_3gvt_19addInstance(PyObject *__pyx_self, PyObject *__p
         case  1:
         if (likely((values[1] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_name)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("addInstance", 1, 3, 3, 1); __PYX_ERR(0, 89, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("addInstance", 1, 3, 3, 1); __PYX_ERR(0, 95, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_m)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("addInstance", 1, 3, 3, 2); __PYX_ERR(0, 89, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("addInstance", 1, 3, 3, 2); __PYX_ERR(0, 95, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "addInstance") < 0)) __PYX_ERR(0, 89, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "addInstance") < 0)) __PYX_ERR(0, 95, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 3) {
       goto __pyx_L5_argtuple_error;
@@ -3211,16 +3713,16 @@ static PyObject *__pyx_pw_3gvt_19addInstance(PyObject *__pyx_self, PyObject *__p
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("addInstance", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 89, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("addInstance", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 95, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("gvt.addInstance", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_s), (&PyString_Type), 1, "s", 1))) __PYX_ERR(0, 89, __pyx_L1_error)
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_name), (&PyString_Type), 1, "name", 1))) __PYX_ERR(0, 89, __pyx_L1_error)
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_m), __pyx_ptype_5numpy_ndarray, 1, "m", 0))) __PYX_ERR(0, 89, __pyx_L1_error)
-  __pyx_r = __pyx_pf_3gvt_18addInstance(__pyx_self, __pyx_v_s, __pyx_v_name, __pyx_v_m);
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_s), (&PyString_Type), 1, "s", 1))) __PYX_ERR(0, 95, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_name), (&PyString_Type), 1, "name", 1))) __PYX_ERR(0, 95, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_m), __pyx_ptype_5numpy_ndarray, 1, "m", 0))) __PYX_ERR(0, 95, __pyx_L1_error)
+  __pyx_r = __pyx_pf_3gvt_22addInstance(__pyx_self, __pyx_v_s, __pyx_v_name, __pyx_v_m);
 
   /* function exit code */
   goto __pyx_L0;
@@ -3231,7 +3733,7 @@ static PyObject *__pyx_pw_3gvt_19addInstance(PyObject *__pyx_self, PyObject *__p
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_3gvt_18addInstance(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_s, PyObject *__pyx_v_name, PyArrayObject *__pyx_v_m) {
+static PyObject *__pyx_pf_3gvt_22addInstance(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_s, PyObject *__pyx_v_name, PyArrayObject *__pyx_v_m) {
   __Pyx_LocalBuf_ND __pyx_pybuffernd_m;
   __Pyx_Buffer __pyx_pybuffer_m;
   PyObject *__pyx_r = NULL;
@@ -3248,18 +3750,18 @@ static PyObject *__pyx_pf_3gvt_18addInstance(CYTHON_UNUSED PyObject *__pyx_self,
   __pyx_pybuffernd_m.rcbuffer = &__pyx_pybuffer_m;
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_m.rcbuffer->pybuffer, (PyObject*)__pyx_v_m, &__Pyx_TypeInfo_float, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 89, __pyx_L1_error)
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_m.rcbuffer->pybuffer, (PyObject*)__pyx_v_m, &__Pyx_TypeInfo_float, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 95, __pyx_L1_error)
   }
   __pyx_pybuffernd_m.diminfo[0].strides = __pyx_pybuffernd_m.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_m.diminfo[0].shape = __pyx_pybuffernd_m.rcbuffer->pybuffer.shape[0];
 
-  /* "gvt.pyx":90
+  /* "gvt.pyx":96
  * 
  * def addInstance(str s, str name,  np.ndarray[float, ndim=1, mode="c"] m):
  *   _addInstance(s.encode(),name.encode(),<float*> m.data)             # <<<<<<<<<<<<<<
- * 
- * def addPointLight(str name,  np.ndarray[float, ndim=1, mode="c"] pos,  np.ndarray[float, ndim=1, mode="c"] color):
+ * def createVolume(str name):
+ *   _createVolume(name.encode())
  */
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_s, __pyx_n_s_encode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 90, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_s, __pyx_n_s_encode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 96, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_t_3 = NULL;
   if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_2))) {
@@ -3272,16 +3774,16 @@ static PyObject *__pyx_pf_3gvt_18addInstance(CYTHON_UNUSED PyObject *__pyx_self,
     }
   }
   if (__pyx_t_3) {
-    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 90, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 96, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   } else {
-    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 90, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 96, __pyx_L1_error)
   }
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_4 = __pyx_convert_string_from_py_std__in_string(__pyx_t_1); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 90, __pyx_L1_error)
+  __pyx_t_4 = __pyx_convert_string_from_py_std__in_string(__pyx_t_1); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 96, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_name, __pyx_n_s_encode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 90, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_name, __pyx_n_s_encode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 96, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_t_3 = NULL;
   if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_2))) {
@@ -3294,23 +3796,23 @@ static PyObject *__pyx_pf_3gvt_18addInstance(CYTHON_UNUSED PyObject *__pyx_self,
     }
   }
   if (__pyx_t_3) {
-    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 90, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 96, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   } else {
-    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 90, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 96, __pyx_L1_error)
   }
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_5 = __pyx_convert_string_from_py_std__in_string(__pyx_t_1); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 90, __pyx_L1_error)
+  __pyx_t_5 = __pyx_convert_string_from_py_std__in_string(__pyx_t_1); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 96, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   addInstance(__pyx_t_4, __pyx_t_5, ((float *)__pyx_v_m->data));
 
-  /* "gvt.pyx":89
+  /* "gvt.pyx":95
  * #   _addMeshMaterials(name.encode(),n,<unsigned*> mattype.data, <float*> kd.data, <float*> ks.float, <float*> alpha.data)
  * 
  * def addInstance(str s, str name,  np.ndarray[float, ndim=1, mode="c"] m):             # <<<<<<<<<<<<<<
  *   _addInstance(s.encode(),name.encode(),<float*> m.data)
- * 
+ * def createVolume(str name):
  */
 
   /* function exit code */
@@ -3337,18 +3839,108 @@ static PyObject *__pyx_pf_3gvt_18addInstance(CYTHON_UNUSED PyObject *__pyx_self,
   return __pyx_r;
 }
 
-/* "gvt.pyx":92
+/* "gvt.pyx":97
+ * def addInstance(str s, str name,  np.ndarray[float, ndim=1, mode="c"] m):
  *   _addInstance(s.encode(),name.encode(),<float*> m.data)
- * 
+ * def createVolume(str name):             # <<<<<<<<<<<<<<
+ *   _createVolume(name.encode())
+ * def addPointLight(str name,  np.ndarray[float, ndim=1, mode="c"] pos,  np.ndarray[float, ndim=1, mode="c"] color):
+ */
+
+/* Python wrapper */
+static PyObject *__pyx_pw_3gvt_25createVolume(PyObject *__pyx_self, PyObject *__pyx_v_name); /*proto*/
+static PyMethodDef __pyx_mdef_3gvt_25createVolume = {"createVolume", (PyCFunction)__pyx_pw_3gvt_25createVolume, METH_O, 0};
+static PyObject *__pyx_pw_3gvt_25createVolume(PyObject *__pyx_self, PyObject *__pyx_v_name) {
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("createVolume (wrapper)", 0);
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_name), (&PyString_Type), 1, "name", 1))) __PYX_ERR(0, 97, __pyx_L1_error)
+  __pyx_r = __pyx_pf_3gvt_24createVolume(__pyx_self, ((PyObject*)__pyx_v_name));
+
+  /* function exit code */
+  goto __pyx_L0;
+  __pyx_L1_error:;
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_3gvt_24createVolume(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name) {
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  PyObject *__pyx_t_2 = NULL;
+  PyObject *__pyx_t_3 = NULL;
+  std::string __pyx_t_4;
+  __Pyx_RefNannySetupContext("createVolume", 0);
+
+  /* "gvt.pyx":98
+ *   _addInstance(s.encode(),name.encode(),<float*> m.data)
+ * def createVolume(str name):
+ *   _createVolume(name.encode())             # <<<<<<<<<<<<<<
+ * def addPointLight(str name,  np.ndarray[float, ndim=1, mode="c"] pos,  np.ndarray[float, ndim=1, mode="c"] color):
+ *   _addPointLight(name.encode(),<float*> pos.data, <float*> color.data)
+ */
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_name, __pyx_n_s_encode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 98, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
+  __pyx_t_3 = NULL;
+  if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_2))) {
+    __pyx_t_3 = PyMethod_GET_SELF(__pyx_t_2);
+    if (likely(__pyx_t_3)) {
+      PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_2);
+      __Pyx_INCREF(__pyx_t_3);
+      __Pyx_INCREF(function);
+      __Pyx_DECREF_SET(__pyx_t_2, function);
+    }
+  }
+  if (__pyx_t_3) {
+    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 98, __pyx_L1_error)
+    __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+  } else {
+    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 98, __pyx_L1_error)
+  }
+  __Pyx_GOTREF(__pyx_t_1);
+  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+  __pyx_t_4 = __pyx_convert_string_from_py_std__in_string(__pyx_t_1); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 98, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  createVolume(__pyx_t_4);
+
+  /* "gvt.pyx":97
+ * def addInstance(str s, str name,  np.ndarray[float, ndim=1, mode="c"] m):
+ *   _addInstance(s.encode(),name.encode(),<float*> m.data)
+ * def createVolume(str name):             # <<<<<<<<<<<<<<
+ *   _createVolume(name.encode())
+ * def addPointLight(str name,  np.ndarray[float, ndim=1, mode="c"] pos,  np.ndarray[float, ndim=1, mode="c"] color):
+ */
+
+  /* function exit code */
+  __pyx_r = Py_None; __Pyx_INCREF(Py_None);
+  goto __pyx_L0;
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_XDECREF(__pyx_t_2);
+  __Pyx_XDECREF(__pyx_t_3);
+  __Pyx_AddTraceback("gvt.createVolume", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "gvt.pyx":99
+ * def createVolume(str name):
+ *   _createVolume(name.encode())
  * def addPointLight(str name,  np.ndarray[float, ndim=1, mode="c"] pos,  np.ndarray[float, ndim=1, mode="c"] color):             # <<<<<<<<<<<<<<
  *   _addPointLight(name.encode(),<float*> pos.data, <float*> color.data)
  * 
  */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_3gvt_21addPointLight(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_mdef_3gvt_21addPointLight = {"addPointLight", (PyCFunction)__pyx_pw_3gvt_21addPointLight, METH_VARARGS|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_3gvt_21addPointLight(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_3gvt_27addPointLight(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_mdef_3gvt_27addPointLight = {"addPointLight", (PyCFunction)__pyx_pw_3gvt_27addPointLight, METH_VARARGS|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_3gvt_27addPointLight(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyObject *__pyx_v_name = 0;
   PyArrayObject *__pyx_v_pos = 0;
   PyArrayObject *__pyx_v_color = 0;
@@ -3380,17 +3972,17 @@ static PyObject *__pyx_pw_3gvt_21addPointLight(PyObject *__pyx_self, PyObject *_
         case  1:
         if (likely((values[1] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_pos)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("addPointLight", 1, 3, 3, 1); __PYX_ERR(0, 92, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("addPointLight", 1, 3, 3, 1); __PYX_ERR(0, 99, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_color)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("addPointLight", 1, 3, 3, 2); __PYX_ERR(0, 92, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("addPointLight", 1, 3, 3, 2); __PYX_ERR(0, 99, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "addPointLight") < 0)) __PYX_ERR(0, 92, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "addPointLight") < 0)) __PYX_ERR(0, 99, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 3) {
       goto __pyx_L5_argtuple_error;
@@ -3405,16 +3997,16 @@ static PyObject *__pyx_pw_3gvt_21addPointLight(PyObject *__pyx_self, PyObject *_
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("addPointLight", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 92, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("addPointLight", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 99, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("gvt.addPointLight", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_name), (&PyString_Type), 1, "name", 1))) __PYX_ERR(0, 92, __pyx_L1_error)
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_pos), __pyx_ptype_5numpy_ndarray, 1, "pos", 0))) __PYX_ERR(0, 92, __pyx_L1_error)
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_color), __pyx_ptype_5numpy_ndarray, 1, "color", 0))) __PYX_ERR(0, 92, __pyx_L1_error)
-  __pyx_r = __pyx_pf_3gvt_20addPointLight(__pyx_self, __pyx_v_name, __pyx_v_pos, __pyx_v_color);
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_name), (&PyString_Type), 1, "name", 1))) __PYX_ERR(0, 99, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_pos), __pyx_ptype_5numpy_ndarray, 1, "pos", 0))) __PYX_ERR(0, 99, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_color), __pyx_ptype_5numpy_ndarray, 1, "color", 0))) __PYX_ERR(0, 99, __pyx_L1_error)
+  __pyx_r = __pyx_pf_3gvt_26addPointLight(__pyx_self, __pyx_v_name, __pyx_v_pos, __pyx_v_color);
 
   /* function exit code */
   goto __pyx_L0;
@@ -3425,7 +4017,7 @@ static PyObject *__pyx_pw_3gvt_21addPointLight(PyObject *__pyx_self, PyObject *_
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_3gvt_20addPointLight(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, PyArrayObject *__pyx_v_pos, PyArrayObject *__pyx_v_color) {
+static PyObject *__pyx_pf_3gvt_26addPointLight(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, PyArrayObject *__pyx_v_pos, PyArrayObject *__pyx_v_color) {
   __Pyx_LocalBuf_ND __pyx_pybuffernd_color;
   __Pyx_Buffer __pyx_pybuffer_color;
   __Pyx_LocalBuf_ND __pyx_pybuffernd_pos;
@@ -3447,23 +4039,23 @@ static PyObject *__pyx_pf_3gvt_20addPointLight(CYTHON_UNUSED PyObject *__pyx_sel
   __pyx_pybuffernd_color.rcbuffer = &__pyx_pybuffer_color;
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_pos.rcbuffer->pybuffer, (PyObject*)__pyx_v_pos, &__Pyx_TypeInfo_float, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 92, __pyx_L1_error)
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_pos.rcbuffer->pybuffer, (PyObject*)__pyx_v_pos, &__Pyx_TypeInfo_float, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 99, __pyx_L1_error)
   }
   __pyx_pybuffernd_pos.diminfo[0].strides = __pyx_pybuffernd_pos.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_pos.diminfo[0].shape = __pyx_pybuffernd_pos.rcbuffer->pybuffer.shape[0];
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_color.rcbuffer->pybuffer, (PyObject*)__pyx_v_color, &__Pyx_TypeInfo_float, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 92, __pyx_L1_error)
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_color.rcbuffer->pybuffer, (PyObject*)__pyx_v_color, &__Pyx_TypeInfo_float, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 99, __pyx_L1_error)
   }
   __pyx_pybuffernd_color.diminfo[0].strides = __pyx_pybuffernd_color.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_color.diminfo[0].shape = __pyx_pybuffernd_color.rcbuffer->pybuffer.shape[0];
 
-  /* "gvt.pyx":93
- * 
+  /* "gvt.pyx":100
+ *   _createVolume(name.encode())
  * def addPointLight(str name,  np.ndarray[float, ndim=1, mode="c"] pos,  np.ndarray[float, ndim=1, mode="c"] color):
  *   _addPointLight(name.encode(),<float*> pos.data, <float*> color.data)             # <<<<<<<<<<<<<<
  * 
  * def addAreaLight(str name,  np.ndarray[float, ndim=1, mode="c"] pos,  np.ndarray[float, ndim=1, mode="c"] color,  np.ndarray[float, ndim=1, mode="c"] n, float w, float h):
  */
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_name, __pyx_n_s_encode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 93, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_name, __pyx_n_s_encode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 100, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_t_3 = NULL;
   if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_2))) {
@@ -3476,20 +4068,20 @@ static PyObject *__pyx_pf_3gvt_20addPointLight(CYTHON_UNUSED PyObject *__pyx_sel
     }
   }
   if (__pyx_t_3) {
-    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 93, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 100, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   } else {
-    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 93, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 100, __pyx_L1_error)
   }
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_4 = __pyx_convert_string_from_py_std__in_string(__pyx_t_1); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 93, __pyx_L1_error)
+  __pyx_t_4 = __pyx_convert_string_from_py_std__in_string(__pyx_t_1); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 100, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   addPointLight(__pyx_t_4, ((float *)__pyx_v_pos->data), ((float *)__pyx_v_color->data));
 
-  /* "gvt.pyx":92
- *   _addInstance(s.encode(),name.encode(),<float*> m.data)
- * 
+  /* "gvt.pyx":99
+ * def createVolume(str name):
+ *   _createVolume(name.encode())
  * def addPointLight(str name,  np.ndarray[float, ndim=1, mode="c"] pos,  np.ndarray[float, ndim=1, mode="c"] color):             # <<<<<<<<<<<<<<
  *   _addPointLight(name.encode(),<float*> pos.data, <float*> color.data)
  * 
@@ -3521,7 +4113,7 @@ static PyObject *__pyx_pf_3gvt_20addPointLight(CYTHON_UNUSED PyObject *__pyx_sel
   return __pyx_r;
 }
 
-/* "gvt.pyx":95
+/* "gvt.pyx":102
  *   _addPointLight(name.encode(),<float*> pos.data, <float*> color.data)
  * 
  * def addAreaLight(str name,  np.ndarray[float, ndim=1, mode="c"] pos,  np.ndarray[float, ndim=1, mode="c"] color,  np.ndarray[float, ndim=1, mode="c"] n, float w, float h):             # <<<<<<<<<<<<<<
@@ -3530,9 +4122,9 @@ static PyObject *__pyx_pf_3gvt_20addPointLight(CYTHON_UNUSED PyObject *__pyx_sel
  */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_3gvt_23addAreaLight(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_mdef_3gvt_23addAreaLight = {"addAreaLight", (PyCFunction)__pyx_pw_3gvt_23addAreaLight, METH_VARARGS|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_3gvt_23addAreaLight(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_3gvt_29addAreaLight(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_mdef_3gvt_29addAreaLight = {"addAreaLight", (PyCFunction)__pyx_pw_3gvt_29addAreaLight, METH_VARARGS|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_3gvt_29addAreaLight(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyObject *__pyx_v_name = 0;
   PyArrayObject *__pyx_v_pos = 0;
   PyArrayObject *__pyx_v_color = 0;
@@ -3573,35 +4165,35 @@ static PyObject *__pyx_pw_3gvt_23addAreaLight(PyObject *__pyx_self, PyObject *__
         case  1:
         if (likely((values[1] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_pos)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("addAreaLight", 1, 6, 6, 1); __PYX_ERR(0, 95, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("addAreaLight", 1, 6, 6, 1); __PYX_ERR(0, 102, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_color)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("addAreaLight", 1, 6, 6, 2); __PYX_ERR(0, 95, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("addAreaLight", 1, 6, 6, 2); __PYX_ERR(0, 102, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  3:
         if (likely((values[3] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_n)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("addAreaLight", 1, 6, 6, 3); __PYX_ERR(0, 95, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("addAreaLight", 1, 6, 6, 3); __PYX_ERR(0, 102, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  4:
         if (likely((values[4] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_w)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("addAreaLight", 1, 6, 6, 4); __PYX_ERR(0, 95, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("addAreaLight", 1, 6, 6, 4); __PYX_ERR(0, 102, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  5:
         if (likely((values[5] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_h)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("addAreaLight", 1, 6, 6, 5); __PYX_ERR(0, 95, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("addAreaLight", 1, 6, 6, 5); __PYX_ERR(0, 102, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "addAreaLight") < 0)) __PYX_ERR(0, 95, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "addAreaLight") < 0)) __PYX_ERR(0, 102, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 6) {
       goto __pyx_L5_argtuple_error;
@@ -3617,22 +4209,22 @@ static PyObject *__pyx_pw_3gvt_23addAreaLight(PyObject *__pyx_self, PyObject *__
     __pyx_v_pos = ((PyArrayObject *)values[1]);
     __pyx_v_color = ((PyArrayObject *)values[2]);
     __pyx_v_n = ((PyArrayObject *)values[3]);
-    __pyx_v_w = __pyx_PyFloat_AsFloat(values[4]); if (unlikely((__pyx_v_w == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 95, __pyx_L3_error)
-    __pyx_v_h = __pyx_PyFloat_AsFloat(values[5]); if (unlikely((__pyx_v_h == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 95, __pyx_L3_error)
+    __pyx_v_w = __pyx_PyFloat_AsFloat(values[4]); if (unlikely((__pyx_v_w == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 102, __pyx_L3_error)
+    __pyx_v_h = __pyx_PyFloat_AsFloat(values[5]); if (unlikely((__pyx_v_h == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 102, __pyx_L3_error)
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("addAreaLight", 1, 6, 6, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 95, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("addAreaLight", 1, 6, 6, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 102, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("gvt.addAreaLight", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_name), (&PyString_Type), 1, "name", 1))) __PYX_ERR(0, 95, __pyx_L1_error)
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_pos), __pyx_ptype_5numpy_ndarray, 1, "pos", 0))) __PYX_ERR(0, 95, __pyx_L1_error)
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_color), __pyx_ptype_5numpy_ndarray, 1, "color", 0))) __PYX_ERR(0, 95, __pyx_L1_error)
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_n), __pyx_ptype_5numpy_ndarray, 1, "n", 0))) __PYX_ERR(0, 95, __pyx_L1_error)
-  __pyx_r = __pyx_pf_3gvt_22addAreaLight(__pyx_self, __pyx_v_name, __pyx_v_pos, __pyx_v_color, __pyx_v_n, __pyx_v_w, __pyx_v_h);
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_name), (&PyString_Type), 1, "name", 1))) __PYX_ERR(0, 102, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_pos), __pyx_ptype_5numpy_ndarray, 1, "pos", 0))) __PYX_ERR(0, 102, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_color), __pyx_ptype_5numpy_ndarray, 1, "color", 0))) __PYX_ERR(0, 102, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_n), __pyx_ptype_5numpy_ndarray, 1, "n", 0))) __PYX_ERR(0, 102, __pyx_L1_error)
+  __pyx_r = __pyx_pf_3gvt_28addAreaLight(__pyx_self, __pyx_v_name, __pyx_v_pos, __pyx_v_color, __pyx_v_n, __pyx_v_w, __pyx_v_h);
 
   /* function exit code */
   goto __pyx_L0;
@@ -3643,7 +4235,7 @@ static PyObject *__pyx_pw_3gvt_23addAreaLight(PyObject *__pyx_self, PyObject *__
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_3gvt_22addAreaLight(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, PyArrayObject *__pyx_v_pos, PyArrayObject *__pyx_v_color, PyArrayObject *__pyx_v_n, float __pyx_v_w, float __pyx_v_h) {
+static PyObject *__pyx_pf_3gvt_28addAreaLight(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, PyArrayObject *__pyx_v_pos, PyArrayObject *__pyx_v_color, PyArrayObject *__pyx_v_n, float __pyx_v_w, float __pyx_v_h) {
   __Pyx_LocalBuf_ND __pyx_pybuffernd_color;
   __Pyx_Buffer __pyx_pybuffer_color;
   __Pyx_LocalBuf_ND __pyx_pybuffernd_n;
@@ -3671,28 +4263,28 @@ static PyObject *__pyx_pf_3gvt_22addAreaLight(CYTHON_UNUSED PyObject *__pyx_self
   __pyx_pybuffernd_n.rcbuffer = &__pyx_pybuffer_n;
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_pos.rcbuffer->pybuffer, (PyObject*)__pyx_v_pos, &__Pyx_TypeInfo_float, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 95, __pyx_L1_error)
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_pos.rcbuffer->pybuffer, (PyObject*)__pyx_v_pos, &__Pyx_TypeInfo_float, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 102, __pyx_L1_error)
   }
   __pyx_pybuffernd_pos.diminfo[0].strides = __pyx_pybuffernd_pos.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_pos.diminfo[0].shape = __pyx_pybuffernd_pos.rcbuffer->pybuffer.shape[0];
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_color.rcbuffer->pybuffer, (PyObject*)__pyx_v_color, &__Pyx_TypeInfo_float, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 95, __pyx_L1_error)
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_color.rcbuffer->pybuffer, (PyObject*)__pyx_v_color, &__Pyx_TypeInfo_float, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 102, __pyx_L1_error)
   }
   __pyx_pybuffernd_color.diminfo[0].strides = __pyx_pybuffernd_color.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_color.diminfo[0].shape = __pyx_pybuffernd_color.rcbuffer->pybuffer.shape[0];
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_n.rcbuffer->pybuffer, (PyObject*)__pyx_v_n, &__Pyx_TypeInfo_float, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 95, __pyx_L1_error)
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_n.rcbuffer->pybuffer, (PyObject*)__pyx_v_n, &__Pyx_TypeInfo_float, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 102, __pyx_L1_error)
   }
   __pyx_pybuffernd_n.diminfo[0].strides = __pyx_pybuffernd_n.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_n.diminfo[0].shape = __pyx_pybuffernd_n.rcbuffer->pybuffer.shape[0];
 
-  /* "gvt.pyx":96
+  /* "gvt.pyx":103
  * 
  * def addAreaLight(str name,  np.ndarray[float, ndim=1, mode="c"] pos,  np.ndarray[float, ndim=1, mode="c"] color,  np.ndarray[float, ndim=1, mode="c"] n, float w, float h):
  *   _addAreaLight(name.encode(),<float*> pos.data, <float*> color.data, <float*> n.data, w, h)             # <<<<<<<<<<<<<<
  * 
  * def modifyLight(str name,  np.ndarray[float, ndim=1, mode="c"] pos,  np.ndarray[float, ndim=1, mode="c"] color):
  */
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_name, __pyx_n_s_encode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 96, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_name, __pyx_n_s_encode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 103, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_t_3 = NULL;
   if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_2))) {
@@ -3705,18 +4297,18 @@ static PyObject *__pyx_pf_3gvt_22addAreaLight(CYTHON_UNUSED PyObject *__pyx_self
     }
   }
   if (__pyx_t_3) {
-    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 96, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 103, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   } else {
-    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 96, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 103, __pyx_L1_error)
   }
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_4 = __pyx_convert_string_from_py_std__in_string(__pyx_t_1); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 96, __pyx_L1_error)
+  __pyx_t_4 = __pyx_convert_string_from_py_std__in_string(__pyx_t_1); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 103, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   addAreaLight(__pyx_t_4, ((float *)__pyx_v_pos->data), ((float *)__pyx_v_color->data), ((float *)__pyx_v_n->data), __pyx_v_w, __pyx_v_h);
 
-  /* "gvt.pyx":95
+  /* "gvt.pyx":102
  *   _addPointLight(name.encode(),<float*> pos.data, <float*> color.data)
  * 
  * def addAreaLight(str name,  np.ndarray[float, ndim=1, mode="c"] pos,  np.ndarray[float, ndim=1, mode="c"] color,  np.ndarray[float, ndim=1, mode="c"] n, float w, float h):             # <<<<<<<<<<<<<<
@@ -3752,7 +4344,7 @@ static PyObject *__pyx_pf_3gvt_22addAreaLight(CYTHON_UNUSED PyObject *__pyx_self
   return __pyx_r;
 }
 
-/* "gvt.pyx":98
+/* "gvt.pyx":105
  *   _addAreaLight(name.encode(),<float*> pos.data, <float*> color.data, <float*> n.data, w, h)
  * 
  * def modifyLight(str name,  np.ndarray[float, ndim=1, mode="c"] pos,  np.ndarray[float, ndim=1, mode="c"] color):             # <<<<<<<<<<<<<<
@@ -3761,9 +4353,9 @@ static PyObject *__pyx_pf_3gvt_22addAreaLight(CYTHON_UNUSED PyObject *__pyx_self
  */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_3gvt_25modifyLight(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_mdef_3gvt_25modifyLight = {"modifyLight", (PyCFunction)__pyx_pw_3gvt_25modifyLight, METH_VARARGS|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_3gvt_25modifyLight(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_3gvt_31modifyLight(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_mdef_3gvt_31modifyLight = {"modifyLight", (PyCFunction)__pyx_pw_3gvt_31modifyLight, METH_VARARGS|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_3gvt_31modifyLight(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyObject *__pyx_v_name = 0;
   PyArrayObject *__pyx_v_pos = 0;
   PyArrayObject *__pyx_v_color = 0;
@@ -3795,17 +4387,17 @@ static PyObject *__pyx_pw_3gvt_25modifyLight(PyObject *__pyx_self, PyObject *__p
         case  1:
         if (likely((values[1] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_pos)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("modifyLight", 1, 3, 3, 1); __PYX_ERR(0, 98, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("modifyLight", 1, 3, 3, 1); __PYX_ERR(0, 105, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_color)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("modifyLight", 1, 3, 3, 2); __PYX_ERR(0, 98, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("modifyLight", 1, 3, 3, 2); __PYX_ERR(0, 105, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "modifyLight") < 0)) __PYX_ERR(0, 98, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "modifyLight") < 0)) __PYX_ERR(0, 105, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 3) {
       goto __pyx_L5_argtuple_error;
@@ -3820,16 +4412,16 @@ static PyObject *__pyx_pw_3gvt_25modifyLight(PyObject *__pyx_self, PyObject *__p
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("modifyLight", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 98, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("modifyLight", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 105, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("gvt.modifyLight", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_name), (&PyString_Type), 1, "name", 1))) __PYX_ERR(0, 98, __pyx_L1_error)
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_pos), __pyx_ptype_5numpy_ndarray, 1, "pos", 0))) __PYX_ERR(0, 98, __pyx_L1_error)
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_color), __pyx_ptype_5numpy_ndarray, 1, "color", 0))) __PYX_ERR(0, 98, __pyx_L1_error)
-  __pyx_r = __pyx_pf_3gvt_24modifyLight(__pyx_self, __pyx_v_name, __pyx_v_pos, __pyx_v_color);
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_name), (&PyString_Type), 1, "name", 1))) __PYX_ERR(0, 105, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_pos), __pyx_ptype_5numpy_ndarray, 1, "pos", 0))) __PYX_ERR(0, 105, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_color), __pyx_ptype_5numpy_ndarray, 1, "color", 0))) __PYX_ERR(0, 105, __pyx_L1_error)
+  __pyx_r = __pyx_pf_3gvt_30modifyLight(__pyx_self, __pyx_v_name, __pyx_v_pos, __pyx_v_color);
 
   /* function exit code */
   goto __pyx_L0;
@@ -3840,7 +4432,7 @@ static PyObject *__pyx_pw_3gvt_25modifyLight(PyObject *__pyx_self, PyObject *__p
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_3gvt_24modifyLight(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, PyArrayObject *__pyx_v_pos, PyArrayObject *__pyx_v_color) {
+static PyObject *__pyx_pf_3gvt_30modifyLight(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, PyArrayObject *__pyx_v_pos, PyArrayObject *__pyx_v_color) {
   __Pyx_LocalBuf_ND __pyx_pybuffernd_color;
   __Pyx_Buffer __pyx_pybuffer_color;
   __Pyx_LocalBuf_ND __pyx_pybuffernd_pos;
@@ -3862,23 +4454,23 @@ static PyObject *__pyx_pf_3gvt_24modifyLight(CYTHON_UNUSED PyObject *__pyx_self,
   __pyx_pybuffernd_color.rcbuffer = &__pyx_pybuffer_color;
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_pos.rcbuffer->pybuffer, (PyObject*)__pyx_v_pos, &__Pyx_TypeInfo_float, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 98, __pyx_L1_error)
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_pos.rcbuffer->pybuffer, (PyObject*)__pyx_v_pos, &__Pyx_TypeInfo_float, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 105, __pyx_L1_error)
   }
   __pyx_pybuffernd_pos.diminfo[0].strides = __pyx_pybuffernd_pos.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_pos.diminfo[0].shape = __pyx_pybuffernd_pos.rcbuffer->pybuffer.shape[0];
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_color.rcbuffer->pybuffer, (PyObject*)__pyx_v_color, &__Pyx_TypeInfo_float, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 98, __pyx_L1_error)
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_color.rcbuffer->pybuffer, (PyObject*)__pyx_v_color, &__Pyx_TypeInfo_float, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 105, __pyx_L1_error)
   }
   __pyx_pybuffernd_color.diminfo[0].strides = __pyx_pybuffernd_color.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_color.diminfo[0].shape = __pyx_pybuffernd_color.rcbuffer->pybuffer.shape[0];
 
-  /* "gvt.pyx":99
+  /* "gvt.pyx":106
  * 
  * def modifyLight(str name,  np.ndarray[float, ndim=1, mode="c"] pos,  np.ndarray[float, ndim=1, mode="c"] color):
  *   _modifyLight(name.encode(),<float*>pos.data, <float*> color.data)             # <<<<<<<<<<<<<<
  * 
  * def modifyLight(str name,  np.ndarray[float, ndim=1, mode="c"] pos,  np.ndarray[float, ndim=1, mode="c"] color,  np.ndarray[float, ndim=1, mode="c"] n, float w, float h):
  */
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_name, __pyx_n_s_encode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 99, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_name, __pyx_n_s_encode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 106, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_t_3 = NULL;
   if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_2))) {
@@ -3891,18 +4483,18 @@ static PyObject *__pyx_pf_3gvt_24modifyLight(CYTHON_UNUSED PyObject *__pyx_self,
     }
   }
   if (__pyx_t_3) {
-    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 99, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 106, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   } else {
-    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 99, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 106, __pyx_L1_error)
   }
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_4 = __pyx_convert_string_from_py_std__in_string(__pyx_t_1); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 99, __pyx_L1_error)
+  __pyx_t_4 = __pyx_convert_string_from_py_std__in_string(__pyx_t_1); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 106, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   modifyLight(__pyx_t_4, ((float *)__pyx_v_pos->data), ((float *)__pyx_v_color->data));
 
-  /* "gvt.pyx":98
+  /* "gvt.pyx":105
  *   _addAreaLight(name.encode(),<float*> pos.data, <float*> color.data, <float*> n.data, w, h)
  * 
  * def modifyLight(str name,  np.ndarray[float, ndim=1, mode="c"] pos,  np.ndarray[float, ndim=1, mode="c"] color):             # <<<<<<<<<<<<<<
@@ -3936,7 +4528,7 @@ static PyObject *__pyx_pf_3gvt_24modifyLight(CYTHON_UNUSED PyObject *__pyx_self,
   return __pyx_r;
 }
 
-/* "gvt.pyx":101
+/* "gvt.pyx":108
  *   _modifyLight(name.encode(),<float*>pos.data, <float*> color.data)
  * 
  * def modifyLight(str name,  np.ndarray[float, ndim=1, mode="c"] pos,  np.ndarray[float, ndim=1, mode="c"] color,  np.ndarray[float, ndim=1, mode="c"] n, float w, float h):             # <<<<<<<<<<<<<<
@@ -3945,9 +4537,9 @@ static PyObject *__pyx_pf_3gvt_24modifyLight(CYTHON_UNUSED PyObject *__pyx_self,
  */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_3gvt_27modifyLight(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_mdef_3gvt_27modifyLight = {"modifyLight", (PyCFunction)__pyx_pw_3gvt_27modifyLight, METH_VARARGS|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_3gvt_27modifyLight(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_3gvt_33modifyLight(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_mdef_3gvt_33modifyLight = {"modifyLight", (PyCFunction)__pyx_pw_3gvt_33modifyLight, METH_VARARGS|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_3gvt_33modifyLight(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyObject *__pyx_v_name = 0;
   PyArrayObject *__pyx_v_pos = 0;
   PyArrayObject *__pyx_v_color = 0;
@@ -3988,35 +4580,35 @@ static PyObject *__pyx_pw_3gvt_27modifyLight(PyObject *__pyx_self, PyObject *__p
         case  1:
         if (likely((values[1] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_pos)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("modifyLight", 1, 6, 6, 1); __PYX_ERR(0, 101, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("modifyLight", 1, 6, 6, 1); __PYX_ERR(0, 108, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_color)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("modifyLight", 1, 6, 6, 2); __PYX_ERR(0, 101, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("modifyLight", 1, 6, 6, 2); __PYX_ERR(0, 108, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  3:
         if (likely((values[3] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_n)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("modifyLight", 1, 6, 6, 3); __PYX_ERR(0, 101, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("modifyLight", 1, 6, 6, 3); __PYX_ERR(0, 108, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  4:
         if (likely((values[4] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_w)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("modifyLight", 1, 6, 6, 4); __PYX_ERR(0, 101, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("modifyLight", 1, 6, 6, 4); __PYX_ERR(0, 108, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  5:
         if (likely((values[5] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_h)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("modifyLight", 1, 6, 6, 5); __PYX_ERR(0, 101, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("modifyLight", 1, 6, 6, 5); __PYX_ERR(0, 108, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "modifyLight") < 0)) __PYX_ERR(0, 101, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "modifyLight") < 0)) __PYX_ERR(0, 108, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 6) {
       goto __pyx_L5_argtuple_error;
@@ -4032,22 +4624,22 @@ static PyObject *__pyx_pw_3gvt_27modifyLight(PyObject *__pyx_self, PyObject *__p
     __pyx_v_pos = ((PyArrayObject *)values[1]);
     __pyx_v_color = ((PyArrayObject *)values[2]);
     __pyx_v_n = ((PyArrayObject *)values[3]);
-    __pyx_v_w = __pyx_PyFloat_AsFloat(values[4]); if (unlikely((__pyx_v_w == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 101, __pyx_L3_error)
-    __pyx_v_h = __pyx_PyFloat_AsFloat(values[5]); if (unlikely((__pyx_v_h == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 101, __pyx_L3_error)
+    __pyx_v_w = __pyx_PyFloat_AsFloat(values[4]); if (unlikely((__pyx_v_w == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 108, __pyx_L3_error)
+    __pyx_v_h = __pyx_PyFloat_AsFloat(values[5]); if (unlikely((__pyx_v_h == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 108, __pyx_L3_error)
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("modifyLight", 1, 6, 6, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 101, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("modifyLight", 1, 6, 6, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 108, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("gvt.modifyLight", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_name), (&PyString_Type), 1, "name", 1))) __PYX_ERR(0, 101, __pyx_L1_error)
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_pos), __pyx_ptype_5numpy_ndarray, 1, "pos", 0))) __PYX_ERR(0, 101, __pyx_L1_error)
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_color), __pyx_ptype_5numpy_ndarray, 1, "color", 0))) __PYX_ERR(0, 101, __pyx_L1_error)
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_n), __pyx_ptype_5numpy_ndarray, 1, "n", 0))) __PYX_ERR(0, 101, __pyx_L1_error)
-  __pyx_r = __pyx_pf_3gvt_26modifyLight(__pyx_self, __pyx_v_name, __pyx_v_pos, __pyx_v_color, __pyx_v_n, __pyx_v_w, __pyx_v_h);
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_name), (&PyString_Type), 1, "name", 1))) __PYX_ERR(0, 108, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_pos), __pyx_ptype_5numpy_ndarray, 1, "pos", 0))) __PYX_ERR(0, 108, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_color), __pyx_ptype_5numpy_ndarray, 1, "color", 0))) __PYX_ERR(0, 108, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_n), __pyx_ptype_5numpy_ndarray, 1, "n", 0))) __PYX_ERR(0, 108, __pyx_L1_error)
+  __pyx_r = __pyx_pf_3gvt_32modifyLight(__pyx_self, __pyx_v_name, __pyx_v_pos, __pyx_v_color, __pyx_v_n, __pyx_v_w, __pyx_v_h);
 
   /* function exit code */
   goto __pyx_L0;
@@ -4058,7 +4650,7 @@ static PyObject *__pyx_pw_3gvt_27modifyLight(PyObject *__pyx_self, PyObject *__p
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_3gvt_26modifyLight(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, PyArrayObject *__pyx_v_pos, PyArrayObject *__pyx_v_color, PyArrayObject *__pyx_v_n, float __pyx_v_w, float __pyx_v_h) {
+static PyObject *__pyx_pf_3gvt_32modifyLight(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, PyArrayObject *__pyx_v_pos, PyArrayObject *__pyx_v_color, PyArrayObject *__pyx_v_n, float __pyx_v_w, float __pyx_v_h) {
   __Pyx_LocalBuf_ND __pyx_pybuffernd_color;
   __Pyx_Buffer __pyx_pybuffer_color;
   __Pyx_LocalBuf_ND __pyx_pybuffernd_n;
@@ -4086,28 +4678,28 @@ static PyObject *__pyx_pf_3gvt_26modifyLight(CYTHON_UNUSED PyObject *__pyx_self,
   __pyx_pybuffernd_n.rcbuffer = &__pyx_pybuffer_n;
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_pos.rcbuffer->pybuffer, (PyObject*)__pyx_v_pos, &__Pyx_TypeInfo_float, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 101, __pyx_L1_error)
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_pos.rcbuffer->pybuffer, (PyObject*)__pyx_v_pos, &__Pyx_TypeInfo_float, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 108, __pyx_L1_error)
   }
   __pyx_pybuffernd_pos.diminfo[0].strides = __pyx_pybuffernd_pos.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_pos.diminfo[0].shape = __pyx_pybuffernd_pos.rcbuffer->pybuffer.shape[0];
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_color.rcbuffer->pybuffer, (PyObject*)__pyx_v_color, &__Pyx_TypeInfo_float, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 101, __pyx_L1_error)
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_color.rcbuffer->pybuffer, (PyObject*)__pyx_v_color, &__Pyx_TypeInfo_float, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 108, __pyx_L1_error)
   }
   __pyx_pybuffernd_color.diminfo[0].strides = __pyx_pybuffernd_color.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_color.diminfo[0].shape = __pyx_pybuffernd_color.rcbuffer->pybuffer.shape[0];
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_n.rcbuffer->pybuffer, (PyObject*)__pyx_v_n, &__Pyx_TypeInfo_float, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 101, __pyx_L1_error)
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_n.rcbuffer->pybuffer, (PyObject*)__pyx_v_n, &__Pyx_TypeInfo_float, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 108, __pyx_L1_error)
   }
   __pyx_pybuffernd_n.diminfo[0].strides = __pyx_pybuffernd_n.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_n.diminfo[0].shape = __pyx_pybuffernd_n.rcbuffer->pybuffer.shape[0];
 
-  /* "gvt.pyx":102
+  /* "gvt.pyx":109
  * 
  * def modifyLight(str name,  np.ndarray[float, ndim=1, mode="c"] pos,  np.ndarray[float, ndim=1, mode="c"] color,  np.ndarray[float, ndim=1, mode="c"] n, float w, float h):
  *   _modifyLight(name.encode(),<float*>pos.data,<float*>color.data,<float*>n.data,w,h)             # <<<<<<<<<<<<<<
  * 
  * def addCamera(str name,  np.ndarray[float, ndim=1, mode="c"]  pos,  np.ndarray[float, ndim=1, mode="c"]  focus,  np.ndarray[float, ndim=1, mode="c"]  up, float fov, int depth, int samples, float jitter):
  */
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_name, __pyx_n_s_encode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 102, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_name, __pyx_n_s_encode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 109, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_t_3 = NULL;
   if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_2))) {
@@ -4120,18 +4712,18 @@ static PyObject *__pyx_pf_3gvt_26modifyLight(CYTHON_UNUSED PyObject *__pyx_self,
     }
   }
   if (__pyx_t_3) {
-    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 102, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 109, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   } else {
-    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 102, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 109, __pyx_L1_error)
   }
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_4 = __pyx_convert_string_from_py_std__in_string(__pyx_t_1); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 102, __pyx_L1_error)
+  __pyx_t_4 = __pyx_convert_string_from_py_std__in_string(__pyx_t_1); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 109, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   modifyLight(__pyx_t_4, ((float *)__pyx_v_pos->data), ((float *)__pyx_v_color->data), ((float *)__pyx_v_n->data), __pyx_v_w, __pyx_v_h);
 
-  /* "gvt.pyx":101
+  /* "gvt.pyx":108
  *   _modifyLight(name.encode(),<float*>pos.data, <float*> color.data)
  * 
  * def modifyLight(str name,  np.ndarray[float, ndim=1, mode="c"] pos,  np.ndarray[float, ndim=1, mode="c"] color,  np.ndarray[float, ndim=1, mode="c"] n, float w, float h):             # <<<<<<<<<<<<<<
@@ -4167,7 +4759,7 @@ static PyObject *__pyx_pf_3gvt_26modifyLight(CYTHON_UNUSED PyObject *__pyx_self,
   return __pyx_r;
 }
 
-/* "gvt.pyx":104
+/* "gvt.pyx":111
  *   _modifyLight(name.encode(),<float*>pos.data,<float*>color.data,<float*>n.data,w,h)
  * 
  * def addCamera(str name,  np.ndarray[float, ndim=1, mode="c"]  pos,  np.ndarray[float, ndim=1, mode="c"]  focus,  np.ndarray[float, ndim=1, mode="c"]  up, float fov, int depth, int samples, float jitter):             # <<<<<<<<<<<<<<
@@ -4176,9 +4768,9 @@ static PyObject *__pyx_pf_3gvt_26modifyLight(CYTHON_UNUSED PyObject *__pyx_self,
  */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_3gvt_29addCamera(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_mdef_3gvt_29addCamera = {"addCamera", (PyCFunction)__pyx_pw_3gvt_29addCamera, METH_VARARGS|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_3gvt_29addCamera(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_3gvt_35addCamera(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_mdef_3gvt_35addCamera = {"addCamera", (PyCFunction)__pyx_pw_3gvt_35addCamera, METH_VARARGS|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_3gvt_35addCamera(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyObject *__pyx_v_name = 0;
   PyArrayObject *__pyx_v_pos = 0;
   PyArrayObject *__pyx_v_focus = 0;
@@ -4225,47 +4817,47 @@ static PyObject *__pyx_pw_3gvt_29addCamera(PyObject *__pyx_self, PyObject *__pyx
         case  1:
         if (likely((values[1] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_pos)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("addCamera", 1, 8, 8, 1); __PYX_ERR(0, 104, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("addCamera", 1, 8, 8, 1); __PYX_ERR(0, 111, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_focus)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("addCamera", 1, 8, 8, 2); __PYX_ERR(0, 104, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("addCamera", 1, 8, 8, 2); __PYX_ERR(0, 111, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  3:
         if (likely((values[3] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_up)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("addCamera", 1, 8, 8, 3); __PYX_ERR(0, 104, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("addCamera", 1, 8, 8, 3); __PYX_ERR(0, 111, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  4:
         if (likely((values[4] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_fov)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("addCamera", 1, 8, 8, 4); __PYX_ERR(0, 104, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("addCamera", 1, 8, 8, 4); __PYX_ERR(0, 111, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  5:
         if (likely((values[5] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_depth)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("addCamera", 1, 8, 8, 5); __PYX_ERR(0, 104, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("addCamera", 1, 8, 8, 5); __PYX_ERR(0, 111, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  6:
         if (likely((values[6] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_samples)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("addCamera", 1, 8, 8, 6); __PYX_ERR(0, 104, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("addCamera", 1, 8, 8, 6); __PYX_ERR(0, 111, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  7:
         if (likely((values[7] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_jitter)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("addCamera", 1, 8, 8, 7); __PYX_ERR(0, 104, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("addCamera", 1, 8, 8, 7); __PYX_ERR(0, 111, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "addCamera") < 0)) __PYX_ERR(0, 104, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "addCamera") < 0)) __PYX_ERR(0, 111, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 8) {
       goto __pyx_L5_argtuple_error;
@@ -4283,24 +4875,24 @@ static PyObject *__pyx_pw_3gvt_29addCamera(PyObject *__pyx_self, PyObject *__pyx
     __pyx_v_pos = ((PyArrayObject *)values[1]);
     __pyx_v_focus = ((PyArrayObject *)values[2]);
     __pyx_v_up = ((PyArrayObject *)values[3]);
-    __pyx_v_fov = __pyx_PyFloat_AsFloat(values[4]); if (unlikely((__pyx_v_fov == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 104, __pyx_L3_error)
-    __pyx_v_depth = __Pyx_PyInt_As_int(values[5]); if (unlikely((__pyx_v_depth == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 104, __pyx_L3_error)
-    __pyx_v_samples = __Pyx_PyInt_As_int(values[6]); if (unlikely((__pyx_v_samples == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 104, __pyx_L3_error)
-    __pyx_v_jitter = __pyx_PyFloat_AsFloat(values[7]); if (unlikely((__pyx_v_jitter == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 104, __pyx_L3_error)
+    __pyx_v_fov = __pyx_PyFloat_AsFloat(values[4]); if (unlikely((__pyx_v_fov == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 111, __pyx_L3_error)
+    __pyx_v_depth = __Pyx_PyInt_As_int(values[5]); if (unlikely((__pyx_v_depth == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 111, __pyx_L3_error)
+    __pyx_v_samples = __Pyx_PyInt_As_int(values[6]); if (unlikely((__pyx_v_samples == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 111, __pyx_L3_error)
+    __pyx_v_jitter = __pyx_PyFloat_AsFloat(values[7]); if (unlikely((__pyx_v_jitter == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 111, __pyx_L3_error)
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("addCamera", 1, 8, 8, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 104, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("addCamera", 1, 8, 8, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 111, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("gvt.addCamera", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_name), (&PyString_Type), 1, "name", 1))) __PYX_ERR(0, 104, __pyx_L1_error)
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_pos), __pyx_ptype_5numpy_ndarray, 1, "pos", 0))) __PYX_ERR(0, 104, __pyx_L1_error)
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_focus), __pyx_ptype_5numpy_ndarray, 1, "focus", 0))) __PYX_ERR(0, 104, __pyx_L1_error)
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_up), __pyx_ptype_5numpy_ndarray, 1, "up", 0))) __PYX_ERR(0, 104, __pyx_L1_error)
-  __pyx_r = __pyx_pf_3gvt_28addCamera(__pyx_self, __pyx_v_name, __pyx_v_pos, __pyx_v_focus, __pyx_v_up, __pyx_v_fov, __pyx_v_depth, __pyx_v_samples, __pyx_v_jitter);
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_name), (&PyString_Type), 1, "name", 1))) __PYX_ERR(0, 111, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_pos), __pyx_ptype_5numpy_ndarray, 1, "pos", 0))) __PYX_ERR(0, 111, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_focus), __pyx_ptype_5numpy_ndarray, 1, "focus", 0))) __PYX_ERR(0, 111, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_up), __pyx_ptype_5numpy_ndarray, 1, "up", 0))) __PYX_ERR(0, 111, __pyx_L1_error)
+  __pyx_r = __pyx_pf_3gvt_34addCamera(__pyx_self, __pyx_v_name, __pyx_v_pos, __pyx_v_focus, __pyx_v_up, __pyx_v_fov, __pyx_v_depth, __pyx_v_samples, __pyx_v_jitter);
 
   /* function exit code */
   goto __pyx_L0;
@@ -4311,7 +4903,7 @@ static PyObject *__pyx_pw_3gvt_29addCamera(PyObject *__pyx_self, PyObject *__pyx
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_3gvt_28addCamera(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, PyArrayObject *__pyx_v_pos, PyArrayObject *__pyx_v_focus, PyArrayObject *__pyx_v_up, float __pyx_v_fov, int __pyx_v_depth, int __pyx_v_samples, float __pyx_v_jitter) {
+static PyObject *__pyx_pf_3gvt_34addCamera(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, PyArrayObject *__pyx_v_pos, PyArrayObject *__pyx_v_focus, PyArrayObject *__pyx_v_up, float __pyx_v_fov, int __pyx_v_depth, int __pyx_v_samples, float __pyx_v_jitter) {
   __Pyx_LocalBuf_ND __pyx_pybuffernd_focus;
   __Pyx_Buffer __pyx_pybuffer_focus;
   __Pyx_LocalBuf_ND __pyx_pybuffernd_pos;
@@ -4339,28 +4931,28 @@ static PyObject *__pyx_pf_3gvt_28addCamera(CYTHON_UNUSED PyObject *__pyx_self, P
   __pyx_pybuffernd_up.rcbuffer = &__pyx_pybuffer_up;
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_pos.rcbuffer->pybuffer, (PyObject*)__pyx_v_pos, &__Pyx_TypeInfo_float, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 104, __pyx_L1_error)
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_pos.rcbuffer->pybuffer, (PyObject*)__pyx_v_pos, &__Pyx_TypeInfo_float, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 111, __pyx_L1_error)
   }
   __pyx_pybuffernd_pos.diminfo[0].strides = __pyx_pybuffernd_pos.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_pos.diminfo[0].shape = __pyx_pybuffernd_pos.rcbuffer->pybuffer.shape[0];
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_focus.rcbuffer->pybuffer, (PyObject*)__pyx_v_focus, &__Pyx_TypeInfo_float, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 104, __pyx_L1_error)
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_focus.rcbuffer->pybuffer, (PyObject*)__pyx_v_focus, &__Pyx_TypeInfo_float, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 111, __pyx_L1_error)
   }
   __pyx_pybuffernd_focus.diminfo[0].strides = __pyx_pybuffernd_focus.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_focus.diminfo[0].shape = __pyx_pybuffernd_focus.rcbuffer->pybuffer.shape[0];
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_up.rcbuffer->pybuffer, (PyObject*)__pyx_v_up, &__Pyx_TypeInfo_float, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 104, __pyx_L1_error)
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_up.rcbuffer->pybuffer, (PyObject*)__pyx_v_up, &__Pyx_TypeInfo_float, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 111, __pyx_L1_error)
   }
   __pyx_pybuffernd_up.diminfo[0].strides = __pyx_pybuffernd_up.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_up.diminfo[0].shape = __pyx_pybuffernd_up.rcbuffer->pybuffer.shape[0];
 
-  /* "gvt.pyx":105
+  /* "gvt.pyx":112
  * 
  * def addCamera(str name,  np.ndarray[float, ndim=1, mode="c"]  pos,  np.ndarray[float, ndim=1, mode="c"]  focus,  np.ndarray[float, ndim=1, mode="c"]  up, float fov, int depth, int samples, float jitter):
  *   _addCamera(name.encode(), <float*> pos.data, <float*>focus.data,<float*>up.data,fov,depth,samples,jitter)             # <<<<<<<<<<<<<<
  * 
  * def modifyCamera(str name,  np.ndarray[float, ndim=1, mode="c"] pos,  np.ndarray[float, ndim=1, mode="c"]  focus,  np.ndarray[float, ndim=1, mode="c"]  up, float fov):
  */
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_name, __pyx_n_s_encode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 105, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_name, __pyx_n_s_encode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 112, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_t_3 = NULL;
   if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_2))) {
@@ -4373,18 +4965,18 @@ static PyObject *__pyx_pf_3gvt_28addCamera(CYTHON_UNUSED PyObject *__pyx_self, P
     }
   }
   if (__pyx_t_3) {
-    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 105, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 112, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   } else {
-    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 105, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 112, __pyx_L1_error)
   }
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_4 = __pyx_convert_string_from_py_std__in_string(__pyx_t_1); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 105, __pyx_L1_error)
+  __pyx_t_4 = __pyx_convert_string_from_py_std__in_string(__pyx_t_1); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 112, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   addCamera(__pyx_t_4, ((float *)__pyx_v_pos->data), ((float *)__pyx_v_focus->data), ((float *)__pyx_v_up->data), __pyx_v_fov, __pyx_v_depth, __pyx_v_samples, __pyx_v_jitter);
 
-  /* "gvt.pyx":104
+  /* "gvt.pyx":111
  *   _modifyLight(name.encode(),<float*>pos.data,<float*>color.data,<float*>n.data,w,h)
  * 
  * def addCamera(str name,  np.ndarray[float, ndim=1, mode="c"]  pos,  np.ndarray[float, ndim=1, mode="c"]  focus,  np.ndarray[float, ndim=1, mode="c"]  up, float fov, int depth, int samples, float jitter):             # <<<<<<<<<<<<<<
@@ -4420,7 +5012,7 @@ static PyObject *__pyx_pf_3gvt_28addCamera(CYTHON_UNUSED PyObject *__pyx_self, P
   return __pyx_r;
 }
 
-/* "gvt.pyx":107
+/* "gvt.pyx":114
  *   _addCamera(name.encode(), <float*> pos.data, <float*>focus.data,<float*>up.data,fov,depth,samples,jitter)
  * 
  * def modifyCamera(str name,  np.ndarray[float, ndim=1, mode="c"] pos,  np.ndarray[float, ndim=1, mode="c"]  focus,  np.ndarray[float, ndim=1, mode="c"]  up, float fov):             # <<<<<<<<<<<<<<
@@ -4429,9 +5021,9 @@ static PyObject *__pyx_pf_3gvt_28addCamera(CYTHON_UNUSED PyObject *__pyx_self, P
  */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_3gvt_31modifyCamera(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_mdef_3gvt_31modifyCamera = {"modifyCamera", (PyCFunction)__pyx_pw_3gvt_31modifyCamera, METH_VARARGS|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_3gvt_31modifyCamera(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_3gvt_37modifyCamera(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_mdef_3gvt_37modifyCamera = {"modifyCamera", (PyCFunction)__pyx_pw_3gvt_37modifyCamera, METH_VARARGS|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_3gvt_37modifyCamera(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyObject *__pyx_v_name = 0;
   PyArrayObject *__pyx_v_pos = 0;
   PyArrayObject *__pyx_v_focus = 0;
@@ -4469,29 +5061,29 @@ static PyObject *__pyx_pw_3gvt_31modifyCamera(PyObject *__pyx_self, PyObject *__
         case  1:
         if (likely((values[1] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_pos)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("modifyCamera", 1, 5, 5, 1); __PYX_ERR(0, 107, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("modifyCamera", 1, 5, 5, 1); __PYX_ERR(0, 114, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_focus)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("modifyCamera", 1, 5, 5, 2); __PYX_ERR(0, 107, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("modifyCamera", 1, 5, 5, 2); __PYX_ERR(0, 114, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  3:
         if (likely((values[3] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_up)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("modifyCamera", 1, 5, 5, 3); __PYX_ERR(0, 107, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("modifyCamera", 1, 5, 5, 3); __PYX_ERR(0, 114, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  4:
         if (likely((values[4] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_fov)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("modifyCamera", 1, 5, 5, 4); __PYX_ERR(0, 107, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("modifyCamera", 1, 5, 5, 4); __PYX_ERR(0, 114, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "modifyCamera") < 0)) __PYX_ERR(0, 107, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "modifyCamera") < 0)) __PYX_ERR(0, 114, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 5) {
       goto __pyx_L5_argtuple_error;
@@ -4506,21 +5098,21 @@ static PyObject *__pyx_pw_3gvt_31modifyCamera(PyObject *__pyx_self, PyObject *__
     __pyx_v_pos = ((PyArrayObject *)values[1]);
     __pyx_v_focus = ((PyArrayObject *)values[2]);
     __pyx_v_up = ((PyArrayObject *)values[3]);
-    __pyx_v_fov = __pyx_PyFloat_AsFloat(values[4]); if (unlikely((__pyx_v_fov == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 107, __pyx_L3_error)
+    __pyx_v_fov = __pyx_PyFloat_AsFloat(values[4]); if (unlikely((__pyx_v_fov == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 114, __pyx_L3_error)
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("modifyCamera", 1, 5, 5, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 107, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("modifyCamera", 1, 5, 5, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 114, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("gvt.modifyCamera", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_name), (&PyString_Type), 1, "name", 1))) __PYX_ERR(0, 107, __pyx_L1_error)
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_pos), __pyx_ptype_5numpy_ndarray, 1, "pos", 0))) __PYX_ERR(0, 107, __pyx_L1_error)
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_focus), __pyx_ptype_5numpy_ndarray, 1, "focus", 0))) __PYX_ERR(0, 107, __pyx_L1_error)
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_up), __pyx_ptype_5numpy_ndarray, 1, "up", 0))) __PYX_ERR(0, 107, __pyx_L1_error)
-  __pyx_r = __pyx_pf_3gvt_30modifyCamera(__pyx_self, __pyx_v_name, __pyx_v_pos, __pyx_v_focus, __pyx_v_up, __pyx_v_fov);
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_name), (&PyString_Type), 1, "name", 1))) __PYX_ERR(0, 114, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_pos), __pyx_ptype_5numpy_ndarray, 1, "pos", 0))) __PYX_ERR(0, 114, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_focus), __pyx_ptype_5numpy_ndarray, 1, "focus", 0))) __PYX_ERR(0, 114, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_up), __pyx_ptype_5numpy_ndarray, 1, "up", 0))) __PYX_ERR(0, 114, __pyx_L1_error)
+  __pyx_r = __pyx_pf_3gvt_36modifyCamera(__pyx_self, __pyx_v_name, __pyx_v_pos, __pyx_v_focus, __pyx_v_up, __pyx_v_fov);
 
   /* function exit code */
   goto __pyx_L0;
@@ -4531,7 +5123,7 @@ static PyObject *__pyx_pw_3gvt_31modifyCamera(PyObject *__pyx_self, PyObject *__
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_3gvt_30modifyCamera(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, PyArrayObject *__pyx_v_pos, PyArrayObject *__pyx_v_focus, PyArrayObject *__pyx_v_up, float __pyx_v_fov) {
+static PyObject *__pyx_pf_3gvt_36modifyCamera(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, PyArrayObject *__pyx_v_pos, PyArrayObject *__pyx_v_focus, PyArrayObject *__pyx_v_up, float __pyx_v_fov) {
   __Pyx_LocalBuf_ND __pyx_pybuffernd_focus;
   __Pyx_Buffer __pyx_pybuffer_focus;
   __Pyx_LocalBuf_ND __pyx_pybuffernd_pos;
@@ -4559,28 +5151,28 @@ static PyObject *__pyx_pf_3gvt_30modifyCamera(CYTHON_UNUSED PyObject *__pyx_self
   __pyx_pybuffernd_up.rcbuffer = &__pyx_pybuffer_up;
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_pos.rcbuffer->pybuffer, (PyObject*)__pyx_v_pos, &__Pyx_TypeInfo_float, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 107, __pyx_L1_error)
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_pos.rcbuffer->pybuffer, (PyObject*)__pyx_v_pos, &__Pyx_TypeInfo_float, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 114, __pyx_L1_error)
   }
   __pyx_pybuffernd_pos.diminfo[0].strides = __pyx_pybuffernd_pos.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_pos.diminfo[0].shape = __pyx_pybuffernd_pos.rcbuffer->pybuffer.shape[0];
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_focus.rcbuffer->pybuffer, (PyObject*)__pyx_v_focus, &__Pyx_TypeInfo_float, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 107, __pyx_L1_error)
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_focus.rcbuffer->pybuffer, (PyObject*)__pyx_v_focus, &__Pyx_TypeInfo_float, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 114, __pyx_L1_error)
   }
   __pyx_pybuffernd_focus.diminfo[0].strides = __pyx_pybuffernd_focus.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_focus.diminfo[0].shape = __pyx_pybuffernd_focus.rcbuffer->pybuffer.shape[0];
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_up.rcbuffer->pybuffer, (PyObject*)__pyx_v_up, &__Pyx_TypeInfo_float, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 107, __pyx_L1_error)
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_up.rcbuffer->pybuffer, (PyObject*)__pyx_v_up, &__Pyx_TypeInfo_float, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 114, __pyx_L1_error)
   }
   __pyx_pybuffernd_up.diminfo[0].strides = __pyx_pybuffernd_up.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_up.diminfo[0].shape = __pyx_pybuffernd_up.rcbuffer->pybuffer.shape[0];
 
-  /* "gvt.pyx":108
+  /* "gvt.pyx":115
  * 
  * def modifyCamera(str name,  np.ndarray[float, ndim=1, mode="c"] pos,  np.ndarray[float, ndim=1, mode="c"]  focus,  np.ndarray[float, ndim=1, mode="c"]  up, float fov):
  *   _modifyCamera(name.encode(), <float*> pos.data, <float*>focus.data,<float*>up.data,fov)             # <<<<<<<<<<<<<<
  * 
  * def addFilm(str name, int w, int h, str path):
  */
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_name, __pyx_n_s_encode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 108, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_name, __pyx_n_s_encode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 115, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_t_3 = NULL;
   if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_2))) {
@@ -4593,18 +5185,18 @@ static PyObject *__pyx_pf_3gvt_30modifyCamera(CYTHON_UNUSED PyObject *__pyx_self
     }
   }
   if (__pyx_t_3) {
-    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 108, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 115, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   } else {
-    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 108, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 115, __pyx_L1_error)
   }
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_4 = __pyx_convert_string_from_py_std__in_string(__pyx_t_1); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 108, __pyx_L1_error)
+  __pyx_t_4 = __pyx_convert_string_from_py_std__in_string(__pyx_t_1); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 115, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   modifyCamera(__pyx_t_4, ((float *)__pyx_v_pos->data), ((float *)__pyx_v_focus->data), ((float *)__pyx_v_up->data), __pyx_v_fov);
 
-  /* "gvt.pyx":107
+  /* "gvt.pyx":114
  *   _addCamera(name.encode(), <float*> pos.data, <float*>focus.data,<float*>up.data,fov,depth,samples,jitter)
  * 
  * def modifyCamera(str name,  np.ndarray[float, ndim=1, mode="c"] pos,  np.ndarray[float, ndim=1, mode="c"]  focus,  np.ndarray[float, ndim=1, mode="c"]  up, float fov):             # <<<<<<<<<<<<<<
@@ -4640,7 +5232,7 @@ static PyObject *__pyx_pf_3gvt_30modifyCamera(CYTHON_UNUSED PyObject *__pyx_self
   return __pyx_r;
 }
 
-/* "gvt.pyx":110
+/* "gvt.pyx":117
  *   _modifyCamera(name.encode(), <float*> pos.data, <float*>focus.data,<float*>up.data,fov)
  * 
  * def addFilm(str name, int w, int h, str path):             # <<<<<<<<<<<<<<
@@ -4649,9 +5241,9 @@ static PyObject *__pyx_pf_3gvt_30modifyCamera(CYTHON_UNUSED PyObject *__pyx_self
  */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_3gvt_33addFilm(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_mdef_3gvt_33addFilm = {"addFilm", (PyCFunction)__pyx_pw_3gvt_33addFilm, METH_VARARGS|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_3gvt_33addFilm(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_3gvt_39addFilm(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_mdef_3gvt_39addFilm = {"addFilm", (PyCFunction)__pyx_pw_3gvt_39addFilm, METH_VARARGS|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_3gvt_39addFilm(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyObject *__pyx_v_name = 0;
   int __pyx_v_w;
   int __pyx_v_h;
@@ -4686,23 +5278,23 @@ static PyObject *__pyx_pw_3gvt_33addFilm(PyObject *__pyx_self, PyObject *__pyx_a
         case  1:
         if (likely((values[1] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_w)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("addFilm", 1, 4, 4, 1); __PYX_ERR(0, 110, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("addFilm", 1, 4, 4, 1); __PYX_ERR(0, 117, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_h)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("addFilm", 1, 4, 4, 2); __PYX_ERR(0, 110, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("addFilm", 1, 4, 4, 2); __PYX_ERR(0, 117, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  3:
         if (likely((values[3] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_path)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("addFilm", 1, 4, 4, 3); __PYX_ERR(0, 110, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("addFilm", 1, 4, 4, 3); __PYX_ERR(0, 117, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "addFilm") < 0)) __PYX_ERR(0, 110, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "addFilm") < 0)) __PYX_ERR(0, 117, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 4) {
       goto __pyx_L5_argtuple_error;
@@ -4713,21 +5305,21 @@ static PyObject *__pyx_pw_3gvt_33addFilm(PyObject *__pyx_self, PyObject *__pyx_a
       values[3] = PyTuple_GET_ITEM(__pyx_args, 3);
     }
     __pyx_v_name = ((PyObject*)values[0]);
-    __pyx_v_w = __Pyx_PyInt_As_int(values[1]); if (unlikely((__pyx_v_w == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 110, __pyx_L3_error)
-    __pyx_v_h = __Pyx_PyInt_As_int(values[2]); if (unlikely((__pyx_v_h == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 110, __pyx_L3_error)
+    __pyx_v_w = __Pyx_PyInt_As_int(values[1]); if (unlikely((__pyx_v_w == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 117, __pyx_L3_error)
+    __pyx_v_h = __Pyx_PyInt_As_int(values[2]); if (unlikely((__pyx_v_h == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 117, __pyx_L3_error)
     __pyx_v_path = ((PyObject*)values[3]);
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("addFilm", 1, 4, 4, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 110, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("addFilm", 1, 4, 4, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 117, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("gvt.addFilm", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_name), (&PyString_Type), 1, "name", 1))) __PYX_ERR(0, 110, __pyx_L1_error)
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_path), (&PyString_Type), 1, "path", 1))) __PYX_ERR(0, 110, __pyx_L1_error)
-  __pyx_r = __pyx_pf_3gvt_32addFilm(__pyx_self, __pyx_v_name, __pyx_v_w, __pyx_v_h, __pyx_v_path);
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_name), (&PyString_Type), 1, "name", 1))) __PYX_ERR(0, 117, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_path), (&PyString_Type), 1, "path", 1))) __PYX_ERR(0, 117, __pyx_L1_error)
+  __pyx_r = __pyx_pf_3gvt_38addFilm(__pyx_self, __pyx_v_name, __pyx_v_w, __pyx_v_h, __pyx_v_path);
 
   /* function exit code */
   goto __pyx_L0;
@@ -4738,7 +5330,7 @@ static PyObject *__pyx_pw_3gvt_33addFilm(PyObject *__pyx_self, PyObject *__pyx_a
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_3gvt_32addFilm(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, int __pyx_v_w, int __pyx_v_h, PyObject *__pyx_v_path) {
+static PyObject *__pyx_pf_3gvt_38addFilm(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, int __pyx_v_w, int __pyx_v_h, PyObject *__pyx_v_path) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -4748,14 +5340,14 @@ static PyObject *__pyx_pf_3gvt_32addFilm(CYTHON_UNUSED PyObject *__pyx_self, PyO
   std::string __pyx_t_5;
   __Pyx_RefNannySetupContext("addFilm", 0);
 
-  /* "gvt.pyx":111
+  /* "gvt.pyx":118
  * 
  * def addFilm(str name, int w, int h, str path):
  *   _addFilm(name.encode(),w,h,path.encode())             # <<<<<<<<<<<<<<
  * 
  * def modifyFilm(str name, int w, int h, str path):
  */
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_name, __pyx_n_s_encode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 111, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_name, __pyx_n_s_encode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 118, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_t_3 = NULL;
   if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_2))) {
@@ -4768,16 +5360,16 @@ static PyObject *__pyx_pf_3gvt_32addFilm(CYTHON_UNUSED PyObject *__pyx_self, PyO
     }
   }
   if (__pyx_t_3) {
-    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 111, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 118, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   } else {
-    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 111, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 118, __pyx_L1_error)
   }
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_4 = __pyx_convert_string_from_py_std__in_string(__pyx_t_1); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 111, __pyx_L1_error)
+  __pyx_t_4 = __pyx_convert_string_from_py_std__in_string(__pyx_t_1); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 118, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_path, __pyx_n_s_encode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 111, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_path, __pyx_n_s_encode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 118, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_t_3 = NULL;
   if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_2))) {
@@ -4790,18 +5382,18 @@ static PyObject *__pyx_pf_3gvt_32addFilm(CYTHON_UNUSED PyObject *__pyx_self, PyO
     }
   }
   if (__pyx_t_3) {
-    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 111, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 118, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   } else {
-    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 111, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 118, __pyx_L1_error)
   }
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_5 = __pyx_convert_string_from_py_std__in_string(__pyx_t_1); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 111, __pyx_L1_error)
+  __pyx_t_5 = __pyx_convert_string_from_py_std__in_string(__pyx_t_1); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 118, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   addFilm(__pyx_t_4, __pyx_v_w, __pyx_v_h, __pyx_t_5);
 
-  /* "gvt.pyx":110
+  /* "gvt.pyx":117
  *   _modifyCamera(name.encode(), <float*> pos.data, <float*>focus.data,<float*>up.data,fov)
  * 
  * def addFilm(str name, int w, int h, str path):             # <<<<<<<<<<<<<<
@@ -4824,7 +5416,7 @@ static PyObject *__pyx_pf_3gvt_32addFilm(CYTHON_UNUSED PyObject *__pyx_self, PyO
   return __pyx_r;
 }
 
-/* "gvt.pyx":113
+/* "gvt.pyx":120
  *   _addFilm(name.encode(),w,h,path.encode())
  * 
  * def modifyFilm(str name, int w, int h, str path):             # <<<<<<<<<<<<<<
@@ -4833,9 +5425,9 @@ static PyObject *__pyx_pf_3gvt_32addFilm(CYTHON_UNUSED PyObject *__pyx_self, PyO
  */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_3gvt_35modifyFilm(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_mdef_3gvt_35modifyFilm = {"modifyFilm", (PyCFunction)__pyx_pw_3gvt_35modifyFilm, METH_VARARGS|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_3gvt_35modifyFilm(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_3gvt_41modifyFilm(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_mdef_3gvt_41modifyFilm = {"modifyFilm", (PyCFunction)__pyx_pw_3gvt_41modifyFilm, METH_VARARGS|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_3gvt_41modifyFilm(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyObject *__pyx_v_name = 0;
   int __pyx_v_w;
   int __pyx_v_h;
@@ -4870,23 +5462,23 @@ static PyObject *__pyx_pw_3gvt_35modifyFilm(PyObject *__pyx_self, PyObject *__py
         case  1:
         if (likely((values[1] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_w)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("modifyFilm", 1, 4, 4, 1); __PYX_ERR(0, 113, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("modifyFilm", 1, 4, 4, 1); __PYX_ERR(0, 120, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_h)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("modifyFilm", 1, 4, 4, 2); __PYX_ERR(0, 113, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("modifyFilm", 1, 4, 4, 2); __PYX_ERR(0, 120, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  3:
         if (likely((values[3] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_path)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("modifyFilm", 1, 4, 4, 3); __PYX_ERR(0, 113, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("modifyFilm", 1, 4, 4, 3); __PYX_ERR(0, 120, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "modifyFilm") < 0)) __PYX_ERR(0, 113, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "modifyFilm") < 0)) __PYX_ERR(0, 120, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 4) {
       goto __pyx_L5_argtuple_error;
@@ -4897,21 +5489,21 @@ static PyObject *__pyx_pw_3gvt_35modifyFilm(PyObject *__pyx_self, PyObject *__py
       values[3] = PyTuple_GET_ITEM(__pyx_args, 3);
     }
     __pyx_v_name = ((PyObject*)values[0]);
-    __pyx_v_w = __Pyx_PyInt_As_int(values[1]); if (unlikely((__pyx_v_w == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 113, __pyx_L3_error)
-    __pyx_v_h = __Pyx_PyInt_As_int(values[2]); if (unlikely((__pyx_v_h == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 113, __pyx_L3_error)
+    __pyx_v_w = __Pyx_PyInt_As_int(values[1]); if (unlikely((__pyx_v_w == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 120, __pyx_L3_error)
+    __pyx_v_h = __Pyx_PyInt_As_int(values[2]); if (unlikely((__pyx_v_h == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 120, __pyx_L3_error)
     __pyx_v_path = ((PyObject*)values[3]);
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("modifyFilm", 1, 4, 4, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 113, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("modifyFilm", 1, 4, 4, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 120, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("gvt.modifyFilm", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_name), (&PyString_Type), 1, "name", 1))) __PYX_ERR(0, 113, __pyx_L1_error)
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_path), (&PyString_Type), 1, "path", 1))) __PYX_ERR(0, 113, __pyx_L1_error)
-  __pyx_r = __pyx_pf_3gvt_34modifyFilm(__pyx_self, __pyx_v_name, __pyx_v_w, __pyx_v_h, __pyx_v_path);
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_name), (&PyString_Type), 1, "name", 1))) __PYX_ERR(0, 120, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_path), (&PyString_Type), 1, "path", 1))) __PYX_ERR(0, 120, __pyx_L1_error)
+  __pyx_r = __pyx_pf_3gvt_40modifyFilm(__pyx_self, __pyx_v_name, __pyx_v_w, __pyx_v_h, __pyx_v_path);
 
   /* function exit code */
   goto __pyx_L0;
@@ -4922,7 +5514,7 @@ static PyObject *__pyx_pw_3gvt_35modifyFilm(PyObject *__pyx_self, PyObject *__py
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_3gvt_34modifyFilm(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, int __pyx_v_w, int __pyx_v_h, PyObject *__pyx_v_path) {
+static PyObject *__pyx_pf_3gvt_40modifyFilm(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, int __pyx_v_w, int __pyx_v_h, PyObject *__pyx_v_path) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -4932,14 +5524,14 @@ static PyObject *__pyx_pf_3gvt_34modifyFilm(CYTHON_UNUSED PyObject *__pyx_self, 
   std::string __pyx_t_5;
   __Pyx_RefNannySetupContext("modifyFilm", 0);
 
-  /* "gvt.pyx":114
+  /* "gvt.pyx":121
  * 
  * def modifyFilm(str name, int w, int h, str path):
  *   _modifyFilm(name.encode(),w,h,path.encode())             # <<<<<<<<<<<<<<
  * 
- * def addRenderer(str name, int adapter, int schedule):
+ * def addRenderer(str name, int adapter, int schedule,str camera,str film,bool vol):
  */
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_name, __pyx_n_s_encode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 114, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_name, __pyx_n_s_encode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 121, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_t_3 = NULL;
   if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_2))) {
@@ -4952,16 +5544,16 @@ static PyObject *__pyx_pf_3gvt_34modifyFilm(CYTHON_UNUSED PyObject *__pyx_self, 
     }
   }
   if (__pyx_t_3) {
-    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 114, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 121, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   } else {
-    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 114, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 121, __pyx_L1_error)
   }
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_4 = __pyx_convert_string_from_py_std__in_string(__pyx_t_1); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 114, __pyx_L1_error)
+  __pyx_t_4 = __pyx_convert_string_from_py_std__in_string(__pyx_t_1); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 121, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_path, __pyx_n_s_encode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 114, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_path, __pyx_n_s_encode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 121, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_t_3 = NULL;
   if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_2))) {
@@ -4974,18 +5566,18 @@ static PyObject *__pyx_pf_3gvt_34modifyFilm(CYTHON_UNUSED PyObject *__pyx_self, 
     }
   }
   if (__pyx_t_3) {
-    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 114, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 121, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   } else {
-    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 114, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 121, __pyx_L1_error)
   }
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_5 = __pyx_convert_string_from_py_std__in_string(__pyx_t_1); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 114, __pyx_L1_error)
+  __pyx_t_5 = __pyx_convert_string_from_py_std__in_string(__pyx_t_1); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 121, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   modifyFilm(__pyx_t_4, __pyx_v_w, __pyx_v_h, __pyx_t_5);
 
-  /* "gvt.pyx":113
+  /* "gvt.pyx":120
  *   _addFilm(name.encode(),w,h,path.encode())
  * 
  * def modifyFilm(str name, int w, int h, str path):             # <<<<<<<<<<<<<<
@@ -5008,31 +5600,40 @@ static PyObject *__pyx_pf_3gvt_34modifyFilm(CYTHON_UNUSED PyObject *__pyx_self, 
   return __pyx_r;
 }
 
-/* "gvt.pyx":116
+/* "gvt.pyx":123
  *   _modifyFilm(name.encode(),w,h,path.encode())
  * 
- * def addRenderer(str name, int adapter, int schedule):             # <<<<<<<<<<<<<<
- *   _addRenderer(name.encode(),adapter,schedule)
+ * def addRenderer(str name, int adapter, int schedule,str camera,str film,bool vol):             # <<<<<<<<<<<<<<
+ *   _addRenderer(name.encode(),adapter,schedule,camera.encode(),film.encode(),vol)
  * 
  */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_3gvt_37addRenderer(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_mdef_3gvt_37addRenderer = {"addRenderer", (PyCFunction)__pyx_pw_3gvt_37addRenderer, METH_VARARGS|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_3gvt_37addRenderer(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_3gvt_43addRenderer(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_mdef_3gvt_43addRenderer = {"addRenderer", (PyCFunction)__pyx_pw_3gvt_43addRenderer, METH_VARARGS|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_3gvt_43addRenderer(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyObject *__pyx_v_name = 0;
   int __pyx_v_adapter;
   int __pyx_v_schedule;
+  PyObject *__pyx_v_camera = 0;
+  PyObject *__pyx_v_film = 0;
+  bool __pyx_v_vol;
   PyObject *__pyx_r = 0;
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("addRenderer (wrapper)", 0);
   {
-    static PyObject **__pyx_pyargnames[] = {&__pyx_n_s_name,&__pyx_n_s_adapter,&__pyx_n_s_schedule,0};
-    PyObject* values[3] = {0,0,0};
+    static PyObject **__pyx_pyargnames[] = {&__pyx_n_s_name,&__pyx_n_s_adapter,&__pyx_n_s_schedule,&__pyx_n_s_camera,&__pyx_n_s_film,&__pyx_n_s_vol,0};
+    PyObject* values[6] = {0,0,0,0,0,0};
     if (unlikely(__pyx_kwds)) {
       Py_ssize_t kw_args;
       const Py_ssize_t pos_args = PyTuple_GET_SIZE(__pyx_args);
       switch (pos_args) {
+        case  6: values[5] = PyTuple_GET_ITEM(__pyx_args, 5);
+        CYTHON_FALLTHROUGH;
+        case  5: values[4] = PyTuple_GET_ITEM(__pyx_args, 4);
+        CYTHON_FALLTHROUGH;
+        case  4: values[3] = PyTuple_GET_ITEM(__pyx_args, 3);
+        CYTHON_FALLTHROUGH;
         case  3: values[2] = PyTuple_GET_ITEM(__pyx_args, 2);
         CYTHON_FALLTHROUGH;
         case  2: values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
@@ -5051,39 +5652,65 @@ static PyObject *__pyx_pw_3gvt_37addRenderer(PyObject *__pyx_self, PyObject *__p
         case  1:
         if (likely((values[1] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_adapter)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("addRenderer", 1, 3, 3, 1); __PYX_ERR(0, 116, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("addRenderer", 1, 6, 6, 1); __PYX_ERR(0, 123, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_schedule)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("addRenderer", 1, 3, 3, 2); __PYX_ERR(0, 116, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("addRenderer", 1, 6, 6, 2); __PYX_ERR(0, 123, __pyx_L3_error)
+        }
+        CYTHON_FALLTHROUGH;
+        case  3:
+        if (likely((values[3] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_camera)) != 0)) kw_args--;
+        else {
+          __Pyx_RaiseArgtupleInvalid("addRenderer", 1, 6, 6, 3); __PYX_ERR(0, 123, __pyx_L3_error)
+        }
+        CYTHON_FALLTHROUGH;
+        case  4:
+        if (likely((values[4] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_film)) != 0)) kw_args--;
+        else {
+          __Pyx_RaiseArgtupleInvalid("addRenderer", 1, 6, 6, 4); __PYX_ERR(0, 123, __pyx_L3_error)
+        }
+        CYTHON_FALLTHROUGH;
+        case  5:
+        if (likely((values[5] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_vol)) != 0)) kw_args--;
+        else {
+          __Pyx_RaiseArgtupleInvalid("addRenderer", 1, 6, 6, 5); __PYX_ERR(0, 123, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "addRenderer") < 0)) __PYX_ERR(0, 116, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "addRenderer") < 0)) __PYX_ERR(0, 123, __pyx_L3_error)
       }
-    } else if (PyTuple_GET_SIZE(__pyx_args) != 3) {
+    } else if (PyTuple_GET_SIZE(__pyx_args) != 6) {
       goto __pyx_L5_argtuple_error;
     } else {
       values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
       values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
       values[2] = PyTuple_GET_ITEM(__pyx_args, 2);
+      values[3] = PyTuple_GET_ITEM(__pyx_args, 3);
+      values[4] = PyTuple_GET_ITEM(__pyx_args, 4);
+      values[5] = PyTuple_GET_ITEM(__pyx_args, 5);
     }
     __pyx_v_name = ((PyObject*)values[0]);
-    __pyx_v_adapter = __Pyx_PyInt_As_int(values[1]); if (unlikely((__pyx_v_adapter == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 116, __pyx_L3_error)
-    __pyx_v_schedule = __Pyx_PyInt_As_int(values[2]); if (unlikely((__pyx_v_schedule == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 116, __pyx_L3_error)
+    __pyx_v_adapter = __Pyx_PyInt_As_int(values[1]); if (unlikely((__pyx_v_adapter == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 123, __pyx_L3_error)
+    __pyx_v_schedule = __Pyx_PyInt_As_int(values[2]); if (unlikely((__pyx_v_schedule == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 123, __pyx_L3_error)
+    __pyx_v_camera = ((PyObject*)values[3]);
+    __pyx_v_film = ((PyObject*)values[4]);
+    __pyx_v_vol = __Pyx_PyObject_IsTrue(values[5]); if (unlikely((__pyx_v_vol == ((bool)-1)) && PyErr_Occurred())) __PYX_ERR(0, 123, __pyx_L3_error)
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("addRenderer", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 116, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("addRenderer", 1, 6, 6, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 123, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("gvt.addRenderer", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_name), (&PyString_Type), 1, "name", 1))) __PYX_ERR(0, 116, __pyx_L1_error)
-  __pyx_r = __pyx_pf_3gvt_36addRenderer(__pyx_self, __pyx_v_name, __pyx_v_adapter, __pyx_v_schedule);
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_name), (&PyString_Type), 1, "name", 1))) __PYX_ERR(0, 123, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_camera), (&PyString_Type), 1, "camera", 1))) __PYX_ERR(0, 123, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_film), (&PyString_Type), 1, "film", 1))) __PYX_ERR(0, 123, __pyx_L1_error)
+  __pyx_r = __pyx_pf_3gvt_42addRenderer(__pyx_self, __pyx_v_name, __pyx_v_adapter, __pyx_v_schedule, __pyx_v_camera, __pyx_v_film, __pyx_v_vol);
 
   /* function exit code */
   goto __pyx_L0;
@@ -5094,23 +5721,25 @@ static PyObject *__pyx_pw_3gvt_37addRenderer(PyObject *__pyx_self, PyObject *__p
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_3gvt_36addRenderer(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, int __pyx_v_adapter, int __pyx_v_schedule) {
+static PyObject *__pyx_pf_3gvt_42addRenderer(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, int __pyx_v_adapter, int __pyx_v_schedule, PyObject *__pyx_v_camera, PyObject *__pyx_v_film, bool __pyx_v_vol) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
   PyObject *__pyx_t_2 = NULL;
   PyObject *__pyx_t_3 = NULL;
   std::string __pyx_t_4;
+  std::string __pyx_t_5;
+  std::string __pyx_t_6;
   __Pyx_RefNannySetupContext("addRenderer", 0);
 
-  /* "gvt.pyx":117
+  /* "gvt.pyx":124
  * 
- * def addRenderer(str name, int adapter, int schedule):
- *   _addRenderer(name.encode(),adapter,schedule)             # <<<<<<<<<<<<<<
+ * def addRenderer(str name, int adapter, int schedule,str camera,str film,bool vol):
+ *   _addRenderer(name.encode(),adapter,schedule,camera.encode(),film.encode(),vol)             # <<<<<<<<<<<<<<
  * 
  * def render(str name):
  */
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_name, __pyx_n_s_encode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 117, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_name, __pyx_n_s_encode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 124, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_t_3 = NULL;
   if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_2))) {
@@ -5123,22 +5752,66 @@ static PyObject *__pyx_pf_3gvt_36addRenderer(CYTHON_UNUSED PyObject *__pyx_self,
     }
   }
   if (__pyx_t_3) {
-    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 117, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 124, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   } else {
-    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 117, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 124, __pyx_L1_error)
   }
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_4 = __pyx_convert_string_from_py_std__in_string(__pyx_t_1); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 117, __pyx_L1_error)
+  __pyx_t_4 = __pyx_convert_string_from_py_std__in_string(__pyx_t_1); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 124, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  addRenderer(__pyx_t_4, __pyx_v_adapter, __pyx_v_schedule);
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_camera, __pyx_n_s_encode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 124, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
+  __pyx_t_3 = NULL;
+  if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_2))) {
+    __pyx_t_3 = PyMethod_GET_SELF(__pyx_t_2);
+    if (likely(__pyx_t_3)) {
+      PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_2);
+      __Pyx_INCREF(__pyx_t_3);
+      __Pyx_INCREF(function);
+      __Pyx_DECREF_SET(__pyx_t_2, function);
+    }
+  }
+  if (__pyx_t_3) {
+    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 124, __pyx_L1_error)
+    __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+  } else {
+    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 124, __pyx_L1_error)
+  }
+  __Pyx_GOTREF(__pyx_t_1);
+  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+  __pyx_t_5 = __pyx_convert_string_from_py_std__in_string(__pyx_t_1); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 124, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_film, __pyx_n_s_encode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 124, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
+  __pyx_t_3 = NULL;
+  if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_2))) {
+    __pyx_t_3 = PyMethod_GET_SELF(__pyx_t_2);
+    if (likely(__pyx_t_3)) {
+      PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_2);
+      __Pyx_INCREF(__pyx_t_3);
+      __Pyx_INCREF(function);
+      __Pyx_DECREF_SET(__pyx_t_2, function);
+    }
+  }
+  if (__pyx_t_3) {
+    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 124, __pyx_L1_error)
+    __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+  } else {
+    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 124, __pyx_L1_error)
+  }
+  __Pyx_GOTREF(__pyx_t_1);
+  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+  __pyx_t_6 = __pyx_convert_string_from_py_std__in_string(__pyx_t_1); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 124, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  addRenderer(__pyx_t_4, __pyx_v_adapter, __pyx_v_schedule, __pyx_t_5, __pyx_t_6, __pyx_v_vol);
 
-  /* "gvt.pyx":116
+  /* "gvt.pyx":123
  *   _modifyFilm(name.encode(),w,h,path.encode())
  * 
- * def addRenderer(str name, int adapter, int schedule):             # <<<<<<<<<<<<<<
- *   _addRenderer(name.encode(),adapter,schedule)
+ * def addRenderer(str name, int adapter, int schedule,str camera,str film,bool vol):             # <<<<<<<<<<<<<<
+ *   _addRenderer(name.encode(),adapter,schedule,camera.encode(),film.encode(),vol)
  * 
  */
 
@@ -5157,8 +5830,8 @@ static PyObject *__pyx_pf_3gvt_36addRenderer(CYTHON_UNUSED PyObject *__pyx_self,
   return __pyx_r;
 }
 
-/* "gvt.pyx":119
- *   _addRenderer(name.encode(),adapter,schedule)
+/* "gvt.pyx":126
+ *   _addRenderer(name.encode(),adapter,schedule,camera.encode(),film.encode(),vol)
  * 
  * def render(str name):             # <<<<<<<<<<<<<<
  *   _render(name.encode())
@@ -5166,14 +5839,14 @@ static PyObject *__pyx_pf_3gvt_36addRenderer(CYTHON_UNUSED PyObject *__pyx_self,
  */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_3gvt_39render(PyObject *__pyx_self, PyObject *__pyx_v_name); /*proto*/
-static PyMethodDef __pyx_mdef_3gvt_39render = {"render", (PyCFunction)__pyx_pw_3gvt_39render, METH_O, 0};
-static PyObject *__pyx_pw_3gvt_39render(PyObject *__pyx_self, PyObject *__pyx_v_name) {
+static PyObject *__pyx_pw_3gvt_45render(PyObject *__pyx_self, PyObject *__pyx_v_name); /*proto*/
+static PyMethodDef __pyx_mdef_3gvt_45render = {"render", (PyCFunction)__pyx_pw_3gvt_45render, METH_O, 0};
+static PyObject *__pyx_pw_3gvt_45render(PyObject *__pyx_self, PyObject *__pyx_v_name) {
   PyObject *__pyx_r = 0;
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("render (wrapper)", 0);
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_name), (&PyString_Type), 1, "name", 1))) __PYX_ERR(0, 119, __pyx_L1_error)
-  __pyx_r = __pyx_pf_3gvt_38render(__pyx_self, ((PyObject*)__pyx_v_name));
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_name), (&PyString_Type), 1, "name", 1))) __PYX_ERR(0, 126, __pyx_L1_error)
+  __pyx_r = __pyx_pf_3gvt_44render(__pyx_self, ((PyObject*)__pyx_v_name));
 
   /* function exit code */
   goto __pyx_L0;
@@ -5184,7 +5857,7 @@ static PyObject *__pyx_pw_3gvt_39render(PyObject *__pyx_self, PyObject *__pyx_v_
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_3gvt_38render(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name) {
+static PyObject *__pyx_pf_3gvt_44render(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -5193,14 +5866,14 @@ static PyObject *__pyx_pf_3gvt_38render(CYTHON_UNUSED PyObject *__pyx_self, PyOb
   std::string __pyx_t_4;
   __Pyx_RefNannySetupContext("render", 0);
 
-  /* "gvt.pyx":120
+  /* "gvt.pyx":127
  * 
  * def render(str name):
  *   _render(name.encode())             # <<<<<<<<<<<<<<
  * 
  * def writeimage(str name, str output):
  */
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_name, __pyx_n_s_encode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 120, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_name, __pyx_n_s_encode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 127, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_t_3 = NULL;
   if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_2))) {
@@ -5213,19 +5886,19 @@ static PyObject *__pyx_pf_3gvt_38render(CYTHON_UNUSED PyObject *__pyx_self, PyOb
     }
   }
   if (__pyx_t_3) {
-    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 120, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 127, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   } else {
-    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 120, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 127, __pyx_L1_error)
   }
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_4 = __pyx_convert_string_from_py_std__in_string(__pyx_t_1); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 120, __pyx_L1_error)
+  __pyx_t_4 = __pyx_convert_string_from_py_std__in_string(__pyx_t_1); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 127, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   render(__pyx_t_4);
 
-  /* "gvt.pyx":119
- *   _addRenderer(name.encode(),adapter,schedule)
+  /* "gvt.pyx":126
+ *   _addRenderer(name.encode(),adapter,schedule,camera.encode(),film.encode(),vol)
  * 
  * def render(str name):             # <<<<<<<<<<<<<<
  *   _render(name.encode())
@@ -5247,7 +5920,7 @@ static PyObject *__pyx_pf_3gvt_38render(CYTHON_UNUSED PyObject *__pyx_self, PyOb
   return __pyx_r;
 }
 
-/* "gvt.pyx":122
+/* "gvt.pyx":129
  *   _render(name.encode())
  * 
  * def writeimage(str name, str output):             # <<<<<<<<<<<<<<
@@ -5255,9 +5928,9 @@ static PyObject *__pyx_pf_3gvt_38render(CYTHON_UNUSED PyObject *__pyx_self, PyOb
  */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_3gvt_41writeimage(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_mdef_3gvt_41writeimage = {"writeimage", (PyCFunction)__pyx_pw_3gvt_41writeimage, METH_VARARGS|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_3gvt_41writeimage(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_3gvt_47writeimage(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_mdef_3gvt_47writeimage = {"writeimage", (PyCFunction)__pyx_pw_3gvt_47writeimage, METH_VARARGS|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_3gvt_47writeimage(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyObject *__pyx_v_name = 0;
   PyObject *__pyx_v_output = 0;
   PyObject *__pyx_r = 0;
@@ -5286,11 +5959,11 @@ static PyObject *__pyx_pw_3gvt_41writeimage(PyObject *__pyx_self, PyObject *__py
         case  1:
         if (likely((values[1] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_output)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("writeimage", 1, 2, 2, 1); __PYX_ERR(0, 122, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("writeimage", 1, 2, 2, 1); __PYX_ERR(0, 129, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "writeimage") < 0)) __PYX_ERR(0, 122, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "writeimage") < 0)) __PYX_ERR(0, 129, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 2) {
       goto __pyx_L5_argtuple_error;
@@ -5303,15 +5976,15 @@ static PyObject *__pyx_pw_3gvt_41writeimage(PyObject *__pyx_self, PyObject *__py
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("writeimage", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 122, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("writeimage", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 129, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("gvt.writeimage", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_name), (&PyString_Type), 1, "name", 1))) __PYX_ERR(0, 122, __pyx_L1_error)
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_output), (&PyString_Type), 1, "output", 1))) __PYX_ERR(0, 122, __pyx_L1_error)
-  __pyx_r = __pyx_pf_3gvt_40writeimage(__pyx_self, __pyx_v_name, __pyx_v_output);
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_name), (&PyString_Type), 1, "name", 1))) __PYX_ERR(0, 129, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_output), (&PyString_Type), 1, "output", 1))) __PYX_ERR(0, 129, __pyx_L1_error)
+  __pyx_r = __pyx_pf_3gvt_46writeimage(__pyx_self, __pyx_v_name, __pyx_v_output);
 
   /* function exit code */
   goto __pyx_L0;
@@ -5322,7 +5995,7 @@ static PyObject *__pyx_pw_3gvt_41writeimage(PyObject *__pyx_self, PyObject *__py
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_3gvt_40writeimage(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, PyObject *__pyx_v_output) {
+static PyObject *__pyx_pf_3gvt_46writeimage(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_name, PyObject *__pyx_v_output) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -5332,12 +6005,12 @@ static PyObject *__pyx_pf_3gvt_40writeimage(CYTHON_UNUSED PyObject *__pyx_self, 
   std::string __pyx_t_5;
   __Pyx_RefNannySetupContext("writeimage", 0);
 
-  /* "gvt.pyx":123
+  /* "gvt.pyx":130
  * 
  * def writeimage(str name, str output):
  *   _writeimage(name.encode(),output.encode())             # <<<<<<<<<<<<<<
  */
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_name, __pyx_n_s_encode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 123, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_name, __pyx_n_s_encode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 130, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_t_3 = NULL;
   if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_2))) {
@@ -5350,16 +6023,16 @@ static PyObject *__pyx_pf_3gvt_40writeimage(CYTHON_UNUSED PyObject *__pyx_self, 
     }
   }
   if (__pyx_t_3) {
-    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 123, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 130, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   } else {
-    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 123, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 130, __pyx_L1_error)
   }
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_4 = __pyx_convert_string_from_py_std__in_string(__pyx_t_1); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 123, __pyx_L1_error)
+  __pyx_t_4 = __pyx_convert_string_from_py_std__in_string(__pyx_t_1); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 130, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_output, __pyx_n_s_encode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 123, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_output, __pyx_n_s_encode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 130, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_t_3 = NULL;
   if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_2))) {
@@ -5372,18 +6045,18 @@ static PyObject *__pyx_pf_3gvt_40writeimage(CYTHON_UNUSED PyObject *__pyx_self, 
     }
   }
   if (__pyx_t_3) {
-    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 123, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 130, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   } else {
-    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 123, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 130, __pyx_L1_error)
   }
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_5 = __pyx_convert_string_from_py_std__in_string(__pyx_t_1); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 123, __pyx_L1_error)
+  __pyx_t_5 = __pyx_convert_string_from_py_std__in_string(__pyx_t_1); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 130, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   writeimage(__pyx_t_4, __pyx_t_5);
 
-  /* "gvt.pyx":122
+  /* "gvt.pyx":129
  *   _render(name.encode())
  * 
  * def writeimage(str name, str output):             # <<<<<<<<<<<<<<
@@ -8096,24 +8769,34 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_addMeshVertices, __pyx_k_addMeshVertices, sizeof(__pyx_k_addMeshVertices), 0, 0, 1, 1},
   {&__pyx_n_s_addPointLight, __pyx_k_addPointLight, sizeof(__pyx_k_addPointLight), 0, 0, 1, 1},
   {&__pyx_n_s_addRenderer, __pyx_k_addRenderer, sizeof(__pyx_k_addRenderer), 0, 0, 1, 1},
+  {&__pyx_n_s_addVolumeSamples, __pyx_k_addVolumeSamples, sizeof(__pyx_k_addVolumeSamples), 0, 0, 1, 1},
+  {&__pyx_n_s_addVolumeTransferFunctions, __pyx_k_addVolumeTransferFunctions, sizeof(__pyx_k_addVolumeTransferFunctions), 0, 0, 1, 1},
   {&__pyx_n_s_alpha, __pyx_k_alpha, sizeof(__pyx_k_alpha), 0, 0, 1, 1},
+  {&__pyx_n_s_camera, __pyx_k_camera, sizeof(__pyx_k_camera), 0, 0, 1, 1},
   {&__pyx_n_s_cline_in_traceback, __pyx_k_cline_in_traceback, sizeof(__pyx_k_cline_in_traceback), 0, 0, 1, 1},
   {&__pyx_n_s_color, __pyx_k_color, sizeof(__pyx_k_color), 0, 0, 1, 1},
+  {&__pyx_n_s_colortfname, __pyx_k_colortfname, sizeof(__pyx_k_colortfname), 0, 0, 1, 1},
   {&__pyx_n_s_compute_normal, __pyx_k_compute_normal, sizeof(__pyx_k_compute_normal), 0, 0, 1, 1},
+  {&__pyx_n_s_counts, __pyx_k_counts, sizeof(__pyx_k_counts), 0, 0, 1, 1},
   {&__pyx_n_s_createMesh, __pyx_k_createMesh, sizeof(__pyx_k_createMesh), 0, 0, 1, 1},
+  {&__pyx_n_s_createVolume, __pyx_k_createVolume, sizeof(__pyx_k_createVolume), 0, 0, 1, 1},
   {&__pyx_n_s_ctypes, __pyx_k_ctypes, sizeof(__pyx_k_ctypes), 0, 0, 1, 1},
+  {&__pyx_n_s_deltas, __pyx_k_deltas, sizeof(__pyx_k_deltas), 0, 0, 1, 1},
   {&__pyx_n_s_depth, __pyx_k_depth, sizeof(__pyx_k_depth), 0, 0, 1, 1},
   {&__pyx_n_s_encode, __pyx_k_encode, sizeof(__pyx_k_encode), 0, 0, 1, 1},
+  {&__pyx_n_s_film, __pyx_k_film, sizeof(__pyx_k_film), 0, 0, 1, 1},
   {&__pyx_n_s_finishMesh, __pyx_k_finishMesh, sizeof(__pyx_k_finishMesh), 0, 0, 1, 1},
   {&__pyx_n_s_focus, __pyx_k_focus, sizeof(__pyx_k_focus), 0, 0, 1, 1},
   {&__pyx_n_s_fov, __pyx_k_fov, sizeof(__pyx_k_fov), 0, 0, 1, 1},
   {&__pyx_n_s_gvt, __pyx_k_gvt, sizeof(__pyx_k_gvt), 0, 0, 1, 1},
   {&__pyx_n_s_gvtInit, __pyx_k_gvtInit, sizeof(__pyx_k_gvtInit), 0, 0, 1, 1},
   {&__pyx_n_s_h, __pyx_k_h, sizeof(__pyx_k_h), 0, 0, 1, 1},
+  {&__pyx_n_s_high, __pyx_k_high, sizeof(__pyx_k_high), 0, 0, 1, 1},
   {&__pyx_n_s_import, __pyx_k_import, sizeof(__pyx_k_import), 0, 0, 1, 1},
   {&__pyx_n_s_jitter, __pyx_k_jitter, sizeof(__pyx_k_jitter), 0, 0, 1, 1},
   {&__pyx_n_s_kd, __pyx_k_kd, sizeof(__pyx_k_kd), 0, 0, 1, 1},
   {&__pyx_n_s_ks, __pyx_k_ks, sizeof(__pyx_k_ks), 0, 0, 1, 1},
+  {&__pyx_n_s_low, __pyx_k_low, sizeof(__pyx_k_low), 0, 0, 1, 1},
   {&__pyx_n_s_m, __pyx_k_m, sizeof(__pyx_k_m), 0, 0, 1, 1},
   {&__pyx_n_s_main, __pyx_k_main, sizeof(__pyx_k_main), 0, 0, 1, 1},
   {&__pyx_n_s_mattype, __pyx_k_mattype, sizeof(__pyx_k_mattype), 0, 0, 1, 1},
@@ -8129,6 +8812,8 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_numpy, __pyx_k_numpy, sizeof(__pyx_k_numpy), 0, 0, 1, 1},
   {&__pyx_kp_s_numpy_core_multiarray_failed_to, __pyx_k_numpy_core_multiarray_failed_to, sizeof(__pyx_k_numpy_core_multiarray_failed_to), 0, 0, 1, 0},
   {&__pyx_kp_s_numpy_core_umath_failed_to_impor, __pyx_k_numpy_core_umath_failed_to_impor, sizeof(__pyx_k_numpy_core_umath_failed_to_impor), 0, 0, 1, 0},
+  {&__pyx_n_s_opacityfname, __pyx_k_opacityfname, sizeof(__pyx_k_opacityfname), 0, 0, 1, 1},
+  {&__pyx_n_s_origin, __pyx_k_origin, sizeof(__pyx_k_origin), 0, 0, 1, 1},
   {&__pyx_n_s_output, __pyx_k_output, sizeof(__pyx_k_output), 0, 0, 1, 1},
   {&__pyx_n_s_path, __pyx_k_path, sizeof(__pyx_k_path), 0, 0, 1, 1},
   {&__pyx_n_s_pos, __pyx_k_pos, sizeof(__pyx_k_pos), 0, 0, 1, 1},
@@ -8136,6 +8821,7 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_render, __pyx_k_render, sizeof(__pyx_k_render), 0, 0, 1, 1},
   {&__pyx_n_s_s, __pyx_k_s, sizeof(__pyx_k_s), 0, 0, 1, 1},
   {&__pyx_n_s_samples, __pyx_k_samples, sizeof(__pyx_k_samples), 0, 0, 1, 1},
+  {&__pyx_n_s_samplingrate, __pyx_k_samplingrate, sizeof(__pyx_k_samplingrate), 0, 0, 1, 1},
   {&__pyx_n_s_schedule, __pyx_k_schedule, sizeof(__pyx_k_schedule), 0, 0, 1, 1},
   {&__pyx_n_s_size, __pyx_k_size, sizeof(__pyx_k_size), 0, 0, 1, 1},
   {&__pyx_kp_s_src_gvt_gvt_pyx, __pyx_k_src_gvt_gvt_pyx, sizeof(__pyx_k_src_gvt_gvt_pyx), 0, 0, 1, 0},
@@ -8145,6 +8831,7 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_kp_u_unknown_dtype_code_in_numpy_pxd, __pyx_k_unknown_dtype_code_in_numpy_pxd, sizeof(__pyx_k_unknown_dtype_code_in_numpy_pxd), 0, 1, 0, 0},
   {&__pyx_n_s_up, __pyx_k_up, sizeof(__pyx_k_up), 0, 0, 1, 1},
   {&__pyx_n_s_vertices, __pyx_k_vertices, sizeof(__pyx_k_vertices), 0, 0, 1, 1},
+  {&__pyx_n_s_vol, __pyx_k_vol, sizeof(__pyx_k_vol), 0, 0, 1, 1},
   {&__pyx_n_s_w, __pyx_k_w, sizeof(__pyx_k_w), 0, 0, 1, 1},
   {&__pyx_n_s_writeimage, __pyx_k_writeimage, sizeof(__pyx_k_writeimage), 0, 0, 1, 1},
   {0, 0, 0, 0, 0, 0, 0}
@@ -8260,253 +8947,289 @@ static int __Pyx_InitCachedConstants(void) {
   __Pyx_GOTREF(__pyx_tuple__9);
   __Pyx_GIVEREF(__pyx_tuple__9);
 
-  /* "gvt.pyx":40
+  /* "gvt.pyx":43
  * #void gvtInit(int &argc, char **&argv)
  * 
  * def gvtInit():             # <<<<<<<<<<<<<<
  *   # cdef char **c_argv
  *   # c_argv = <char**>malloc(sizeof(char*) * len(sys.argv))
  */
-  __pyx_codeobj__10 = (PyObject*)__Pyx_PyCode_New(0, 0, 0, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_src_gvt_gvt_pyx, __pyx_n_s_gvtInit, 40, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__10)) __PYX_ERR(0, 40, __pyx_L1_error)
+  __pyx_codeobj__10 = (PyObject*)__Pyx_PyCode_New(0, 0, 0, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_src_gvt_gvt_pyx, __pyx_n_s_gvtInit, 43, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__10)) __PYX_ERR(0, 43, __pyx_L1_error)
 
-  /* "gvt.pyx":62
+  /* "gvt.pyx":65
  *   # _gvtInit(argc,argv)
  * 
  * def createMesh(str name):             # <<<<<<<<<<<<<<
  *   _createMesh(name.encode())
- * 
+ * def addVolumeTransferFunctions(str name, str colortfname, str opacityfname, float low, float high):
  */
-  __pyx_tuple__11 = PyTuple_Pack(1, __pyx_n_s_name); if (unlikely(!__pyx_tuple__11)) __PYX_ERR(0, 62, __pyx_L1_error)
+  __pyx_tuple__11 = PyTuple_Pack(1, __pyx_n_s_name); if (unlikely(!__pyx_tuple__11)) __PYX_ERR(0, 65, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__11);
   __Pyx_GIVEREF(__pyx_tuple__11);
-  __pyx_codeobj__12 = (PyObject*)__Pyx_PyCode_New(1, 0, 1, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__11, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_src_gvt_gvt_pyx, __pyx_n_s_createMesh, 62, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__12)) __PYX_ERR(0, 62, __pyx_L1_error)
+  __pyx_codeobj__12 = (PyObject*)__Pyx_PyCode_New(1, 0, 1, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__11, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_src_gvt_gvt_pyx, __pyx_n_s_createMesh, 65, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__12)) __PYX_ERR(0, 65, __pyx_L1_error)
 
-  /* "gvt.pyx":65
+  /* "gvt.pyx":67
+ * def createMesh(str name):
  *   _createMesh(name.encode())
- * 
+ * def addVolumeTransferFunctions(str name, str colortfname, str opacityfname, float low, float high):             # <<<<<<<<<<<<<<
+ *   _addVolumeTransferFunctions(name.encode(),colortfname.encode(),opacityfname.encode(),low,high)
+ * def addVolumeSamples(str name, np.ndarray[float, ndim=1,mode="c"] samples, np.ndarray[int,ndim=1,mode="c"] counts, np.ndarray[float,ndim=1,mode="c"] origin, np.ndarray[float,ndim=1,mode="c"] deltas,float samplingrate):
+ */
+  __pyx_tuple__13 = PyTuple_Pack(5, __pyx_n_s_name, __pyx_n_s_colortfname, __pyx_n_s_opacityfname, __pyx_n_s_low, __pyx_n_s_high); if (unlikely(!__pyx_tuple__13)) __PYX_ERR(0, 67, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__13);
+  __Pyx_GIVEREF(__pyx_tuple__13);
+  __pyx_codeobj__14 = (PyObject*)__Pyx_PyCode_New(5, 0, 5, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__13, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_src_gvt_gvt_pyx, __pyx_n_s_addVolumeTransferFunctions, 67, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__14)) __PYX_ERR(0, 67, __pyx_L1_error)
+
+  /* "gvt.pyx":69
+ * def addVolumeTransferFunctions(str name, str colortfname, str opacityfname, float low, float high):
+ *   _addVolumeTransferFunctions(name.encode(),colortfname.encode(),opacityfname.encode(),low,high)
+ * def addVolumeSamples(str name, np.ndarray[float, ndim=1,mode="c"] samples, np.ndarray[int,ndim=1,mode="c"] counts, np.ndarray[float,ndim=1,mode="c"] origin, np.ndarray[float,ndim=1,mode="c"] deltas,float samplingrate):             # <<<<<<<<<<<<<<
+ *   _addVolumeSamples(name.encode(),<float*>samples.data,<int*>counts.data,<float*>origin.data,<float*>deltas.data,samplingrate)
+ * def addMeshVertices(str name, int size, np.ndarray[float, ndim=1, mode="c"] vertices not None):
+ */
+  __pyx_tuple__15 = PyTuple_Pack(6, __pyx_n_s_name, __pyx_n_s_samples, __pyx_n_s_counts, __pyx_n_s_origin, __pyx_n_s_deltas, __pyx_n_s_samplingrate); if (unlikely(!__pyx_tuple__15)) __PYX_ERR(0, 69, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__15);
+  __Pyx_GIVEREF(__pyx_tuple__15);
+  __pyx_codeobj__16 = (PyObject*)__Pyx_PyCode_New(6, 0, 6, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__15, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_src_gvt_gvt_pyx, __pyx_n_s_addVolumeSamples, 69, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__16)) __PYX_ERR(0, 69, __pyx_L1_error)
+
+  /* "gvt.pyx":71
+ * def addVolumeSamples(str name, np.ndarray[float, ndim=1,mode="c"] samples, np.ndarray[int,ndim=1,mode="c"] counts, np.ndarray[float,ndim=1,mode="c"] origin, np.ndarray[float,ndim=1,mode="c"] deltas,float samplingrate):
+ *   _addVolumeSamples(name.encode(),<float*>samples.data,<int*>counts.data,<float*>origin.data,<float*>deltas.data,samplingrate)
  * def addMeshVertices(str name, int size, np.ndarray[float, ndim=1, mode="c"] vertices not None):             # <<<<<<<<<<<<<<
  *   _addMeshVertices(name.encode(),size,<float*> vertices.data)
  * 
  */
-  __pyx_tuple__13 = PyTuple_Pack(3, __pyx_n_s_name, __pyx_n_s_size, __pyx_n_s_vertices); if (unlikely(!__pyx_tuple__13)) __PYX_ERR(0, 65, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__13);
-  __Pyx_GIVEREF(__pyx_tuple__13);
-  __pyx_codeobj__14 = (PyObject*)__Pyx_PyCode_New(3, 0, 3, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__13, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_src_gvt_gvt_pyx, __pyx_n_s_addMeshVertices, 65, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__14)) __PYX_ERR(0, 65, __pyx_L1_error)
+  __pyx_tuple__17 = PyTuple_Pack(3, __pyx_n_s_name, __pyx_n_s_size, __pyx_n_s_vertices); if (unlikely(!__pyx_tuple__17)) __PYX_ERR(0, 71, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__17);
+  __Pyx_GIVEREF(__pyx_tuple__17);
+  __pyx_codeobj__18 = (PyObject*)__Pyx_PyCode_New(3, 0, 3, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__17, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_src_gvt_gvt_pyx, __pyx_n_s_addMeshVertices, 71, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__18)) __PYX_ERR(0, 71, __pyx_L1_error)
 
-  /* "gvt.pyx":68
+  /* "gvt.pyx":74
  *   _addMeshVertices(name.encode(),size,<float*> vertices.data)
  * 
  * def addMeshTriangles(str name, unsigned n,  np.ndarray[unsigned, ndim=1, mode="c"] triangles):             # <<<<<<<<<<<<<<
  *   _addMeshTriangles(name.encode(),  n,  <unsigned *> triangles.data)
  * 
  */
-  __pyx_tuple__15 = PyTuple_Pack(3, __pyx_n_s_name, __pyx_n_s_n, __pyx_n_s_triangles); if (unlikely(!__pyx_tuple__15)) __PYX_ERR(0, 68, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__15);
-  __Pyx_GIVEREF(__pyx_tuple__15);
-  __pyx_codeobj__16 = (PyObject*)__Pyx_PyCode_New(3, 0, 3, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__15, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_src_gvt_gvt_pyx, __pyx_n_s_addMeshTriangles, 68, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__16)) __PYX_ERR(0, 68, __pyx_L1_error)
+  __pyx_tuple__19 = PyTuple_Pack(3, __pyx_n_s_name, __pyx_n_s_n, __pyx_n_s_triangles); if (unlikely(!__pyx_tuple__19)) __PYX_ERR(0, 74, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__19);
+  __Pyx_GIVEREF(__pyx_tuple__19);
+  __pyx_codeobj__20 = (PyObject*)__Pyx_PyCode_New(3, 0, 3, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__19, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_src_gvt_gvt_pyx, __pyx_n_s_addMeshTriangles, 74, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__20)) __PYX_ERR(0, 74, __pyx_L1_error)
 
-  /* "gvt.pyx":71
+  /* "gvt.pyx":77
  *   _addMeshTriangles(name.encode(),  n,  <unsigned *> triangles.data)
  * 
  * def addMeshFaceNormals( str name, unsigned n,   np.ndarray[float, ndim=1, mode="c"] normals):             # <<<<<<<<<<<<<<
  *   _addMeshFaceNormals(name.encode(), n, <float*> normals.data)
  * 
  */
-  __pyx_tuple__17 = PyTuple_Pack(3, __pyx_n_s_name, __pyx_n_s_n, __pyx_n_s_normals); if (unlikely(!__pyx_tuple__17)) __PYX_ERR(0, 71, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__17);
-  __Pyx_GIVEREF(__pyx_tuple__17);
-  __pyx_codeobj__18 = (PyObject*)__Pyx_PyCode_New(3, 0, 3, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__17, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_src_gvt_gvt_pyx, __pyx_n_s_addMeshFaceNormals, 71, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__18)) __PYX_ERR(0, 71, __pyx_L1_error)
+  __pyx_tuple__21 = PyTuple_Pack(3, __pyx_n_s_name, __pyx_n_s_n, __pyx_n_s_normals); if (unlikely(!__pyx_tuple__21)) __PYX_ERR(0, 77, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__21);
+  __Pyx_GIVEREF(__pyx_tuple__21);
+  __pyx_codeobj__22 = (PyObject*)__Pyx_PyCode_New(3, 0, 3, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__21, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_src_gvt_gvt_pyx, __pyx_n_s_addMeshFaceNormals, 77, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__22)) __PYX_ERR(0, 77, __pyx_L1_error)
 
-  /* "gvt.pyx":74
+  /* "gvt.pyx":80
  *   _addMeshFaceNormals(name.encode(), n, <float*> normals.data)
  * 
  * def addMeshVertexNormals( str name,  unsigned n,  np.ndarray[float, ndim=1, mode="c"] normals):             # <<<<<<<<<<<<<<
  *   _addMeshVertexNormals(name.encode(),n, <float*> normals.data)
  * 
  */
-  __pyx_tuple__19 = PyTuple_Pack(3, __pyx_n_s_name, __pyx_n_s_n, __pyx_n_s_normals); if (unlikely(!__pyx_tuple__19)) __PYX_ERR(0, 74, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__19);
-  __Pyx_GIVEREF(__pyx_tuple__19);
-  __pyx_codeobj__20 = (PyObject*)__Pyx_PyCode_New(3, 0, 3, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__19, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_src_gvt_gvt_pyx, __pyx_n_s_addMeshVertexNormals, 74, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__20)) __PYX_ERR(0, 74, __pyx_L1_error)
+  __pyx_tuple__23 = PyTuple_Pack(3, __pyx_n_s_name, __pyx_n_s_n, __pyx_n_s_normals); if (unlikely(!__pyx_tuple__23)) __PYX_ERR(0, 80, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__23);
+  __Pyx_GIVEREF(__pyx_tuple__23);
+  __pyx_codeobj__24 = (PyObject*)__Pyx_PyCode_New(3, 0, 3, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__23, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_src_gvt_gvt_pyx, __pyx_n_s_addMeshVertexNormals, 80, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__24)) __PYX_ERR(0, 80, __pyx_L1_error)
 
-  /* "gvt.pyx":77
+  /* "gvt.pyx":83
  *   _addMeshVertexNormals(name.encode(),n, <float*> normals.data)
  * 
  * def finishMesh( str name, bool compute_normal = True):             # <<<<<<<<<<<<<<
  *   _finishMesh(name.encode(),compute_normal)
  * 
  */
-  __pyx_tuple__21 = PyTuple_Pack(2, __pyx_n_s_name, __pyx_n_s_compute_normal); if (unlikely(!__pyx_tuple__21)) __PYX_ERR(0, 77, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__21);
-  __Pyx_GIVEREF(__pyx_tuple__21);
-  __pyx_codeobj__22 = (PyObject*)__Pyx_PyCode_New(2, 0, 2, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__21, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_src_gvt_gvt_pyx, __pyx_n_s_finishMesh, 77, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__22)) __PYX_ERR(0, 77, __pyx_L1_error)
+  __pyx_tuple__25 = PyTuple_Pack(2, __pyx_n_s_name, __pyx_n_s_compute_normal); if (unlikely(!__pyx_tuple__25)) __PYX_ERR(0, 83, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__25);
+  __Pyx_GIVEREF(__pyx_tuple__25);
+  __pyx_codeobj__26 = (PyObject*)__Pyx_PyCode_New(2, 0, 2, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__25, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_src_gvt_gvt_pyx, __pyx_n_s_finishMesh, 83, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__26)) __PYX_ERR(0, 83, __pyx_L1_error)
 
-  /* "gvt.pyx":80
+  /* "gvt.pyx":86
  *   _finishMesh(name.encode(),compute_normal)
  * 
  * def addMeshMaterialLambert( str name,  unsigned mattype,  np.ndarray[float, ndim=1, mode="c"] kd,  float alpha):             # <<<<<<<<<<<<<<
  *   _addMeshMaterial(name.encode() ,mattype, <float*> kd.data, alpha)
  * 
  */
-  __pyx_tuple__23 = PyTuple_Pack(4, __pyx_n_s_name, __pyx_n_s_mattype, __pyx_n_s_kd, __pyx_n_s_alpha); if (unlikely(!__pyx_tuple__23)) __PYX_ERR(0, 80, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__23);
-  __Pyx_GIVEREF(__pyx_tuple__23);
-  __pyx_codeobj__24 = (PyObject*)__Pyx_PyCode_New(4, 0, 4, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__23, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_src_gvt_gvt_pyx, __pyx_n_s_addMeshMaterialLambert, 80, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__24)) __PYX_ERR(0, 80, __pyx_L1_error)
+  __pyx_tuple__27 = PyTuple_Pack(4, __pyx_n_s_name, __pyx_n_s_mattype, __pyx_n_s_kd, __pyx_n_s_alpha); if (unlikely(!__pyx_tuple__27)) __PYX_ERR(0, 86, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__27);
+  __Pyx_GIVEREF(__pyx_tuple__27);
+  __pyx_codeobj__28 = (PyObject*)__Pyx_PyCode_New(4, 0, 4, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__27, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_src_gvt_gvt_pyx, __pyx_n_s_addMeshMaterialLambert, 86, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__28)) __PYX_ERR(0, 86, __pyx_L1_error)
 
-  /* "gvt.pyx":83
+  /* "gvt.pyx":89
  *   _addMeshMaterial(name.encode() ,mattype, <float*> kd.data, alpha)
  * 
  * def addMeshMaterialSpecular( str name,  unsigned mattype,  np.ndarray[float, ndim=1, mode="c"] kd,  np.ndarray[float, ndim=1, mode="c"] ks, float alpha ):             # <<<<<<<<<<<<<<
  *   _addMeshMaterial2(name.encode(), mattype, <float*> kd.data, <float*> ks.data, alpha)
  * 
  */
-  __pyx_tuple__25 = PyTuple_Pack(5, __pyx_n_s_name, __pyx_n_s_mattype, __pyx_n_s_kd, __pyx_n_s_ks, __pyx_n_s_alpha); if (unlikely(!__pyx_tuple__25)) __PYX_ERR(0, 83, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__25);
-  __Pyx_GIVEREF(__pyx_tuple__25);
-  __pyx_codeobj__26 = (PyObject*)__Pyx_PyCode_New(5, 0, 5, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__25, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_src_gvt_gvt_pyx, __pyx_n_s_addMeshMaterialSpecular, 83, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__26)) __PYX_ERR(0, 83, __pyx_L1_error)
+  __pyx_tuple__29 = PyTuple_Pack(5, __pyx_n_s_name, __pyx_n_s_mattype, __pyx_n_s_kd, __pyx_n_s_ks, __pyx_n_s_alpha); if (unlikely(!__pyx_tuple__29)) __PYX_ERR(0, 89, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__29);
+  __Pyx_GIVEREF(__pyx_tuple__29);
+  __pyx_codeobj__30 = (PyObject*)__Pyx_PyCode_New(5, 0, 5, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__29, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_src_gvt_gvt_pyx, __pyx_n_s_addMeshMaterialSpecular, 89, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__30)) __PYX_ERR(0, 89, __pyx_L1_error)
 
-  /* "gvt.pyx":89
+  /* "gvt.pyx":95
  * #   _addMeshMaterials(name.encode(),n,<unsigned*> mattype.data, <float*> kd.data, <float*> ks.float, <float*> alpha.data)
  * 
  * def addInstance(str s, str name,  np.ndarray[float, ndim=1, mode="c"] m):             # <<<<<<<<<<<<<<
  *   _addInstance(s.encode(),name.encode(),<float*> m.data)
- * 
+ * def createVolume(str name):
  */
-  __pyx_tuple__27 = PyTuple_Pack(3, __pyx_n_s_s, __pyx_n_s_name, __pyx_n_s_m); if (unlikely(!__pyx_tuple__27)) __PYX_ERR(0, 89, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__27);
-  __Pyx_GIVEREF(__pyx_tuple__27);
-  __pyx_codeobj__28 = (PyObject*)__Pyx_PyCode_New(3, 0, 3, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__27, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_src_gvt_gvt_pyx, __pyx_n_s_addInstance, 89, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__28)) __PYX_ERR(0, 89, __pyx_L1_error)
+  __pyx_tuple__31 = PyTuple_Pack(3, __pyx_n_s_s, __pyx_n_s_name, __pyx_n_s_m); if (unlikely(!__pyx_tuple__31)) __PYX_ERR(0, 95, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__31);
+  __Pyx_GIVEREF(__pyx_tuple__31);
+  __pyx_codeobj__32 = (PyObject*)__Pyx_PyCode_New(3, 0, 3, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__31, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_src_gvt_gvt_pyx, __pyx_n_s_addInstance, 95, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__32)) __PYX_ERR(0, 95, __pyx_L1_error)
 
-  /* "gvt.pyx":92
+  /* "gvt.pyx":97
+ * def addInstance(str s, str name,  np.ndarray[float, ndim=1, mode="c"] m):
  *   _addInstance(s.encode(),name.encode(),<float*> m.data)
- * 
+ * def createVolume(str name):             # <<<<<<<<<<<<<<
+ *   _createVolume(name.encode())
+ * def addPointLight(str name,  np.ndarray[float, ndim=1, mode="c"] pos,  np.ndarray[float, ndim=1, mode="c"] color):
+ */
+  __pyx_tuple__33 = PyTuple_Pack(1, __pyx_n_s_name); if (unlikely(!__pyx_tuple__33)) __PYX_ERR(0, 97, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__33);
+  __Pyx_GIVEREF(__pyx_tuple__33);
+  __pyx_codeobj__34 = (PyObject*)__Pyx_PyCode_New(1, 0, 1, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__33, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_src_gvt_gvt_pyx, __pyx_n_s_createVolume, 97, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__34)) __PYX_ERR(0, 97, __pyx_L1_error)
+
+  /* "gvt.pyx":99
+ * def createVolume(str name):
+ *   _createVolume(name.encode())
  * def addPointLight(str name,  np.ndarray[float, ndim=1, mode="c"] pos,  np.ndarray[float, ndim=1, mode="c"] color):             # <<<<<<<<<<<<<<
  *   _addPointLight(name.encode(),<float*> pos.data, <float*> color.data)
  * 
  */
-  __pyx_tuple__29 = PyTuple_Pack(3, __pyx_n_s_name, __pyx_n_s_pos, __pyx_n_s_color); if (unlikely(!__pyx_tuple__29)) __PYX_ERR(0, 92, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__29);
-  __Pyx_GIVEREF(__pyx_tuple__29);
-  __pyx_codeobj__30 = (PyObject*)__Pyx_PyCode_New(3, 0, 3, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__29, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_src_gvt_gvt_pyx, __pyx_n_s_addPointLight, 92, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__30)) __PYX_ERR(0, 92, __pyx_L1_error)
+  __pyx_tuple__35 = PyTuple_Pack(3, __pyx_n_s_name, __pyx_n_s_pos, __pyx_n_s_color); if (unlikely(!__pyx_tuple__35)) __PYX_ERR(0, 99, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__35);
+  __Pyx_GIVEREF(__pyx_tuple__35);
+  __pyx_codeobj__36 = (PyObject*)__Pyx_PyCode_New(3, 0, 3, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__35, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_src_gvt_gvt_pyx, __pyx_n_s_addPointLight, 99, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__36)) __PYX_ERR(0, 99, __pyx_L1_error)
 
-  /* "gvt.pyx":95
+  /* "gvt.pyx":102
  *   _addPointLight(name.encode(),<float*> pos.data, <float*> color.data)
  * 
  * def addAreaLight(str name,  np.ndarray[float, ndim=1, mode="c"] pos,  np.ndarray[float, ndim=1, mode="c"] color,  np.ndarray[float, ndim=1, mode="c"] n, float w, float h):             # <<<<<<<<<<<<<<
  *   _addAreaLight(name.encode(),<float*> pos.data, <float*> color.data, <float*> n.data, w, h)
  * 
  */
-  __pyx_tuple__31 = PyTuple_Pack(6, __pyx_n_s_name, __pyx_n_s_pos, __pyx_n_s_color, __pyx_n_s_n, __pyx_n_s_w, __pyx_n_s_h); if (unlikely(!__pyx_tuple__31)) __PYX_ERR(0, 95, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__31);
-  __Pyx_GIVEREF(__pyx_tuple__31);
-  __pyx_codeobj__32 = (PyObject*)__Pyx_PyCode_New(6, 0, 6, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__31, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_src_gvt_gvt_pyx, __pyx_n_s_addAreaLight, 95, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__32)) __PYX_ERR(0, 95, __pyx_L1_error)
+  __pyx_tuple__37 = PyTuple_Pack(6, __pyx_n_s_name, __pyx_n_s_pos, __pyx_n_s_color, __pyx_n_s_n, __pyx_n_s_w, __pyx_n_s_h); if (unlikely(!__pyx_tuple__37)) __PYX_ERR(0, 102, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__37);
+  __Pyx_GIVEREF(__pyx_tuple__37);
+  __pyx_codeobj__38 = (PyObject*)__Pyx_PyCode_New(6, 0, 6, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__37, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_src_gvt_gvt_pyx, __pyx_n_s_addAreaLight, 102, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__38)) __PYX_ERR(0, 102, __pyx_L1_error)
 
-  /* "gvt.pyx":98
+  /* "gvt.pyx":105
  *   _addAreaLight(name.encode(),<float*> pos.data, <float*> color.data, <float*> n.data, w, h)
  * 
  * def modifyLight(str name,  np.ndarray[float, ndim=1, mode="c"] pos,  np.ndarray[float, ndim=1, mode="c"] color):             # <<<<<<<<<<<<<<
  *   _modifyLight(name.encode(),<float*>pos.data, <float*> color.data)
  * 
  */
-  __pyx_tuple__33 = PyTuple_Pack(3, __pyx_n_s_name, __pyx_n_s_pos, __pyx_n_s_color); if (unlikely(!__pyx_tuple__33)) __PYX_ERR(0, 98, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__33);
-  __Pyx_GIVEREF(__pyx_tuple__33);
-  __pyx_codeobj__34 = (PyObject*)__Pyx_PyCode_New(3, 0, 3, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__33, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_src_gvt_gvt_pyx, __pyx_n_s_modifyLight, 98, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__34)) __PYX_ERR(0, 98, __pyx_L1_error)
+  __pyx_tuple__39 = PyTuple_Pack(3, __pyx_n_s_name, __pyx_n_s_pos, __pyx_n_s_color); if (unlikely(!__pyx_tuple__39)) __PYX_ERR(0, 105, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__39);
+  __Pyx_GIVEREF(__pyx_tuple__39);
+  __pyx_codeobj__40 = (PyObject*)__Pyx_PyCode_New(3, 0, 3, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__39, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_src_gvt_gvt_pyx, __pyx_n_s_modifyLight, 105, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__40)) __PYX_ERR(0, 105, __pyx_L1_error)
 
-  /* "gvt.pyx":101
+  /* "gvt.pyx":108
  *   _modifyLight(name.encode(),<float*>pos.data, <float*> color.data)
  * 
  * def modifyLight(str name,  np.ndarray[float, ndim=1, mode="c"] pos,  np.ndarray[float, ndim=1, mode="c"] color,  np.ndarray[float, ndim=1, mode="c"] n, float w, float h):             # <<<<<<<<<<<<<<
  *   _modifyLight(name.encode(),<float*>pos.data,<float*>color.data,<float*>n.data,w,h)
  * 
  */
-  __pyx_tuple__35 = PyTuple_Pack(6, __pyx_n_s_name, __pyx_n_s_pos, __pyx_n_s_color, __pyx_n_s_n, __pyx_n_s_w, __pyx_n_s_h); if (unlikely(!__pyx_tuple__35)) __PYX_ERR(0, 101, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__35);
-  __Pyx_GIVEREF(__pyx_tuple__35);
-  __pyx_codeobj__36 = (PyObject*)__Pyx_PyCode_New(6, 0, 6, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__35, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_src_gvt_gvt_pyx, __pyx_n_s_modifyLight, 101, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__36)) __PYX_ERR(0, 101, __pyx_L1_error)
+  __pyx_tuple__41 = PyTuple_Pack(6, __pyx_n_s_name, __pyx_n_s_pos, __pyx_n_s_color, __pyx_n_s_n, __pyx_n_s_w, __pyx_n_s_h); if (unlikely(!__pyx_tuple__41)) __PYX_ERR(0, 108, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__41);
+  __Pyx_GIVEREF(__pyx_tuple__41);
+  __pyx_codeobj__42 = (PyObject*)__Pyx_PyCode_New(6, 0, 6, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__41, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_src_gvt_gvt_pyx, __pyx_n_s_modifyLight, 108, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__42)) __PYX_ERR(0, 108, __pyx_L1_error)
 
-  /* "gvt.pyx":104
+  /* "gvt.pyx":111
  *   _modifyLight(name.encode(),<float*>pos.data,<float*>color.data,<float*>n.data,w,h)
  * 
  * def addCamera(str name,  np.ndarray[float, ndim=1, mode="c"]  pos,  np.ndarray[float, ndim=1, mode="c"]  focus,  np.ndarray[float, ndim=1, mode="c"]  up, float fov, int depth, int samples, float jitter):             # <<<<<<<<<<<<<<
  *   _addCamera(name.encode(), <float*> pos.data, <float*>focus.data,<float*>up.data,fov,depth,samples,jitter)
  * 
  */
-  __pyx_tuple__37 = PyTuple_Pack(8, __pyx_n_s_name, __pyx_n_s_pos, __pyx_n_s_focus, __pyx_n_s_up, __pyx_n_s_fov, __pyx_n_s_depth, __pyx_n_s_samples, __pyx_n_s_jitter); if (unlikely(!__pyx_tuple__37)) __PYX_ERR(0, 104, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__37);
-  __Pyx_GIVEREF(__pyx_tuple__37);
-  __pyx_codeobj__38 = (PyObject*)__Pyx_PyCode_New(8, 0, 8, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__37, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_src_gvt_gvt_pyx, __pyx_n_s_addCamera, 104, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__38)) __PYX_ERR(0, 104, __pyx_L1_error)
+  __pyx_tuple__43 = PyTuple_Pack(8, __pyx_n_s_name, __pyx_n_s_pos, __pyx_n_s_focus, __pyx_n_s_up, __pyx_n_s_fov, __pyx_n_s_depth, __pyx_n_s_samples, __pyx_n_s_jitter); if (unlikely(!__pyx_tuple__43)) __PYX_ERR(0, 111, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__43);
+  __Pyx_GIVEREF(__pyx_tuple__43);
+  __pyx_codeobj__44 = (PyObject*)__Pyx_PyCode_New(8, 0, 8, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__43, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_src_gvt_gvt_pyx, __pyx_n_s_addCamera, 111, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__44)) __PYX_ERR(0, 111, __pyx_L1_error)
 
-  /* "gvt.pyx":107
+  /* "gvt.pyx":114
  *   _addCamera(name.encode(), <float*> pos.data, <float*>focus.data,<float*>up.data,fov,depth,samples,jitter)
  * 
  * def modifyCamera(str name,  np.ndarray[float, ndim=1, mode="c"] pos,  np.ndarray[float, ndim=1, mode="c"]  focus,  np.ndarray[float, ndim=1, mode="c"]  up, float fov):             # <<<<<<<<<<<<<<
  *   _modifyCamera(name.encode(), <float*> pos.data, <float*>focus.data,<float*>up.data,fov)
  * 
  */
-  __pyx_tuple__39 = PyTuple_Pack(5, __pyx_n_s_name, __pyx_n_s_pos, __pyx_n_s_focus, __pyx_n_s_up, __pyx_n_s_fov); if (unlikely(!__pyx_tuple__39)) __PYX_ERR(0, 107, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__39);
-  __Pyx_GIVEREF(__pyx_tuple__39);
-  __pyx_codeobj__40 = (PyObject*)__Pyx_PyCode_New(5, 0, 5, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__39, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_src_gvt_gvt_pyx, __pyx_n_s_modifyCamera, 107, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__40)) __PYX_ERR(0, 107, __pyx_L1_error)
+  __pyx_tuple__45 = PyTuple_Pack(5, __pyx_n_s_name, __pyx_n_s_pos, __pyx_n_s_focus, __pyx_n_s_up, __pyx_n_s_fov); if (unlikely(!__pyx_tuple__45)) __PYX_ERR(0, 114, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__45);
+  __Pyx_GIVEREF(__pyx_tuple__45);
+  __pyx_codeobj__46 = (PyObject*)__Pyx_PyCode_New(5, 0, 5, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__45, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_src_gvt_gvt_pyx, __pyx_n_s_modifyCamera, 114, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__46)) __PYX_ERR(0, 114, __pyx_L1_error)
 
-  /* "gvt.pyx":110
+  /* "gvt.pyx":117
  *   _modifyCamera(name.encode(), <float*> pos.data, <float*>focus.data,<float*>up.data,fov)
  * 
  * def addFilm(str name, int w, int h, str path):             # <<<<<<<<<<<<<<
  *   _addFilm(name.encode(),w,h,path.encode())
  * 
  */
-  __pyx_tuple__41 = PyTuple_Pack(4, __pyx_n_s_name, __pyx_n_s_w, __pyx_n_s_h, __pyx_n_s_path); if (unlikely(!__pyx_tuple__41)) __PYX_ERR(0, 110, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__41);
-  __Pyx_GIVEREF(__pyx_tuple__41);
-  __pyx_codeobj__42 = (PyObject*)__Pyx_PyCode_New(4, 0, 4, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__41, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_src_gvt_gvt_pyx, __pyx_n_s_addFilm, 110, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__42)) __PYX_ERR(0, 110, __pyx_L1_error)
+  __pyx_tuple__47 = PyTuple_Pack(4, __pyx_n_s_name, __pyx_n_s_w, __pyx_n_s_h, __pyx_n_s_path); if (unlikely(!__pyx_tuple__47)) __PYX_ERR(0, 117, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__47);
+  __Pyx_GIVEREF(__pyx_tuple__47);
+  __pyx_codeobj__48 = (PyObject*)__Pyx_PyCode_New(4, 0, 4, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__47, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_src_gvt_gvt_pyx, __pyx_n_s_addFilm, 117, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__48)) __PYX_ERR(0, 117, __pyx_L1_error)
 
-  /* "gvt.pyx":113
+  /* "gvt.pyx":120
  *   _addFilm(name.encode(),w,h,path.encode())
  * 
  * def modifyFilm(str name, int w, int h, str path):             # <<<<<<<<<<<<<<
  *   _modifyFilm(name.encode(),w,h,path.encode())
  * 
  */
-  __pyx_tuple__43 = PyTuple_Pack(4, __pyx_n_s_name, __pyx_n_s_w, __pyx_n_s_h, __pyx_n_s_path); if (unlikely(!__pyx_tuple__43)) __PYX_ERR(0, 113, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__43);
-  __Pyx_GIVEREF(__pyx_tuple__43);
-  __pyx_codeobj__44 = (PyObject*)__Pyx_PyCode_New(4, 0, 4, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__43, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_src_gvt_gvt_pyx, __pyx_n_s_modifyFilm, 113, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__44)) __PYX_ERR(0, 113, __pyx_L1_error)
+  __pyx_tuple__49 = PyTuple_Pack(4, __pyx_n_s_name, __pyx_n_s_w, __pyx_n_s_h, __pyx_n_s_path); if (unlikely(!__pyx_tuple__49)) __PYX_ERR(0, 120, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__49);
+  __Pyx_GIVEREF(__pyx_tuple__49);
+  __pyx_codeobj__50 = (PyObject*)__Pyx_PyCode_New(4, 0, 4, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__49, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_src_gvt_gvt_pyx, __pyx_n_s_modifyFilm, 120, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__50)) __PYX_ERR(0, 120, __pyx_L1_error)
 
-  /* "gvt.pyx":116
+  /* "gvt.pyx":123
  *   _modifyFilm(name.encode(),w,h,path.encode())
  * 
- * def addRenderer(str name, int adapter, int schedule):             # <<<<<<<<<<<<<<
- *   _addRenderer(name.encode(),adapter,schedule)
+ * def addRenderer(str name, int adapter, int schedule,str camera,str film,bool vol):             # <<<<<<<<<<<<<<
+ *   _addRenderer(name.encode(),adapter,schedule,camera.encode(),film.encode(),vol)
  * 
  */
-  __pyx_tuple__45 = PyTuple_Pack(3, __pyx_n_s_name, __pyx_n_s_adapter, __pyx_n_s_schedule); if (unlikely(!__pyx_tuple__45)) __PYX_ERR(0, 116, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__45);
-  __Pyx_GIVEREF(__pyx_tuple__45);
-  __pyx_codeobj__46 = (PyObject*)__Pyx_PyCode_New(3, 0, 3, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__45, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_src_gvt_gvt_pyx, __pyx_n_s_addRenderer, 116, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__46)) __PYX_ERR(0, 116, __pyx_L1_error)
+  __pyx_tuple__51 = PyTuple_Pack(6, __pyx_n_s_name, __pyx_n_s_adapter, __pyx_n_s_schedule, __pyx_n_s_camera, __pyx_n_s_film, __pyx_n_s_vol); if (unlikely(!__pyx_tuple__51)) __PYX_ERR(0, 123, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__51);
+  __Pyx_GIVEREF(__pyx_tuple__51);
+  __pyx_codeobj__52 = (PyObject*)__Pyx_PyCode_New(6, 0, 6, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__51, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_src_gvt_gvt_pyx, __pyx_n_s_addRenderer, 123, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__52)) __PYX_ERR(0, 123, __pyx_L1_error)
 
-  /* "gvt.pyx":119
- *   _addRenderer(name.encode(),adapter,schedule)
+  /* "gvt.pyx":126
+ *   _addRenderer(name.encode(),adapter,schedule,camera.encode(),film.encode(),vol)
  * 
  * def render(str name):             # <<<<<<<<<<<<<<
  *   _render(name.encode())
  * 
  */
-  __pyx_tuple__47 = PyTuple_Pack(1, __pyx_n_s_name); if (unlikely(!__pyx_tuple__47)) __PYX_ERR(0, 119, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__47);
-  __Pyx_GIVEREF(__pyx_tuple__47);
-  __pyx_codeobj__48 = (PyObject*)__Pyx_PyCode_New(1, 0, 1, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__47, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_src_gvt_gvt_pyx, __pyx_n_s_render, 119, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__48)) __PYX_ERR(0, 119, __pyx_L1_error)
+  __pyx_tuple__53 = PyTuple_Pack(1, __pyx_n_s_name); if (unlikely(!__pyx_tuple__53)) __PYX_ERR(0, 126, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__53);
+  __Pyx_GIVEREF(__pyx_tuple__53);
+  __pyx_codeobj__54 = (PyObject*)__Pyx_PyCode_New(1, 0, 1, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__53, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_src_gvt_gvt_pyx, __pyx_n_s_render, 126, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__54)) __PYX_ERR(0, 126, __pyx_L1_error)
 
-  /* "gvt.pyx":122
+  /* "gvt.pyx":129
  *   _render(name.encode())
  * 
  * def writeimage(str name, str output):             # <<<<<<<<<<<<<<
  *   _writeimage(name.encode(),output.encode())
  */
-  __pyx_tuple__49 = PyTuple_Pack(2, __pyx_n_s_name, __pyx_n_s_output); if (unlikely(!__pyx_tuple__49)) __PYX_ERR(0, 122, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__49);
-  __Pyx_GIVEREF(__pyx_tuple__49);
-  __pyx_codeobj__50 = (PyObject*)__Pyx_PyCode_New(2, 0, 2, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__49, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_src_gvt_gvt_pyx, __pyx_n_s_writeimage, 122, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__50)) __PYX_ERR(0, 122, __pyx_L1_error)
+  __pyx_tuple__55 = PyTuple_Pack(2, __pyx_n_s_name, __pyx_n_s_output); if (unlikely(!__pyx_tuple__55)) __PYX_ERR(0, 129, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__55);
+  __Pyx_GIVEREF(__pyx_tuple__55);
+  __pyx_codeobj__56 = (PyObject*)__Pyx_PyCode_New(2, 0, 2, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__55, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_src_gvt_gvt_pyx, __pyx_n_s_writeimage, 129, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__56)) __PYX_ERR(0, 129, __pyx_L1_error)
   __Pyx_RefNannyFinishContext();
   return 0;
   __pyx_L1_error:;
@@ -8714,255 +9437,291 @@ static int __pyx_pymod_exec_gvt(PyObject *__pyx_pyinit_module)
   if (PyDict_SetItem(__pyx_d, __pyx_n_s_np, __pyx_t_1) < 0) __PYX_ERR(0, 6, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "gvt.pyx":40
+  /* "gvt.pyx":43
  * #void gvtInit(int &argc, char **&argv)
  * 
  * def gvtInit():             # <<<<<<<<<<<<<<
  *   # cdef char **c_argv
  *   # c_argv = <char**>malloc(sizeof(char*) * len(sys.argv))
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_3gvt_1gvtInit, NULL, __pyx_n_s_gvt); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 40, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_3gvt_1gvtInit, NULL, __pyx_n_s_gvt); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 43, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_gvtInit, __pyx_t_1) < 0) __PYX_ERR(0, 40, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_gvtInit, __pyx_t_1) < 0) __PYX_ERR(0, 43, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "gvt.pyx":62
+  /* "gvt.pyx":65
  *   # _gvtInit(argc,argv)
  * 
  * def createMesh(str name):             # <<<<<<<<<<<<<<
  *   _createMesh(name.encode())
- * 
+ * def addVolumeTransferFunctions(str name, str colortfname, str opacityfname, float low, float high):
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_3gvt_3createMesh, NULL, __pyx_n_s_gvt); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 62, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_3gvt_3createMesh, NULL, __pyx_n_s_gvt); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 65, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_createMesh, __pyx_t_1) < 0) __PYX_ERR(0, 62, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_createMesh, __pyx_t_1) < 0) __PYX_ERR(0, 65, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "gvt.pyx":65
+  /* "gvt.pyx":67
+ * def createMesh(str name):
  *   _createMesh(name.encode())
- * 
+ * def addVolumeTransferFunctions(str name, str colortfname, str opacityfname, float low, float high):             # <<<<<<<<<<<<<<
+ *   _addVolumeTransferFunctions(name.encode(),colortfname.encode(),opacityfname.encode(),low,high)
+ * def addVolumeSamples(str name, np.ndarray[float, ndim=1,mode="c"] samples, np.ndarray[int,ndim=1,mode="c"] counts, np.ndarray[float,ndim=1,mode="c"] origin, np.ndarray[float,ndim=1,mode="c"] deltas,float samplingrate):
+ */
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_3gvt_5addVolumeTransferFunctions, NULL, __pyx_n_s_gvt); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 67, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_addVolumeTransferFunctions, __pyx_t_1) < 0) __PYX_ERR(0, 67, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+
+  /* "gvt.pyx":69
+ * def addVolumeTransferFunctions(str name, str colortfname, str opacityfname, float low, float high):
+ *   _addVolumeTransferFunctions(name.encode(),colortfname.encode(),opacityfname.encode(),low,high)
+ * def addVolumeSamples(str name, np.ndarray[float, ndim=1,mode="c"] samples, np.ndarray[int,ndim=1,mode="c"] counts, np.ndarray[float,ndim=1,mode="c"] origin, np.ndarray[float,ndim=1,mode="c"] deltas,float samplingrate):             # <<<<<<<<<<<<<<
+ *   _addVolumeSamples(name.encode(),<float*>samples.data,<int*>counts.data,<float*>origin.data,<float*>deltas.data,samplingrate)
+ * def addMeshVertices(str name, int size, np.ndarray[float, ndim=1, mode="c"] vertices not None):
+ */
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_3gvt_7addVolumeSamples, NULL, __pyx_n_s_gvt); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 69, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_addVolumeSamples, __pyx_t_1) < 0) __PYX_ERR(0, 69, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+
+  /* "gvt.pyx":71
+ * def addVolumeSamples(str name, np.ndarray[float, ndim=1,mode="c"] samples, np.ndarray[int,ndim=1,mode="c"] counts, np.ndarray[float,ndim=1,mode="c"] origin, np.ndarray[float,ndim=1,mode="c"] deltas,float samplingrate):
+ *   _addVolumeSamples(name.encode(),<float*>samples.data,<int*>counts.data,<float*>origin.data,<float*>deltas.data,samplingrate)
  * def addMeshVertices(str name, int size, np.ndarray[float, ndim=1, mode="c"] vertices not None):             # <<<<<<<<<<<<<<
  *   _addMeshVertices(name.encode(),size,<float*> vertices.data)
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_3gvt_5addMeshVertices, NULL, __pyx_n_s_gvt); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 65, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_3gvt_9addMeshVertices, NULL, __pyx_n_s_gvt); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 71, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_addMeshVertices, __pyx_t_1) < 0) __PYX_ERR(0, 65, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_addMeshVertices, __pyx_t_1) < 0) __PYX_ERR(0, 71, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "gvt.pyx":68
+  /* "gvt.pyx":74
  *   _addMeshVertices(name.encode(),size,<float*> vertices.data)
  * 
  * def addMeshTriangles(str name, unsigned n,  np.ndarray[unsigned, ndim=1, mode="c"] triangles):             # <<<<<<<<<<<<<<
  *   _addMeshTriangles(name.encode(),  n,  <unsigned *> triangles.data)
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_3gvt_7addMeshTriangles, NULL, __pyx_n_s_gvt); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 68, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_3gvt_11addMeshTriangles, NULL, __pyx_n_s_gvt); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 74, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_addMeshTriangles, __pyx_t_1) < 0) __PYX_ERR(0, 68, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_addMeshTriangles, __pyx_t_1) < 0) __PYX_ERR(0, 74, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "gvt.pyx":71
+  /* "gvt.pyx":77
  *   _addMeshTriangles(name.encode(),  n,  <unsigned *> triangles.data)
  * 
  * def addMeshFaceNormals( str name, unsigned n,   np.ndarray[float, ndim=1, mode="c"] normals):             # <<<<<<<<<<<<<<
  *   _addMeshFaceNormals(name.encode(), n, <float*> normals.data)
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_3gvt_9addMeshFaceNormals, NULL, __pyx_n_s_gvt); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 71, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_3gvt_13addMeshFaceNormals, NULL, __pyx_n_s_gvt); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 77, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_addMeshFaceNormals, __pyx_t_1) < 0) __PYX_ERR(0, 71, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_addMeshFaceNormals, __pyx_t_1) < 0) __PYX_ERR(0, 77, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "gvt.pyx":74
+  /* "gvt.pyx":80
  *   _addMeshFaceNormals(name.encode(), n, <float*> normals.data)
  * 
  * def addMeshVertexNormals( str name,  unsigned n,  np.ndarray[float, ndim=1, mode="c"] normals):             # <<<<<<<<<<<<<<
  *   _addMeshVertexNormals(name.encode(),n, <float*> normals.data)
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_3gvt_11addMeshVertexNormals, NULL, __pyx_n_s_gvt); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 74, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_3gvt_15addMeshVertexNormals, NULL, __pyx_n_s_gvt); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 80, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_addMeshVertexNormals, __pyx_t_1) < 0) __PYX_ERR(0, 74, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_addMeshVertexNormals, __pyx_t_1) < 0) __PYX_ERR(0, 80, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "gvt.pyx":77
+  /* "gvt.pyx":83
  *   _addMeshVertexNormals(name.encode(),n, <float*> normals.data)
  * 
  * def finishMesh( str name, bool compute_normal = True):             # <<<<<<<<<<<<<<
  *   _finishMesh(name.encode(),compute_normal)
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_3gvt_13finishMesh, NULL, __pyx_n_s_gvt); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 77, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_3gvt_17finishMesh, NULL, __pyx_n_s_gvt); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 83, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_finishMesh, __pyx_t_1) < 0) __PYX_ERR(0, 77, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_finishMesh, __pyx_t_1) < 0) __PYX_ERR(0, 83, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "gvt.pyx":80
+  /* "gvt.pyx":86
  *   _finishMesh(name.encode(),compute_normal)
  * 
  * def addMeshMaterialLambert( str name,  unsigned mattype,  np.ndarray[float, ndim=1, mode="c"] kd,  float alpha):             # <<<<<<<<<<<<<<
  *   _addMeshMaterial(name.encode() ,mattype, <float*> kd.data, alpha)
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_3gvt_15addMeshMaterialLambert, NULL, __pyx_n_s_gvt); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 80, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_3gvt_19addMeshMaterialLambert, NULL, __pyx_n_s_gvt); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 86, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_addMeshMaterialLambert, __pyx_t_1) < 0) __PYX_ERR(0, 80, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_addMeshMaterialLambert, __pyx_t_1) < 0) __PYX_ERR(0, 86, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "gvt.pyx":83
+  /* "gvt.pyx":89
  *   _addMeshMaterial(name.encode() ,mattype, <float*> kd.data, alpha)
  * 
  * def addMeshMaterialSpecular( str name,  unsigned mattype,  np.ndarray[float, ndim=1, mode="c"] kd,  np.ndarray[float, ndim=1, mode="c"] ks, float alpha ):             # <<<<<<<<<<<<<<
  *   _addMeshMaterial2(name.encode(), mattype, <float*> kd.data, <float*> ks.data, alpha)
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_3gvt_17addMeshMaterialSpecular, NULL, __pyx_n_s_gvt); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 83, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_3gvt_21addMeshMaterialSpecular, NULL, __pyx_n_s_gvt); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 89, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_addMeshMaterialSpecular, __pyx_t_1) < 0) __PYX_ERR(0, 83, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_addMeshMaterialSpecular, __pyx_t_1) < 0) __PYX_ERR(0, 89, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "gvt.pyx":89
+  /* "gvt.pyx":95
  * #   _addMeshMaterials(name.encode(),n,<unsigned*> mattype.data, <float*> kd.data, <float*> ks.float, <float*> alpha.data)
  * 
  * def addInstance(str s, str name,  np.ndarray[float, ndim=1, mode="c"] m):             # <<<<<<<<<<<<<<
  *   _addInstance(s.encode(),name.encode(),<float*> m.data)
- * 
+ * def createVolume(str name):
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_3gvt_19addInstance, NULL, __pyx_n_s_gvt); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 89, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_3gvt_23addInstance, NULL, __pyx_n_s_gvt); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 95, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_addInstance, __pyx_t_1) < 0) __PYX_ERR(0, 89, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_addInstance, __pyx_t_1) < 0) __PYX_ERR(0, 95, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "gvt.pyx":92
+  /* "gvt.pyx":97
+ * def addInstance(str s, str name,  np.ndarray[float, ndim=1, mode="c"] m):
  *   _addInstance(s.encode(),name.encode(),<float*> m.data)
- * 
+ * def createVolume(str name):             # <<<<<<<<<<<<<<
+ *   _createVolume(name.encode())
+ * def addPointLight(str name,  np.ndarray[float, ndim=1, mode="c"] pos,  np.ndarray[float, ndim=1, mode="c"] color):
+ */
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_3gvt_25createVolume, NULL, __pyx_n_s_gvt); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 97, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_createVolume, __pyx_t_1) < 0) __PYX_ERR(0, 97, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+
+  /* "gvt.pyx":99
+ * def createVolume(str name):
+ *   _createVolume(name.encode())
  * def addPointLight(str name,  np.ndarray[float, ndim=1, mode="c"] pos,  np.ndarray[float, ndim=1, mode="c"] color):             # <<<<<<<<<<<<<<
  *   _addPointLight(name.encode(),<float*> pos.data, <float*> color.data)
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_3gvt_21addPointLight, NULL, __pyx_n_s_gvt); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 92, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_3gvt_27addPointLight, NULL, __pyx_n_s_gvt); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 99, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_addPointLight, __pyx_t_1) < 0) __PYX_ERR(0, 92, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_addPointLight, __pyx_t_1) < 0) __PYX_ERR(0, 99, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "gvt.pyx":95
+  /* "gvt.pyx":102
  *   _addPointLight(name.encode(),<float*> pos.data, <float*> color.data)
  * 
  * def addAreaLight(str name,  np.ndarray[float, ndim=1, mode="c"] pos,  np.ndarray[float, ndim=1, mode="c"] color,  np.ndarray[float, ndim=1, mode="c"] n, float w, float h):             # <<<<<<<<<<<<<<
  *   _addAreaLight(name.encode(),<float*> pos.data, <float*> color.data, <float*> n.data, w, h)
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_3gvt_23addAreaLight, NULL, __pyx_n_s_gvt); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 95, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_3gvt_29addAreaLight, NULL, __pyx_n_s_gvt); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 102, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_addAreaLight, __pyx_t_1) < 0) __PYX_ERR(0, 95, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_addAreaLight, __pyx_t_1) < 0) __PYX_ERR(0, 102, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "gvt.pyx":98
+  /* "gvt.pyx":105
  *   _addAreaLight(name.encode(),<float*> pos.data, <float*> color.data, <float*> n.data, w, h)
  * 
  * def modifyLight(str name,  np.ndarray[float, ndim=1, mode="c"] pos,  np.ndarray[float, ndim=1, mode="c"] color):             # <<<<<<<<<<<<<<
  *   _modifyLight(name.encode(),<float*>pos.data, <float*> color.data)
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_3gvt_25modifyLight, NULL, __pyx_n_s_gvt); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 98, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_3gvt_31modifyLight, NULL, __pyx_n_s_gvt); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 105, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_modifyLight, __pyx_t_1) < 0) __PYX_ERR(0, 98, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_modifyLight, __pyx_t_1) < 0) __PYX_ERR(0, 105, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "gvt.pyx":101
+  /* "gvt.pyx":108
  *   _modifyLight(name.encode(),<float*>pos.data, <float*> color.data)
  * 
  * def modifyLight(str name,  np.ndarray[float, ndim=1, mode="c"] pos,  np.ndarray[float, ndim=1, mode="c"] color,  np.ndarray[float, ndim=1, mode="c"] n, float w, float h):             # <<<<<<<<<<<<<<
  *   _modifyLight(name.encode(),<float*>pos.data,<float*>color.data,<float*>n.data,w,h)
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_3gvt_27modifyLight, NULL, __pyx_n_s_gvt); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 101, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_3gvt_33modifyLight, NULL, __pyx_n_s_gvt); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 108, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_modifyLight, __pyx_t_1) < 0) __PYX_ERR(0, 101, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_modifyLight, __pyx_t_1) < 0) __PYX_ERR(0, 108, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "gvt.pyx":104
+  /* "gvt.pyx":111
  *   _modifyLight(name.encode(),<float*>pos.data,<float*>color.data,<float*>n.data,w,h)
  * 
  * def addCamera(str name,  np.ndarray[float, ndim=1, mode="c"]  pos,  np.ndarray[float, ndim=1, mode="c"]  focus,  np.ndarray[float, ndim=1, mode="c"]  up, float fov, int depth, int samples, float jitter):             # <<<<<<<<<<<<<<
  *   _addCamera(name.encode(), <float*> pos.data, <float*>focus.data,<float*>up.data,fov,depth,samples,jitter)
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_3gvt_29addCamera, NULL, __pyx_n_s_gvt); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 104, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_3gvt_35addCamera, NULL, __pyx_n_s_gvt); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 111, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_addCamera, __pyx_t_1) < 0) __PYX_ERR(0, 104, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_addCamera, __pyx_t_1) < 0) __PYX_ERR(0, 111, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "gvt.pyx":107
+  /* "gvt.pyx":114
  *   _addCamera(name.encode(), <float*> pos.data, <float*>focus.data,<float*>up.data,fov,depth,samples,jitter)
  * 
  * def modifyCamera(str name,  np.ndarray[float, ndim=1, mode="c"] pos,  np.ndarray[float, ndim=1, mode="c"]  focus,  np.ndarray[float, ndim=1, mode="c"]  up, float fov):             # <<<<<<<<<<<<<<
  *   _modifyCamera(name.encode(), <float*> pos.data, <float*>focus.data,<float*>up.data,fov)
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_3gvt_31modifyCamera, NULL, __pyx_n_s_gvt); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 107, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_3gvt_37modifyCamera, NULL, __pyx_n_s_gvt); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 114, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_modifyCamera, __pyx_t_1) < 0) __PYX_ERR(0, 107, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_modifyCamera, __pyx_t_1) < 0) __PYX_ERR(0, 114, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "gvt.pyx":110
+  /* "gvt.pyx":117
  *   _modifyCamera(name.encode(), <float*> pos.data, <float*>focus.data,<float*>up.data,fov)
  * 
  * def addFilm(str name, int w, int h, str path):             # <<<<<<<<<<<<<<
  *   _addFilm(name.encode(),w,h,path.encode())
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_3gvt_33addFilm, NULL, __pyx_n_s_gvt); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 110, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_3gvt_39addFilm, NULL, __pyx_n_s_gvt); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 117, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_addFilm, __pyx_t_1) < 0) __PYX_ERR(0, 110, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_addFilm, __pyx_t_1) < 0) __PYX_ERR(0, 117, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "gvt.pyx":113
+  /* "gvt.pyx":120
  *   _addFilm(name.encode(),w,h,path.encode())
  * 
  * def modifyFilm(str name, int w, int h, str path):             # <<<<<<<<<<<<<<
  *   _modifyFilm(name.encode(),w,h,path.encode())
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_3gvt_35modifyFilm, NULL, __pyx_n_s_gvt); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 113, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_3gvt_41modifyFilm, NULL, __pyx_n_s_gvt); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 120, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_modifyFilm, __pyx_t_1) < 0) __PYX_ERR(0, 113, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_modifyFilm, __pyx_t_1) < 0) __PYX_ERR(0, 120, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "gvt.pyx":116
+  /* "gvt.pyx":123
  *   _modifyFilm(name.encode(),w,h,path.encode())
  * 
- * def addRenderer(str name, int adapter, int schedule):             # <<<<<<<<<<<<<<
- *   _addRenderer(name.encode(),adapter,schedule)
+ * def addRenderer(str name, int adapter, int schedule,str camera,str film,bool vol):             # <<<<<<<<<<<<<<
+ *   _addRenderer(name.encode(),adapter,schedule,camera.encode(),film.encode(),vol)
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_3gvt_37addRenderer, NULL, __pyx_n_s_gvt); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 116, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_3gvt_43addRenderer, NULL, __pyx_n_s_gvt); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 123, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_addRenderer, __pyx_t_1) < 0) __PYX_ERR(0, 116, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_addRenderer, __pyx_t_1) < 0) __PYX_ERR(0, 123, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "gvt.pyx":119
- *   _addRenderer(name.encode(),adapter,schedule)
+  /* "gvt.pyx":126
+ *   _addRenderer(name.encode(),adapter,schedule,camera.encode(),film.encode(),vol)
  * 
  * def render(str name):             # <<<<<<<<<<<<<<
  *   _render(name.encode())
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_3gvt_39render, NULL, __pyx_n_s_gvt); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 119, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_3gvt_45render, NULL, __pyx_n_s_gvt); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 126, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_render, __pyx_t_1) < 0) __PYX_ERR(0, 119, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_render, __pyx_t_1) < 0) __PYX_ERR(0, 126, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "gvt.pyx":122
+  /* "gvt.pyx":129
  *   _render(name.encode())
  * 
  * def writeimage(str name, str output):             # <<<<<<<<<<<<<<
  *   _writeimage(name.encode(),output.encode())
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_3gvt_41writeimage, NULL, __pyx_n_s_gvt); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 122, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_3gvt_47writeimage, NULL, __pyx_n_s_gvt); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 129, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_writeimage, __pyx_t_1) < 0) __PYX_ERR(0, 122, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_writeimage, __pyx_t_1) < 0) __PYX_ERR(0, 129, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
   /* "gvt.pyx":1

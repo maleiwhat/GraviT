@@ -23,6 +23,9 @@ cdef extern from "gravit/api.h":
   void _addMeshMaterial2"addMeshMaterial"( string name,  unsigned mattype,  float *kd,  float *ks, float alpha )
   void _addMeshMaterials"addMeshMaterials"( string name,  unsigned n,  unsigned *mattype,  float *kd, float *ks,  float *alpha)
   void _addInstance"addInstance"(string s, string name,  float *m)
+  void _createVolume"createVolume"(string name)
+  void _addVolumeTransferFunctions"addVolumeTransferFunctions"(string name, string colortfname, string opacityfname, float low, float high)
+  void _addVolumeSamples"addVolumeSamples"(string name, float *samples, int *counts, float *origin, float* deltas, float samplingrate)
   void _addPointLight"addPointLight"(string name,  float *pos,  float *color)
   void _addAreaLight"addAreaLight"(string name,  float *pos,  float *color,  float *n, float w, float h)
   void _modifyLight"modifyLight"(string name,  float *pos,  float *color)
@@ -34,7 +37,7 @@ cdef extern from "gravit/api.h":
   void _modifyFilm"modifyFilm"(string name, int w, int h, string path)
   void _render"render"(string name)
   void _writeimage"writeimage"(string name, string output)
-  void _addRenderer"addRenderer"(string name, int adapter, int schedule)
+  void _addRenderer"addRenderer"(string name, int adapter, int schedule,string camera,string film,bool vol)
 #void gvtInit(int &argc, char **&argv)
 
 def gvtInit():
@@ -61,7 +64,10 @@ def gvtInit():
 
 def createMesh(str name):
   _createMesh(name.encode())
-
+def addVolumeTransferFunctions(str name, str colortfname, str opacityfname, float low, float high):
+  _addVolumeTransferFunctions(name.encode(),colortfname.encode(),opacityfname.encode(),low,high)
+def addVolumeSamples(str name, np.ndarray[float, ndim=1,mode="c"] samples, np.ndarray[int,ndim=1,mode="c"] counts, np.ndarray[float,ndim=1,mode="c"] origin, np.ndarray[float,ndim=1,mode="c"] deltas,float samplingrate):
+  _addVolumeSamples(name.encode(),<float*>samples.data,<int*>counts.data,<float*>origin.data,<float*>deltas.data,samplingrate)
 def addMeshVertices(str name, int size, np.ndarray[float, ndim=1, mode="c"] vertices not None):
   _addMeshVertices(name.encode(),size,<float*> vertices.data)
 
@@ -88,7 +94,8 @@ def addMeshMaterialSpecular( str name,  unsigned mattype,  np.ndarray[float, ndi
 
 def addInstance(str s, str name,  np.ndarray[float, ndim=1, mode="c"] m):
   _addInstance(s.encode(),name.encode(),<float*> m.data)
-
+def createVolume(str name):
+  _createVolume(name.encode())
 def addPointLight(str name,  np.ndarray[float, ndim=1, mode="c"] pos,  np.ndarray[float, ndim=1, mode="c"] color):
   _addPointLight(name.encode(),<float*> pos.data, <float*> color.data)
 
@@ -113,8 +120,8 @@ def addFilm(str name, int w, int h, str path):
 def modifyFilm(str name, int w, int h, str path):
   _modifyFilm(name.encode(),w,h,path.encode())
 
-def addRenderer(str name, int adapter, int schedule):
-  _addRenderer(name.encode(),adapter,schedule)
+def addRenderer(str name, int adapter, int schedule,str camera,str film,bool vol):
+  _addRenderer(name.encode(),adapter,schedule,camera.encode(),film.encode(),vol)
 
 def render(str name):
   _render(name.encode())

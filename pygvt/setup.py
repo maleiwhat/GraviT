@@ -6,12 +6,12 @@ import sys
 import os
 import numpy
 
-compile_args = ['-std=c++11']
+compile_args = ['-std=c++11','-DGVT_BUILD_VOLUME']
 
 try:
    embree_inc = os.environ["embree_DIR"] + "/include"
    #embree_lib = os.environ["embree_DIR"] + ("/lib" if os.path.exists(os.environ["embree_DIR"]+"/lib") else "/lib64")
-   embree_lib = os.environ["embree_DIR"] + "/build"
+   embree_lib = os.environ["embree_DIR"] + "/lib64"
 
 except KeyError:
    print("Please set the environment variable embree_DIR")
@@ -27,6 +27,12 @@ except KeyError:
 #    print("Please set the environment variable Boost_DIR")
 #    sys.exit(1)
 
+try:
+    os.environ["osp_lib"]
+    osp_library = os.environ["osp_lib"]
+except KeyError:
+    print("Please set the environment variable osp_lib")
+    sys.exit(1)
 
 try:
     os.environ["gvt_DIR"]
@@ -75,6 +81,7 @@ extensions = [
         "gvtRender","gvtCore",
         "IceTGL","IceTMPI","IceTCore",
         "embree",
+        "ospray",
         # "boost_system"+mpi_mac,
         "mpi",
         "mpicxx",
@@ -87,6 +94,7 @@ extensions = [
             embree_lib,
             mpi_lib,
             gvt_lib,
+            osp_library,
             #boost_lib,
             os.environ["IceT_LIB_DIR"],
             ],

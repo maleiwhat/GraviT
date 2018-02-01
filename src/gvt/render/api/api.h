@@ -77,16 +77,14 @@ void addMeshMaterial(const std::string name, const unsigned mattype, const float
  * Add global specular material to mesh
  *
  */
-void addMeshMaterial(const std::string name, const unsigned mattype, const float *kd, const float *ks,
-                     const float alpha = 1.f);
+void addMeshMaterial(const std::string name, const unsigned mattype, const float *kd, const float *ks, const float alpha = 1.f);
 
 /**
  * Add material list to mesh
  *
  *
  */
-void addMeshMaterials(const std::string name, const unsigned n, const unsigned *mattype, const float *kd,
-                      const float *ks, const float *alpha);
+void addMeshMaterials(const std::string name, const unsigned n, const unsigned *mattype, const float *kd, const float *ks, const float *alpha);
 
 /**
  * Add color to vertex
@@ -191,8 +189,7 @@ void addCamera(std::string name, const float *pos, const float *focus, const flo
  * \param samples the number of rays cast per pixel for this camera
  * \param jitter the window size for jittering multiple samples per pixel
  */
-void modifyCamera(std::string name, const float *pos, const float *focus, const float *up, float fov, int depth,
-                  int samples, float jitter);
+void modifyCamera(std::string name, const float *pos, const float *focus, const float *up, float fov, int depth, int samples, float jitter);
 
 /**
  * modify the given camera, if it exists
