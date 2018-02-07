@@ -355,8 +355,8 @@ int main(int argc, char **argv) {
   for(int domain =0; domain < volheader.numberofdomains; domain++) {
     if(domain%worldsize == rank){ // read this domain 
         std::cout << " rank " << rank << " reading domain " << domain << std::endl;
-      gvt::render::data::primitives::Volume *vol =
-        new gvt::render::data::primitives::Volume();
+      //gvt::render::data::primitives::Volume *vol =
+        //new gvt::render::data::primitives::Volume();
       // read volume file.
       float* sampledata = volheader.readdata(domain);
       gvt::render::data::primitives::TransferFunction *tf =
@@ -366,16 +366,16 @@ int main(int argc, char **argv) {
       // this value range is for small enzo data
       tf->setValueRange(glm::vec2(0.0,65536.0));
       // required values in the volume.
-      vol->SetVoxelType(gvt::render::data::primitives::Volume::FLOAT);
-      vol->SetSamples(sampledata);
-      vol->SetTransferFunction(tf);
-      vol->SetCounts(volheader.counts[0],volheader.counts[1],volheader.counts[2]);
-      vol->SetOrigin(volheader.origin[0],volheader.origin[1],volheader.origin[2]);
+      //vol->SetVoxelType(gvt::render::data::primitives::Volume::FLOAT);
+      //vol->SetSamples(sampledata);
+      //vol->SetTransferFunction(tf);
+      //vol->SetCounts(volheader.counts[0],volheader.counts[1],volheader.counts[2]);
+      //vol->SetOrigin(volheader.origin[0],volheader.origin[1],volheader.origin[2]);
       float deltas[3] = {1.0,1.0,1.0};
       float samplingrate = 1.0;
       glm::vec3 dels = {1.0,1.0,1.0};
-      vol->SetDeltas(dels.x,dels.y,dels.z);
-      vol->SetSamplingRate(samplingrate);
+      //vol->SetDeltas(dels.x,dels.y,dels.z);
+      //vol->SetSamplingRate(samplingrate);
       gvt::render::data::primitives::Box3D *volbox = volheader.volbox;
 
 
@@ -412,10 +412,10 @@ int main(int argc, char **argv) {
   // again some default stuff loaded in. Not entirely required in this
   // instance but get in tha habbit of putting it there anyway.
   // not sure I need a light but what the heck. 
-  auto lpos = glm::vec3(0.,0.,1.);
-  auto lcolor = glm::vec3(100.,100.,500.);
-  string lightname = "mylight";
-  addPointLight(lightname,glm::value_ptr(lpos),glm::value_ptr(lcolor));
+  //auto lpos = glm::vec3(0.,0.,1.);
+  //auto lcolor = glm::vec3(100.,100.,500.);
+  //string lightname = "mylight";
+  //addPointLight(lightname,glm::value_ptr(lpos),glm::value_ptr(lcolor));
   // camera time
   auto eye = glm::vec3(127.5,127.5,1024.);
   if (cmd.isSet("eye")) {
