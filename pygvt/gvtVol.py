@@ -8,21 +8,22 @@ gvt.gvtInit()
 # Read some data
 
 dims = (256,256,256)
-Volume = np.reshape(np.fromfile("../data/vol/1000.256",dtype=np.int32),dims)
+#Volume = np.reshape(np.fromfile("../data/vol/1000.int256",dtype=np.int32),dims)
+Volume = np.fromfile("../data/vol/1000.int256",dtype=np.int32).astype(np.float32)
 
 # Some volume metadata
 
 # Deltas - cell spacing
 
-deltas = np.array([1.0,1.0,1.0])
+deltas = np.array([1.0,1.0,1.0],dtype=np.float32)
 
 # Counts - number of points in each coordinate direction
 
-counts = dims
+counts = np.array(dims,dtype=np.int32)
 
 # Origin - origin of the volume in world space
 
-origin = np.array([0.0,0.0,0.0])
+origin = np.array([0.0,0.0,0.0],dtype=np.float32)
 
 # samplingrate - rate of the sampling
 
@@ -49,18 +50,19 @@ high = 65536.0
 
 gvt.createVolume(volnodename)
 gvt.addVolumeTransferFunctions(volnodename,ctf,otf,low,high)
-gvt.addVolumeSamples(volnodename,volume,counts,origin,deltas,samplingrate)
+gvt.addVolumeSamples(volnodename,Volume,counts,origin,deltas,samplingrate)
 
 # add an instance. 
 # An instance needs a transformation matrix. All coords of the volume data
 # are in world coords so we give the identity matrix.
 
-mf = np.identity(4)
+mf = np.identity(4,dtype=np.float32).flatten()
+print(mf.shape)
 gvt.addInstance("inst0",volnodename,mf)
 
 # Set up camera and film. 
 
-eye = np.array([512.0,512.0,512.0],dtype=np.float32)
+eyept = np.array([512.0,512.0,512.0],dtype=np.float32)
 focus = np.array([127.5,127.5,127.5],dtype=np.float32)
 fov = 30.0*np.pi/180.0
 upVector = np.array([0.0,0.0,1.0],dtype=np.float32)
@@ -69,7 +71,7 @@ raySamples = 1
 jitterWindowSize = 0.5
 camname = "volCam"
 
-gvt.addCamera(camname,eye,focus,upVector,fov,rayMaxDepth,raySamples,jitterWindowSize)
+gvt.addCamera(camname,eyept,focus,upVector,fov,rayMaxDepth,raySamples,jitterWindowSize)
 
 # set up film.
 
@@ -82,8 +84,10 @@ gvt.addFilm(filmname,wsize[0],wsize[1],imagename)
 # renderer bits ...
 
 rendername = "PythonVolRenderer"
+schedtype = 1
+adaptertype = 5
 
-gvt.addRenderer(rendername,adaptertype,schedtype,camname,filmname,TRUE)
+gvt.addRenderer(rendername,adaptertype,schedtype,camname,filmname,True)
 
 # render it
 

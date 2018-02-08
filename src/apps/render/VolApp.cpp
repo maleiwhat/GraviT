@@ -473,6 +473,7 @@ int main(int argc, char **argv) {
 #endif
   gvtsync();
 
+  std::cout << "schedtype: " << schedtype << " adaptertype: " << adaptertype << std::endl;
   std::cout << "add renderer " << rendername << " " << adaptertype << " " << schedtype << std::endl;
   addRenderer(rendername,adaptertype,schedtype,camname,filmname,true);
   std::cout << "Calling render" << std::endl;
